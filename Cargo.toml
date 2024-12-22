@@ -1,0 +1,13 @@
+[package]
+name = "tasktaskrevolution"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ttr"
+path = "src/main.rs"
+
+[dependencies]
+clap = "4.5.23"
+serde_yml = "0.0.12"
+serde = { version = "1.0.216", features = ["derive"] }
