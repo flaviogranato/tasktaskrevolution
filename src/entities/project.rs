@@ -1,4 +1,4 @@
-use serde::{ser::Serializer, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProjectManifest {
