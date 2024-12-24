@@ -1,14 +1,13 @@
 mod entities;
 
-use regex::Regex;
 use std::env;
 use std::{fs, path::PathBuf};
-use std::process::Command;
 
 use clap::{Parser, Subcommand};
-use serde_yml::{to_string};
+use serde_yml::to_string;
 
 use crate::entities::config::{ConfigManifest, ConfigMetadata, ConfigSpec};
+use crate::entities::project::ProjectManifest;
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"), 
@@ -56,21 +55,20 @@ enum CreateCommands {
         project: Option<String>,
         #[clap(short, long)]
         resource: Option<String>,
-    }
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let current_dir = env::current_dir()?;
     let cli = Cli::parse();
 
     match &cli.command {
-        Commands::Init { 
+        Commands::Init {
             path,
             manager_name,
             manager_email,
         } => {
             let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
-            create_config_file(&repo_path, &manager_name, &manager_email);
+            let _ = create_config_file(&repo_path, manager_name, manager_email);
 
             println!("Repositório inicializado em: {}", repo_path.display());
         }
@@ -79,23 +77,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match create_command {
                 CreateCommands::Project { name, description } => {
-                    println!("Criando projeto: {} no diretório: {}", name, config_path.display());
+                    println!(
+                        "Criando projeto: {} no diretório: {}",
+                        name,
+                        config_path.display()
+                    );
                     if let Some(desc) = description {
                         println!("Descrição: {}", desc);
                     }
 
                     let project_path = config_path.join(name);
                     fs::create_dir_all(project_path.clone())?;
+                    let _ = create_project(name, description);
                     println!("Projeto criado em: {}", project_path.display());
                 }
-                &CreateCommands::Resource { .. } | &CreateCommands::Task { .. } => todo!()
+                &CreateCommands::Resource { .. } | &CreateCommands::Task { .. } => todo!(),
             }
         }
     }
 
     Ok(())
 }
-
 
 fn create_config_file(path: &PathBuf, name: &str, email: &str) -> Result<(), serde_yml::Error> {
     let config_path = path.join("config.yaml");
@@ -120,7 +122,7 @@ fn create_config_file(path: &PathBuf, name: &str, email: &str) -> Result<(), ser
             date_format: "yyyy-mm-dd".to_string(),
             default_task_duration: 8,
             locale: "pt_BR".to_string(),
-        }
+        },
     };
 
     let config_yaml = to_string(&_config)?;
@@ -133,23 +135,15 @@ fn create_config_file(path: &PathBuf, name: &str, email: &str) -> Result<(), ser
     Ok(())
 }
 
-fn create_project(matches: &clap::ArgMatches) -> Result<(), Box<dyn std::error::Error>> {
-    // Lógica para criar o projeto
-    // Extrai o nome do projeto dos argumentos
-    // Chama o comando `ttr create project` (que ainda precisa ser implementado)
-    // Trata os erros
-    let project_name = matches.get_one::<String>("project_name").map_or("default-project", |v| v.as_str());
+fn create_project(name: &String, description: &Option<String>) -> Result<(), serde_yml::Error> {
+    let project_path = PathBuf::from(name);
+    let project_file_path = project_path.join("project.yaml");
+    let project = ProjectManifest::new(name.to_string(), None, None);
+    let project_yaml = to_string(&project)?;
 
-    // Executa o comando `ttr create project`
-    let output = Command::new("ttr")
-        .arg("create")
-        .arg("project")
-        .arg(project_name)
-        .output()?;
-
-    if !output.status.success() {
-        let error_message = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("Erro ao executar o comando ttr create project: {}", error_message).into());
+    if let Err(e) = fs::write(project_file_path, project_yaml) {
+        eprintln!("Erro ao criar o arquivo config.yaml: {}", e);
+        return Ok(());
     }
 
     Ok(())
