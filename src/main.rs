@@ -1,8 +1,8 @@
 mod entities;
 
-use std::env;
-use std::{fs, path::PathBuf};
+use std::{env, fs, path::PathBuf};
 
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use serde_yml::to_string;
 
@@ -58,7 +58,7 @@ enum CreateCommands {
     },
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
@@ -77,18 +77,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match create_command {
                 CreateCommands::Project { name, description } => {
-                    println!(
-                        "Criando projeto: {} no diretório: {}",
-                        name,
-                        config_path.display()
-                    );
-                    if let Some(desc) = description {
-                        println!("Descrição: {}", desc);
+                    let project_path = config_path.join(name);
+                    let project_file_path = project_path.join("project.yaml");
+
+                    match create_project(name, description) {
+                        Ok(project) => {
+                            let project_yaml = to_string(&project)
+                                .context("Falha ao serializar o projeto para yaml")?;
+                            fs::create_dir_all(project_path.clone())?;
+                            if let Err(e) = fs::write(project_file_path, project_yaml) {
+                                eprintln!("Erro ao criar o arquivo config.yaml: {}", e);
+                                return Ok(());
+                            }
+                        }
+                        Err(err) => {
+                            eprint!("Erro ao criar o projeto: {}", err);
+                        }
                     }
 
-                    let project_path = config_path.join(name);
-                    fs::create_dir_all(project_path.clone())?;
-                    let _ = create_project(name, description);
                     println!("Projeto criado em: {}", project_path.display());
                 }
                 &CreateCommands::Resource { .. } | &CreateCommands::Task { .. } => todo!(),
@@ -135,16 +141,11 @@ fn create_config_file(path: &PathBuf, name: &str, email: &str) -> Result<(), ser
     Ok(())
 }
 
-fn create_project(name: &String, description: &Option<String>) -> Result<(), serde_yml::Error> {
-    let project_path = PathBuf::from(name);
-    let project_file_path = project_path.join("project.yaml");
-    let project = ProjectManifest::new(name.to_string(), None, None);
-    let project_yaml = to_string(&project)?;
-
-    if let Err(e) = fs::write(project_file_path, project_yaml) {
-        eprintln!("Erro ao criar o arquivo config.yaml: {}", e);
-        return Ok(());
-    }
-
-    Ok(())
+fn create_project(
+    code: &Option<String>,
+    name: &String,
+    description: &Option<String>,
+) -> Result<ProjectManifest> {
+    let project = ProjectManifest::new(None, name.to_string(), None, None);
+    Ok(project)
 }

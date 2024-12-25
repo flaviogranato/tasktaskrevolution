@@ -12,6 +12,8 @@ pub struct ProjectManifest {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
     pub name: String,
 }
 
@@ -32,7 +34,9 @@ pub struct ProjectSpec {
 pub struct VacationRules {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_concurrent_vacations: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_layoff_vacations: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub require_layoff_vacation_period: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub layoff_periods: Option<Vec<LayoffPeriod>>,
@@ -54,11 +58,16 @@ pub enum ProjectStatus {
 }
 
 impl ProjectManifest {
-    pub fn new(name: String, start_date: Option<String>, end_date: Option<String>) -> Self {
+    pub fn new(
+        code: Option<String>,
+        name: String,
+        start_date: Option<String>,
+        end_date: Option<String>,
+    ) -> Self {
         ProjectManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Project".to_string(),
-            metadata: ProjectMetadata { name },
+            metadata: ProjectMetadata { name, code },
             spec: ProjectSpec {
                 start_date,
                 end_date,
