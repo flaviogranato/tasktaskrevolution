@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectManifest {
     pub api_version: String,
     pub kind: String,
@@ -8,34 +9,43 @@ pub struct ProjectManifest {
     pub spec: ProjectSpec,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectMetadata {
     pub name: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end_date: Option<String>,
     pub status: ProjectStatus,
-    pub vacation_rules: VacationRules,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vacation_rules: Option<VacationRules>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct VacationRules {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_concurrent_vacations: Option<u32>,
-    pub allow_layoff_vacations: bool,
-    pub require_layoff_vacation_period: bool,
+    pub allow_layoff_vacations: Option<bool>,
+    pub require_layoff_vacation_period: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub layoff_periods: Option<Vec<LayoffPeriod>>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct LayoffPeriod {
     pub start_date: String,
     pub end_date: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum ProjectStatus {
     Planned,
     InProgress,
@@ -53,12 +63,12 @@ impl ProjectManifest {
                 start_date,
                 end_date,
                 status: ProjectStatus::Planned,
-                vacation_rules: VacationRules {
+                vacation_rules: Some(VacationRules {
                     max_concurrent_vacations: None,
-                    allow_layoff_vacations: false,
-                    require_layoff_vacation_period: false,
+                    allow_layoff_vacations: None,
+                    require_layoff_vacation_period: None,
                     layoff_periods: None,
-                },
+                }),
             },
         }
     }
