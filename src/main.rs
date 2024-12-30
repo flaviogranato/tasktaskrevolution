@@ -1,13 +1,15 @@
 mod entities;
 
+use std::path::Path;
 use std::{env, fs, path::PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use serde_yml::to_string;
 
-use crate::entities::config::{ConfigManifest, ConfigMetadata, ConfigSpec};
+use crate::entities::config::ConfigManifest;
 use crate::entities::project::ProjectManifest;
+use crate::entities::resource::ResourceManifest;
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"), 
@@ -68,7 +70,23 @@ fn main() -> Result<()> {
             manager_email,
         } => {
             let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
-            let _ = create_config_file(&repo_path, manager_name, manager_email);
+
+            if !repo_path.exists() {
+                match fs::create_dir(&repo_path) {
+                    Ok(_) => println!("Criado o repositório de configurações"),
+                    Err(e) => println!("Erro ao criar diretório de resources: {}", e),
+                }
+            }
+
+            let config_path = repo_path.join("config.yaml");
+            let config = ConfigManifest::basic(manager_name, manager_email);
+
+            let config_yaml = to_string(&config)?;
+
+            if let Err(e) = fs::write(config_path, config_yaml) {
+                eprintln!("Erro ao criar o arquivo config.yaml: {}", e);
+                return Ok(());
+            }
 
             println!("Repositório inicializado em: {}", repo_path.display());
         }
@@ -80,72 +98,52 @@ fn main() -> Result<()> {
                     let project_path = config_path.join(name);
                     let project_file_path = project_path.join("project.yaml");
 
-                    match create_project(name, description) {
-                        Ok(project) => {
-                            let project_yaml = to_string(&project)
-                                .context("Falha ao serializar o projeto para yaml")?;
-                            fs::create_dir_all(project_path.clone())?;
-                            if let Err(e) = fs::write(project_file_path, project_yaml) {
-                                eprintln!("Erro ao criar o arquivo config.yaml: {}", e);
-                                return Ok(());
-                            }
-                        }
-                        Err(err) => {
-                            eprint!("Erro ao criar o projeto: {}", err);
+                    let project = ProjectManifest::new(
+                        None,
+                        name.to_string(),
+                        description.clone(),
+                        None,
+                        None,
+                    );
+
+                    let project_yaml = to_string(&project)?;
+                    fs::create_dir_all(project_path.clone())?;
+                    fs::write(project_file_path, project_yaml)?;
+                    println!("Projeto criado em: {}", project_path.display());
+                }
+                CreateCommands::Resource {
+                    name,
+                    resource_type,
+                    project,
+                } => {
+                    let resource_name = format!("{}.yaml", name);
+                    let resources_path = Path::new("resources");
+
+                    if !resources_path.exists() {
+                        match fs::create_dir(resources_path) {
+                            Ok(_) => println!("Criado o diretório de resources"),
+                            Err(e) => println!("Erro ao criar diretório de resources: {}", e),
                         }
                     }
 
-                    println!("Projeto criado em: {}", project_path.display());
+                    let resource_path = resources_path.join(resource_name);
+                    let resource = ResourceManifest::basic(
+                        name.to_string(),
+                        resource_type.to_string(),
+                        project.clone(),
+                    );
+
+                    let resource_yaml = to_string(&resource)?;
+
+                    if let Err(e) = fs::write(resource_path, resource_yaml) {
+                        eprintln!("Erro ao criar o arquivo config.yaml: {}", e);
+                        return Ok(());
+                    }
                 }
-                &CreateCommands::Resource { .. } | &CreateCommands::Task { .. } => todo!(),
+                &CreateCommands::Task { .. } => todo!(),
             }
         }
     }
 
     Ok(())
-}
-
-fn create_config_file(path: &PathBuf, name: &str, email: &str) -> Result<(), serde_yml::Error> {
-    let config_path = path.join("config.yaml");
-    let _config = ConfigManifest {
-        api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
-        kind: "Config".to_string(),
-        metadata: ConfigMetadata {
-            name: "config".to_string(),
-            manager_name: name.to_string(),
-            manager_email: email.to_string(),
-        },
-        spec: ConfigSpec {
-            currency: "BRL".to_string(),
-            work_hours_per_day: 8,
-            work_days_per_week: vec![
-                "segunda-feira".to_string(),
-                "terça-feira".to_string(),
-                "quarta-feira".to_string(),
-                "quinta-feira".to_string(),
-                "sexta-feira".to_string(),
-            ],
-            date_format: "yyyy-mm-dd".to_string(),
-            default_task_duration: 8,
-            locale: "pt_BR".to_string(),
-        },
-    };
-
-    let config_yaml = to_string(&_config)?;
-
-    if let Err(e) = fs::write(config_path, config_yaml) {
-        eprintln!("Erro ao criar o arquivo config.yaml: {}", e);
-        return Ok(());
-    }
-
-    Ok(())
-}
-
-fn create_project(
-    code: &Option<String>,
-    name: &String,
-    description: &Option<String>,
-) -> Result<ProjectManifest> {
-    let project = ProjectManifest::new(None, name.to_string(), None, None);
-    Ok(project)
 }
