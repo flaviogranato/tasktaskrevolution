@@ -2,11 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.0] - 2025-01-01
+
+### 🚀 Features
+
+- *(project)* Improved serialization
+- *(resource)* Added resource creation
+- *(config)* Made config::spec dont required
+- *(validation)* Initial struct of validation command
+
+### 🚜 Refactor
+
+- *(main)* Moving to DDD
+
+### ⚙️ Miscellaneous Tasks
+
+- *(project)* Normalized the fields of project
+- *(tests)* Added speculate lib to BDD tests
+
 ## [0.0.1] - 2024-12-24
 
 ### 🚀 Features
 
 - *(project)* Added creation projects
+- *(main)* Added changelog file and configuration git-cliff
 
 ### 🚜 Refactor
 
