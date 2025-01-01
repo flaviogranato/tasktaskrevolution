@@ -1,4 +1,4 @@
-mod entities;
+mod domain;
 
 use std::path::Path;
 use std::{env, fs, path::PathBuf};
@@ -7,9 +7,9 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use serde_yml::to_string;
 
-use crate::entities::config::ConfigManifest;
-use crate::entities::project::ProjectManifest;
-use crate::entities::resource::ResourceManifest;
+use crate::domain::config::ConfigManifest;
+use crate::domain::project::ProjectManifest;
+use crate::domain::resource::ResourceManifest;
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"), 

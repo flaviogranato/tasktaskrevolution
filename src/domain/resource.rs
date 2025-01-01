@@ -95,7 +95,7 @@ mod test {
 
     use chrono::Local;
 
-    use crate::entities::resource::{
+    use crate::domain::resource::{
         Period, PeriodType, ProjectAssignment, ResourceManifest, ResourceMetadata, ResourceSpec,
     };
 
