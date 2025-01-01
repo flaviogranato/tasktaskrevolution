@@ -6,7 +6,8 @@ pub struct ConfigManifest {
     pub api_version: String,
     pub kind: String,
     pub metadata: ConfigMetadata,
-    pub spec: ConfigSpec,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spec: Option<ConfigSpec>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Default)]
@@ -39,7 +40,7 @@ impl ConfigManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Config".to_string(),
             metadata: ConfigMetadata::default(),
-            spec: ConfigSpec::default(),
+            spec: None,
         }
     }
     pub fn basic(name: &String, email: &String) -> Self {
@@ -50,7 +51,7 @@ impl ConfigManifest {
                 manager_name: name.to_string(),
                 manager_email: email.to_string(),
             },
-            spec: ConfigSpec {
+            spec: Some(ConfigSpec {
                 currency: Some("BRL".to_string()),
                 work_hours_per_day: Some(8),
                 work_days_per_week: Some(vec![
@@ -63,7 +64,7 @@ impl ConfigManifest {
                 date_format: Some("yyyy-mm-dd".to_string()),
                 default_task_duration: Some(8),
                 locale: Some("pt_BR".to_string()),
-            },
+            }),
         }
     }
 }
@@ -84,7 +85,7 @@ mod test {
                 manager_name: name.clone(),
                 manager_email: email.clone(),
             },
-            spec: ConfigSpec {
+            spec: Some(ConfigSpec {
                 currency: Some("BRL".to_string()),
                 work_hours_per_day: Some(8),
                 work_days_per_week: Some(vec![
@@ -97,7 +98,7 @@ mod test {
                 date_format: Some("yyyy-mm-dd".to_string()),
                 default_task_duration: Some(8),
                 locale: Some("pt_BR".to_string()),
-            },
+            }),
         };
 
         let actual_config = ConfigManifest::basic(&name, &email);
@@ -133,7 +134,7 @@ mod test {
         );
         assert_eq!(manifest.kind, "Config".to_string());
         assert_eq!(manifest.metadata, ConfigMetadata::default());
-        assert_eq!(manifest.spec, ConfigSpec::default());
+        assert_eq!(manifest.spec, None);
     }
 
     #[test]
@@ -168,7 +169,7 @@ mod test {
             manifest.metadata.manager_email,
             "john.doe@example.com".to_string()
         );
-        assert_eq!(manifest.spec, ConfigSpec::default());
+        assert_eq!(manifest.spec, None);
     }
 
     #[test]
@@ -180,7 +181,7 @@ mod test {
                 manager_name: "Test Name".to_string(),
                 manager_email: "test@email.com".to_string(),
             },
-            spec: ConfigSpec::default(),
+            spec: None,
         };
 
         let yaml_str = serde_yml::to_string(&manifest).unwrap();
