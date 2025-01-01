@@ -35,6 +35,10 @@ enum Commands {
         #[clap(subcommand)]
         create_command: CreateCommands,
     },
+    Validate {
+        #[clap(subcommand)]
+        validate_command: ValidateCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -58,6 +62,10 @@ enum CreateCommands {
         #[clap(short, long)]
         resource: Option<String>,
     },
+}
+#[derive(Subcommand)]
+enum ValidateCommands {
+    Vacations,
 }
 
 fn main() -> Result<()> {
@@ -143,6 +151,11 @@ fn main() -> Result<()> {
                 &CreateCommands::Task { .. } => todo!(),
             }
         }
+        Commands::Validate { validate_command } => match validate_command {
+            ValidateCommands::Vacations => {
+                println!("validando as férias")
+            }
+        },
     }
 
     Ok(())
