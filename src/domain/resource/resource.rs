@@ -92,12 +92,8 @@ impl ResourceManifest {
 
 #[cfg(test)]
 mod test {
-
+    use super::*;
     use chrono::Local;
-
-    use crate::domain::resource::{
-        Period, PeriodType, ProjectAssignment, ResourceManifest, ResourceMetadata, ResourceSpec,
-    };
 
     #[test]
     fn test_resource_manifest_new() {

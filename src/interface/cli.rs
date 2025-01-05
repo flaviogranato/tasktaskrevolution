@@ -5,9 +5,9 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use serde_yml::to_string;
 
-use crate::domain::config::ConfigManifest;
-use crate::domain::project::ProjectManifest;
-use crate::domain::resource::ResourceManifest;
+use crate::domain::config::config::ConfigManifest;
+use crate::domain::project::project::ProjectManifest;
+use crate::domain::resource::resource::ResourceManifest;
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"), 
@@ -17,7 +17,7 @@ use crate::domain::resource::ResourceManifest;
 #[clap(propagate_version = true)]
 pub struct Cli {
     #[clap(subcommand)]
-    pub command: Commands,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
