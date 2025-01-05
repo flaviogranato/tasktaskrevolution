@@ -75,7 +75,7 @@ impl ResourceManifest {
             spec: ResourceSpec::default(),
         }
     }
-    pub fn basic(name: String, resource_type: String, project: Option<String>) -> Self {
+    pub fn basic(name: String, resource_type: String) -> Self {
         ResourceManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Resource".to_string(),
