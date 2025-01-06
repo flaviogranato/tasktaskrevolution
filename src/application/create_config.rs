@@ -1,29 +1,111 @@
 use crate::domain::config::config::ConfigManifest;
-use serde_yml::to_string;
-use std::fs;
+use crate::domain::config::config_repository::ConfigRepository;
+use crate::domain::shared_kernel::errors::DomainError;
 use std::path::PathBuf;
 
-pub fn create_config(
-    path: &Option<PathBuf>,
-    manager_name: &String,
-    manager_email: &String,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
+pub struct InitializeRepositoryUseCase<R: ConfigRepository> {
+    repository: R,
+}
 
-    if !repo_path.exists() {
-        match fs::create_dir(&repo_path) {
-            Ok(_) => println!("Criado o repositório de configurações"),
-            Err(e) => println!("Erro ao criar diretório de resources: {}", e),
+impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
+    pub fn new(repository: R) -> Self {
+        Self { repository }
+    }
+    pub fn execute(
+        &self,
+        path: PathBuf,
+        manager_name: &String,
+        manager_email: &String,
+    ) -> Result<(), DomainError> {
+        let config = ConfigManifest::basic(manager_name, manager_email);
+        self.repository.create_repository_dir(path.clone())?;
+        self.repository.save(config, path.clone())?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::domain::config::config::ConfigManifest;
+    use crate::domain::shared_kernel::errors::DomainError;
+    use std::cell::RefCell;
+
+    struct MockConfigRepository {
+        should_fail: bool,
+        saved_config: RefCell<Option<ConfigManifest>>,
+        created_path: RefCell<Option<PathBuf>>,
+    }
+
+    impl MockConfigRepository {
+        fn new(should_fail: bool) -> Self {
+            Self {
+                should_fail,
+                saved_config: RefCell::new(None),
+                created_path: RefCell::new(None),
+            }
         }
     }
 
-    let config_path = repo_path.join("config.yaml");
-    let config = ConfigManifest::basic(manager_name, manager_email);
+    impl ConfigRepository for MockConfigRepository {
+        fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
+            if self.should_fail {
+                return Err(DomainError::Generic("Erro mockado ao salvar".to_string()));
+            }
+            *self.saved_config.borrow_mut() = Some(config.clone());
+            *self.created_path.borrow_mut() = Some(path.clone());
 
-    let config_yaml = to_string(&config)?;
+            Ok(())
+        }
 
-    fs::write(config_path, config_yaml)?;
+        fn create_repository_dir(&self, path: PathBuf) -> Result<(), DomainError> {
+            *self.created_path.borrow_mut() = Some(path.clone());
+            Ok(())
+        }
+    }
+    #[test]
+    fn test_create_config_success() {
+        let mock_repo = MockConfigRepository::new(false);
+        let use_case = InitializeRepositoryUseCase::new(mock_repo);
+        let manager_name = "John".to_string();
+        let manager_email = "john@nothing.com".to_string();
+        let repo_path = PathBuf::new();
 
-    println!("Repositório inicializado em: {}", repo_path.display());
-    Ok(())
+        let result = use_case.execute(repo_path, &manager_name, &manager_email);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_create_config_failure() {
+        let mock_repo = MockConfigRepository::new(true);
+        let use_case = InitializeRepositoryUseCase::new(mock_repo);
+        let manager_name = "John".to_string();
+        let manager_email = "john@nothing.com".to_string();
+        let repo_path = PathBuf::new();
+
+        let result = use_case.execute(repo_path, &manager_name, &manager_email);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_verify_config_saved() {
+        let mock_repo = MockConfigRepository::new(false);
+        let use_case = InitializeRepositoryUseCase::new(mock_repo);
+        let manager_name = "John".to_string();
+        let manager_email = "john@nothing.com".to_string();
+        let repo_path = PathBuf::new();
+        let _ = use_case.execute(repo_path, &manager_name, &manager_email);
+
+        let saved_config = use_case.repository.saved_config.borrow();
+        assert!(saved_config.is_some());
+        assert_eq!(
+            saved_config.as_ref().unwrap().metadata.manager_name,
+            manager_name
+        );
+        assert_eq!(
+            saved_config.as_ref().unwrap().metadata.manager_email,
+            manager_email
+        );
+    }
 }
