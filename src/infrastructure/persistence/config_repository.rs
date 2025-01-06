@@ -17,13 +17,6 @@ impl FileConfigRepository {
 
 impl ConfigRepository for FileConfigRepository {
     fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
-        // if !repo_path.exists() {
-        //     match fs::create_dir(&repo_path) {
-        //         Ok(_) => println!("Criado o repositório de configurações"),
-        //         Err(e) => println!("Erro ao criar diretório de resources: {}", e),
-        //     }
-        // }
-
         let config_yaml = to_string(&config).map_err(|e| DomainError::Generic(e.to_string()))?;
         fs::write(path, config_yaml).map_err(|e| DomainError::Generic(e.to_string()))?;
         Ok(())
