@@ -3,8 +3,12 @@ use std::{env, path::PathBuf};
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-use crate::application::{
-    create_config::create_config, create_project::create_project, create_resource::create_resource,
+use crate::{
+    application::{
+        create_config::InitializeRepositoryUseCase, create_project::create_project,
+        create_resource::create_resource,
+    },
+    infrastructure::persistence::config_repository::FileConfigRepository,
 };
 
 #[derive(Parser)]
@@ -69,7 +73,11 @@ pub fn run(cli: Cli) -> Result<()> {
             manager_name,
             manager_email,
         } => {
-            let _ = create_config(path, manager_name, manager_email);
+            let config_repository = FileConfigRepository::new();
+            let use_case = InitializeRepositoryUseCase::new(config_repository);
+            let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
+
+            use_case.execute(repo_path, manager_name, manager_email)?;
         }
         Commands::Create { create_command } => {
             let config_path = std::env::current_dir()?;

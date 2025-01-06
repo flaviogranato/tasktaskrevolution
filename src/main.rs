@@ -1,5 +1,6 @@
 mod application;
 mod domain;
+mod infrastructure;
 mod interface;
 
 use anyhow::Result;
