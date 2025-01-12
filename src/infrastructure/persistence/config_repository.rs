@@ -18,7 +18,8 @@ impl FileConfigRepository {
 impl ConfigRepository for FileConfigRepository {
     fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
         let config_yaml = to_string(&config).map_err(|e| DomainError::Generic(e.to_string()))?;
-        fs::write(path, config_yaml).map_err(|e| DomainError::Generic(e.to_string()))?;
+        let file = path.join("config.yaml");
+        fs::write(file, config_yaml).map_err(|e| DomainError::Generic(e.to_string()))?;
         Ok(())
     }
 
