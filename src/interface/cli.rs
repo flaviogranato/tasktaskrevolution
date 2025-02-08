@@ -5,10 +5,14 @@ use clap::{Parser, Subcommand};
 
 use crate::{
     application::{
-        create_config::InitializeRepositoryUseCase, create_project::create_project,
-        create_resource::create_resource,
+        create_project_use_case::CreateProjectUseCase,
+        create_resource_use_case::CreateResourceUseCase,
+        initialize_repository_use_case::InitializeRepositoryUseCase,
     },
-    infrastructure::persistence::config_repository::FileConfigRepository,
+    infrastructure::persistence::{
+        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
+        resource_repository::FileResourceRepository,
+    },
 };
 
 #[derive(Parser)]
@@ -73,28 +77,30 @@ pub fn run(cli: Cli) -> Result<()> {
             manager_name,
             manager_email,
         } => {
-            let config_repository = FileConfigRepository::new();
-            let use_case = InitializeRepositoryUseCase::new(config_repository);
+            let repository = FileConfigRepository::new();
+            let use_case = InitializeRepositoryUseCase::new(repository);
             let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
 
-            use_case.execute(repo_path, manager_name, manager_email)?;
+            use_case.execute(repo_path, manager_name.clone(), manager_email.clone())?;
         }
-        Commands::Create { create_command } => {
-            let config_path = std::env::current_dir()?;
+        Commands::Create { create_command } => match create_command {
+            CreateCommands::Project { name, description } => {
+                let repository = FileProjectRepository::new();
+                let use_case = CreateProjectUseCase::new(repository);
 
-            match create_command {
-                CreateCommands::Project { name, description } => {
-                    let _ = create_project(&config_path, name, description);
-                }
-                CreateCommands::Resource {
-                    name,
-                    resource_type,
-                } => {
-                    let _ = create_resource(name, resource_type);
-                }
-                &CreateCommands::Task { .. } => todo!(),
+                use_case.execute(name.clone(), description.clone())?;
             }
-        }
+            CreateCommands::Resource {
+                name,
+                resource_type,
+            } => {
+                let repository = FileResourceRepository::new();
+                let use_case = CreateResourceUseCase::new(repository);
+
+                use_case.execute(name.clone(), resource_type.clone());
+            }
+            &CreateCommands::Task { .. } => todo!(),
+        },
         Commands::Validate { validate_command } => match validate_command {
             ValidateCommands::Vacations => {
                 println!("validando as férias")

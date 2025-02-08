@@ -3,9 +3,9 @@ use std::{fs, path::PathBuf};
 use serde_yml::to_string;
 
 use crate::domain::{
-    config::{config::ConfigManifest, config_repository::ConfigRepository},
-    shared_kernel::errors::DomainError,
+    config::config_repository::ConfigRepository, shared_kernel::errors::DomainError,
 };
+use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 
 pub struct FileConfigRepository;
 

@@ -1,61 +1,67 @@
 use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct ResourceManifest {
-    pub api_version: String,
-    pub kind: String,
-    pub metadata: ResourceMetadata,
-    pub spec: ResourceSpec,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ResourceMetadata {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub code: Option<String>,
+#[derive(Clone)]
+pub struct Resource {
+    pub id: Option<String>,
     pub name: String,
-    pub resource_type: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
-#[serde(rename_all = "camelCase")]
-pub struct ResourceSpec {
-    pub project_assignments: Vec<ProjectAssignment>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_type: String,
     pub vacations: Option<Vec<Period>>,
+    pub project_assignments: Option<Vec<ProjectAssignment>>,
     pub time_off_balance: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct ProjectAssignment {
-    pub project_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_date: Option<String>,
+impl Resource {
+    pub fn new(
+        id: Option<String>,
+        name: String,
+        email: Option<String>,
+        resource_type: String,
+        vacations: Option<Vec<Period>>,
+        project_assignments: Option<Vec<ProjectAssignment>>,
+        time_off_balance: u32,
+    ) -> Self {
+        Self {
+            id,
+            name,
+            email,
+            resource_type,
+            vacations,
+            project_assignments,
+            time_off_balance,
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
+impl Display for Resource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Resource {{ id: {:?}, name: {}, email: {:?}, resource_type: {}, vacations: {:?}, project_assignments: {:?}, time_off_balance: {} }}",
+            self.id, self.name, self.email, self.resource_type, self.vacations, self.project_assignments, self.time_off_balance
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Period {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub start_date: Option<DateTime<Local>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end_date: Option<DateTime<Local>>,
+    pub start_date: DateTime<Local>,
+    pub end_date: DateTime<Local>,
     pub approved: bool,
     pub period_type: PeriodType,
     pub is_time_off_compensation: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub compensated_hours: Option<u32>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-#[serde(rename_all = "camelCase")]
+impl Display for Period {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Period {{ start_date: {}, end_date: {}, approved: {}, period_type: {}, is_time_off_compensation: {}, compensated_hours: {:?} }}",
+        self.start_date, self.end_date, self.approved, self.period_type, self.is_time_off_compensation, self.compensated_hours)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum PeriodType {
     BirthdayBreak,
     DayOff,
@@ -63,157 +69,34 @@ pub enum PeriodType {
     SickLeave,
     PersonalLeave,
     TimeOffCompensation,
-    Other(String),
 }
 
-impl ResourceManifest {
-    pub fn new() -> Self {
-        ResourceManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
-            kind: "Resource".to_string(),
-            metadata: ResourceMetadata::default(),
-            spec: ResourceSpec::default(),
-        }
-    }
-    pub fn basic(name: String, resource_type: String) -> Self {
-        ResourceManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
-            kind: "Resource".to_string(),
-            metadata: ResourceMetadata {
-                code: None,
-                name,
-                email: None,
-                resource_type,
-            },
-            spec: ResourceSpec::default(),
+impl Display for PeriodType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PeriodType::BirthdayBreak => write!(f, "BirthdayBreak"),
+            PeriodType::DayOff => write!(f, "DayOff"),
+            PeriodType::Vacation => write!(f, "Vacation"),
+            PeriodType::SickLeave => write!(f, "SickLeave"),
+            PeriodType::PersonalLeave => write!(f, "PersonalLeave"),
+            PeriodType::TimeOffCompensation => write!(f, "TimeOffCompensation"),
         }
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use chrono::Local;
+#[derive(Debug, Clone)]
+pub struct ProjectAssignment {
+    pub project_id: String,
+    pub start_date: DateTime<Local>,
+    pub end_date: DateTime<Local>,
+}
 
-    #[test]
-    fn test_resource_manifest_new() {
-        let manifest = ResourceManifest::new();
-
-        assert_eq!(
-            manifest.api_version,
-            "tasktaskrevolution.io/v1alpha1".to_string()
-        );
-        assert_eq!(manifest.kind, "Resource".to_string());
-        assert_eq!(manifest.metadata, ResourceMetadata::default());
-        assert_eq!(manifest.spec, ResourceSpec::default());
-    }
-
-    #[test]
-    fn test_resource_manifest_deserialize_empty() {
-        let yaml_str = ""; // YAML vazio
-
-        let manifest: Result<ResourceManifest, _> = serde_yml::from_str(yaml_str);
-
-        assert!(manifest.is_err()); // Deve dar erro ao desserializar YAML vazio.
-    }
-
-    #[test]
-    fn test_resource_manifest_deserialize_with_data() {
-        let yaml_str = r#"
-apiVersion: custom.io/v1
-kind: CustomResource
-metadata:
-  code: ABC123
-  name: John Doe
-  resourceType: devops
-  email: john.doe@example.com
-spec:
-  projectAssignments: []
-  vacations: null
-  timeOffBalance: 0
-"#;
-
-        let manifest: ResourceManifest = serde_yml::from_str(yaml_str).unwrap();
-
-        assert_eq!(manifest.api_version, "custom.io/v1".to_string());
-        assert_eq!(manifest.kind, "CustomResource".to_string());
-        assert_eq!(manifest.metadata.code, Some("ABC123".to_string()));
-        assert_eq!(manifest.metadata.resource_type, "devops".to_string());
-        assert_eq!(manifest.metadata.name, "John Doe".to_string());
-        assert_eq!(
-            manifest.metadata.email,
-            Some("john.doe@example.com".to_string())
-        );
-        assert_eq!(manifest.spec.project_assignments, vec![]);
-        assert_eq!(manifest.spec.vacations, None);
-        assert_eq!(manifest.spec.time_off_balance, 0);
-    }
-
-    #[test]
-    fn test_resource_manifest_serialize() {
-        let manifest = ResourceManifest {
-            api_version: "test/v1".to_string(),
-            kind: "TestKind".to_string(),
-            metadata: ResourceMetadata {
-                code: Some("TESTCODE".to_string()),
-                name: "Test Name".to_string(),
-                resource_type: "devops".to_string(),
-                email: Some("test@email.com".to_string()),
-            },
-            spec: ResourceSpec {
-                project_assignments: vec![ProjectAssignment {
-                    project_id: "proj1".to_string(),
-                    start_date: None,
-                    end_date: None,
-                }],
-                vacations: None,
-                time_off_balance: 10,
-            },
-        };
-
-        let yaml_str = serde_yml::to_string(&manifest).unwrap();
-        let manifest_deserialized: ResourceManifest = serde_yml::from_str(&yaml_str).unwrap();
-        assert_eq!(manifest, manifest_deserialized);
-    }
-
-    #[test]
-    fn test_period_with_all_fields() {
-        let now = Local::now();
-        let tomorrow = now + chrono::Duration::days(1);
-
-        let period = Period {
-            start_date: Some(now.clone()),
-            end_date: Some(tomorrow.clone()),
-            approved: true,
-            period_type: PeriodType::Vacation,
-            is_time_off_compensation: false,
-            compensated_hours: None,
-        };
-
-        assert_eq!(period.start_date.unwrap(), now);
-        assert_eq!(period.end_date.unwrap(), tomorrow);
-        assert!(period.approved);
-        assert_eq!(period.period_type, PeriodType::Vacation);
-        assert!(!period.is_time_off_compensation);
-        assert!(period.compensated_hours.is_none());
-    }
-
-    #[test]
-    fn test_period_with_some_fields() {
-        let period = Period {
-            start_date: None,
-            end_date: Some(Local::now()),
-            approved: false,
-            period_type: PeriodType::Other("Testing".to_string()),
-            is_time_off_compensation: true,
-            compensated_hours: Some(8),
-        };
-
-        assert!(period.start_date.is_none());
-        assert!(period.end_date.is_some());
-        assert!(!period.approved);
-        assert_eq!(period.period_type, PeriodType::Other("Testing".to_string()));
-        assert!(period.is_time_off_compensation);
-        assert_eq!(period.compensated_hours.unwrap(), 8);
+impl Display for ProjectAssignment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "ProjectAssignment: {{ project_id: {}, start_date: {}, end_date: {} }}",
+            self.project_id, self.start_date, self.end_date
+        )
     }
 }

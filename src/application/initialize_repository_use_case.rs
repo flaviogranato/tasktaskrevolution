@@ -1,6 +1,8 @@
-use crate::domain::config::config::ConfigManifest;
+use crate::domain::config::config::Config;
 use crate::domain::config::config_repository::ConfigRepository;
+use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::shared_kernel::errors::DomainError;
+use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
 
 pub struct InitializeRepositoryUseCase<R: ConfigRepository> {
@@ -14,12 +16,14 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
     pub fn execute(
         &self,
         path: PathBuf,
-        manager_name: &String,
-        manager_email: &String,
+        manager_name: String,
+        manager_email: String,
     ) -> Result<(), DomainError> {
-        let config = ConfigManifest::basic(manager_name, manager_email);
+        let config = Config::new(manager_name.clone(), manager_email.clone());
+        let config_manifest = <ConfigManifest as Convertable<Config>>::from(config);
         self.repository.create_repository_dir(path.clone())?;
-        self.repository.save(config, path.clone())?;
+        self.repository.save(config_manifest, path.clone())?;
+        println!("Configuração iniciada em: {}", path.display());
 
         Ok(())
     }
@@ -28,8 +32,8 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::config::config::ConfigManifest;
     use crate::domain::shared_kernel::errors::DomainError;
+    use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
 
     struct MockConfigRepository {
@@ -72,7 +76,7 @@ mod test {
         let manager_email = "john@nothing.com".to_string();
         let repo_path = PathBuf::new();
 
-        let result = use_case.execute(repo_path, &manager_name, &manager_email);
+        let result = use_case.execute(repo_path, manager_name, manager_email);
         assert!(result.is_ok());
     }
 
@@ -84,7 +88,7 @@ mod test {
         let manager_email = "john@nothing.com".to_string();
         let repo_path = PathBuf::new();
 
-        let result = use_case.execute(repo_path, &manager_name, &manager_email);
+        let result = use_case.execute(repo_path, manager_name, manager_email);
         assert!(result.is_err());
     }
 
@@ -95,7 +99,7 @@ mod test {
         let manager_name = "John".to_string();
         let manager_email = "john@nothing.com".to_string();
         let repo_path = PathBuf::new();
-        let _ = use_case.execute(repo_path, &manager_name, &manager_email);
+        let _ = use_case.execute(repo_path, manager_name.clone(), manager_email.clone());
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
