@@ -97,7 +97,7 @@ pub fn run(cli: Cli) -> Result<()> {
                 let repository = FileResourceRepository::new();
                 let use_case = CreateResourceUseCase::new(repository);
 
-                use_case.execute(name.clone(), resource_type.clone());
+                let _ = use_case.execute(name.clone(), resource_type.clone());
             }
             &CreateCommands::Task { .. } => todo!(),
         },

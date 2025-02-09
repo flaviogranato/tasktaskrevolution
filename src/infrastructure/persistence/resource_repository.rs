@@ -30,7 +30,8 @@ impl ResourceRepository for FileResourceRepository {
 
         let resource_yaml =
             to_string(&resource).map_err(|e| DomainError::Generic(e.to_string()))?;
-        fs::write(resource_path, resource_yaml).map_err(|e| DomainError::Generic(e.to_string()));
+        let _ = fs::write(resource_path, resource_yaml)
+            .map_err(|e| DomainError::Generic(e.to_string()));
 
         println!("Recurso {} criado.", r.name);
         Ok(r)
