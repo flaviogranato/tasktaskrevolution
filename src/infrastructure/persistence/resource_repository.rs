@@ -19,7 +19,7 @@ impl ResourceRepository for FileResourceRepository {
         let path = Path::new("resources");
 
         if !path.exists() {
-            match fs::create_dir(&file_name) {
+            match fs::create_dir(path) {
                 Ok(_) => println!("Criado o diretório de resources"),
                 Err(e) => println!("Erro ao criar diretório de resources: {}", e),
             }
