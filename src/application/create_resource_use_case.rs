@@ -46,6 +46,10 @@ mod test {
 
             Ok(resource)
         }
+
+        fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
+            Ok(vec![])
+        }
     }
     #[test]
     fn test_create_project_success() {
