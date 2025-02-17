@@ -9,6 +9,7 @@ use crate::{
         create_resource_use_case::CreateResourceUseCase,
         initialize_repository_use_case::InitializeRepositoryUseCase,
         validate_vacations_use_case::ValidateVacationsUseCase,
+        create_vacation_use_case::CreateVacationUseCase,
     },
     infrastructure::persistence::{
         config_repository::FileConfigRepository, project_repository::FileProjectRepository,
@@ -46,26 +47,30 @@ enum Commands {
     },
 }
 
-#[derive(Subcommand)]
-enum CreateCommands {
+#[derive(Subcommand, Debug)]
+pub enum CreateCommands {
     Project {
         name: String,
-        #[clap(short, long)]
         description: Option<String>,
     },
     Resource {
         name: String,
-        #[clap(short, long)]
         resource_type: String,
     },
-    Task {
-        description: String,
-        #[clap(short, long)]
-        project: Option<String>,
-        #[clap(short, long)]
-        resource: Option<String>,
+    Vacation {
+        #[arg(long, short)]
+        resource: String, // Pode ser código ou nome
+        #[arg(long, short)]
+        start_date: String,
+        #[arg(long, short)]
+        end_date: String,
+        #[arg(long, short, default_value = "false")]
+        is_time_off_compensation: bool,
+        #[arg(long, short)]
+        compensated_hours: Option<u32>,
     },
 }
+
 #[derive(Subcommand)]
 enum ValidateCommands {
     Vacations,
@@ -100,7 +105,27 @@ pub fn run(cli: Cli) -> Result<()> {
 
                 let _ = use_case.execute(name.clone(), resource_type.clone());
             }
-            &CreateCommands::Task { .. } => todo!(),
+            CreateCommands::Vacation {
+                resource,
+                start_date,
+                end_date,
+                is_time_off_compensation,
+                compensated_hours,
+            } => {
+                let repository = FileResourceRepository::new();
+                let use_case = CreateVacationUseCase::new(repository);
+
+                match use_case.execute(
+                    resource.clone(),
+                    start_date.clone(),
+                    end_date.clone(),
+                    *is_time_off_compensation,
+                    *compensated_hours,
+                ) {
+                    Ok(resource) => println!("✅ Período de férias adicionado com sucesso para {}", resource.name),
+                    Err(e) => println!("❌ Erro ao adicionar período de férias: {}", e),
+                }
+            }
         },
         Commands::Validate { validate_command } => match validate_command {
             ValidateCommands::Vacations => {
