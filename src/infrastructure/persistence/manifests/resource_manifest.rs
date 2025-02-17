@@ -38,14 +38,16 @@ pub struct ProjectAssignmentManifest {
     pub project_id: String,
     pub start_date: DateTime<Local>,
     pub end_date: DateTime<Local>,
+    pub allocation_percentage: u8,
 }
 
 impl Convertable<ProjectAssignment> for ProjectAssignmentManifest {
     fn from(source: ProjectAssignment) -> Self {
-        ProjectAssignmentManifest {
+        Self {
             project_id: source.project_id,
             start_date: source.start_date,
             end_date: source.end_date,
+            allocation_percentage: source.allocation_percentage,
         }
     }
     fn to(self) -> ProjectAssignment {
@@ -53,6 +55,7 @@ impl Convertable<ProjectAssignment> for ProjectAssignmentManifest {
             project_id: self.project_id,
             start_date: self.start_date,
             end_date: self.end_date,
+            allocation_percentage: self.allocation_percentage,
         }
     }
 }
@@ -71,11 +74,19 @@ pub struct PeriodManifest {
 
 impl Convertable<Period> for PeriodManifest {
     fn from(source: Period) -> Self {
-        PeriodManifest {
+        Self {
             start_date: source.start_date,
             end_date: source.end_date,
             approved: source.approved,
-            period_type: <PeriodTypeManifest as Convertable<PeriodType>>::from(source.period_type),
+            period_type: match source.period_type {
+                PeriodType::Vacation => PeriodTypeManifest::Vacation,
+                PeriodType::TimeOff => PeriodTypeManifest::TimeOff,
+                PeriodType::BirthdayBreak => PeriodTypeManifest::BirthdayBreak,
+                PeriodType::DayOff => PeriodTypeManifest::DayOff,
+                PeriodType::SickLeave => PeriodTypeManifest::SickLeave,
+                PeriodType::PersonalLeave => PeriodTypeManifest::PersonalLeave,
+                PeriodType::TimeOffCompensation => PeriodTypeManifest::TimeOffCompensation,
+            },
             is_time_off_compensation: source.is_time_off_compensation,
             compensated_hours: source.compensated_hours,
         }
@@ -85,7 +96,15 @@ impl Convertable<Period> for PeriodManifest {
             start_date: self.start_date,
             end_date: self.end_date,
             approved: self.approved,
-            period_type: self.period_type.to(),
+            period_type: match self.period_type {
+                PeriodTypeManifest::Vacation => PeriodType::Vacation,
+                PeriodTypeManifest::TimeOff => PeriodType::TimeOff,
+                PeriodTypeManifest::BirthdayBreak => PeriodType::BirthdayBreak,
+                PeriodTypeManifest::DayOff => PeriodType::DayOff,
+                PeriodTypeManifest::SickLeave => PeriodType::SickLeave,
+                PeriodTypeManifest::PersonalLeave => PeriodType::PersonalLeave,
+                PeriodTypeManifest::TimeOffCompensation => PeriodType::TimeOffCompensation,
+            },
             is_time_off_compensation: self.is_time_off_compensation,
             compensated_hours: self.compensated_hours,
         }
@@ -101,6 +120,7 @@ pub enum PeriodTypeManifest {
     SickLeave,
     PersonalLeave,
     TimeOffCompensation,
+    TimeOff,
 }
 
 impl Convertable<PeriodType> for PeriodTypeManifest {
@@ -112,6 +132,7 @@ impl Convertable<PeriodType> for PeriodTypeManifest {
             PeriodType::SickLeave => PeriodTypeManifest::SickLeave,
             PeriodType::PersonalLeave => PeriodTypeManifest::PersonalLeave,
             PeriodType::TimeOffCompensation => PeriodTypeManifest::TimeOffCompensation,
+            PeriodType::TimeOff => PeriodTypeManifest::TimeOff,
         }
     }
     fn to(self) -> PeriodType {
@@ -122,6 +143,7 @@ impl Convertable<PeriodType> for PeriodTypeManifest {
             PeriodTypeManifest::SickLeave => PeriodType::SickLeave,
             PeriodTypeManifest::PersonalLeave => PeriodType::PersonalLeave,
             PeriodTypeManifest::TimeOffCompensation => PeriodType::TimeOffCompensation,
+            PeriodTypeManifest::TimeOff => PeriodType::TimeOff,
         }
     }
 }
@@ -164,46 +186,43 @@ impl Convertable<Resource> for ResourceManifest {
             metadata: ResourceMetadata {
                 name: source.name,
                 email: source.email,
-                code: source.id.unwrap_or_else(|| "".to_string()),
+                code: source.id.unwrap_or_default(),
                 resource_type: source.resource_type,
             },
             spec: ResourceSpec {
                 vacations: source.vacations.map(|v| {
                     v.into_iter()
-                        .map(|p| <PeriodManifest as Convertable<Period>>::from(p))
+                        .map(|period| <PeriodManifest as Convertable<Period>>::from(period))
                         .collect()
                 }),
-                project_assignments: source.project_assignments.map(|p| {
-                    p.into_iter()
-                        .map(|a| {
-                            <ProjectAssignmentManifest as Convertable<ProjectAssignment>>::from(a)
-                        })
+                project_assignments: source.project_assignments.map(|pa| {
+                    pa.into_iter()
+                        .map(|assignment| <ProjectAssignmentManifest as Convertable<ProjectAssignment>>::from(assignment))
                         .collect()
                 }),
                 time_off_balance: source.time_off_balance,
             },
         }
     }
+
     fn to(self) -> Resource {
-        Resource {
-            id: Some(self.metadata.code),
-            name: self.metadata.name,
-            email: self.metadata.email,
-            resource_type: self.metadata.resource_type,
-            vacations: self.spec.vacations.map(|v| {
+        Resource::new(
+            Some(self.metadata.code),
+            self.metadata.name,
+            self.metadata.email,
+            self.metadata.resource_type,
+            self.spec.vacations.map(|v| {
                 v.into_iter()
-                    .map(|p| <PeriodManifest as Convertable<Period>>::to(p))
+                    .map(|period| period.to())
                     .collect()
             }),
-            project_assignments: self.spec.project_assignments.map(|p| {
-                p.into_iter()
-                    .map(|a| {
-                        <ProjectAssignmentManifest as Convertable<ProjectAssignment>>::to(a)
-                    })
+            self.spec.project_assignments.map(|pa| {
+                pa.into_iter()
+                    .map(|assignment| assignment.to())
                     .collect()
             }),
-            time_off_balance: self.spec.time_off_balance,
-        }
+            self.spec.time_off_balance,
+        )
     }
 }
 

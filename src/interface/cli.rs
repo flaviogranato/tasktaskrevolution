@@ -10,6 +10,7 @@ use crate::{
         initialize_repository_use_case::InitializeRepositoryUseCase,
         validate_vacations_use_case::ValidateVacationsUseCase,
         create_vacation_use_case::CreateVacationUseCase,
+        create_time_off_use_case::CreateTimeOffUseCase,
     },
     infrastructure::persistence::{
         config_repository::FileConfigRepository, project_repository::FileProjectRepository,
@@ -59,7 +60,7 @@ pub enum CreateCommands {
     },
     Vacation {
         #[arg(long, short)]
-        resource: String, // Pode ser código ou nome
+        resource: String,
         #[arg(long, short)]
         start_date: String,
         #[arg(long, short)]
@@ -68,6 +69,16 @@ pub enum CreateCommands {
         is_time_off_compensation: bool,
         #[arg(long, short)]
         compensated_hours: Option<u32>,
+    },
+    TimeOff {
+        #[arg(long, short)]
+        resource: String,
+        #[arg(long, short)]
+        hours: u32,
+        #[arg(long, short)]
+        date: String,
+        #[arg(long, short)]
+        description: Option<String>,
     },
 }
 
@@ -124,6 +135,32 @@ pub fn run(cli: Cli) -> Result<()> {
                 ) {
                     Ok(resource) => println!("✅ Período de férias adicionado com sucesso para {}", resource.name),
                     Err(e) => println!("❌ Erro ao adicionar período de férias: {}", e),
+                }
+            }
+            CreateCommands::TimeOff {
+                resource,
+                hours,
+                date,
+                description,
+            } => {
+                let repository = FileResourceRepository::new();
+                let use_case = CreateTimeOffUseCase::new(repository);
+
+                match use_case.execute(
+                    resource.clone(),
+                    *hours,
+                    date.clone(),
+                    description.clone(),
+                ) {
+                    Ok(resource) => {
+                        println!("✅ {} horas adicionadas com sucesso para {}", hours, resource.name);
+                        println!("📊 Novo saldo: {} horas", resource.time_off_balance);
+                        if let Some(desc) = description {
+                            println!("📝 Descrição: {}", desc);
+                        }
+                        println!("📅 Data: {}", date);
+                    },
+                    Err(e) => println!("❌ Erro ao adicionar horas extras: {}", e),
                 }
             }
         },

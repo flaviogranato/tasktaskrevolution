@@ -1,7 +1,59 @@
 use chrono::{DateTime, Local};
 use std::fmt::Display;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TimeOffEntry {
+    pub date: DateTime<Local>,
+    pub hours: u32,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Period {
+    pub start_date: DateTime<Local>,
+    pub end_date: DateTime<Local>,
+    pub approved: bool,
+    pub period_type: PeriodType,
+    pub is_time_off_compensation: bool,
+    pub compensated_hours: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum PeriodType {
+    Vacation,
+    TimeOff,
+    BirthdayBreak,
+    DayOff,
+    SickLeave,
+    PersonalLeave,
+    TimeOffCompensation,
+}
+
+impl fmt::Display for PeriodType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PeriodType::Vacation => write!(f, "Vacation"),
+            PeriodType::TimeOff => write!(f, "TimeOff"),
+            PeriodType::BirthdayBreak => write!(f, "BirthdayBreak"),
+            PeriodType::DayOff => write!(f, "DayOff"),
+            PeriodType::SickLeave => write!(f, "SickLeave"),
+            PeriodType::PersonalLeave => write!(f, "PersonalLeave"),
+            PeriodType::TimeOffCompensation => write!(f, "TimeOffCompensation"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ProjectAssignment {
+    pub project_id: String,
+    pub start_date: DateTime<Local>,
+    pub end_date: DateTime<Local>,
+    pub allocation_percentage: u8,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Resource {
     pub id: Option<String>,
     pub name: String,
@@ -10,6 +62,7 @@ pub struct Resource {
     pub vacations: Option<Vec<Period>>,
     pub project_assignments: Option<Vec<ProjectAssignment>>,
     pub time_off_balance: u32,
+    pub time_off_history: Option<Vec<TimeOffEntry>>,
 }
 
 impl Resource {
@@ -30,6 +83,7 @@ impl Resource {
             vacations,
             project_assignments,
             time_off_balance,
+            time_off_history: Some(Vec::new()),
         }
     }
 }
@@ -44,51 +98,11 @@ impl Display for Resource {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Period {
-    pub start_date: DateTime<Local>,
-    pub end_date: DateTime<Local>,
-    pub approved: bool,
-    pub period_type: PeriodType,
-    pub is_time_off_compensation: bool,
-    pub compensated_hours: Option<u32>,
-}
-
 impl Display for Period {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Period {{ start_date: {}, end_date: {}, approved: {}, period_type: {}, is_time_off_compensation: {}, compensated_hours: {:?} }}",
         self.start_date, self.end_date, self.approved, self.period_type, self.is_time_off_compensation, self.compensated_hours)
     }
-}
-
-#[derive(Debug, Clone)]
-pub enum PeriodType {
-    BirthdayBreak,
-    DayOff,
-    Vacation,
-    SickLeave,
-    PersonalLeave,
-    TimeOffCompensation,
-}
-
-impl Display for PeriodType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PeriodType::BirthdayBreak => write!(f, "BirthdayBreak"),
-            PeriodType::DayOff => write!(f, "DayOff"),
-            PeriodType::Vacation => write!(f, "Vacation"),
-            PeriodType::SickLeave => write!(f, "SickLeave"),
-            PeriodType::PersonalLeave => write!(f, "PersonalLeave"),
-            PeriodType::TimeOffCompensation => write!(f, "TimeOffCompensation"),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ProjectAssignment {
-    pub project_id: String,
-    pub start_date: DateTime<Local>,
-    pub end_date: DateTime<Local>,
 }
 
 impl Display for ProjectAssignment {
