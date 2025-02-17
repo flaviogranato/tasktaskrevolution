@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2025-02-17
+
+### 🚀 Features
+
+- *(cli)* Moving foward to adopt DDD
+- *(main)* Moved to use DDD as in the books
+- *(validate)* Added vacation overlap validation
+- Adiciona comando para criar período de férias
+- Adiciona histórico de horas extras
+
+### 🐛 Bug Fixes
+
+- *(config)* Fixed create initial config file
+- *(resource)* Fixed create resource dir
+
+### 🚜 Refactor
+
+- *(all)* Moved to the respective folders
+- *(application)* Moved the creation from cli to application
+- *(config)* Refactoring config to better use DDD techniques
+- Migra de serde_yml para serde_yaml e corrige testes
+
+### ⚙️ Miscellaneous Tasks
+
+- *(doc)* Added the new files and folders organization
+- *(gitignore)* Removed test folder
+- *(config)* Removed code commented from the file.
+- *(resource)* Catch the return of write the file
+
 ## [0.1.0] - 2025-01-01
 
 ### 🚀 Features
@@ -19,6 +48,7 @@ All notable changes to this project will be documented in this file.
 
 - *(project)* Normalized the fields of project
 - *(tests)* Added speculate lib to BDD tests
+- *(cliff)* Bump version
 
 ## [0.0.1] - 2024-12-24
 
