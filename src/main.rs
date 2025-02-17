@@ -3,12 +3,9 @@ mod domain;
 mod infrastructure;
 mod interface;
 
-use anyhow::Result;
 use clap::Parser;
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let cli = interface::cli::Cli::parse();
-
-    interface::cli::run(cli)?;
-    Ok(())
+    interface::cli::run(cli)
 }
