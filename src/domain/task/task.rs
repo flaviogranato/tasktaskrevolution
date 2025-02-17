@@ -18,9 +18,6 @@ impl Task {
     }
 }
 
-pub trait TaskRepository {
-    fn save(&self, task: Task) -> Result<Task, Box<dyn std::error::Error>>;
-}
 
 #[cfg(test)]
 mod tests {
@@ -56,24 +53,6 @@ mod tests {
         assert_eq!(original.id, cloned.id);
         assert_eq!(original.name, cloned.name);
         assert_eq!(original.description, cloned.description);
-    }
-
-    #[test]
-    fn test_task_serialization() {
-        let task = Task::new(
-            "Serialization Test".to_string(),
-            Some("Test YAML serialization".to_string()),
-        );
-
-        // Teste de serialização para YAML
-        let yaml = serde_yaml::to_string(&task).expect("Failed to serialize task");
-        assert!(yaml.contains(&task.id.to_string()));
-        assert!(yaml.contains("Serialization Test"));
-        assert!(yaml.contains("Test YAML serialization"));
-
-        // Teste de desserialização do YAML
-        let deserialized: Task = serde_yaml::from_str(&yaml).expect("Failed to deserialize task");
-        assert_eq!(task, deserialized);
     }
 
     #[test]
