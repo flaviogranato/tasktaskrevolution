@@ -1,6 +1,5 @@
 use std::{env, path::PathBuf};
 
-use anyhow::Result;
 use clap::{Parser, Subcommand};
 
 use crate::{
@@ -11,10 +10,13 @@ use crate::{
         validate_vacations_use_case::ValidateVacationsUseCase,
         create_vacation_use_case::CreateVacationUseCase,
         create_time_off_use_case::CreateTimeOffUseCase,
+        create_task_use_case::CreateTaskUseCase,
     },
     infrastructure::persistence::{
-        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
+        config_repository::FileConfigRepository,
+        project_repository::FileProjectRepository,
         resource_repository::FileResourceRepository,
+        task_repository::FileTaskRepository,
     },
 };
 
@@ -80,6 +82,12 @@ pub enum CreateCommands {
         #[arg(long, short)]
         description: Option<String>,
     },
+    Task {
+        #[arg(long, short)]
+        name: String,
+        #[arg(long, short)]
+        description: Option<String>,
+    },
 }
 
 #[derive(Subcommand)]
@@ -87,7 +95,7 @@ enum ValidateCommands {
     Vacations,
 }
 
-pub fn run(cli: Cli) -> Result<()> {
+pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     match &cli.command {
         Commands::Init {
             path,
@@ -161,6 +169,15 @@ pub fn run(cli: Cli) -> Result<()> {
                         println!("📅 Data: {}", date);
                     },
                     Err(e) => println!("❌ Erro ao adicionar horas extras: {}", e),
+                }
+            }
+            CreateCommands::Task { name, description } => {
+                let repository = FileTaskRepository::new();
+                let use_case = CreateTaskUseCase::new(repository);
+
+                match use_case.execute(name.clone(), description.clone()) {
+                    Ok(task) => println!("✅ Tarefa '{}' criada com sucesso", task.name),
+                    Err(e) => println!("❌ Erro ao criar tarefa: {}", e),
                 }
             }
         },
