@@ -4,7 +4,6 @@ use crate::domain::{
     shared_kernel::errors::DomainError,
     resource::resource::Period,
 };
-use chrono::Local;
 
 pub struct ValidateVacationsUseCase<P: ProjectRepository, R: ResourceRepository> {
     project_repository: P,
@@ -62,7 +61,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource::resource::Resource;
+    use crate::domain::resource::resource::{Resource, PeriodType};
     use chrono::{Duration, Local};
 
     struct MockProjectRepository;
@@ -98,7 +97,7 @@ mod tests {
                 start_date: now,
                 end_date: now + Duration::days(10),
                 approved: true,
-                period_type: crate::domain::resource::resource::PeriodType::Vacation,
+                period_type: PeriodType::Vacation,
                 is_time_off_compensation: false,
                 compensated_hours: None,
             }]),
@@ -115,7 +114,7 @@ mod tests {
                 start_date: now + Duration::days(5),
                 end_date: now + Duration::days(15),
                 approved: true,
-                period_type: crate::domain::resource::resource::PeriodType::Vacation,
+                period_type: PeriodType::Vacation,
                 is_time_off_compensation: false,
                 compensated_hours: None,
             }]),

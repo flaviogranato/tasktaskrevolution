@@ -202,17 +202,17 @@ mod tests {
             start_date: "2024-01-01".to_string(),
             end_date: "2024-01-31".to_string(),
         };
-        let serialized = serde_yml::to_string(&layoff_period).unwrap();
+        let serialized = serde_yaml::to_string(&layoff_period).unwrap();
         assert_eq!(
             serialized,
-            "startDate: '2024-01-01'\nendDate: '2024-01-31'\n"
+            "startDate: 2024-01-01\nendDate: 2024-01-31\n"
         );
     }
 
     #[test]
     fn test_layoff_period_deserialize() {
         let yaml = "startDate: '2024-01-01'\nendDate: '2024-01-31'\n";
-        let deserialized: LayoffPeriodManifest = serde_yml::from_str(yaml).unwrap();
+        let deserialized: LayoffPeriodManifest = serde_yaml::from_str(yaml).unwrap();
         assert_eq!(deserialized.start_date, "2024-01-01");
         assert_eq!(deserialized.end_date, "2024-01-31");
     }
@@ -235,18 +235,18 @@ mod tests {
             ]),
         };
 
-        let serialized = serde_yml::to_string(&vacation_rules).unwrap();
+        let serialized = serde_yaml::to_string(&vacation_rules).unwrap();
         let expected_yaml = r#"
 maxConcurrentVacations: 2
 allowLayoffVacations: true
 requireLayoffVacationPeriod: true
 layoffPeriods:
-- startDate: '2024-01-01'
-  endDate: '2024-01-31'
-- startDate: '2024-07-01'
-  endDate: '2024-07-31'
+- startDate: 2024-01-01
+  endDate: 2024-01-31
+- startDate: 2024-07-01
+  endDate: 2024-07-31
 "#;
-        assert_eq!(serialized.trim(), expected_yaml.trim()); // Importante usar trim() para ignorar espaços em branco
+        assert_eq!(serialized.trim(), expected_yaml.trim());
     }
 
     #[test]
@@ -261,7 +261,7 @@ layoffPeriods:
 - startDate: "2024-07-01"
   endDate: "2024-07-31"
 "#;
-        let deserialized: VacationRulesManifest = serde_yml::from_str(yaml).unwrap();
+        let deserialized: VacationRulesManifest = serde_yaml::from_str(yaml).unwrap();
         assert_eq!(deserialized.max_concurrent_vacations, Some(2));
         assert_eq!(deserialized.allow_layoff_vacations, Some(true));
         assert_eq!(deserialized.require_layoff_vacation_period, Some(true));
@@ -300,7 +300,7 @@ spec:
         endDate: "2024-11-30"
 "#;
 
-        let manifest: ProjectManifest = serde_yml::from_str(yaml_str).unwrap();
+        let manifest: ProjectManifest = serde_yaml::from_str(yaml_str).unwrap();
 
         assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
         assert_eq!(manifest.kind, "Project");
@@ -486,7 +486,7 @@ spec:
             expected_end_date.clone(),
         );
 
-        let serialized_manifest = serde_yml::to_string(&manifest).unwrap();
+        let serialized_manifest = serde_yaml::to_string(&manifest).unwrap();
 
         let expected_yaml = format!(
             r#"apiVersion: tasktaskrevolution.io/v1alpha1
@@ -496,8 +496,8 @@ metadata:
   name: {}
   description: {}
 spec:
-  startDate: '{}'
-  endDate: '{}'
+  startDate: {}
+  endDate: {}
   status: Planned
   vacationRules: {{}}
 "#,
@@ -522,7 +522,7 @@ spec:
             description: description.clone(),
         };
 
-        let serialized_metadata = serde_yml::to_string(&metadata).unwrap();
+        let serialized_metadata = serde_yaml::to_string(&metadata).unwrap();
 
         let expected_yaml = format!(
             r#"code: {}
@@ -554,11 +554,11 @@ description: {}
             vacation_rules,
         };
 
-        let serialized_spec = serde_yml::to_string(&spec).unwrap();
+        let serialized_spec = serde_yaml::to_string(&spec).unwrap();
 
         let expected_yaml = format!(
-            r#"startDate: '{}'
-endDate: '{}'
+            r#"startDate: {}
+endDate: {}
 status: InProgress
 vacationRules:
   maxConcurrentVacations: 5

@@ -2,8 +2,7 @@ use crate::domain::resource::{resource::Resource, resource_repository::ResourceR
 use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::shared_kernel::errors::DomainError;
 use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
-use serde_yml::to_string;
-use serde_yml::from_str;
+use serde_yaml::{from_str, to_string};
 use std::{fs, path::Path};
 
 pub struct FileResourceRepository;

@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use serde_yml::to_string;
+use serde_yaml::to_string;
 
 use crate::domain::{
     config::config_repository::ConfigRepository, shared_kernel::errors::DomainError,

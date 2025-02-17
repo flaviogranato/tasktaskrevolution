@@ -3,7 +3,7 @@ use crate::domain::project::project::Project;
 use crate::domain::project::project_repository::ProjectRepository;
 use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::shared_kernel::errors::DomainError;
-use serde_yml::to_string;
+use serde_yaml::to_string;
 use std::fs;
 
 pub struct FileProjectRepository;
