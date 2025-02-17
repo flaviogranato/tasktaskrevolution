@@ -8,6 +8,7 @@ use crate::{
         create_project_use_case::CreateProjectUseCase,
         create_resource_use_case::CreateResourceUseCase,
         initialize_repository_use_case::InitializeRepositoryUseCase,
+        validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
         config_repository::FileConfigRepository, project_repository::FileProjectRepository,
@@ -103,7 +104,23 @@ pub fn run(cli: Cli) -> Result<()> {
         },
         Commands::Validate { validate_command } => match validate_command {
             ValidateCommands::Vacations => {
-                println!("validando as férias")
+                let project_repository = FileProjectRepository::new();
+                let resource_repository = FileResourceRepository::new();
+                let use_case = ValidateVacationsUseCase::new(
+                    project_repository,
+                    resource_repository,
+                );
+
+                match use_case.execute() {
+                    Ok(mensagens) => {
+                        println!("\nResultado da validação de férias:");
+                        println!("--------------------------------");
+                        for mensagem in mensagens {
+                            println!("{}", mensagem);
+                        }
+                    }
+                    Err(e) => println!("Erro ao validar férias: {}", e),
+                }
             }
         },
     }

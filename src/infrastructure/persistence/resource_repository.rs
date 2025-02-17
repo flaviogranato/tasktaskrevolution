@@ -3,6 +3,7 @@ use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::shared_kernel::errors::DomainError;
 use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
 use serde_yml::to_string;
+use serde_yml::from_str;
 use std::{fs, path::Path};
 
 pub struct FileResourceRepository;
@@ -35,5 +36,26 @@ impl ResourceRepository for FileResourceRepository {
 
         println!("Recurso {} criado.", r.name);
         Ok(r)
+    }
+
+    fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
+        let path = Path::new("resources");
+        if !path.exists() {
+            return Ok(vec![]);
+        }
+
+        let mut resources = Vec::new();
+        for entry in fs::read_dir(path).map_err(|e| DomainError::Generic(e.to_string()))? {
+            let entry = entry.map_err(|e| DomainError::Generic(e.to_string()))?;
+            if entry.path().extension().and_then(|s| s.to_str()) == Some("yaml") {
+                let content = fs::read_to_string(entry.path())
+                    .map_err(|e| DomainError::Generic(e.to_string()))?;
+                let manifest: ResourceManifest = from_str(&content)
+                    .map_err(|e| DomainError::Generic(e.to_string()))?;
+                resources.push(manifest.to());
+            }
+        }
+
+        Ok(resources)
     }
 }
