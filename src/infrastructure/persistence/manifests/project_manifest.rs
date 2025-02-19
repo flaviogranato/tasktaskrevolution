@@ -24,9 +24,12 @@ pub struct ProjectMetadata {
     pub description: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSpec {
+    pub name: String,
+    pub description: Option<String>,
+    pub timezone: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start_date: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -96,11 +99,14 @@ impl ProjectManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Project".to_string(),
             metadata: ProjectMetadata {
-                name,
+                name: name.clone(),
                 code,
-                description,
+                description: description.clone(),
             },
             spec: ProjectSpec {
+                name,
+                description,
+                timezone: None,
                 start_date,
                 end_date,
                 status: ProjectStatusManifest::Planned,
@@ -121,11 +127,14 @@ impl Convertable<Project> for ProjectManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Project".to_string(),
             metadata: ProjectMetadata {
-                code: source.id,
-                name: source.name,
-                description: source.description,
+                code: source.id.clone(),
+                name: source.name.clone(),
+                description: source.description.clone(),
             },
             spec: ProjectSpec {
+                name: source.name,
+                description: source.description,
+                timezone: None,
                 start_date: source.start_date,
                 end_date: source.end_date,
                 status: <ProjectStatusManifest as Convertable<ProjectStatus>>::from(source.status),
@@ -286,6 +295,9 @@ metadata:
   name: Meu Projeto
   description: Descrição do Projeto
 spec:
+  name: Meu Projeto
+  description: Descrição do Projeto
+  timezone: null
   startDate: "2024-01-10"
   endDate: "2024-12-20"
   status: InProgress
@@ -328,6 +340,7 @@ spec:
             "2024-11-30"
         );
     }
+
     #[test]
     fn creates_manifest_with_all_fields() {
         let expected_code = Some("my-project-code".to_string());
@@ -470,6 +483,7 @@ spec:
         assert_eq!(vr.require_layoff_vacation_period, None);
         assert_eq!(vr.layoff_periods, None);
     }
+
     #[test]
     fn test_project_manifest_serialize_with_all_fields() {
         let expected_code = Some("my-project-code".to_string());
@@ -488,6 +502,7 @@ spec:
 
         let serialized_manifest = serde_yaml::to_string(&manifest).unwrap();
 
+        let empty_string = String::new();
         let expected_yaml = format!(
             r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Project
@@ -496,20 +511,25 @@ metadata:
   name: {}
   description: {}
 spec:
+  name: {}
+  description: {}
+  timezone: null
   startDate: {}
   endDate: {}
   status: Planned
-  vacationRules: {{}}
-"#,
+  vacationRules: {{}}"#,
             expected_code.unwrap_or_else(|| "".to_string()),
             expected_name,
-            expected_description.unwrap_or_else(|| "".to_string()),
+            expected_description.as_ref().unwrap_or(&empty_string),
+            expected_name,
+            expected_description.as_ref().unwrap_or(&empty_string),
             expected_start_date.unwrap_or_else(|| "".to_string()),
             expected_end_date.unwrap_or_else(|| "".to_string())
         );
 
-        assert_eq!(serialized_manifest, expected_yaml);
+        assert_eq!(serialized_manifest.trim(), expected_yaml.trim());
     }
+
     #[test]
     fn test_project_metadata_serialize_with_all_fields() {
         let code = Some("my-project-code".to_string());
@@ -536,6 +556,7 @@ description: {}
 
         assert_eq!(serialized_metadata, expected_yaml);
     }
+
     #[test]
     fn test_project_spec_serialize_with_all_fields() {
         let start_date = Some("2025-01-01".to_string());
@@ -548,6 +569,9 @@ description: {}
         });
 
         let spec = ProjectSpec {
+            name: "My Project Name".to_string(),
+            description: Some("A cool project".to_string()),
+            timezone: None,
             start_date: start_date.clone(),
             end_date: end_date.clone(),
             status: ProjectStatusManifest::InProgress,
@@ -557,18 +581,20 @@ description: {}
         let serialized_spec = serde_yaml::to_string(&spec).unwrap();
 
         let expected_yaml = format!(
-            r#"startDate: {}
+            r#"name: My Project Name
+description: A cool project
+timezone: null
+startDate: {}
 endDate: {}
 status: InProgress
 vacationRules:
   maxConcurrentVacations: 5
   allowLayoffVacations: true
-  requireLayoffVacationPeriod: false
-"#,
+  requireLayoffVacationPeriod: false"#,
             start_date.unwrap_or_else(|| "".to_string()),
             end_date.unwrap_or_else(|| "".to_string())
         );
 
-        assert_eq!(serialized_spec, expected_yaml);
+        assert_eq!(serialized_spec.trim(), expected_yaml.trim());
     }
 }

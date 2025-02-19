@@ -1,8 +1,8 @@
-use std::fs;
-use std::path::PathBuf;
 use crate::domain::task::Task;
 use crate::domain::task::TaskRepository;
 use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
+use std::fs;
+use std::path::PathBuf;
 
 pub struct FileTaskRepository {
     base_path: PathBuf,
@@ -16,22 +16,49 @@ impl FileTaskRepository {
     fn get_task_path(&self, id: &str) -> PathBuf {
         self.base_path.join("tasks").join(format!("{}.yaml", id))
     }
+
+    fn generate_next_task_id(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let tasks_dir = self.base_path.join("tasks");
+        if !tasks_dir.exists() {
+            fs::create_dir_all(&tasks_dir)?;
+            return Ok("task-1".to_string());
+        }
+
+        let entries = fs::read_dir(&tasks_dir)?;
+        let mut max_id = 0;
+
+        for entry in entries {
+            let entry = entry?;
+            let file_name = entry.file_name();
+            let file_name = file_name.to_string_lossy();
+            if file_name.starts_with("task-") && file_name.ends_with(".yaml") {
+                if let Some(id_str) = file_name
+                    .strip_prefix("task-")
+                    .and_then(|s| s.strip_suffix(".yaml"))
+                {
+                    if let Ok(id) = id_str.parse::<u32>() {
+                        max_id = max_id.max(id);
+                    }
+                }
+            }
+        }
+
+        Ok(format!("task-{}", max_id + 1))
+    }
 }
 
 impl TaskRepository for FileTaskRepository {
-    fn save(&self, task: Task) -> Result<Task, Box<dyn std::error::Error>> {
+    fn save(&self, mut task: Task) -> Result<Task, Box<dyn std::error::Error>> {
+        // Gera o ID sequencial antes de salvar
+        task.id = self.generate_next_task_id()?;
+
         let manifest: TaskManifest = task.clone().into();
         let yaml = serde_yaml::to_string(&manifest)?;
-        
-        let task_path = self.get_task_path(&task.id.to_string());
-        
-        // Cria o diretório tasks se não existir
-        if let Some(parent) = task_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        
+
+        let task_path = self.get_task_path(&task.id);
+
         fs::write(task_path, yaml)?;
-        
+
         Ok(task)
     }
 }
@@ -39,7 +66,12 @@ impl TaskRepository for FileTaskRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::{DateTime, TimeZone, Utc};
     use tempfile::TempDir;
+
+    fn format_datetime(dt: DateTime<Utc>) -> String {
+        format!("{}", dt.format("%Y-%m-%dT%H:%M"))
+    }
 
     #[test]
     fn test_file_task_repository_save() {
@@ -49,17 +81,30 @@ mod tests {
         let task = Task::new(
             "Test Task".to_string(),
             Some("Test Description".to_string()),
+            Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap()),
         );
         
-        let saved_task = repository.save(task.clone()).unwrap();
-        assert_eq!(saved_task, task);
+        let saved_task = repository.save(task).unwrap();
+        assert_eq!(saved_task.id, "task-1");
         
-        let task_path = repository.get_task_path(&task.id.to_string());
+        let task_path = repository.get_task_path(&saved_task.id);
         assert!(task_path.exists());
         
         let content = fs::read_to_string(task_path).unwrap();
-        assert!(content.contains("apiVersion: v1"));
-        assert!(content.contains(&task.name));
-        assert!(content.contains(task.description.as_ref().unwrap()));
+        let expected_yaml = format!(r#"apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Task
+metadata:
+  id: {}
+  createdAt: {}
+  dueDate: 2024-03-15
+spec:
+  name: Test Task
+  description: Test Description"#, 
+            saved_task.id,
+            format_datetime(saved_task.created_at)
+        );
+        
+        assert_eq!(content.trim(), expected_yaml.trim());
     }
-} 
+}
+

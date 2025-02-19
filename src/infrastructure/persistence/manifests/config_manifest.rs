@@ -9,8 +9,7 @@ pub struct ConfigManifest {
     pub api_version: String,
     pub kind: String,
     pub metadata: ConfigMetadata,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub spec: Option<ConfigSpec>,
+    pub spec: ConfigSpec,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
@@ -23,6 +22,10 @@ pub struct ConfigMetadata {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigSpec {
+    pub manager_name: String,
+    pub manager_email: String,
+    #[serde(default = "default_timezone")]
+    pub default_timezone: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub currency: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -37,13 +40,27 @@ pub struct ConfigSpec {
     pub locale: Option<String>,
 }
 
+fn default_timezone() -> String {
+    "UTC".to_string()
+}
+
 impl ConfigManifest {
     pub fn new() -> Self {
         ConfigManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Config".to_string(),
             metadata: ConfigMetadata::default(),
-            spec: None,
+            spec: ConfigSpec {
+                manager_name: "".to_string(),
+                manager_email: "".to_string(),
+                default_timezone: "UTC".to_string(),
+                currency: None,
+                work_hours_per_day: None,
+                work_days_per_week: None,
+                date_format: None,
+                default_task_duration: None,
+                locale: None,
+            },
         }
     }
     pub fn basic(name: &String, email: &String) -> Self {
@@ -54,7 +71,10 @@ impl ConfigManifest {
                 manager_name: name.to_string(),
                 manager_email: email.to_string(),
             },
-            spec: Some(ConfigSpec {
+            spec: ConfigSpec {
+                manager_name: name.to_string(),
+                manager_email: email.to_string(),
+                default_timezone: "UTC".to_string(),
                 currency: Some("BRL".to_string()),
                 work_hours_per_day: Some(8),
                 work_days_per_week: Some(vec![
@@ -67,7 +87,7 @@ impl ConfigManifest {
                 date_format: Some("yyyy-mm-dd".to_string()),
                 default_task_duration: Some(8),
                 locale: Some("pt_BR".to_string()),
-            }),
+            },
         }
     }
 }
@@ -78,10 +98,20 @@ impl Convertable<Config> for ConfigManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Config".to_string(),
             metadata: ConfigMetadata {
+                manager_name: source.manager_name.clone(),
+                manager_email: source.manager_email.clone(),
+            },
+            spec: ConfigSpec {
                 manager_name: source.manager_name,
                 manager_email: source.manager_email,
+                default_timezone: "UTC".to_string(),
+                currency: None,
+                work_hours_per_day: None,
+                work_days_per_week: None,
+                date_format: None,
+                default_task_duration: None,
+                locale: None,
             },
-            spec: None,
         }
     }
 
@@ -119,6 +149,10 @@ mod tests {
             metadata:
                 managerName: "John Doe"
                 managerEmail: "john@doe.com"
+            spec:
+                managerName: "John Doe"
+                managerEmail: "john@doe.com"
+                defaultTimezone: "UTC"
         "#;
         let manifest: ConfigManifest = serde_yaml::from_str(yaml_str).unwrap();
         assert_eq!(manifest.metadata.manager_name, "John Doe");
