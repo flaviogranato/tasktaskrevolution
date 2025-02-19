@@ -87,6 +87,8 @@ pub enum CreateCommands {
         name: String,
         #[arg(long, short)]
         description: Option<String>,
+        #[arg(long)]
+        due_date: Option<String>,
     },
 }
 
@@ -171,12 +173,19 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Err(e) => println!("❌ Erro ao adicionar horas extras: {}", e),
                 }
             }
-            CreateCommands::Task { name, description } => {
+            CreateCommands::Task { name, description, due_date } => {
                 let current_dir = std::env::current_dir()?;
                 let repository = FileTaskRepository::new(current_dir);
                 let use_case = CreateTaskUseCase::new(repository);
 
-                match use_case.execute(name.clone(), description.clone()) {
+                let due_date = due_date.as_ref().map(|date| {
+                    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
+                        .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
+                        .map(|dt| chrono::DateTime::from_naive_utc_and_offset(dt, chrono::Utc))
+                        .unwrap()
+                });
+
+                match use_case.execute(name.clone(), description.clone(), due_date) {
                     Ok(task) => println!("✅ Tarefa '{}' criada com sucesso", task.name),
                     Err(e) => println!("❌ Erro ao criar tarefa: {}", e),
                 }

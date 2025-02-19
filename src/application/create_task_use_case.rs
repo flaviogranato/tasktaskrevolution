@@ -1,5 +1,6 @@
 use crate::domain::task::Task;
 use crate::domain::task::TaskRepository;
+use chrono::{DateTime, Utc};
 
 pub struct CreateTaskUseCase<R: TaskRepository> {
     task_repository: R,
@@ -14,8 +15,9 @@ impl<R: TaskRepository> CreateTaskUseCase<R> {
         &self,
         name: String,
         description: Option<String>,
+        due_date: Option<DateTime<Utc>>,
     ) -> Result<Task, Box<dyn std::error::Error>> {
-        let task = Task::new(name, description);
+        let task = Task::new(name, description, due_date);
         self.task_repository.save(task)
     }
 }
@@ -24,6 +26,7 @@ impl<R: TaskRepository> CreateTaskUseCase<R> {
 mod tests {
     use super::*;
     use std::sync::Mutex;
+    use chrono::TimeZone;
 
     struct MockTaskRepository {
         saved_task: Mutex<Option<Task>>,
@@ -44,11 +47,13 @@ mod tests {
         };
         let use_case = CreateTaskUseCase::new(repository);
 
+        let due_date = Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap());
         let task = use_case
-            .execute("Test Task".to_string(), Some("Description".to_string()))
+            .execute("Test Task".to_string(), Some("Description".to_string()), due_date)
             .unwrap();
 
         assert_eq!(task.name, "Test Task");
         assert_eq!(task.description, Some("Description".to_string()));
+        assert_eq!(task.due_date, due_date);
     }
 } 
