@@ -1,68 +1,37 @@
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs;
 use std::path::PathBuf;
-use std::error::Error;
-use std::fmt;
-
-use serde_yaml;
-
-use crate::domain::task::{Task, TaskRepository};
+use crate::domain::task::Task;
+use crate::domain::task::TaskRepository;
+use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
 
 pub struct FileTaskRepository {
     base_path: PathBuf,
 }
 
-// Custom error type
-#[derive(Debug)]
-pub enum TaskRepositoryError {
-    FileOpenError(String),
-    FileWriteError(String),
-    YamlError(String),
-    DirectoryCreationError(String),
-}
-
-impl fmt::Display for TaskRepositoryError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            TaskRepositoryError::FileOpenError(msg) => write!(f, "Erro ao abrir o arquivo: {}", msg),
-            TaskRepositoryError::FileWriteError(msg) => write!(f, "Erro ao escrever no arquivo: {}", msg),
-            TaskRepositoryError::YamlError(msg) => write!(f, "Erro ao serializar/desserializar YAML: {}", msg),
-            TaskRepositoryError::DirectoryCreationError(msg) => write!(f, "Erro ao criar diretório: {}", msg),
-        }
-    }
-}
-
-impl Error for TaskRepositoryError {}
-
 impl FileTaskRepository {
-    pub fn new() -> Self {
-        let mut base_path = PathBuf::from(std::env::current_dir().unwrap());
-        base_path.push("tasks");
+    pub fn new(base_path: PathBuf) -> Self {
         Self { base_path }
+    }
+
+    fn get_task_path(&self, id: &str) -> PathBuf {
+        self.base_path.join("tasks").join(format!("{}.yaml", id))
     }
 }
 
 impl TaskRepository for FileTaskRepository {
-    fn save(&self, task: Task) -> Result<Task, Box<dyn Error>> {
-        // Criar diretório tasks se não existir
-        if !self.base_path.exists() {
-            fs::create_dir_all(&self.base_path)
-                .map_err(|e| TaskRepositoryError::DirectoryCreationError(e.to_string()))?;
+    fn save(&self, task: Task) -> Result<Task, Box<dyn std::error::Error>> {
+        let manifest: TaskManifest = task.clone().into();
+        let yaml = serde_yaml::to_string(&manifest)?;
+        
+        let task_path = self.get_task_path(&task.id.to_string());
+        
+        // Cria o diretório tasks se não existir
+        if let Some(parent) = task_path.parent() {
+            fs::create_dir_all(parent)?;
         }
-
-        // Criar arquivo YAML para a task
-        let file_name = format!("{}.yaml", task.id);
-        let file_path = self.base_path.join(file_name);
-
-        let yaml = serde_yaml::to_string(&task)
-            .map_err(|e| TaskRepositoryError::YamlError(e.to_string()))?;
-
-        let mut file = File::create(&file_path)
-            .map_err(|e| TaskRepositoryError::FileOpenError(e.to_string()))?;
-
-        file.write_all(yaml.as_bytes())
-            .map_err(|e| TaskRepositoryError::FileWriteError(e.to_string()))?;
-
+        
+        fs::write(task_path, yaml)?;
+        
         Ok(task)
     }
 }
@@ -70,29 +39,27 @@ impl TaskRepository for FileTaskRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
+    use tempfile::TempDir;
 
     #[test]
-    fn test_file_task_repository_save() -> Result<(), Box<dyn Error>> {
-        let temp_dir = tempdir()?;
-        let repo = FileTaskRepository {
-            base_path: temp_dir.path().to_path_buf(),
-        };
-
-        let task = Task::new("Test Task".to_string(), Some("Test Description".to_string()));
-        let saved_task = repo.save(task.clone())?;
-
-        let file_path = repo.base_path.join(format!("{}.yaml", saved_task.id));
-        assert!(file_path.exists());
-
-        let content = fs::read_to_string(file_path)?;
-        let loaded_task: Task = serde_yaml::from_str(&content)?;
-
-        assert_eq!(loaded_task.id, task.id);
-        assert_eq!(loaded_task.name, task.name);
-        assert_eq!(loaded_task.description, task.description);
-
-        temp_dir.close()?;
-        Ok(())
+    fn test_file_task_repository_save() {
+        let temp_dir = TempDir::new().unwrap();
+        let repository = FileTaskRepository::new(temp_dir.path().to_path_buf());
+        
+        let task = Task::new(
+            "Test Task".to_string(),
+            Some("Test Description".to_string()),
+        );
+        
+        let saved_task = repository.save(task.clone()).unwrap();
+        assert_eq!(saved_task, task);
+        
+        let task_path = repository.get_task_path(&task.id.to_string());
+        assert!(task_path.exists());
+        
+        let content = fs::read_to_string(task_path).unwrap();
+        assert!(content.contains("apiVersion: v1"));
+        assert!(content.contains(&task.name));
+        assert!(content.contains(task.description.as_ref().unwrap()));
     }
 } 

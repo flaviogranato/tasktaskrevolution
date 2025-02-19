@@ -172,7 +172,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 }
             }
             CreateCommands::Task { name, description } => {
-                let repository = FileTaskRepository::new();
+                let current_dir = std::env::current_dir()?;
+                let repository = FileTaskRepository::new(current_dir);
                 let use_case = CreateTaskUseCase::new(repository);
 
                 match use_case.execute(name.clone(), description.clone()) {
