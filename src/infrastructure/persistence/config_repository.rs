@@ -6,12 +6,30 @@ use crate::domain::{
     config::config_repository::ConfigRepository, shared_kernel::errors::DomainError,
 };
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
+use crate::domain::config::config::Config;
+use crate::domain::shared_kernel::convertable::Convertable;
 
 pub struct FileConfigRepository;
 
 impl FileConfigRepository {
     pub fn new() -> Self {
         Self
+    }
+
+    pub fn load_config(&self) -> Result<Config, std::io::Error> {
+        let config_path = PathBuf::from("config.yaml");
+        if !config_path.exists() {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Config file not found",
+            ));
+        }
+
+        let contents = std::fs::read_to_string(config_path)?;
+        let manifest: ConfigManifest = serde_yaml::from_str(&contents)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+        
+        Ok(manifest.to())
     }
 }
 
