@@ -3,13 +3,42 @@ use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::shared_kernel::errors::DomainError;
 use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
 use serde_yaml::{from_str, to_string};
-use std::{fs, path::Path};
+use std::{fs, path::Path, path::PathBuf};
 
 pub struct FileResourceRepository;
 
 impl FileResourceRepository {
     pub fn new() -> Self {
         Self
+    }
+
+    pub fn load_resources(&self) -> Result<Vec<Resource>, std::io::Error> {
+        let resources_dir = PathBuf::from("resources");
+        if !resources_dir.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut resources = Vec::new();
+        for entry in std::fs::read_dir(resources_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.extension().map_or(false, |ext| ext == "yaml") {
+                let contents = std::fs::read_to_string(&path)?;
+                match serde_yaml::from_str::<ResourceManifest>(&contents) {
+                    Ok(manifest) => {
+                        let resource = manifest.to();
+                        resources.push(resource);
+                    }
+                    Err(err) => {
+                        // Lidar com o erro de desserialização
+                        eprintln!("Erro ao desserializar o YAML: {}", err);
+                        // Ou propagar o erro como um DomainError::Generic
+                    }
+                }
+            }
+        }
+
+        Ok(resources)
     }
 }
 
@@ -49,8 +78,8 @@ impl ResourceRepository for FileResourceRepository {
             if entry.path().extension().and_then(|s| s.to_str()) == Some("yaml") {
                 let content = fs::read_to_string(entry.path())
                     .map_err(|e| DomainError::Generic(e.to_string()))?;
-                let manifest: ResourceManifest = from_str(&content)
-                    .map_err(|e| DomainError::Generic(e.to_string()))?;
+                let manifest: ResourceManifest =
+                    from_str(&content).map_err(|e| DomainError::Generic(e.to_string()))?;
                 resources.push(manifest.to());
             }
         }

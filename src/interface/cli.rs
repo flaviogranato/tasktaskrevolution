@@ -11,6 +11,7 @@ use crate::{
         create_vacation_use_case::CreateVacationUseCase,
         create_time_off_use_case::CreateTimeOffUseCase,
         create_task_use_case::CreateTaskUseCase,
+        vacation_report_use_case::VacationReportUseCase,
     },
     infrastructure::persistence::{
         config_repository::FileConfigRepository,
@@ -47,6 +48,10 @@ enum Commands {
     Validate {
         #[clap(subcommand)]
         validate_command: ValidateCommands,
+    },
+    Report {
+        #[clap(subcommand)]
+        report_command: ReportCommands,
     },
 }
 
@@ -95,6 +100,11 @@ pub enum CreateCommands {
 #[derive(Subcommand)]
 enum ValidateCommands {
     Vacations,
+}
+
+#[derive(Subcommand)]
+enum ReportCommands {
+    Vacation,
 }
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -210,6 +220,12 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                     Err(e) => println!("Erro ao validar férias: {}", e),
                 }
+            }
+        },
+        Commands::Report { report_command } => match report_command {
+            ReportCommands::Vacation => {
+                let use_case = VacationReportUseCase::new();
+                use_case.execute()?;
             }
         },
     }
