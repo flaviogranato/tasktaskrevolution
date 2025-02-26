@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use crate::domain::task::Task;
 use chrono::{DateTime, Utc};
+use crate::domain::shared_kernel::convertable::Convertable;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -29,20 +30,30 @@ pub struct TaskSpec {
     pub description: Option<String>,
 }
 
-impl From<Task> for TaskManifest {
-    fn from(task: Task) -> Self {
-        Self {
+impl Convertable<Task> for TaskManifest {
+    fn from(source: Task) -> Self {
+        TaskManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Task".to_string(),
             metadata: TaskMetadata {
-                id: task.id,
-                created_at: task.created_at,
-                due_date: task.due_date,
+                id: source.id,
+                created_at: source.created_at,
+                due_date: source.due_date,
             },
             spec: TaskSpec {
-                name: task.name,
-                description: task.description,
+                name: source.name,
+                description: source.description,
             },
+        }
+    }
+
+    fn to(self) -> Task {
+        Task {
+            id: self.metadata.id,
+            name: self.spec.name,
+            description: self.spec.description,
+            created_at: self.metadata.created_at,
+            due_date: self.metadata.due_date,
         }
     }
 }
@@ -117,7 +128,7 @@ mod tests {
             Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap()),
         );
         task.id = "task-1".to_string();
-        let manifest: TaskManifest = task.into();
+        let manifest = <TaskManifest as Convertable<Task>>::from(task);
 
         let yaml = serde_yaml::to_string(&manifest).unwrap();
         
@@ -167,7 +178,7 @@ spec:
             None,
         );
         task.id = "task-1".to_string();
-        let manifest: TaskManifest = task.into();
+        let manifest = <TaskManifest as Convertable<Task>>::from(task);
 
         let yaml = serde_yaml::to_string(&manifest).unwrap();
         
@@ -181,4 +192,4 @@ spec:
 
         assert_eq!(yaml.trim(), expected_yaml);
     }
-} 
+}

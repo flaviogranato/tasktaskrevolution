@@ -3,6 +3,7 @@ use crate::domain::task::TaskRepository;
 use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
 use std::fs;
 use std::path::PathBuf;
+use crate::domain::shared_kernel::convertable::Convertable;
 
 pub struct FileTaskRepository {
     base_path: PathBuf,
@@ -45,14 +46,33 @@ impl FileTaskRepository {
 
         Ok(format!("task-{}", max_id + 1))
     }
+
+    pub fn load_tasks(&self) -> Result<Vec<Task>, std::io::Error> {
+        let tasks_dir = self.base_path.join("tasks");
+        if !tasks_dir.exists() {
+            return Ok(Vec::new());
+        }
+
+        let mut tasks = Vec::new();
+        for entry in std::fs::read_dir(tasks_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.extension().map_or(false, |ext| ext == "yaml") {
+                let contents = std::fs::read_to_string(&path)?;
+                let manifest: TaskManifest = serde_yaml::from_str(&contents)
+                    .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+                tasks.push(manifest.to());
+            }
+        }
+
+        Ok(tasks)
+    }
 }
 
 impl TaskRepository for FileTaskRepository {
     fn save(&self, mut task: Task) -> Result<Task, Box<dyn std::error::Error>> {
-        // Gera o ID sequencial antes de salvar
         task.id = self.generate_next_task_id()?;
-
-        let manifest: TaskManifest = task.clone().into();
+        let manifest = <TaskManifest as Convertable<Task>>::from(task.clone());
         let yaml = serde_yaml::to_string(&manifest)?;
 
         let task_path = self.get_task_path(&task.id);
