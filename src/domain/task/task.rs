@@ -13,7 +13,7 @@ pub struct Task {
 impl Task {
     pub fn new(name: String, description: Option<String>, due_date: Option<DateTime<Utc>>) -> Self {
         Self {
-            id: String::new(), // ID será gerado pelo repositório
+            id: String::new(),
             name,
             description,
             created_at: Utc::now(),
