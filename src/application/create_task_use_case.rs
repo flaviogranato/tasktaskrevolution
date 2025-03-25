@@ -25,8 +25,8 @@ impl<R: TaskRepository> CreateTaskUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
     use chrono::TimeZone;
+    use std::sync::Mutex;
 
     struct MockTaskRepository {
         saved_task: Mutex<Option<Task>>,
@@ -49,11 +49,15 @@ mod tests {
 
         let due_date = Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap());
         let task = use_case
-            .execute("Test Task".to_string(), Some("Description".to_string()), due_date)
+            .execute(
+                "Test Task".to_string(),
+                Some("Description".to_string()),
+                due_date,
+            )
             .unwrap();
 
         assert_eq!(task.name, "Test Task");
         assert_eq!(task.description, Some("Description".to_string()));
         assert_eq!(task.due_date, due_date);
     }
-} 
+}

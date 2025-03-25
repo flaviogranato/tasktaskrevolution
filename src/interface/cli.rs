@@ -5,19 +5,16 @@ use clap::{Parser, Subcommand};
 use crate::{
     application::{
         create_project_use_case::CreateProjectUseCase,
-        create_resource_use_case::CreateResourceUseCase,
-        initialize_repository_use_case::InitializeRepositoryUseCase,
-        validate_vacations_use_case::ValidateVacationsUseCase,
-        create_vacation_use_case::CreateVacationUseCase,
+        create_resource_use_case::CreateResourceUseCase, create_task_use_case::CreateTaskUseCase,
         create_time_off_use_case::CreateTimeOffUseCase,
-        create_task_use_case::CreateTaskUseCase,
+        create_vacation_use_case::CreateVacationUseCase,
+        initialize_repository_use_case::InitializeRepositoryUseCase,
         vacation_report_use_case::VacationReportUseCase,
+        validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
-        config_repository::FileConfigRepository,
-        project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository,
-        task_repository::FileTaskRepository,
+        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
+        resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
     },
 };
 
@@ -153,7 +150,10 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     *is_time_off_compensation,
                     *compensated_hours,
                 ) {
-                    Ok(resource) => println!("✅ Período de férias adicionado com sucesso para {}", resource.name),
+                    Ok(resource) => println!(
+                        "✅ Período de férias adicionado com sucesso para {}",
+                        resource.name
+                    ),
                     Err(e) => println!("❌ Erro ao adicionar período de férias: {}", e),
                 }
             }
@@ -166,24 +166,27 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileResourceRepository::new();
                 let use_case = CreateTimeOffUseCase::new(repository);
 
-                match use_case.execute(
-                    resource.clone(),
-                    *hours,
-                    date.clone(),
-                    description.clone(),
-                ) {
+                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone())
+                {
                     Ok(resource) => {
-                        println!("✅ {} horas adicionadas com sucesso para {}", hours, resource.name);
+                        println!(
+                            "✅ {} horas adicionadas com sucesso para {}",
+                            hours, resource.name
+                        );
                         println!("📊 Novo saldo: {} horas", resource.time_off_balance);
                         if let Some(desc) = description {
                             println!("📝 Descrição: {}", desc);
                         }
                         println!("📅 Data: {}", date);
-                    },
+                    }
                     Err(e) => println!("❌ Erro ao adicionar horas extras: {}", e),
                 }
             }
-            CreateCommands::Task { name, description, due_date } => {
+            CreateCommands::Task {
+                name,
+                description,
+                due_date,
+            } => {
                 let current_dir = std::env::current_dir()?;
                 let repository = FileTaskRepository::new(current_dir);
                 let use_case = CreateTaskUseCase::new(repository);
@@ -205,10 +208,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             ValidateCommands::Vacations => {
                 let project_repository = FileProjectRepository::new();
                 let resource_repository = FileResourceRepository::new();
-                let use_case = ValidateVacationsUseCase::new(
-                    project_repository,
-                    resource_repository,
-                );
+                let use_case =
+                    ValidateVacationsUseCase::new(project_repository, resource_repository);
 
                 match use_case.execute() {
                     Ok(mensagens) => {

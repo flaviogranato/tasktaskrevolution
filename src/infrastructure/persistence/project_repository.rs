@@ -26,7 +26,7 @@ impl FileProjectRepository {
         let contents = std::fs::read_to_string(project_path)?;
         let manifest: ProjectManifest = serde_yaml::from_str(&contents)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-        
+
         Ok(manifest.to())
     }
 }

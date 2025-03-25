@@ -1,8 +1,6 @@
 use crate::domain::{
-    project::project_repository::ProjectRepository,
-    resource::resource_repository::ResourceRepository,
-    shared_kernel::errors::DomainError,
-    resource::resource::Period,
+    project::project_repository::ProjectRepository, resource::resource::Period,
+    resource::resource_repository::ResourceRepository, shared_kernel::errors::DomainError,
 };
 
 pub struct ValidateVacationsUseCase<P: ProjectRepository, R: ResourceRepository> {
@@ -25,7 +23,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
     pub fn execute(&self) -> Result<Vec<String>, DomainError> {
         let resources = self.resource_repository.find_all()?;
         let mut mensagens = Vec::new();
-        
+
         // Verificar sobreposição entre todos os recursos
         for (i, resource1) in resources.iter().enumerate() {
             if let Some(vacations1) = &resource1.vacations {
@@ -61,7 +59,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource::resource::{Resource, PeriodType};
+    use crate::domain::resource::resource::{PeriodType, Resource};
     use chrono::{Duration, Local};
 
     struct MockProjectRepository;
@@ -70,7 +68,10 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: crate::domain::project::project::Project) -> Result<(), DomainError> {
+        fn save(
+            &self,
+            _project: crate::domain::project::project::Project,
+        ) -> Result<(), DomainError> {
             Ok(())
         }
     }
@@ -130,6 +131,8 @@ mod tests {
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+        assert!(result
+            .iter()
+            .any(|msg| msg.contains("Sobreposição detectada")));
     }
-} 
+}

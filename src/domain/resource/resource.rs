@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
-use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::fmt::Display;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimeOffEntry {

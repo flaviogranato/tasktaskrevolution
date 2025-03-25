@@ -160,12 +160,12 @@ mod tests {
 
     #[test]
     fn test_serialize_deserialize() {
-        let manifest = ConfigManifest::basic(
-            &"John Doe".to_string(),
-            &"john@doe.com".to_string(),
-        );
+        let manifest = ConfigManifest::basic(&"John Doe".to_string(), &"john@doe.com".to_string());
         let yaml_str = serde_yaml::to_string(&manifest).unwrap();
         let manifest_deserialized: ConfigManifest = serde_yaml::from_str(&yaml_str).unwrap();
-        assert_eq!(manifest.metadata.manager_name, manifest_deserialized.metadata.manager_name);
+        assert_eq!(
+            manifest.metadata.manager_name,
+            manifest_deserialized.metadata.manager_name
+        );
     }
 }
