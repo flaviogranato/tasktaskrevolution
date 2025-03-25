@@ -1,9 +1,9 @@
+use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::task::Task;
 use crate::domain::task::TaskRepository;
 use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
 use std::fs;
 use std::path::PathBuf;
-use crate::domain::shared_kernel::convertable::Convertable;
 
 pub struct FileTaskRepository {
     base_path: PathBuf,
@@ -97,21 +97,22 @@ mod tests {
     fn test_file_task_repository_save() {
         let temp_dir = TempDir::new().unwrap();
         let repository = FileTaskRepository::new(temp_dir.path().to_path_buf());
-        
+
         let task = Task::new(
             "Test Task".to_string(),
             Some("Test Description".to_string()),
             Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap()),
         );
-        
+
         let saved_task = repository.save(task).unwrap();
         assert_eq!(saved_task.id, "task-1");
-        
+
         let task_path = repository.get_task_path(&saved_task.id);
         assert!(task_path.exists());
-        
+
         let content = fs::read_to_string(task_path).unwrap();
-        let expected_yaml = format!(r#"apiVersion: tasktaskrevolution.io/v1alpha1
+        let expected_yaml = format!(
+            r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Task
 metadata:
   id: {}
@@ -119,12 +120,11 @@ metadata:
   dueDate: 2024-03-15
 spec:
   name: Test Task
-  description: Test Description"#, 
+  description: Test Description"#,
             saved_task.id,
             format_datetime(saved_task.created_at)
         );
-        
+
         assert_eq!(content.trim(), expected_yaml.trim());
     }
 }
-

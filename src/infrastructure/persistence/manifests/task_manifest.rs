@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
+use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::task::Task;
 use chrono::{DateTime, Utc};
-use crate::domain::shared_kernel::convertable::Convertable;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -18,7 +18,10 @@ pub struct TaskMetadata {
     pub id: String,
     #[serde(with = "datetime_format")]
     pub created_at: DateTime<Utc>,
-    #[serde(skip_serializing_if = "Option::is_none", with = "datetime_format::optional")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        with = "datetime_format::optional"
+    )]
     pub due_date: Option<DateTime<Utc>>,
 }
 
@@ -131,8 +134,9 @@ mod tests {
         let manifest = <TaskManifest as Convertable<Task>>::from(task);
 
         let yaml = serde_yaml::to_string(&manifest).unwrap();
-        
-        let expected_yaml = format!(r#"apiVersion: tasktaskrevolution.io/v1alpha1
+
+        let expected_yaml = format!(
+            r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Task
 metadata:
   id: task-1
@@ -140,7 +144,9 @@ metadata:
   dueDate: 2024-03-15
 spec:
   name: Test Task
-  description: Test Description"#, format_datetime(manifest.metadata.created_at));
+  description: Test Description"#,
+            format_datetime(manifest.metadata.created_at)
+        );
 
         assert_eq!(yaml.trim(), expected_yaml);
     }
@@ -160,35 +166,43 @@ spec:
         "#;
 
         let manifest: TaskManifest = serde_yaml::from_str(yaml).unwrap();
-        
+
         assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
         assert_eq!(manifest.kind, "Task");
         assert_eq!(manifest.metadata.id, "task-1");
-        assert_eq!(manifest.metadata.created_at, Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap());
-        assert_eq!(manifest.metadata.due_date, Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap()));
+        assert_eq!(
+            manifest.metadata.created_at,
+            Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap()
+        );
+        assert_eq!(
+            manifest.metadata.due_date,
+            Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap())
+        );
         assert_eq!(manifest.spec.name, "Test Task");
-        assert_eq!(manifest.spec.description, Some("Test Description".to_string()));
+        assert_eq!(
+            manifest.spec.description,
+            Some("Test Description".to_string())
+        );
     }
 
     #[test]
     fn test_task_manifest_without_optional_fields() {
-        let mut task = Task::new(
-            "Test Task".to_string(),
-            None,
-            None,
-        );
+        let mut task = Task::new("Test Task".to_string(), None, None);
         task.id = "task-1".to_string();
         let manifest = <TaskManifest as Convertable<Task>>::from(task);
 
         let yaml = serde_yaml::to_string(&manifest).unwrap();
-        
-        let expected_yaml = format!(r#"apiVersion: tasktaskrevolution.io/v1alpha1
+
+        let expected_yaml = format!(
+            r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Task
 metadata:
   id: task-1
   createdAt: {}
 spec:
-  name: Test Task"#, format_datetime(manifest.metadata.created_at));
+  name: Test Task"#,
+            format_datetime(manifest.metadata.created_at)
+        );
 
         assert_eq!(yaml.trim(), expected_yaml);
     }

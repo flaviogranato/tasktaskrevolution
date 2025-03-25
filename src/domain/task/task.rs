@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Task {
@@ -21,7 +21,6 @@ impl Task {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -53,7 +52,11 @@ mod tests {
 
     #[test]
     fn test_task_clone() {
-        let mut original = Task::new("Original Task".to_string(), Some("Description".to_string()), None);
+        let mut original = Task::new(
+            "Original Task".to_string(),
+            Some("Description".to_string()),
+            None,
+        );
         original.id = "task-1".to_string(); // Simulando um ID gerado
         let cloned = original.clone();
 
@@ -71,10 +74,10 @@ mod tests {
             None,
         );
         task.id = "task-1".to_string(); // Simulando um ID gerado
-        
+
         let debug_output = format!("{:?}", task);
         assert!(debug_output.contains("Debug Test"));
         assert!(debug_output.contains("Test debug output"));
         assert!(debug_output.contains(&task.id));
     }
-} 
+}

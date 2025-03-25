@@ -197,7 +197,11 @@ impl Convertable<Resource> for ResourceManifest {
                 }),
                 project_assignments: source.project_assignments.map(|pa| {
                     pa.into_iter()
-                        .map(|assignment| <ProjectAssignmentManifest as Convertable<ProjectAssignment>>::from(assignment))
+                        .map(|assignment| {
+                            <ProjectAssignmentManifest as Convertable<ProjectAssignment>>::from(
+                                assignment,
+                            )
+                        })
                         .collect()
                 }),
                 time_off_balance: source.time_off_balance,
@@ -211,16 +215,12 @@ impl Convertable<Resource> for ResourceManifest {
             self.metadata.name,
             self.metadata.email,
             self.metadata.resource_type,
-            self.spec.vacations.map(|v| {
-                v.into_iter()
-                    .map(|period| period.to())
-                    .collect()
-            }),
-            self.spec.project_assignments.map(|pa| {
-                pa.into_iter()
-                    .map(|assignment| assignment.to())
-                    .collect()
-            }),
+            self.spec
+                .vacations
+                .map(|v| v.into_iter().map(|period| period.to()).collect()),
+            self.spec
+                .project_assignments
+                .map(|pa| pa.into_iter().map(|assignment| assignment.to()).collect()),
             self.spec.time_off_balance,
         )
     }

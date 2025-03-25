@@ -1,4 +1,3 @@
-use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use crate::domain::{
     resource::{
         resource::{Resource, TimeOffEntry},
@@ -6,6 +5,7 @@ use crate::domain::{
     },
     shared_kernel::errors::DomainError,
 };
+use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
     resource_repository: R,
@@ -19,10 +19,12 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
     }
 
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
-        let naive = NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_str), "%Y-%m-%d %H:%M:%S")
-            .map_err(|e| DomainError::Generic(format!("Erro ao converter data: {}", e)))?;
-        
-        Ok(Local.from_local_datetime(&naive)
+        let naive =
+            NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_str), "%Y-%m-%d %H:%M:%S")
+                .map_err(|e| DomainError::Generic(format!("Erro ao converter data: {}", e)))?;
+
+        Ok(Local
+            .from_local_datetime(&naive)
             .earliest()
             .ok_or_else(|| DomainError::Generic("Erro ao converter data local".to_string()))?)
     }
@@ -35,11 +37,16 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         description: Option<String>,
     ) -> Result<Resource, DomainError> {
         let resources = self.resource_repository.find_all()?;
-        
+
         let mut resource = resources
             .into_iter()
-            .find(|r| r.id.as_ref().map_or(false, |id| id == &resource_identifier) || r.name == resource_identifier)
-            .ok_or_else(|| DomainError::Generic(format!("Recurso não encontrado: {}", resource_identifier)))?;
+            .find(|r| {
+                r.id.as_ref().map_or(false, |id| id == &resource_identifier)
+                    || r.name == resource_identifier
+            })
+            .ok_or_else(|| {
+                DomainError::Generic(format!("Recurso não encontrado: {}", resource_identifier))
+            })?;
 
         let entry_date = Self::parse_date(&date)?;
 
@@ -120,12 +127,15 @@ mod tests {
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
         assert_eq!(updated_resource.time_off_balance, 8);
-        
+
         // Verifica se a entrada foi adicionada ao histórico
         let history = updated_resource.time_off_history.unwrap();
         assert_eq!(history.len(), 1);
         assert_eq!(history[0].hours, 8);
-        assert_eq!(history[0].description, Some("Trabalho no feriado".to_string()));
+        assert_eq!(
+            history[0].description,
+            Some("Trabalho no feriado".to_string())
+        );
     }
 
     #[test]
@@ -163,10 +173,10 @@ mod tests {
 
         let final_resource = result2.unwrap();
         assert_eq!(final_resource.time_off_balance, 12); // 8 + 4
-        
+
         let history = final_resource.time_off_history.unwrap();
         assert_eq!(history.len(), 2);
         assert_eq!(history[1].hours, 4);
         assert_eq!(history[1].description, Some("Hora extra".to_string()));
     }
-} 
+}

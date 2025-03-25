@@ -212,10 +212,7 @@ mod tests {
             end_date: "2024-01-31".to_string(),
         };
         let serialized = serde_yaml::to_string(&layoff_period).unwrap();
-        assert_eq!(
-            serialized,
-            "startDate: 2024-01-01\nendDate: 2024-01-31\n"
-        );
+        assert_eq!(serialized, "startDate: 2024-01-01\nendDate: 2024-01-31\n");
     }
 
     #[test]

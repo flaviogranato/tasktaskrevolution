@@ -1,11 +1,11 @@
-use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use crate::domain::{
     resource::{
-        resource::{Resource, Period, PeriodType},
+        resource::{Period, PeriodType, Resource},
         resource_repository::ResourceRepository,
     },
     shared_kernel::errors::DomainError,
 };
+use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
     resource_repository: R,
@@ -19,11 +19,13 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
     }
 
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
-        let naive = NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_str), "%Y-%m-%d %H:%M:%S")
-            .map_err(|e| DomainError::Generic(format!("Erro ao converter data: {}", e)))?;
-        
+        let naive =
+            NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_str), "%Y-%m-%d %H:%M:%S")
+                .map_err(|e| DomainError::Generic(format!("Erro ao converter data: {}", e)))?;
+
         // Usando from_local em vez de from_naive_utc_and_local
-        Ok(Local.from_local_datetime(&naive)
+        Ok(Local
+            .from_local_datetime(&naive)
             .earliest()
             .ok_or_else(|| DomainError::Generic("Erro ao converter data local".to_string()))?)
     }
@@ -37,18 +39,25 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
         compensated_hours: Option<u32>,
     ) -> Result<Resource, DomainError> {
         let resources = self.resource_repository.find_all()?;
-        
+
         // Busca por código ou nome
         let mut resource = resources
             .into_iter()
-            .find(|r| r.id.as_ref().map_or(false, |id| id == &resource_identifier) || r.name == resource_identifier)
-            .ok_or_else(|| DomainError::Generic(format!("Recurso não encontrado: {}", resource_identifier)))?;
+            .find(|r| {
+                r.id.as_ref().map_or(false, |id| id == &resource_identifier)
+                    || r.name == resource_identifier
+            })
+            .ok_or_else(|| {
+                DomainError::Generic(format!("Recurso não encontrado: {}", resource_identifier))
+            })?;
 
         let start = Self::parse_date(&start_date)?;
         let end = Self::parse_date(&end_date)?;
 
         if start >= end {
-            return Err(DomainError::Generic("Data de início deve ser anterior à data de fim".to_string()));
+            return Err(DomainError::Generic(
+                "Data de início deve ser anterior à data de fim".to_string(),
+            ));
         }
 
         let new_period = Period {
@@ -154,4 +163,4 @@ mod tests {
 
         assert!(result.is_err());
     }
-} 
+}
