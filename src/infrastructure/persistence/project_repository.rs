@@ -1,49 +1,75 @@
-use super::manifests::project_manifest::ProjectManifest;
-use crate::domain::project::project::Project;
-use crate::domain::project::project_repository::ProjectRepository;
-use crate::domain::shared_kernel::convertable::Convertable;
-use crate::domain::shared_kernel::errors::DomainError;
-use serde_yaml::to_string;
-use std::fs;
+use crate::domain::{
+    project::{project::Project, project_repository::ProjectRepository},
+    shared_kernel::{errors::DomainError, convertable::Convertable},
+};
 use std::path::PathBuf;
+use std::fs;
+use serde_yaml;
+use crate::infrastructure::persistence::manifests::project_manifest::ProjectManifest;
 
-pub struct FileProjectRepository;
+pub struct FileProjectRepository {
+    base_path: PathBuf,
+}
 
 impl FileProjectRepository {
     pub fn new() -> Self {
-        Self
+        Self {
+            base_path: PathBuf::from("."),
+        }
     }
 
-    pub fn load_project(&self, path: &PathBuf) -> Result<Project, std::io::Error> {
-        let project_path = path.join("project.yaml");
-        if !project_path.exists() {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Project file not found",
-            ));
-        }
-
-        let contents = std::fs::read_to_string(project_path)?;
-        let manifest: ProjectManifest = serde_yaml::from_str(&contents)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
-
-        Ok(manifest.to())
+    fn get_project_file_path(&self, path: &PathBuf) -> PathBuf {
+        path.join("project.yaml")
     }
 }
 
 impl ProjectRepository for FileProjectRepository {
     fn save(&self, project: Project) -> Result<(), DomainError> {
-        let current_dir = std::env::current_dir().map_err(|e| DomainError::Generic(e.to_string()));
-        let path = current_dir.unwrap().join(&project.name);
-        let project_file_path = path.join("project.yaml");
+        let file_path = self.get_project_file_path(&PathBuf::from(&project.name));
         let project_manifest = <ProjectManifest as Convertable<Project>>::from(project);
-        let project_yaml =
-            to_string(&project_manifest).map_err(|e| DomainError::Generic(e.to_string()))?;
-        fs::create_dir_all(&path).map_err(|e| DomainError::Generic(e.to_string()))?;
-        fs::write(project_file_path, project_yaml)
-            .map_err(|e| DomainError::Generic(e.to_string()))?;
-
-        println!("Projeto criado em: {}", path.display());
+        let yaml = serde_yaml::to_string(&project_manifest)
+            .map_err(|e| DomainError::Generic(format!("Erro ao serializar projeto: {}", e)))?;
+        
+        fs::create_dir_all(file_path.parent().unwrap())
+            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {}", e)))?;
+        
+        fs::write(file_path, yaml)
+            .map_err(|e| DomainError::Generic(format!("Erro ao salvar projeto: {}", e)))?;
+        
         Ok(())
+    }
+
+    fn load(&self, path: &PathBuf) -> Result<Project, DomainError> {
+        let file_path = self.get_project_file_path(path);
+        let yaml = fs::read_to_string(&file_path)
+            .map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de projeto: {}", e)))?;
+        
+        let project_manifest: ProjectManifest = serde_yaml::from_str(&yaml)
+            .map_err(|e| DomainError::Generic(format!("Erro ao deserializar projeto: {}", e)))?;
+        
+        Ok(<ProjectManifest as Convertable<Project>>::to(project_manifest))
+    }
+}
+
+#[cfg(test)]
+pub struct MockProjectRepository {
+    project: Project,
+}
+
+#[cfg(test)]
+impl MockProjectRepository {
+    pub fn new(project: Project) -> Self {
+        Self { project }
+    }
+}
+
+#[cfg(test)]
+impl ProjectRepository for MockProjectRepository {
+    fn save(&self, _project: Project) -> Result<(), DomainError> {
+        Ok(())
+    }
+
+    fn load(&self, _path: &PathBuf) -> Result<Project, DomainError> {
+        Ok(self.project.clone())
     }
 }

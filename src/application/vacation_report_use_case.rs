@@ -3,6 +3,10 @@ use crate::infrastructure::persistence::{
 };
 use csv::Writer;
 use std::{io, path::PathBuf};
+use crate::domain::{
+    project::project_repository::ProjectRepository,
+    resource::resource_repository::ResourceRepository,
+};
 
 pub struct VacationReportUseCase {
     project_repository: FileProjectRepository,
@@ -29,8 +33,8 @@ impl VacationReportUseCase {
         let mut writer = Writer::from_path(file_path)?;
         writer.write_record(&["Recurso", "Projeto", "Data Início", "Data Fim"])?;
 
-        if let Ok(project) = self.project_repository.load_project(&PathBuf::from(".")) {
-            if let Ok(resources) = self.resource_repository.load_resources() {
+        if let Ok(project) = self.project_repository.load(&PathBuf::from(".")) {
+            if let Ok(resources) = self.resource_repository.find_all() {
                 for resource in resources {
                     for periods in &resource.vacations {
                         for period in periods {
