@@ -39,7 +39,7 @@ pub struct ProjectSpec {
     pub vacation_rules: Option<VacationRulesManifest>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct VacationRulesManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -52,7 +52,7 @@ pub struct VacationRulesManifest {
     pub layoff_periods: Option<Vec<LayoffPeriodManifest>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LayoffPeriodManifest {
     pub start_date: String,
@@ -77,7 +77,7 @@ impl Convertable<ProjectStatus> for ProjectStatusManifest {
         }
     }
 
-    fn to(self) -> ProjectStatus {
+    fn to(&self) -> ProjectStatus {
         match self {
             ProjectStatusManifest::Planned => ProjectStatus::Planned,
             ProjectStatusManifest::InProgress => ProjectStatus::InProgress,
@@ -145,15 +145,15 @@ impl Convertable<Project> for ProjectManifest {
         }
     }
 
-    fn to(self) -> Project {
+    fn to(&self) -> Project {
         Project {
             id: None, // TODO: Você precisará gerar um ID aqui, se necessário
-            name: self.metadata.name,
-            description: self.metadata.description,
-            start_date: self.spec.start_date,
-            end_date: self.spec.end_date,
-            status: <ProjectStatusManifest as Convertable<ProjectStatus>>::to(self.spec.status),
-            vacation_rules: self.spec.vacation_rules.map(|vr| vr.to()),
+            name: self.metadata.name.clone(),
+            description: self.metadata.description.clone(),
+            start_date: self.spec.start_date.clone(),
+            end_date: self.spec.end_date.clone(),
+            status: <ProjectStatusManifest as Convertable<ProjectStatus>>::to(&self.spec.status),
+            vacation_rules: self.spec.vacation_rules.as_ref().map(|vr| vr.to()),
         }
     }
 }
@@ -173,14 +173,13 @@ impl Convertable<VacationRules> for VacationRulesManifest {
         }
     }
 
-    fn to(self) -> VacationRules {
+    fn to(&self) -> VacationRules {
         VacationRules {
             max_concurrent_vacations: self.max_concurrent_vacations,
             allow_layoff_vacations: self.allow_layoff_vacations,
             require_layoff_vacation_period: self.require_layoff_vacation_period,
-            layoff_periods: self
-                .layoff_periods
-                .map(|periods| periods.into_iter().map(|period| period.to()).collect()),
+            layoff_periods: self.layoff_periods.as_ref()
+                .map(|periods| periods.iter().map(|period| period.to()).collect()),
         }
     }
 }
@@ -193,10 +192,10 @@ impl Convertable<LayoffPeriod> for LayoffPeriodManifest {
         }
     }
 
-    fn to(self) -> LayoffPeriod {
+    fn to(&self) -> LayoffPeriod {
         LayoffPeriod {
-            start_date: self.start_date,
-            end_date: self.end_date,
+            start_date: self.start_date.clone(),
+            end_date: self.end_date.clone(),
         }
     }
 }

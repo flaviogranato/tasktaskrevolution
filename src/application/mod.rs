@@ -6,3 +6,4 @@ pub mod create_vacation_use_case;
 pub mod initialize_repository_use_case;
 pub mod vacation_report_use_case;
 pub mod validate_vacations_use_case;
+

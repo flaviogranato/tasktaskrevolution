@@ -1,11 +1,8 @@
 use crate::domain::{
-    resource::{
-        resource::Resource,
-        resource_repository::ResourceRepository,
-    },
+    resource::resource_repository::ResourceRepository,
     shared_kernel::errors::DomainError,
 };
-use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
+use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
     repository: R,
@@ -27,15 +24,17 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         Self { repository }
     }
 
+    #[allow(dead_code)]
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
-        let naive =
-            NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_str), "%Y-%m-%d %H:%M:%S")
-                .map_err(|e| DomainError::Generic(format!("Erro ao converter data: {}", e)))?;
+        let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+            .map_err(|_| DomainError::Generic("Formato de data inválido. Use YYYY-MM-DD".to_string()))?
+            .and_hms_opt(0, 0, 0)
+            .ok_or_else(|| DomainError::Generic("Erro ao converter hora".to_string()))?;
 
-        Ok(Local
+        Local
             .from_local_datetime(&naive)
             .earliest()
-            .ok_or_else(|| DomainError::Generic("Erro ao converter data local".to_string()))?)
+            .ok_or_else(|| DomainError::Generic("Erro ao converter data local".to_string()))
     }
 
     pub fn execute(
@@ -105,6 +104,10 @@ mod tests {
 
         fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
+        }
+
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+            false
         }
     }
 

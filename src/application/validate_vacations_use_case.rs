@@ -114,6 +114,7 @@ mod tests {
         resource::resource::{PeriodType, Resource},
     };
     use chrono::{Duration, Local};
+    use std::path::Path;
 
     struct MockProjectRepository {
         vacation_rules: Option<VacationRules>,
@@ -131,7 +132,7 @@ mod tests {
             Ok(())
         }
 
-        fn load(&self, _path: &std::path::PathBuf) -> Result<crate::domain::project::project::Project, DomainError> {
+        fn load(&self, _path: &Path) -> Result<crate::domain::project::project::Project, DomainError> {
             Ok(crate::domain::project::project::Project {
                 id: None,
                 name: "Test Project".to_string(),
@@ -160,6 +161,10 @@ mod tests {
         fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
+
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+            false
+        }
     }
 
     #[test]
@@ -177,6 +182,7 @@ mod tests {
                 period_type: PeriodType::Vacation,
                 is_time_off_compensation: false,
                 compensated_hours: None,
+                is_layoff: false,
             }]),
             None,
             0,
@@ -194,6 +200,7 @@ mod tests {
                 period_type: PeriodType::Vacation,
                 is_time_off_compensation: false,
                 compensated_hours: None,
+                is_layoff: false,
             }]),
             None,
             0,
@@ -240,6 +247,7 @@ mod tests {
                 period_type: PeriodType::Vacation,
                 is_time_off_compensation: false,
                 compensated_hours: None,
+                is_layoff: false,
             }]),
             None,
             0,
@@ -258,6 +266,7 @@ mod tests {
                 period_type: PeriodType::Vacation,
                 is_time_off_compensation: false,
                 compensated_hours: None,
+                is_layoff: true,
             }]),
             None,
             0,
@@ -279,5 +288,84 @@ mod tests {
         assert!(!result
             .iter()
             .any(|msg| msg.contains("Maria") && msg.contains("layoff")));
+    }
+
+    fn create_resource_with_approved_vacation() -> Resource {
+        Resource::new(
+            Some("resource1".to_string()),
+            "Recurso 1".to_string(),
+            None,
+            "Desenvolvedor".to_string(),
+            Some(vec![Period {
+                start_date: Local::now(),
+                end_date: Local::now(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            None,
+            0,
+        )
+    }
+
+    fn create_resource_with_layoff_period() -> Resource {
+        Resource::new(
+            Some("resource1".to_string()),
+            "Recurso 1".to_string(),
+            None,
+            "Desenvolvedor".to_string(),
+            Some(vec![Period {
+                start_date: Local::now(),
+                end_date: Local::now(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: true,
+            }]),
+            None,
+            0,
+        )
+    }
+
+    fn create_resource_2_people_on_vacation() -> Vec<Resource> {
+        vec![
+            Resource::new(
+                Some("resource1".to_string()),
+                "Recurso 1".to_string(),
+                None,
+                "Desenvolvedor".to_string(),
+                Some(vec![Period {
+                    start_date: Local::now(),
+                    end_date: Local::now(),
+                    approved: true,
+                    period_type: PeriodType::Vacation,
+                    is_time_off_compensation: false,
+                    compensated_hours: None,
+                    is_layoff: false,
+                }]),
+                None,
+                0,
+            ),
+            Resource::new(
+                Some("resource2".to_string()),
+                "Recurso 2".to_string(),
+                None,
+                "Desenvolvedor".to_string(),
+                Some(vec![Period {
+                    start_date: Local::now(),
+                    end_date: Local::now(),
+                    approved: true,
+                    period_type: PeriodType::Vacation,
+                    is_time_off_compensation: false,
+                    compensated_hours: None,
+                    is_layoff: false,
+                }]),
+                None,
+                0,
+            ),
+        ]
     }
 }

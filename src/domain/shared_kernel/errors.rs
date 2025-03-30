@@ -1,10 +1,12 @@
 use std::fmt;
+use validator::ValidationErrors;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum DomainError {
     NotFound(String),
     InvalidInput(String),
     Generic(String),
+    ValidationError(ValidationErrors),
 }
 
 impl fmt::Display for DomainError {
@@ -13,6 +15,7 @@ impl fmt::Display for DomainError {
             DomainError::NotFound(msg) => write!(f, "Recurso não encontrado: {}", msg),
             DomainError::InvalidInput(msg) => write!(f, "Entrada inválida: {}", msg),
             DomainError::Generic(msg) => write!(f, "Erro genérico: {}", msg),
+            DomainError::ValidationError(msg) => write!(f, "Erro de validação: {}", msg),
         }
     }
 }
