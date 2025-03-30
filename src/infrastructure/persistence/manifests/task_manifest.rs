@@ -1,6 +1,6 @@
 use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::task::Task;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,22 +15,18 @@ pub struct TaskManifest {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskMetadata {
-    pub id: String,
     #[serde(with = "datetime_format")]
     pub created_at: DateTime<Utc>,
-    #[serde(
-        skip_serializing_if = "Option::is_none",
-        with = "datetime_format::optional"
-    )]
-    pub due_date: Option<DateTime<Utc>>,
+    #[serde(with = "date_format")]
+    pub due_date: NaiveDate,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskSpec {
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    pub title: String,
+    pub description: String,
+    pub completed: bool,
 }
 
 impl Convertable<Task> for TaskManifest {
@@ -39,25 +35,23 @@ impl Convertable<Task> for TaskManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Task".to_string(),
             metadata: TaskMetadata {
-                id: source.id,
-                created_at: source.created_at,
-                due_date: source.due_date,
+                created_at: Utc::now(),
+                due_date: source.due_date(),
             },
             spec: TaskSpec {
-                name: source.name,
-                description: source.description,
+                title: source.title().to_string(),
+                description: source.description().to_string(),
+                completed: source.is_completed(),
             },
         }
     }
 
-    fn to(self) -> Task {
-        Task {
-            id: self.metadata.id,
-            name: self.spec.name,
-            description: self.spec.description,
-            created_at: self.metadata.created_at,
-            due_date: self.metadata.due_date,
-        }
+    fn to(&self) -> Task {
+        Task::new(
+            self.spec.title.clone(),
+            self.spec.description.clone(),
+            self.metadata.due_date,
+        ).unwrap() // TODO: Handle this error properly
     }
 }
 
@@ -82,128 +76,52 @@ mod datetime_format {
             .map(|dt| dt.with_timezone(&Utc))
             .map_err(serde::de::Error::custom)
     }
+}
 
-    pub mod optional {
-        use super::*;
+mod date_format {
+    use chrono::NaiveDate;
+    use serde::{self, Deserialize, Deserializer, Serializer};
 
-        pub fn serialize<S>(date: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-        {
-            match date {
-                Some(date) => {
-                    let s = format!("{}", date.format("%Y-%m-%d"));
-                    serializer.serialize_str(&s)
-                }
-                None => serializer.serialize_none(),
-            }
-        }
+    pub fn serialize<S>(date: &NaiveDate, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = format!("{}", date.format("%Y-%m-%d"));
+        serializer.serialize_str(&s)
+    }
 
-        pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            Option::deserialize(deserializer)?
-                .map(|s: String| {
-                    DateTime::parse_from_rfc3339(&format!("{}T00:00:00Z", s))
-                        .map(|dt| dt.with_timezone(&Utc))
-                        .map_err(serde::de::Error::custom)
-                })
-                .transpose()
-        }
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<NaiveDate, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        NaiveDate::parse_from_str(&s, "%Y-%m-%d")
+            .map_err(serde::de::Error::custom)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
-
-    fn format_datetime(dt: DateTime<Utc>) -> String {
-        format!("{}", dt.format("%Y-%m-%dT%H:%M"))
-    }
+    use chrono::Utc;
 
     #[test]
     fn test_task_manifest_serialization() {
-        let mut task = Task::new(
+        let task = Task::new(
             "Test Task".to_string(),
-            Some("Test Description".to_string()),
-            Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap()),
-        );
-        task.id = "task-1".to_string();
+            "Test Description".to_string(),
+            Utc::now().naive_utc().date(),
+        ).unwrap();
+        
         let manifest = <TaskManifest as Convertable<Task>>::from(task);
 
         let yaml = serde_yaml::to_string(&manifest).unwrap();
+        println!("{}", yaml);
 
-        let expected_yaml = format!(
-            r#"apiVersion: tasktaskrevolution.io/v1alpha1
-kind: Task
-metadata:
-  id: task-1
-  createdAt: {}
-  dueDate: 2024-03-15
-spec:
-  name: Test Task
-  description: Test Description"#,
-            format_datetime(manifest.metadata.created_at)
-        );
+        let manifest: TaskManifest = serde_yaml::from_str(&yaml).unwrap();
+        let task = manifest.to();
 
-        assert_eq!(yaml.trim(), expected_yaml);
-    }
-
-    #[test]
-    fn test_task_manifest_deserialization() {
-        let yaml = r#"
-            apiVersion: tasktaskrevolution.io/v1alpha1
-            kind: Task
-            metadata:
-              id: task-1
-              createdAt: "2024-01-01T00:00"
-              dueDate: "2024-03-15"
-            spec:
-              name: Test Task
-              description: Test Description
-        "#;
-
-        let manifest: TaskManifest = serde_yaml::from_str(yaml).unwrap();
-
-        assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
-        assert_eq!(manifest.kind, "Task");
-        assert_eq!(manifest.metadata.id, "task-1");
-        assert_eq!(
-            manifest.metadata.created_at,
-            Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap()
-        );
-        assert_eq!(
-            manifest.metadata.due_date,
-            Some(Utc.with_ymd_and_hms(2024, 3, 15, 0, 0, 0).unwrap())
-        );
-        assert_eq!(manifest.spec.name, "Test Task");
-        assert_eq!(
-            manifest.spec.description,
-            Some("Test Description".to_string())
-        );
-    }
-
-    #[test]
-    fn test_task_manifest_without_optional_fields() {
-        let mut task = Task::new("Test Task".to_string(), None, None);
-        task.id = "task-1".to_string();
-        let manifest = <TaskManifest as Convertable<Task>>::from(task);
-
-        let yaml = serde_yaml::to_string(&manifest).unwrap();
-
-        let expected_yaml = format!(
-            r#"apiVersion: tasktaskrevolution.io/v1alpha1
-kind: Task
-metadata:
-  id: task-1
-  createdAt: {}
-spec:
-  name: Test Task"#,
-            format_datetime(manifest.metadata.created_at)
-        );
-
-        assert_eq!(yaml.trim(), expected_yaml);
+        assert_eq!(task.title(), "Test Task");
+        assert_eq!(task.description(), "Test Description");
     }
 }

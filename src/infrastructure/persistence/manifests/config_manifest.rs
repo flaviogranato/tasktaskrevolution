@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use chrono::Utc;
 
 use crate::domain::config::config::Config;
 use crate::domain::shared_kernel::convertable::Convertable;
+use crate::infrastructure::persistence::manifests::project_manifest::VacationRulesManifest;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -17,6 +19,7 @@ pub struct ConfigManifest {
 pub struct ConfigMetadata {
     pub manager_name: String,
     pub manager_email: String,
+    pub created_at: chrono::DateTime<Utc>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
@@ -38,6 +41,8 @@ pub struct ConfigSpec {
     pub default_task_duration: Option<u8>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub locale: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vacation_rules: Option<VacationRulesManifest>,
 }
 
 fn default_timezone() -> String {
@@ -49,10 +54,14 @@ impl ConfigManifest {
         ConfigManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata::default(),
+            metadata: ConfigMetadata {
+                manager_name: "Default Manager".to_string(),
+                manager_email: "email@example.com".to_string(),
+                created_at: Utc::now(),
+            },
             spec: ConfigSpec {
-                manager_name: "".to_string(),
-                manager_email: "".to_string(),
+                manager_name: "Default Manager".to_string(),
+                manager_email: "email@example.com".to_string(),
                 default_timezone: "UTC".to_string(),
                 currency: None,
                 work_hours_per_day: None,
@@ -60,6 +69,7 @@ impl ConfigManifest {
                 date_format: None,
                 default_task_duration: None,
                 locale: None,
+                vacation_rules: None,
             },
         }
     }
@@ -70,6 +80,7 @@ impl ConfigManifest {
             metadata: ConfigMetadata {
                 manager_name: name.to_string(),
                 manager_email: email.to_string(),
+                created_at: Utc::now(),
             },
             spec: ConfigSpec {
                 manager_name: name.to_string(),
@@ -87,8 +98,15 @@ impl ConfigManifest {
                 date_format: Some("yyyy-mm-dd".to_string()),
                 default_task_duration: Some(8),
                 locale: Some("pt_BR".to_string()),
+                vacation_rules: None,
             },
         }
+    }
+}
+
+impl Default for ConfigManifest {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -100,6 +118,7 @@ impl Convertable<Config> for ConfigManifest {
             metadata: ConfigMetadata {
                 manager_name: source.manager_name.clone(),
                 manager_email: source.manager_email.clone(),
+                created_at: Utc::now(),
             },
             spec: ConfigSpec {
                 manager_name: source.manager_name,
@@ -111,14 +130,15 @@ impl Convertable<Config> for ConfigManifest {
                 date_format: None,
                 default_task_duration: None,
                 locale: None,
+                vacation_rules: None,
             },
         }
     }
 
-    fn to(self) -> Config {
+    fn to(&self) -> Config {
         Config {
-            manager_name: self.metadata.manager_name,
-            manager_email: self.metadata.manager_email,
+            manager_name: self.spec.manager_name.clone(),
+            manager_email: self.spec.manager_email.clone(),
         }
     }
 }
@@ -149,6 +169,7 @@ mod tests {
             metadata:
                 managerName: "John Doe"
                 managerEmail: "john@doe.com"
+                createdAt: "2024-01-01T00:00:00Z"
             spec:
                 managerName: "John Doe"
                 managerEmail: "john@doe.com"

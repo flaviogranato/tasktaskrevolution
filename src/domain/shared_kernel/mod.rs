@@ -1,4 +1,3 @@
-pub mod convertable;
 pub mod errors;
-pub mod specification;
-pub mod validatable;
+pub mod validation;
+pub mod convertable;

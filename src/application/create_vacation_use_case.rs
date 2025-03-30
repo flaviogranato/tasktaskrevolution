@@ -1,11 +1,12 @@
 use crate::domain::{
+    project::project_repository::ProjectRepository,
     resource::{
         resource::Resource,
         resource_repository::ResourceRepository,
     },
     shared_kernel::errors::DomainError,
 };
-use chrono::NaiveDate;
+use chrono::{NaiveDate, DateTime, Local};
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
     repository: R,
@@ -116,6 +117,10 @@ mod tests {
             // Aqui você pode adicionar a lógica para salvar as férias no recurso
             // Por enquanto, apenas retornamos o recurso sem modificações
             Ok(resource.clone())
+        }
+
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+            false
         }
     }
 

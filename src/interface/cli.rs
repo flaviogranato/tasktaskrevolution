@@ -1,11 +1,13 @@
 use std::{env, path::PathBuf};
 
 use clap::{Parser, Subcommand};
+use chrono::{NaiveDate, Utc};
 
 use crate::{
     application::{
         create_project_use_case::CreateProjectUseCase,
-        create_resource_use_case::CreateResourceUseCase, create_task_use_case::CreateTaskUseCase,
+        create_resource_use_case::CreateResourceUseCase, 
+        create_task_use_case::{CreateTaskUseCase, CreateTaskUseCaseImpl},
         create_time_off_use_case::CreateTimeOffUseCase,
         create_vacation_use_case::CreateVacationUseCase,
         initialize_repository_use_case::InitializeRepositoryUseCase,
@@ -13,8 +15,10 @@ use crate::{
         validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
-        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
+        config_repository::FileConfigRepository, 
+        project_repository::FileProjectRepository,
+        resource_repository::FileResourceRepository, 
+        task_repository::FileTaskRepository,
     },
 };
 
@@ -102,6 +106,13 @@ enum ValidateCommands {
 #[derive(Subcommand)]
 enum ReportCommands {
     Vacation,
+}
+
+#[derive(Debug)]
+pub struct CreateTaskArgs {
+    pub title: String,
+    pub description: String,
+    pub due_date: NaiveDate,
 }
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -192,19 +203,22 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             } => {
                 let current_dir = std::env::current_dir()?;
                 let repository = FileTaskRepository::new(current_dir);
-                let use_case = CreateTaskUseCase::new(repository);
+                let use_case = CreateTaskUseCaseImpl::new(repository);
 
-                let due_date = due_date.as_ref().map(|date| {
-                    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
-                        .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
-                        .map(|dt| chrono::DateTime::from_naive_utc_and_offset(dt, chrono::Utc))
-                        .unwrap()
-                });
+                let due_date = due_date
+                    .as_ref()
+                    .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+                    .transpose()?
+                    .unwrap_or_else(|| Utc::now().naive_utc().date());
 
-                match use_case.execute(name.clone(), description.clone(), due_date) {
-                    Ok(task) => println!("✅ Tarefa '{}' criada com sucesso", task.name),
-                    Err(e) => println!("❌ Erro ao criar tarefa: {}", e),
-                }
+                handle_create_task(
+                    &CreateTaskArgs {
+                        title: name.clone(),
+                        description: description.clone().unwrap_or_default(),
+                        due_date,
+                    },
+                    &use_case,
+                )?;
             }
         },
         Commands::Validate { validate_command } => match validate_command {
@@ -242,4 +256,21 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
     }
 
     Ok(())
+}
+
+fn handle_create_task<T: CreateTaskUseCase>(args: &CreateTaskArgs, use_case: &T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    match use_case.execute(
+        args.title.clone(),
+        args.description.clone(),
+        args.due_date,
+    ) {
+        Ok(task) => {
+            println!("✅ Tarefa '{}' criada com sucesso", task.title());
+            Ok(())
+        },
+        Err(e) => {
+            println!("❌ Erro ao criar tarefa: {}", e);
+            Ok(())
+        }
+    }
 }
