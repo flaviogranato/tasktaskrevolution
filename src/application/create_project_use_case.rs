@@ -42,7 +42,7 @@ mod test {
     use super::*;
     use crate::domain::shared_kernel::errors::DomainError;
     use std::cell::RefCell;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     struct MockProjectRepository {
         should_fail: bool,
@@ -77,7 +77,7 @@ mod test {
             Ok(())
         }
 
-        fn load(&self, _path: &PathBuf) -> Result<Project, DomainError> {
+        fn load(&self, _path: &Path) -> Result<Project, DomainError> {
             Ok(self.project.clone())
         }
     }
