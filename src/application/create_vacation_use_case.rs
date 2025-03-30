@@ -1,10 +1,4 @@
-use crate::domain::{
-    resource::{
-        resource::Resource,
-        resource_repository::ResourceRepository,
-    },
-    shared_kernel::errors::DomainError,
-};
+use crate::domain::resource::resource_repository::ResourceRepository;
 use chrono::NaiveDate;
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {

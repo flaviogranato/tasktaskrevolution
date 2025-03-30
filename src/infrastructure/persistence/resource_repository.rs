@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::fs;
 use serde_yaml;
 use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
-use chrono::{DateTime, Local, NaiveDate, FixedOffset, Offset};
+use chrono::{DateTime, Local, NaiveDate, Offset};
 
 pub struct FileResourceRepository {
     base_path: PathBuf,
@@ -147,6 +147,12 @@ impl ResourceRepository for FileResourceRepository {
         
         self.save(resource.clone())?;
         Ok(resource.clone())
+    }
+}
+
+impl Default for FileResourceRepository {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

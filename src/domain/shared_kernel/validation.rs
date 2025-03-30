@@ -5,12 +5,12 @@ use crate::domain::shared_kernel::errors::DomainError;
 pub trait DomainValidation: Validate {
     /// Valida a entidade e retorna um Result
     fn validate_domain(&self) -> Result<(), DomainError> {
-        self.validate().map_err(|e| DomainError::ValidationError(e))
+        self.validate().map_err(DomainError::ValidationError)
     }
 }
 
 /// Função auxiliar para criar erros de validação
-pub fn create_validation_error(field: &str, message: &str) -> ValidationError {
+pub fn create_validation_error(_field: &str, message: &str) -> ValidationError {
     let mut error = ValidationError::new("validation_error");
     error.message = Some(message.to_string().into());
     error.params = std::collections::HashMap::new();

@@ -8,4 +8,3 @@ pub mod vacation_report_use_case;
 pub mod validate_vacations_use_case;
 pub mod task;
 
-pub use task::TaskService;

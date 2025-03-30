@@ -2,12 +2,13 @@ use crate::domain::{
     project::{project::Project, project_repository::ProjectRepository},
     shared_kernel::{errors::DomainError, convertable::Convertable},
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::fs;
 use serde_yaml;
 use crate::infrastructure::persistence::manifests::project_manifest::ProjectManifest;
 use std::error::Error;
 use std::fmt;
+use std::default::Default;
 
 // Implementação simples do NotFoundError
 #[derive(Debug)]
@@ -42,8 +43,8 @@ impl FileProjectRepository {
         }
     }
 
-    fn get_project_file_path(&self, path: &PathBuf) -> PathBuf {
-        path.join("project.yaml")
+    fn get_project_file_path(&self, path: &Path) -> PathBuf {
+        path.to_path_buf()
     }
 
     fn get_project_path(&self, project_code: &str) -> PathBuf {
@@ -64,6 +65,14 @@ impl FileProjectRepository {
 
         Ok(<ProjectManifest as Convertable<Project>>::to(&project_manifest))
     }
+
+    fn load_manifest(&self, path: &Path) -> Result<ProjectManifest, Box<dyn Error>> {
+        let yaml = fs::read_to_string(path)
+            .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+        
+        serde_yaml::from_str(&yaml)
+            .map_err(|e| Box::new(e) as Box<dyn Error>)
+    }
 }
 
 impl ProjectRepository for FileProjectRepository {
@@ -82,15 +91,20 @@ impl ProjectRepository for FileProjectRepository {
         Ok(())
     }
 
-    fn load(&self, path: &PathBuf) -> Result<Project, DomainError> {
-        let file_path = self.get_project_file_path(path);
-        let yaml = fs::read_to_string(&file_path)
-            .map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de projeto: {}", e)))?;
+    fn load(&self, path: &Path) -> Result<Project, DomainError> {
+        let manifest_path = path.join("project.yaml");
         
-        let project_manifest: ProjectManifest = serde_yaml::from_str(&yaml)
-            .map_err(|e| DomainError::Generic(format!("Erro ao deserializar projeto: {}", e)))?;
-        
-        Ok(<ProjectManifest as Convertable<Project>>::to(&project_manifest))
+        if let Ok(manifest) = self.load_manifest(&manifest_path) {
+            Ok(manifest.to())
+        } else {
+            Err(DomainError::Generic("Falha ao carregar o arquivo do projeto".to_string()))
+        }
+    }
+}
+
+impl Default for FileProjectRepository {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -112,7 +126,7 @@ impl ProjectRepository for MockProjectRepository {
         Ok(())
     }
 
-    fn load(&self, _path: &PathBuf) -> Result<Project, DomainError> {
+    fn load(&self, _path: &Path) -> Result<Project, DomainError> {
         Ok(self.project.clone())
     }
 }
