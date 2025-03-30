@@ -1,0 +1,10 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Config
+metadata:
+  managerName: Gerente
+  managerEmail: gerente@empresa.com
+  createdAt: 2025-03-30T22:38:27.469822008Z
+spec:
+  managerName: Gerente
+  managerEmail: gerente@empresa.com
+  defaultTimezone: UTC

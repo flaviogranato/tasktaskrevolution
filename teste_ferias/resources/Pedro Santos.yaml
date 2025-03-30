@@ -1,0 +1,17 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Resource
+metadata:
+  name: Pedro Santos
+  email: null
+  code: ''
+  resourceType: QA
+spec:
+  vacations:
+  - startDate: 2024-12-09T21:00:00-03:00
+    endDate: 2024-12-19T21:00:00-03:00
+    approved: true
+    periodType: vacation
+    isTimeOffCompensation: false
+    isLayoff: true
+  projectAssignments: null
+  timeOffBalance: 0

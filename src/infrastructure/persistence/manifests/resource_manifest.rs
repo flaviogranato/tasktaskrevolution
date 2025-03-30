@@ -70,6 +70,7 @@ pub struct PeriodManifest {
     pub is_time_off_compensation: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub compensated_hours: Option<u32>,
+    pub is_layoff: bool,
 }
 
 impl Convertable<Period> for PeriodManifest {
@@ -81,6 +82,7 @@ impl Convertable<Period> for PeriodManifest {
             period_type: <PeriodTypeManifest as Convertable<PeriodType>>::from(source.period_type),
             is_time_off_compensation: source.is_time_off_compensation,
             compensated_hours: source.compensated_hours,
+            is_layoff: source.is_layoff,
         }
     }
     fn to(&self) -> Period {
@@ -91,6 +93,7 @@ impl Convertable<Period> for PeriodManifest {
             period_type: self.period_type.to(),
             is_time_off_compensation: self.is_time_off_compensation,
             compensated_hours: self.compensated_hours,
+            is_layoff: self.is_layoff,
         }
     }
 }

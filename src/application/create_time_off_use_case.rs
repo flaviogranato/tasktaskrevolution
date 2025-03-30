@@ -105,6 +105,10 @@ mod tests {
         fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
+
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+            false
+        }
     }
 
     #[test]

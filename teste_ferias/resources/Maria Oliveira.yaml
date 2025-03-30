@@ -1,0 +1,17 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Resource
+metadata:
+  name: Maria Oliveira
+  email: null
+  code: ''
+  resourceType: Designer
+spec:
+  vacations:
+  - startDate: 2024-05-31T21:00:00-03:00
+    endDate: 2024-06-14T21:00:00-03:00
+    approved: true
+    periodType: vacation
+    isTimeOffCompensation: false
+    isLayoff: true
+  projectAssignments: null
+  timeOffBalance: 0

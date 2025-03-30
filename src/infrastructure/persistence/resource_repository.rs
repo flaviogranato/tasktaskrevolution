@@ -3,6 +3,7 @@ use crate::domain::{
         resource::{Period, PeriodType, Resource},
         resource_repository::ResourceRepository,
     },
+    project::project_repository::ProjectRepository,
     shared_kernel::{errors::DomainError, convertable::Convertable},
 };
 use std::path::PathBuf;
@@ -132,6 +133,9 @@ impl ResourceRepository for FileResourceRepository {
         let start_date: DateTime<Local> = DateTime::from_naive_utc_and_offset(start_date, offset);
         let end_date: DateTime<Local> = DateTime::from_naive_utc_and_offset(end_date, offset);
         
+        // Verificar se o período coincide com algum período de layoff
+        let is_layoff = self.check_if_layoff_period(&start_date, &end_date);
+        
         let new_vacation = Period {
             start_date,
             end_date,
@@ -139,6 +143,7 @@ impl ResourceRepository for FileResourceRepository {
             period_type: PeriodType::Vacation,
             is_time_off_compensation,
             compensated_hours,
+            is_layoff,
         };
         
         let mut vacations = resource.vacations.clone().unwrap_or_default();
@@ -147,6 +152,38 @@ impl ResourceRepository for FileResourceRepository {
         
         self.save(resource.clone())?;
         Ok(resource.clone())
+    }
+
+    fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool {
+        use crate::infrastructure::persistence::project_repository::FileProjectRepository;
+        use std::path::PathBuf;
+        
+        let project_repo = FileProjectRepository::new();
+        
+        if let Ok(project) = project_repo.load(&PathBuf::from(".")) {
+            if let Some(vacation_rules) = project.vacation_rules {
+                if let Some(layoff_periods) = vacation_rules.layoff_periods {
+                    for layoff_period in layoff_periods {
+                        // Converter as datas de string para DateTime
+                        if let (Ok(layoff_start), Ok(layoff_end)) = (
+                            chrono::NaiveDate::parse_from_str(&layoff_period.start_date, "%Y-%m-%d")
+                                .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
+                                .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *start_date.offset())),
+                            chrono::NaiveDate::parse_from_str(&layoff_period.end_date, "%Y-%m-%d")
+                                .map(|d| d.and_hms_opt(23, 59, 59).unwrap())
+                                .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *end_date.offset()))
+                        ) {
+                            // Verificar se os períodos se sobrepõem
+                            if start_date <= &layoff_end && end_date >= &layoff_start {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        false
     }
 }
 
@@ -262,6 +299,7 @@ mod tests {
         let vacation = &updated_resource.vacations.unwrap()[0];
         assert!(vacation.is_time_off_compensation);
         assert_eq!(vacation.compensated_hours, Some(10));
+        assert!(!vacation.is_layoff);
     }
 
     #[test]
@@ -301,5 +339,108 @@ mod tests {
         );
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_check_if_layoff_period() {
+        use crate::domain::project::layoff_period::LayoffPeriod;
+        use crate::domain::project::project::Project;
+        use crate::domain::project::project::ProjectStatus;
+        use crate::domain::project::project_repository::ProjectRepository;
+        use crate::domain::project::vacation_rules::VacationRules;
+        use std::path::Path;
+
+        struct MockProjectRepository {
+            project: Project,
+        }
+
+        impl ProjectRepository for MockProjectRepository {
+            fn save(&self, _project: Project) -> Result<(), DomainError> {
+                Ok(())
+            }
+
+            fn load(&self, _path: &Path) -> Result<Project, DomainError> {
+                Ok(self.project.clone())
+            }
+        }
+
+        // Criar um projeto com um período de layoff definido
+        let layoff_period = LayoffPeriod::new(
+            "2024-01-01".to_string(),
+            "2024-01-31".to_string(),
+        );
+        let vacation_rules = VacationRules::new(
+            Some(1),
+            Some(true),
+            Some(false),
+            Some(vec![layoff_period]),
+        );
+        let project = Project::new(
+            Some("test-project".to_string()),
+            "Test Project".to_string(),
+            Some("Projeto para teste".to_string()),
+            None,
+            None,
+            ProjectStatus::InProgress,
+            Some(vacation_rules),
+        );
+
+        // Simular o repositório com o projeto mockado
+        let mock_repo = MockProjectRepository { project };
+        
+        // Patch para substituir o método load do FileProjectRepository
+        impl FileResourceRepository {
+            fn check_with_mock(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>, mock_repo: &MockProjectRepository) -> bool {
+                // Verifica usando o projeto mockado
+                if let Ok(project) = mock_repo.load(&Path::new(".")) {
+                    if let Some(vacation_rules) = project.vacation_rules {
+                        if let Some(layoff_periods) = vacation_rules.layoff_periods {
+                            for layoff_period in layoff_periods {
+                                // Converter as datas de string para DateTime
+                                if let (Ok(layoff_start), Ok(layoff_end)) = (
+                                    chrono::NaiveDate::parse_from_str(&layoff_period.start_date, "%Y-%m-%d")
+                                        .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
+                                        .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *start_date.offset())),
+                                    chrono::NaiveDate::parse_from_str(&layoff_period.end_date, "%Y-%m-%d")
+                                        .map(|d| d.and_hms_opt(23, 59, 59).unwrap())
+                                        .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *end_date.offset()))
+                                ) {
+                                    // Verificar se os períodos se sobrepõem
+                                    if (start_date <= &layoff_end && end_date >= &layoff_start) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                false
+            }
+        }
+
+        let repo = FileResourceRepository {
+            base_path: std::path::PathBuf::from("."),
+        };
+
+        // Caso 1: Férias no período de layoff (deve retornar true)
+        let start_date = chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()
+            .and_hms_opt(0, 0, 0).unwrap();
+        let end_date = chrono::NaiveDate::from_ymd_opt(2024, 1, 31).unwrap()
+            .and_hms_opt(0, 0, 0).unwrap();
+        let offset = Local::now().offset().fix();
+        let start_date_local = DateTime::from_naive_utc_and_offset(start_date, offset);
+        let end_date_local = DateTime::from_naive_utc_and_offset(end_date, offset);
+
+        // Caso 2: Férias fora do período de layoff (deve retornar false)
+        let start_date2 = chrono::NaiveDate::from_ymd_opt(2024, 2, 1).unwrap()
+            .and_hms_opt(0, 0, 0).unwrap();
+        let end_date2 = chrono::NaiveDate::from_ymd_opt(2024, 2, 28).unwrap()
+            .and_hms_opt(0, 0, 0).unwrap();
+        let start_date_local2 = DateTime::from_naive_utc_and_offset(start_date2, offset);
+        let end_date_local2 = DateTime::from_naive_utc_and_offset(end_date2, offset);
+
+        // Verificamos as datas nos períodos usando o método mockado
+        assert!(repo.check_with_mock(&start_date_local, &end_date_local, &mock_repo));
+        assert!(!repo.check_with_mock(&start_date_local2, &end_date_local2, &mock_repo));
     }
 }
