@@ -1,0 +1,80 @@
+image: rust:latest
+
+variables:
+  CARGO_TERM_COLOR: always
+
+stages:
+  - build
+  - test
+  - release
+
+# Cache as dependências entre jobs
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .cargo/
+    - target/
+
+# Job de build
+build:
+  stage: build
+  script:
+    - cargo build --release
+  artifacts:
+    paths:
+      - target/release/
+    expire_in: 1 week
+
+# Job de teste
+test:
+  stage: test
+  script:
+    - cargo test --release
+
+# Job de release para Linux
+release_linux:
+  stage: release
+  image: rust:latest
+  script:
+    - cargo build --release
+    - tar czf tasktaskrevolution-linux.tar.gz -C target/release tasktaskrevolution
+  artifacts:
+    paths:
+      - tasktaskrevolution-linux.tar.gz
+    expire_in: never
+  only:
+    - tags
+
+# Job de release para Windows
+release_windows:
+  stage: release
+  image: rust:latest
+  before_script:
+    - apt-get update && apt-get install -y mingw-w64
+    - rustup target add x86_64-pc-windows-gnu
+  script:
+    - cargo build --release --target x86_64-pc-windows-gnu
+    - zip tasktaskrevolution-windows.zip target/x86_64-pc-windows-gnu/release/tasktaskrevolution.exe
+  artifacts:
+    paths:
+      - tasktaskrevolution-windows.zip
+    expire_in: never
+  only:
+    - tags
+
+# Job de release para macOS
+release_macos:
+  stage: release
+  image: rust:latest
+  before_script:
+    - apt-get update && apt-get install -y clang
+    - rustup target add x86_64-apple-darwin
+  script:
+    - cargo build --release --target x86_64-apple-darwin
+    - tar czf tasktaskrevolution-macos.tar.gz -C target/x86_64-apple-darwin/release tasktaskrevolution
+  artifacts:
+    paths:
+      - tasktaskrevolution-macos.tar.gz
+    expire_in: never
+  only:
+    - tags 
