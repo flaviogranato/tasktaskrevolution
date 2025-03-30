@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file.
 - Adiciona validação de datas para férias
 - Implementa sistema de tarefas e correção de erros de compilação
 
+### 🐛 Bug Fixes
+
+- Corrige importações e tipos de parâmetros nos testes
+
 ### 🚜 Refactor
 
 - Ajustes nas implementações dos casos de uso e repositórios
