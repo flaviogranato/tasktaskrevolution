@@ -150,11 +150,14 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     *is_time_off_compensation,
                     *compensated_hours,
                 ) {
-                    Ok(resource) => println!(
-                        "✅ Período de férias adicionado com sucesso para {}",
-                        resource.name
-                    ),
-                    Err(e) => println!("❌ Erro ao adicionar período de férias: {}", e),
+                    Ok(result) => {
+                        if result.success {
+                            println!("✅ {}", result.message);
+                        } else {
+                            println!("❌ {}", result.message);
+                        }
+                    }
+                    Err(e) => println!("❌ Erro inesperado: {}", e),
                 }
             }
             CreateCommands::TimeOff {
@@ -166,20 +169,20 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileResourceRepository::new();
                 let use_case = CreateTimeOffUseCase::new(repository);
 
-                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone())
-                {
-                    Ok(resource) => {
-                        println!(
-                            "✅ {} horas adicionadas com sucesso para {}",
-                            hours, resource.name
-                        );
-                        println!("📊 Novo saldo: {} horas", resource.time_off_balance);
-                        if let Some(desc) = description {
-                            println!("📝 Descrição: {}", desc);
+                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone()) {
+                    Ok(result) => {
+                        if result.success {
+                            println!("✅ {}", result.message);
+                            println!("📊 Novo saldo: {} horas", result.time_off_balance);
+                            if let Some(desc) = &result.description {
+                                println!("📝 Descrição: {}", desc);
+                            }
+                            println!("📅 Data: {}", result.date);
+                        } else {
+                            println!("❌ {}", result.message);
                         }
-                        println!("📅 Data: {}", date);
                     }
-                    Err(e) => println!("❌ Erro ao adicionar horas extras: {}", e),
+                    Err(e) => println!("❌ Erro inesperado: {}", e),
                 }
             }
             CreateCommands::Task {
@@ -226,7 +229,14 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         Commands::Report { report_command } => match report_command {
             ReportCommands::Vacation => {
                 let use_case = VacationReportUseCase::new();
-                use_case.execute()?;
+                match use_case.execute() {
+                    Ok(result) => {
+                        if result.success {
+                            println!("✅ {}: {}", result.message, result.file_path);
+                        }
+                    }
+                    Err(e) => println!("❌ Erro ao gerar relatório: {}", e),
+                }
             }
         },
     }

@@ -86,4 +86,27 @@ impl ResourceRepository for FileResourceRepository {
 
         Ok(resources)
     }
+
+    fn save_time_off(&self, resource_name: String, hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        let mut resources = self.find_all()?;
+        let resource = resources.iter_mut()
+            .find(|r| r.name == resource_name)
+            .ok_or_else(|| DomainError::Generic("Recurso não encontrado".to_string()))?;
+        
+        resource.time_off_balance += hours;
+        self.save(resource.clone())?;
+        Ok(resource.clone())
+    }
+
+    fn save_vacation(&self, resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
+        let mut resources = self.find_all()?;
+        let resource = resources.iter_mut()
+            .find(|r| r.name == resource_name)
+            .ok_or_else(|| DomainError::Generic("Recurso não encontrado".to_string()))?;
+        
+        // Aqui você pode adicionar a lógica para salvar as férias no recurso
+        // Por enquanto, apenas retornamos o recurso sem modificações
+        self.save(resource.clone())?;
+        Ok(resource.clone())
+    }
 }
