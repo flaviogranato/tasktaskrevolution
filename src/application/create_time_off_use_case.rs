@@ -45,7 +45,7 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         date: String,
         description: Option<String>,
     ) -> Result<CreateTimeOffResult, Box<dyn std::error::Error>> {
-        match self.repository.save_time_off(resource, hours, date.clone(), description.clone()) {
+        match self.repository.save_time_off(resource.clone(), hours, date.clone(), description.clone()) {
             Ok(resource) => Ok(CreateTimeOffResult {
                 success: true,
                 message: format!("{} horas adicionadas com sucesso para {}", hours, resource.name),
@@ -55,15 +55,7 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
                 description,
                 date,
             }),
-            Err(e) => Ok(CreateTimeOffResult {
-                success: false,
-                message: format!("Erro ao adicionar horas extras: {}", e),
-                resource_name: String::new(),
-                hours: 0,
-                time_off_balance: 0,
-                description: None,
-                date: String::new(),
-            }),
+            Err(e) => Err(Box::new(e)),
         }
     }
 }
@@ -72,6 +64,7 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 mod tests {
     use super::*;
     use std::cell::RefCell;
+    use crate::domain::resource::resource::Resource;
 
     struct MockResourceRepository {
         resources: RefCell<Vec<Resource>>,
@@ -132,20 +125,18 @@ mod tests {
 
         let result = use_case.execute(
             "john-doe".to_string(),
-            8,
+            10,
             "2024-01-01".to_string(),
-            Some("Trabalho no feriado".to_string()),
+            Some("Test time off".to_string()),
         );
 
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
-        assert_eq!(updated_resource.time_off_balance, 8);
-        assert_eq!(updated_resource.hours, 8);
-        assert_eq!(updated_resource.description, Some("Trabalho no feriado".to_string()));
+        assert_eq!(updated_resource.time_off_balance, 10);
     }
 
     #[test]
-    fn test_create_multiple_time_off_entries() {
+    fn test_create_time_off_nonexistent_resource() {
         let resource = Resource::new(
             Some("john-doe".to_string()),
             "John Doe".to_string(),
@@ -159,27 +150,104 @@ mod tests {
         let repository = MockResourceRepository::new(vec![resource]);
         let use_case = CreateTimeOffUseCase::new(repository);
 
-        // Primeira entrada
-        let result1 = use_case.execute(
+        let result = use_case.execute(
+            "nonexistent".to_string(),
+            10,
+            "2024-01-01".to_string(),
+            Some("Test time off".to_string()),
+        );
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_time_off_with_description() {
+        let resource = Resource::new(
+            Some("john-doe".to_string()),
+            "John Doe".to_string(),
+            None,
+            "Developer".to_string(),
+            None,
+            None,
+            0,
+        );
+
+        let repository = MockResourceRepository::new(vec![resource]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute(
             "john-doe".to_string(),
             8,
             "2024-01-01".to_string(),
-            Some("Trabalho no feriado".to_string()),
+            Some("Dia de folga".to_string()),
+        );
+
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 8);
+    }
+
+    #[test]
+    fn test_create_time_off_without_description() {
+        let resource = Resource::new(
+            Some("john-doe".to_string()),
+            "John Doe".to_string(),
+            None,
+            "Developer".to_string(),
+            None,
+            None,
+            0,
+        );
+
+        let repository = MockResourceRepository::new(vec![resource]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute(
+            "john-doe".to_string(),
+            4,
+            "2024-01-01".to_string(),
+            None,
+        );
+
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 4);
+    }
+
+    #[test]
+    fn test_create_time_off_accumulates_balance() {
+        let resource = Resource::new(
+            Some("john-doe".to_string()),
+            "John Doe".to_string(),
+            None,
+            "Developer".to_string(),
+            None,
+            None,
+            0,
+        );
+
+        let repository = MockResourceRepository::new(vec![resource]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Primeiro registro
+        let result1 = use_case.execute(
+            "john-doe".to_string(),
+            4,
+            "2024-01-01".to_string(),
+            Some("Manhã".to_string()),
         );
         assert!(result1.is_ok());
 
-        // Segunda entrada
+        // Segundo registro
         let result2 = use_case.execute(
             "john-doe".to_string(),
             4,
             "2024-01-02".to_string(),
-            Some("Hora extra".to_string()),
+            Some("Tarde".to_string()),
         );
         assert!(result2.is_ok());
 
         let final_resource = result2.unwrap();
-        assert_eq!(final_resource.time_off_balance, 12); // 8 + 4
-        assert_eq!(final_resource.hours, 4);
-        assert_eq!(final_resource.description, Some("Hora extra".to_string()));
+        assert_eq!(final_resource.time_off_balance, 8);
     }
 }

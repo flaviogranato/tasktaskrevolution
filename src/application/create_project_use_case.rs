@@ -30,6 +30,11 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         println!("Projeto {} criado", name);
         Ok(())
     }
+
+    #[cfg(test)]
+    pub fn get_repository(&self) -> &R {
+        &self.repository
+    }
 }
 
 #[cfg(test)]
@@ -37,10 +42,12 @@ mod test {
     use super::*;
     use crate::domain::shared_kernel::errors::DomainError;
     use std::cell::RefCell;
+    use std::path::PathBuf;
 
     struct MockProjectRepository {
         should_fail: bool,
         saved_config: RefCell<Option<Project>>,
+        project: Project,
     }
 
     impl MockProjectRepository {
@@ -48,6 +55,15 @@ mod test {
             Self {
                 should_fail,
                 saved_config: RefCell::new(None),
+                project: Project::new(
+                    None,
+                    "John".to_string(),
+                    Some("a simple test project".to_string()),
+                    None,
+                    None,
+                    ProjectStatus::Planned,
+                    None,
+                ),
             }
         }
     }
@@ -57,11 +73,15 @@ mod test {
             if self.should_fail {
                 return Err(DomainError::Generic("Erro mockado ao salvar".to_string()));
             }
-            *self.saved_config.borrow_mut() = Some(project.clone());
-
+            *self.saved_config.borrow_mut() = Some(project);
             Ok(())
         }
+
+        fn load(&self, _path: &PathBuf) -> Result<Project, DomainError> {
+            Ok(self.project.clone())
+        }
     }
+
     #[test]
     fn test_create_project_success() {
         let mock_repo = MockProjectRepository::new(false);
@@ -92,7 +112,7 @@ mod test {
         let description = Some("a simple test project".to_string());
         let _ = use_case.execute(name.clone(), description.clone());
 
-        let saved_config = use_case.repository.saved_config.borrow();
+        let saved_config = use_case.get_repository().saved_config.borrow();
         assert!(saved_config.is_some());
         assert_eq!(saved_config.as_ref().unwrap().name, name);
         assert_eq!(saved_config.as_ref().unwrap().description, description);

@@ -3,4 +3,5 @@ use crate::domain::shared_kernel::errors::DomainError;
 
 pub trait ProjectRepository {
     fn save(&self, project: Project) -> Result<(), DomainError>;
+    fn load(&self, path: &std::path::PathBuf) -> Result<Project, DomainError>;
 }
