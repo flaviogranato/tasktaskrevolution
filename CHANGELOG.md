@@ -2,6 +2,55 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- *(cargo)* Added release profile
+- Adiciona validação de datas para férias
+- Implementa sistema de tarefas e correção de erros de compilação
+
+### 🚜 Refactor
+
+- Ajustes nas implementações dos casos de uso e repositórios
+
+### 📚 Documentation
+
+- Adiciona licença Creative Commons BY-SA 4.0
+- Melhora a documentação do README com instruções de uso e licença CC BY-NC-SA 4.0
+- Adiciona guia de contribuição com padrões e diretrizes do projeto
+
+### 🎨 Styling
+
+- *(all)* Format all files
+
+### ⚙️ Miscellaneous Tasks
+
+- *(dependencies)* Bump dependencies
+- *(github)* Remove unnecessary file
+- *(cargo)* Update cargo.lock
+- *(dependencies)* Updated dependencies
+- Adiciona pipeline GitLab CI para build, teste e release
+
+## [0.3.0] - 2025-02-26
+
+### 🚀 Features
+
+- *(task)* Implement task domain entity and repository
+- *(task)* Implement task creation and persistence
+- *(manifests)* Standardize manifest formats and add timezone support
+- *(report)* Added vacation's report
+- *(task)* Added task
+- *(pipeline)* Added action to create a release
+
+### 🚜 Refactor
+
+- *(task)* Move serialization and repository to infrastructure layer
+
+### ⚙️ Miscellaneous Tasks
+
+- *(cargo)* Updated cargo.lock
+
 ## [0.2.0] - 2025-02-17
 
 ### 🚀 Features
