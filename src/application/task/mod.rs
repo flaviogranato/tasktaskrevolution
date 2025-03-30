@@ -4,6 +4,12 @@ use crate::domain::shared_kernel::errors::DomainError;
 /// Serviço responsável por gerenciar operações relacionadas a tarefas
 pub struct TaskService;
 
+impl Default for TaskService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaskService {
     /// Cria uma nova instância do TaskService
     pub fn new() -> Self {

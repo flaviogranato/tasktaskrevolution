@@ -33,6 +33,12 @@ impl FileConfigRepository {
     }
 }
 
+impl Default for FileConfigRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConfigRepository for FileConfigRepository {
     fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
         let config_yaml = to_string(&config).map_err(|e| DomainError::Generic(e.to_string()))?;

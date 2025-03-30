@@ -1,7 +1,7 @@
 use std::{env, path::PathBuf};
 
 use clap::{Parser, Subcommand};
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{NaiveDate, Utc};
 
 use crate::{
     application::{

@@ -5,6 +5,9 @@ version = "0.3.0"
 edition = "2024"
 description = "Um utilitário de linha de comando para organizar suas tarefas e projetos."
 
+[lints.rust]
+non_snake_case = "allow"
+
 [[bin]]
 name = "ttr"
 path = "src/main.rs"

@@ -6,7 +6,6 @@ use std::fs;
 use std::path::Path;
 use std::io;
 use serde_yaml;
-use chrono::Utc;
 
 pub struct FileTaskRepository {
     base_path: std::path::PathBuf,

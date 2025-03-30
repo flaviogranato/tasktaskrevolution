@@ -20,6 +20,16 @@ All notable changes to this project will be documented in this file.
 - Melhora a documentação do README com instruções de uso e licença CC BY-NC-SA 4.0
 - Adiciona guia de contribuição com padrões e diretrizes do projeto
 
+### 🧹 Lints
+
+- Corrige todos os avisos do Clippy:
+  - Remove chamadas de .clone() desnecessárias em tipos Copy
+  - Adiciona implementações Default para várias estruturas
+  - Corrige tipos de parâmetros em traits (PathBuf para Path)
+  - Simplifica closures redundantes
+  - Melhora padrões para loops sobre Option
+  - Resolve imports não utilizados
+
 ### 🎨 Styling
 
 - *(all)* Format all files

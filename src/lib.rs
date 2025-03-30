@@ -1,5 +1,7 @@
-pub mod application;
+#[allow(non_snake_case)]
+#[allow(clippy::module_inception)]
 pub mod domain;
+pub mod application;
 pub mod infrastructure;
 pub mod interface;
 

@@ -54,10 +54,14 @@ impl ConfigManifest {
         ConfigManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata::default(),
+            metadata: ConfigMetadata {
+                manager_name: "Default Manager".to_string(),
+                manager_email: "email@example.com".to_string(),
+                created_at: Utc::now(),
+            },
             spec: ConfigSpec {
-                manager_name: "".to_string(),
-                manager_email: "".to_string(),
+                manager_name: "Default Manager".to_string(),
+                manager_email: "email@example.com".to_string(),
                 default_timezone: "UTC".to_string(),
                 currency: None,
                 work_hours_per_day: None,
@@ -97,6 +101,12 @@ impl ConfigManifest {
                 vacation_rules: None,
             },
         }
+    }
+}
+
+impl Default for ConfigManifest {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

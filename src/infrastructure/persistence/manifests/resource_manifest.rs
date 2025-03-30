@@ -53,8 +53,8 @@ impl Convertable<ProjectAssignment> for ProjectAssignmentManifest {
     fn to(&self) -> ProjectAssignment {
         ProjectAssignment {
             project_id: self.project_id.clone(),
-            start_date: self.start_date.clone(),
-            end_date: self.end_date.clone(),
+            start_date: self.start_date,
+            end_date: self.end_date,
             allocation_percentage: self.allocation_percentage,
         }
     }
@@ -85,8 +85,8 @@ impl Convertable<Period> for PeriodManifest {
     }
     fn to(&self) -> Period {
         Period {
-            start_date: self.start_date.clone(),
-            end_date: self.end_date.clone(),
+            start_date: self.start_date,
+            end_date: self.end_date,
             approved: self.approved,
             period_type: self.period_type.to(),
             is_time_off_compensation: self.is_time_off_compensation,
@@ -176,16 +176,12 @@ impl Convertable<Resource> for ResourceManifest {
             spec: ResourceSpec {
                 vacations: source.vacations.map(|v| {
                     v.into_iter()
-                        .map(|period| <PeriodManifest as Convertable<Period>>::from(period))
+                        .map(<PeriodManifest as Convertable<Period>>::from)
                         .collect()
                 }),
                 project_assignments: source.project_assignments.map(|pa| {
                     pa.into_iter()
-                        .map(|assignment| {
-                            <ProjectAssignmentManifest as Convertable<ProjectAssignment>>::from(
-                                assignment,
-                            )
-                        })
+                        .map(<ProjectAssignmentManifest as Convertable<ProjectAssignment>>::from)
                         .collect()
                 }),
                 time_off_balance: source.time_off_balance,
