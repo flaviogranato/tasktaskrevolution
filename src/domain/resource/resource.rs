@@ -18,6 +18,7 @@ pub struct Period {
     pub period_type: PeriodType,
     pub is_time_off_compensation: bool,
     pub compensated_hours: Option<u32>,
+    pub is_layoff: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -100,8 +101,8 @@ impl Display for Resource {
 
 impl Display for Period {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Period {{ start_date: {}, end_date: {}, approved: {}, period_type: {}, is_time_off_compensation: {}, compensated_hours: {:?} }}",
-        self.start_date, self.end_date, self.approved, self.period_type, self.is_time_off_compensation, self.compensated_hours)
+        write!(f, "Period {{ start_date: {}, end_date: {}, approved: {}, period_type: {}, is_time_off_compensation: {}, compensated_hours: {:?}, is_layoff: {} }}",
+        self.start_date, self.end_date, self.approved, self.period_type, self.is_time_off_compensation, self.compensated_hours, self.is_layoff)
     }
 }
 

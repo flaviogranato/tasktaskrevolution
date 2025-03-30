@@ -32,7 +32,7 @@ impl VacationReportUseCase {
     pub fn execute(&self) -> Result<VacationReportResult, io::Error> {
         let file_path = "vacation_report.csv";
         let mut writer = Writer::from_path(file_path)?;
-        writer.write_record(["Recurso", "Projeto", "Data Início", "Data Fim"])?;
+        writer.write_record(["Recurso", "Projeto", "Data Início", "Data Fim", "Layoff"])?;
 
         if let Ok(project) = self.project_repository.load(&PathBuf::from(".")) {
             if let Ok(resources) = self.resource_repository.find_all() {
@@ -44,6 +44,7 @@ impl VacationReportUseCase {
                                 &project.name,
                                 &period.start_date.to_rfc3339(),
                                 &period.end_date.to_rfc3339(),
+                                &period.is_layoff.to_string(),
                             ])?;
                         }
                     }
@@ -61,7 +62,7 @@ impl VacationReportUseCase {
     }
 
     fn generate_report(&self, writer: &mut csv::Writer<Vec<u8>>) -> Result<(), Box<dyn std::error::Error>> {
-        writer.write_record(["Recurso", "Projeto", "Data Início", "Data Fim"])?;
+        writer.write_record(["Recurso", "Projeto", "Data Início", "Data Fim", "Layoff"])?;
 
         if let Ok(project) = self.project_repository.load(&PathBuf::from(".")) {
             if let Ok(resources) = self.resource_repository.find_all() {
@@ -73,6 +74,7 @@ impl VacationReportUseCase {
                                 &project.name,
                                 &period.start_date.to_rfc3339(),
                                 &period.end_date.to_rfc3339(),
+                                &period.is_layoff.to_string(),
                             ])?;
                         }
                     }
