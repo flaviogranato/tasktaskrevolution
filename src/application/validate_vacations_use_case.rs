@@ -5,6 +5,7 @@ use crate::domain::{
     shared_kernel::errors::DomainError,
 };
 use chrono::{DateTime, Local, NaiveDate, FixedOffset, Offset};
+use std::path::Path;
 
 pub struct ValidateVacationsUseCase<P: ProjectRepository, R: ResourceRepository> {
     project_repository: P,
@@ -114,6 +115,7 @@ mod tests {
         resource::resource::{PeriodType, Resource},
     };
     use chrono::{Duration, Local};
+    use std::path::Path;
 
     struct MockProjectRepository {
         vacation_rules: Option<VacationRules>,
@@ -131,7 +133,7 @@ mod tests {
             Ok(())
         }
 
-        fn load(&self, _path: &std::path::PathBuf) -> Result<crate::domain::project::project::Project, DomainError> {
+        fn load(&self, _path: &Path) -> Result<crate::domain::project::project::Project, DomainError> {
             Ok(crate::domain::project::project::Project {
                 id: None,
                 name: "Test Project".to_string(),
