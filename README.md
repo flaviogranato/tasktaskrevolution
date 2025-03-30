@@ -8,6 +8,42 @@ Um utilitário de linha de comando para gerenciar suas tarefas e projetos de for
 - Criação de recursos dentro de projetos
 - Criação de tarefas associadas a projetos e recursos
 
+## Funcionalidades
+
+### Logging e Telemetria
+
+O projeto utiliza o sistema de logging `tracing` e métricas `metrics` para monitoramento:
+
+- Logs estruturados com diferentes níveis (info, warn, error, debug)
+- Métricas de performance disponíveis em `http://localhost:9090/metrics`
+- Contadores de operações e histogramas de duração
+
+### Validação de Dados
+
+Implementamos validação robusta de dados usando o crate `validator`:
+
+- Validação automática de entidades do domínio
+- Funções auxiliares para validação de datas e UUIDs
+- Mensagens de erro personalizadas em português
+
+### Benchmarks
+
+Para garantir a performance do código, incluímos benchmarks usando `criterion`:
+
+- Medição de tempo de criação de tarefas
+- Validação de performance
+- Executar benchmarks: `cargo bench`
+
+### Qualidade de Código
+
+O projeto utiliza hooks de pre-commit para garantir qualidade:
+
+- Verificação de linting com clippy
+- Execução automática de testes
+- Verificação de formatação
+- Auditoria de dependências
+- Verificação de documentação
+
 ## Estrutura do Projeto
 
 ```
@@ -180,6 +216,26 @@ Este projeto segue os princípios da Arquitetura Limpa (Clean Architecture) e Do
 - **Application**: Implementa os casos de uso da aplicação
 - **Infrastructure**: Fornece implementações concretas para persistência e APIs
 - **Interface**: Gerencia a interação com o usuário
+
+### Configuração do Ambiente
+
+1. Clone o repositório
+2. Instale as dependências: `cargo build`
+3. Configure os hooks de git: `chmod +x .git/hooks/pre-commit`
+4. Execute os testes: `cargo test`
+5. Execute os benchmarks: `cargo bench`
+
+### Logging
+
+Para ajustar o nível de logging, use a variável de ambiente `RUST_LOG`:
+
+```bash
+RUST_LOG=debug cargo run
+```
+
+### Métricas
+
+As métricas de performance estão disponíveis em `http://localhost:9090/metrics` quando o programa está em execução.
 
 ## Contribuindo
 
