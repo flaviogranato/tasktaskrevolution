@@ -25,6 +25,27 @@ impl FileResourceRepository {
     fn get_resource_file_path(&self, resource_name: &str) -> PathBuf {
         self.base_path.join("resources").join(format!("{}.yaml", resource_name))
     }
+
+    fn get_config_path(&self) -> PathBuf {
+        self.base_path.join("resources").join("resources.yaml")
+    }
+    
+    pub fn load(&self) -> Result<Vec<Resource>, Box<dyn std::error::Error>> {
+        let config_path = self.get_config_path();
+        if !config_path.exists() {
+            return Ok(Vec::new());
+        }
+
+        let config_yaml = fs::read_to_string(config_path)?;
+        let resource_manifests: Vec<ResourceManifest> = serde_yaml::from_str(&config_yaml)?;
+
+        let mut resources = Vec::new();
+        for resource_manifest in resource_manifests {
+            resources.push(<ResourceManifest as Convertable<Resource>>::to(&resource_manifest));
+        }
+
+        Ok(resources)
+    }
 }
 
 impl ResourceRepository for FileResourceRepository {
@@ -68,7 +89,7 @@ impl ResourceRepository for FileResourceRepository {
                     let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml)
                         .map_err(|e| DomainError::Generic(format!("Erro ao deserializar recurso: {}", e)))?;
                     
-                    resources.push(<ResourceManifest as Convertable<Resource>>::to(resource_manifest));
+                    resources.push(<ResourceManifest as Convertable<Resource>>::to(&resource_manifest));
                 }
             }
         }
