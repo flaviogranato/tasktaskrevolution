@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 ### 🚜 Refactor
 
 - Ajustes nas implementações dos casos de uso e repositórios
+- Remove TaskService da camada de aplicação para respeitar arquitetura DDD
 
 ### 📚 Documentation
 
