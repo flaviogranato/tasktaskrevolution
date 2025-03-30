@@ -1,5 +1,7 @@
-#[allow(non_snake_case)]
-#[allow(clippy::module_inception)]
+#![allow(non_snake_case)]
+#![allow(clippy::module_inception)]
+#![allow(dead_code)]
+
 pub mod domain;
 pub mod application;
 pub mod infrastructure;
