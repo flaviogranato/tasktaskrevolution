@@ -1,6 +1,6 @@
 use crate::domain::{
     resource::{
-        resource::{Resource, TimeOffEntry},
+        resource::Resource,
         resource_repository::ResourceRepository,
     },
     shared_kernel::errors::DomainError,
@@ -8,14 +8,23 @@ use crate::domain::{
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
-    resource_repository: R,
+    repository: R,
+}
+
+#[derive(Debug)]
+pub struct CreateTimeOffResult {
+    pub success: bool,
+    pub message: String,
+    pub resource_name: String,
+    pub hours: u32,
+    pub time_off_balance: u32,
+    pub description: Option<String>,
+    pub date: String,
 }
 
 impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
-    pub fn new(resource_repository: R) -> Self {
-        Self {
-            resource_repository,
-        }
+    pub fn new(repository: R) -> Self {
+        Self { repository }
     }
 
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
@@ -31,41 +40,31 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 
     pub fn execute(
         &self,
-        resource_identifier: String,
+        resource: String,
         hours: u32,
         date: String,
         description: Option<String>,
-    ) -> Result<Resource, DomainError> {
-        let resources = self.resource_repository.find_all()?;
-
-        let mut resource = resources
-            .into_iter()
-            .find(|r| {
-                r.id.as_ref().map_or(false, |id| id == &resource_identifier)
-                    || r.name == resource_identifier
-            })
-            .ok_or_else(|| {
-                DomainError::Generic(format!("Recurso não encontrado: {}", resource_identifier))
-            })?;
-
-        let entry_date = Self::parse_date(&date)?;
-
-        // Cria uma nova entrada no histórico
-        let time_off_entry = TimeOffEntry {
-            date: entry_date,
-            hours,
-            description,
-        };
-
-        // Adiciona a entrada ao histórico
-        let mut history = resource.time_off_history.unwrap_or_else(Vec::new);
-        history.push(time_off_entry);
-        resource.time_off_history = Some(history);
-
-        // Atualiza o saldo total
-        resource.time_off_balance += hours;
-
-        self.resource_repository.save(resource)
+    ) -> Result<CreateTimeOffResult, Box<dyn std::error::Error>> {
+        match self.repository.save_time_off(resource, hours, date.clone(), description.clone()) {
+            Ok(resource) => Ok(CreateTimeOffResult {
+                success: true,
+                message: format!("{} horas adicionadas com sucesso para {}", hours, resource.name),
+                resource_name: resource.name,
+                hours,
+                time_off_balance: resource.time_off_balance,
+                description,
+                date,
+            }),
+            Err(e) => Ok(CreateTimeOffResult {
+                success: false,
+                message: format!("Erro ao adicionar horas extras: {}", e),
+                resource_name: String::new(),
+                hours: 0,
+                time_off_balance: 0,
+                description: None,
+                date: String::new(),
+            }),
+        }
     }
 }
 
@@ -100,6 +99,20 @@ mod tests {
         fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
             Ok(self.resources.borrow().clone())
         }
+
+        fn save_time_off(&self, resource_name: String, hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+            let mut resources = self.resources.borrow_mut();
+            let resource = resources.iter_mut()
+                .find(|r| r.id == Some(resource_name.clone()))
+                .ok_or_else(|| DomainError::Generic("Recurso não encontrado".to_string()))?;
+            
+            resource.time_off_balance += hours;
+            Ok(resource.clone())
+        }
+
+        fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
+            unimplemented!("Not needed for these tests")
+        }
     }
 
     #[test]
@@ -127,15 +140,8 @@ mod tests {
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
         assert_eq!(updated_resource.time_off_balance, 8);
-
-        // Verifica se a entrada foi adicionada ao histórico
-        let history = updated_resource.time_off_history.unwrap();
-        assert_eq!(history.len(), 1);
-        assert_eq!(history[0].hours, 8);
-        assert_eq!(
-            history[0].description,
-            Some("Trabalho no feriado".to_string())
-        );
+        assert_eq!(updated_resource.hours, 8);
+        assert_eq!(updated_resource.description, Some("Trabalho no feriado".to_string()));
     }
 
     #[test]
@@ -173,10 +179,7 @@ mod tests {
 
         let final_resource = result2.unwrap();
         assert_eq!(final_resource.time_off_balance, 12); // 8 + 4
-
-        let history = final_resource.time_off_history.unwrap();
-        assert_eq!(history.len(), 2);
-        assert_eq!(history[1].hours, 4);
-        assert_eq!(history[1].description, Some("Hora extra".to_string()));
+        assert_eq!(final_resource.hours, 4);
+        assert_eq!(final_resource.description, Some("Hora extra".to_string()));
     }
 }

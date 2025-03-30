@@ -50,6 +50,14 @@ mod test {
         fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
             Ok(vec![])
         }
+
+        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+            unimplemented!("Not needed for these tests")
+        }
+
+        fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
+            unimplemented!("Not needed for these tests")
+        }
     }
     #[test]
     fn test_create_project_success() {

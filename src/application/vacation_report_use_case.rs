@@ -9,6 +9,13 @@ pub struct VacationReportUseCase {
     resource_repository: FileResourceRepository,
 }
 
+#[derive(Debug)]
+pub struct VacationReportResult {
+    pub success: bool,
+    pub message: String,
+    pub file_path: String,
+}
+
 impl VacationReportUseCase {
     pub fn new() -> Self {
         Self {
@@ -17,8 +24,9 @@ impl VacationReportUseCase {
         }
     }
 
-    pub fn execute(&self) -> Result<(), io::Error> {
-        let mut writer = Writer::from_path("vacation_report.csv")?;
+    pub fn execute(&self) -> Result<VacationReportResult, io::Error> {
+        let file_path = "vacation_report.csv";
+        let mut writer = Writer::from_path(file_path)?;
         writer.write_record(&["Recurso", "Projeto", "Data Início", "Data Fim"])?;
 
         if let Ok(project) = self.project_repository.load_project(&PathBuf::from(".")) {
@@ -39,7 +47,11 @@ impl VacationReportUseCase {
         }
 
         writer.flush()?;
-        println!("✅ Relatório de férias gerado com sucesso: vacation_report.csv");
-        Ok(())
+        
+        Ok(VacationReportResult {
+            success: true,
+            message: "Relatório de férias gerado com sucesso".to_string(),
+            file_path: file_path.to_string(),
+        })
     }
 }
