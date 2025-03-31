@@ -2,79 +2,134 @@ image: rust:latest
 
 variables:
   CARGO_TERM_COLOR: always
+  ARTIFACT_PREFIX: "tasktaskrevolution"
+  RUSTFLAGS: "-C target-cpu=native"
+  CARGO_INCREMENTAL: 0
 
 stages:
+  - prepare
   - build
   - test
+  - security
   - release
+  - changelog
 
-# Cache as dependências entre jobs
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - Cargo.lock
+    prefix: ${CI_COMMIT_REF_SLUG}
   paths:
     - .cargo/
     - target/
+  policy: pull-push
 
-# Job de build
+# Instalação de dependências como sccache (para builds rápidos)
+prepare:
+  stage: prepare
+  script:
+    - cargo install sccache
+    - cargo install git-cliff
+  cache:
+    paths:
+      - .cargo/bin/sccache
+      - .cargo/bin/git-cliff
+
+# Build do projeto para múltiplos sistemas operacionais
 build:
   stage: build
+  parallel: matrix
+  strategy:
+    matrix:
+      - target:
+          [
+            "x86_64-unknown-linux-gnu",
+            "x86_64-pc-windows-gnu",
+            "x86_64-apple-darwin",
+          ]
   script:
-    - cargo build --release
+    - export RUSTC_WRAPPER="sccache"
+    - cargo build --release --target $target
   artifacts:
     paths:
-      - target/release/
+      - target/$target/release/ttr
     expire_in: 1 week
 
-# Job de teste
+# Testes automatizados com paralelismo habilitado
 test:
   stage: test
   script:
-    - cargo test --release
+    - cargo test --release -- --test-threads=3
 
-# Job de release para Linux
+# Análise de segurança com cargo-audit e cargo-deny
+security_analysis:
+  stage: security
+  script:
+    - cargo install cargo-audit cargo-deny
+    - cargo audit --deny warnings
+    - cargo deny check bans
+
+# Release para múltiplas plataformas com compactação Zstandard (máxima eficiência)
 release_linux:
   stage: release
   image: rust:latest
+  before_script:
+    - apt-get update && apt-get install -y zstd
   script:
-    - cargo build --release
-    - tar czf tasktaskrevolution-linux.tar.gz -C target/release tasktaskrevolution
+    - cargo build --release --target x86_64-unknown-linux-gnu
+    - zstd --ultra -22 --rm target/x86_64-unknown-linux-gnu/release/ttr -o ${ARTIFACT_PREFIX}-linux.zst
   artifacts:
     paths:
-      - tasktaskrevolution-linux.tar.gz
+      - ${ARTIFACT_PREFIX}-linux.zst
     expire_in: never
   only:
     - tags
 
-# Job de release para Windows
 release_windows:
   stage: release
   image: rust:latest
   before_script:
-    - apt-get update && apt-get install -y mingw-w64
+    - apt-get update && apt-get install -y mingw-w64 zstd
     - rustup target add x86_64-pc-windows-gnu
   script:
     - cargo build --release --target x86_64-pc-windows-gnu
-    - zip tasktaskrevolution-windows.zip target/x86_64-pc-windows-gnu/release/tasktaskrevolution.exe
+    - zstd --ultra -22 --rm target/x86_64-pc-windows-gnu/release/ttr.exe -o ${ARTIFACT_PREFIX}-windows.zst
   artifacts:
     paths:
-      - tasktaskrevolution-windows.zip
+      - ${ARTIFACT_PREFIX}-windows.zst
     expire_in: never
   only:
     - tags
 
-# Job de release para macOS
 release_macos:
   stage: release
   image: rust:latest
   before_script:
-    - apt-get update && apt-get install -y clang
+    - apt-get update && apt-get install -y clang zstd
     - rustup target add x86_64-apple-darwin
   script:
     - cargo build --release --target x86_64-apple-darwin
-    - tar czf tasktaskrevolution-macos.tar.gz -C target/x86_64-apple-darwin/release tasktaskrevolution
+    - zstd --ultra -22 --rm target/x86_64-apple-darwin/release/ttr -o ${ARTIFACT_PREFIX}-macos.zst
   artifacts:
     paths:
-      - tasktaskrevolution-macos.tar.gz
+      - ${ARTIFACT_PREFIX}-macos.zst
     expire_in: never
   only:
-    - tags 
+    - tags
+
+# Atualização automática do changelog usando Git Cliff durante releases (tags)
+update_changelog:
+  stage: changelog
+  image: rust:latest
+  script:
+    # Gere o changelog automaticamente com base nos commits convencionais.
+    - git cliff > CHANGELOG.md
+
+    # Adicione o changelog ao commit e envie para o repositório.
+    # Certifique-se de que o pipeline tem permissões para fazer push.
+    - git add CHANGELOG.md
+    - git commit -m "chore(release): update changelog for $CI_COMMIT_TAG"
+    # Push das alterações diretamente na branch/tag atual.
+    # Pode ser necessário configurar um token de acesso.
+    - git push origin $CI_COMMIT_BRANCH
+
