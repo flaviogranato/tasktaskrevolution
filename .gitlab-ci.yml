@@ -7,52 +7,33 @@ variables:
   CARGO_INCREMENTAL: 0
 
 stages:
-  - prepare
   - build
   - test
-  - security
   - release
-  - changelog
 
 cache:
-  key:
-    files:
-      - Cargo.lock
-    prefix: ${CI_COMMIT_REF_SLUG}
+  key: ${CI_COMMIT_REF_SLUG}
   paths:
     - .cargo/
     - target/
   policy: pull-push
 
-# Instalação de dependências como sccache (para builds rápidos)
-prepare:
-  stage: prepare
-  script:
-    - cargo install sccache
-    - cargo install git-cliff
-  cache:
-    paths:
-      - .cargo/bin/sccache
-      - .cargo/bin/git-cliff
-
 # Build do projeto para múltiplos sistemas operacionais
 build:
   stage: build
-  parallel: matrix
-  strategy:
+  parallel:
     matrix:
-      - target:
+      - RUST_TARGET:
           [
             "x86_64-unknown-linux-gnu",
             "x86_64-pc-windows-gnu",
             "x86_64-apple-darwin",
           ]
   script:
-    - export RUSTC_WRAPPER="sccache"
-    - cargo build --release --target $target
+    - cargo build --release --target $RUST_TARGET
   artifacts:
     paths:
-      - target/$target/release/ttr
+      - target/$RUST_TARGET/release/ttr
     expire_in: 1 week
 
 # Testes automatizados com paralelismo habilitado
@@ -61,20 +42,10 @@ test:
   script:
     - cargo test --release -- --test-threads=3
 
-# Análise de segurança com cargo-audit e cargo-deny
-security_analysis:
-  stage: security
-  script:
-    - cargo install cargo-audit cargo-deny
-    - cargo audit --deny warnings
-    - cargo deny check bans
-
 # Release para múltiplas plataformas com compactação Zstandard (máxima eficiência)
 release_linux:
   stage: release
   image: rust:latest
-  before_script:
-    - apt-get update && apt-get install -y zstd
   script:
     - cargo build --release --target x86_64-unknown-linux-gnu
     - zstd --ultra -22 --rm target/x86_64-unknown-linux-gnu/release/ttr -o ${ARTIFACT_PREFIX}-linux.zst
@@ -89,11 +60,25 @@ release_windows:
   stage: release
   image: rust:latest
   before_script:
-    - apt-get update && apt-get install -y mingw-w64 zstd
+    # 1. Instalação completa do Mingw-w64 com bibliotecas essenciais
+    - apt-get update && apt-get install -y mingw-w64 gcc-mingw-w64 zstd libz-mingw-w64-dev
+
+    # 2. Configuração explícita da toolchain e componentes Rust
+    - rustup default stable
     - rustup target add x86_64-pc-windows-gnu
+    - rustup component add rust-std-x86_64-pc-windows-gnu
+
+    # 3. Verificação da instalação
+    - rustup show
+    - x86_64-w64-mingw32-gcc --version
+
   script:
+    # 4. Configuração do linker e build
+    - export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER="x86_64-w64-mingw32-gcc"
+    - cargo clean
     - cargo build --release --target x86_64-pc-windows-gnu
     - zstd --ultra -22 --rm target/x86_64-pc-windows-gnu/release/ttr.exe -o ${ARTIFACT_PREFIX}-windows.zst
+
   artifacts:
     paths:
       - ${ARTIFACT_PREFIX}-windows.zst
@@ -116,20 +101,3 @@ release_macos:
     expire_in: never
   only:
     - tags
-
-# Atualização automática do changelog usando Git Cliff durante releases (tags)
-update_changelog:
-  stage: changelog
-  image: rust:latest
-  script:
-    # Gere o changelog automaticamente com base nos commits convencionais.
-    - git cliff > CHANGELOG.md
-
-    # Adicione o changelog ao commit e envie para o repositório.
-    # Certifique-se de que o pipeline tem permissões para fazer push.
-    - git add CHANGELOG.md
-    - git commit -m "chore(release): update changelog for $CI_COMMIT_TAG"
-    # Push das alterações diretamente na branch/tag atual.
-    # Pode ser necessário configurar um token de acesso.
-    - git push origin $CI_COMMIT_BRANCH
-
