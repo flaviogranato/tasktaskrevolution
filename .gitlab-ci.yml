@@ -1,103 +1,63 @@
-image: rust:latest
+stages:
+  - test
+  - build
+  - release
 
 variables:
-  CARGO_TERM_COLOR: always
-  ARTIFACT_PREFIX: "tasktaskrevolution"
-  RUSTFLAGS: "-C target-cpu=native"
-  CARGO_INCREMENTAL: 0
-
-stages:
-  - build
-  - test
-  - release
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+  RUSTFLAGS: "-Dwarnings"
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - .cargo/
     - target/
-  policy: pull-push
 
-# Build do projeto para múltiplos sistemas operacionais
-build:
-  stage: build
-  parallel:
-    matrix:
-      - RUST_TARGET:
-          [
-            "x86_64-unknown-linux-gnu",
-            "x86_64-pc-windows-gnu",
-            "x86_64-apple-darwin",
-          ]
-  script:
-    - cargo build --release --target $RUST_TARGET
-  artifacts:
-    paths:
-      - target/$RUST_TARGET/release/ttr
-    expire_in: 1 week
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ || $CI_COMMIT_BRANCH == "develop"
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^release\/.*$/ || $CI_COMMIT_BRANCH == "master"
+      when: always
+    - when: never
 
-# Testes automatizados com paralelismo habilitado
 test:
   stage: test
-  script:
-    - cargo test --release -- --test-threads=3
-
-# Release para múltiplas plataformas com compactação Zstandard (máxima eficiência)
-release_linux:
-  stage: release
   image: rust:latest
   script:
-    - cargo build --release --target x86_64-unknown-linux-gnu
-    - zstd --ultra -22 --rm target/x86_64-unknown-linux-gnu/release/ttr -o ${ARTIFACT_PREFIX}-linux.zst
-  artifacts:
-    paths:
-      - ${ARTIFACT_PREFIX}-linux.zst
-    expire_in: never
-  only:
-    - tags
+    - cargo test --verbose
+    - rustup component add clippy
+    - cargo clippy -- -D warnings
+    - rustup component add rustfmt
+    - cargo fmt -- --check
 
-release_windows:
-  stage: release
+build:
+  stage: build
   image: rust:latest
-  before_script:
-    # 1. Instalação completa do Mingw-w64 com bibliotecas essenciais
-    - apt-get update && apt-get install -y mingw-w64 gcc-mingw-w64 zstd libz-mingw-w64-dev
-
-    # 2. Configuração explícita da toolchain e componentes Rust
-    - rustup default stable
-    - rustup target add x86_64-pc-windows-gnu
-    - rustup component add rust-std-x86_64-pc-windows-gnu
-
-    # 3. Verificação da instalação
-    - rustup show
-    - x86_64-w64-mingw32-gcc --version
-
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH =~ /^release\/.*$/
+      when: always
   script:
-    # 4. Configuração do linker e build
-    - export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER="x86_64-w64-mingw32-gcc"
-    - cargo clean
-    - cargo build --release --target x86_64-pc-windows-gnu
-    - zstd --ultra -22 --rm target/x86_64-pc-windows-gnu/release/ttr.exe -o ${ARTIFACT_PREFIX}-windows.zst
-
+    - apt-get update && apt-get install -y zstd
+    - cargo build --release
+    - zstd -19 --ultra target/release/${CI_PROJECT_NAME} -o ${CI_PROJECT_NAME}.zst
   artifacts:
     paths:
-      - ${ARTIFACT_PREFIX}-windows.zst
-    expire_in: never
-  only:
-    - tags
+      - ${CI_PROJECT_NAME}.zst
 
-release_macos:
+release:
   stage: release
-  image: rust:latest
-  before_script:
-    - apt-get update && apt-get install -y clang zstd
-    - rustup target add x86_64-apple-darwin
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master" && $CI_COMMIT_TAG != null
+      when: always
   script:
-    - cargo build --release --target x86_64-apple-darwin
-    - zstd --ultra -22 --rm target/x86_64-apple-darwin/release/ttr -o ${ARTIFACT_PREFIX}-macos.zst
-  artifacts:
-    paths:
-      - ${ARTIFACT_PREFIX}-macos.zst
-    expire_in: never
-  only:
-    - tags
+    - echo "Lançando versão ${CI_COMMIT_TAG}"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    description: "Release ${CI_COMMIT_TAG}"
+    assets:
+      links:
+        - name: "Binário Compactado"
+          url: "${CI_JOB_URL}/artifacts/download"
+          link_type: "other"
