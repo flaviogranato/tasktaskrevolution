@@ -23,7 +23,7 @@ workflow:
 
 test:
   stage: test
-  image: rust:latest
+  image: rust:1.85
   script:
     - cargo test --verbose
     - rustup component add clippy
@@ -33,7 +33,7 @@ test:
 
 build:
   stage: build
-  image: rust:latest
+  image: rust:1.85
   rules:
     - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH =~ /^release\/.*$/
       when: always
