@@ -61,8 +61,10 @@ release_windows:
   image: rust:latest
   before_script:
     - apt-get update && apt-get install -y mingw-w64 gcc-mingw-w64 zstd
-    - rustup target add x86_64-pc-windows-gnu
+    - rustup target add x86_64-pc-windows-gnu --toolchain stable # Toolchain explícita
+    - rustup component add rust-std-x86_64-pc-windows-gnu # Garantir stdlib
   script:
+    - export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER="x86_64-w64-mingw32-gcc" # Linker explícito
     - cargo build --release --target x86_64-pc-windows-gnu
     - zstd --ultra -22 --rm target/x86_64-pc-windows-gnu/release/ttr.exe -o ${ARTIFACT_PREFIX}-windows.zst
   artifacts:
