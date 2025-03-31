@@ -60,25 +60,23 @@ release_windows:
   stage: release
   image: rust:latest
   before_script:
-    # 1. Instalação completa do Mingw-w64 e dependências
+    # 1. Instalação completa do Mingw-w64 com bibliotecas essenciais
     - apt-get update && apt-get install -y mingw-w64 gcc-mingw-w64 zstd libz-mingw-w64-dev
 
-    # 2. Configuração explícita do target e toolchain
+    # 2. Configuração explícita da toolchain e componentes Rust
     - rustup default stable
     - rustup target add x86_64-pc-windows-gnu
     - rustup component add rust-std-x86_64-pc-windows-gnu
 
     # 3. Verificação da instalação
     - rustup show
-    - find /usr/local/rustup -name "*windows-gnu*"
+    - x86_64-w64-mingw32-gcc --version
 
   script:
     # 4. Configuração do linker e build
     - export CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER="x86_64-w64-mingw32-gcc"
-    - cargo clean # Força rebuild completo
+    - cargo clean
     - cargo build --release --target x86_64-pc-windows-gnu
-
-    # 5. Compactação do artefato
     - zstd --ultra -22 --rm target/x86_64-pc-windows-gnu/release/ttr.exe -o ${ARTIFACT_PREFIX}-windows.zst
 
   artifacts:
