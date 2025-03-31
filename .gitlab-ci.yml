@@ -38,10 +38,9 @@ prepare:
 # Build do projeto para múltiplos sistemas operacionais
 build:
   stage: build
-  parallel: matrix
-  strategy:
+  parallel:
     matrix:
-      - target:
+      - RUST_TARGET:
           [
             "x86_64-unknown-linux-gnu",
             "x86_64-pc-windows-gnu",
@@ -49,10 +48,10 @@ build:
           ]
   script:
     - export RUSTC_WRAPPER="sccache"
-    - cargo build --release --target $target
+    - cargo build --release --target $RUST_TARGET
   artifacts:
     paths:
-      - target/$target/release/ttr
+      - target/$RUST_TARGET/release/ttr
     expire_in: 1 week
 
 # Testes automatizados com paralelismo habilitado
@@ -129,7 +128,7 @@ update_changelog:
     # Certifique-se de que o pipeline tem permissões para fazer push.
     - git add CHANGELOG.md
     - git commit -m "chore(release): update changelog for $CI_COMMIT_TAG"
+
     # Push das alterações diretamente na branch/tag atual.
     # Pode ser necessário configurar um token de acesso.
     - git push origin $CI_COMMIT_BRANCH
-
