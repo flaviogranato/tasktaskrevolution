@@ -60,7 +60,7 @@ release_windows:
   stage: release
   image: rust:latest
   before_script:
-    - apt-get update && apt-get install -y mingw-w64 zstd
+    - apt-get update && apt-get install -y mingw-w64 gcc-mingw-w64 zstd
     - rustup target add x86_64-pc-windows-gnu
   script:
     - cargo build --release --target x86_64-pc-windows-gnu
