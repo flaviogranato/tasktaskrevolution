@@ -1,9 +1,8 @@
-use serde::{Deserialize, Serialize};
-use chrono::Utc;
-
-use crate::domain::config::config::Config;
+use crate::domain::config::model::Config;
 use crate::domain::shared_kernel::convertable::Convertable;
 use crate::infrastructure::persistence::manifests::project_manifest::VacationRulesManifest;
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -73,35 +72,6 @@ impl ConfigManifest {
             },
         }
     }
-    pub fn basic(name: &String, email: &String) -> Self {
-        ConfigManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
-            kind: "Config".to_string(),
-            metadata: ConfigMetadata {
-                manager_name: name.to_string(),
-                manager_email: email.to_string(),
-                created_at: Utc::now(),
-            },
-            spec: ConfigSpec {
-                manager_name: name.to_string(),
-                manager_email: email.to_string(),
-                default_timezone: "UTC".to_string(),
-                currency: Some("BRL".to_string()),
-                work_hours_per_day: Some(8),
-                work_days_per_week: Some(vec![
-                    "segunda-feira".to_string(),
-                    "terça-feira".to_string(),
-                    "quarta-feira".to_string(),
-                    "quinta-feira".to_string(),
-                    "sexta-feira".to_string(),
-                ]),
-                date_format: Some("yyyy-mm-dd".to_string()),
-                default_task_duration: Some(8),
-                locale: Some("pt_BR".to_string()),
-                vacation_rules: None,
-            },
-        }
-    }
 }
 
 impl Default for ConfigManifest {
@@ -148,13 +118,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_basic_config_serialization() {
-        let config = ConfigManifest::basic(&"Test".to_string(), &"test@test.com".to_string());
-        let yaml = serde_yaml::to_string(&config).unwrap();
-        assert!(yaml.contains("managerName: Test"));
-    }
-
-    #[test]
     fn test_deserialize_invalid_yaml() {
         let yaml_str = "invalid: - yaml: content";
         let manifest: Result<ConfigManifest, _> = serde_yaml::from_str(yaml_str);
@@ -177,16 +140,5 @@ mod tests {
         "#;
         let manifest: ConfigManifest = serde_yaml::from_str(yaml_str).unwrap();
         assert_eq!(manifest.metadata.manager_name, "John Doe");
-    }
-
-    #[test]
-    fn test_serialize_deserialize() {
-        let manifest = ConfigManifest::basic(&"John Doe".to_string(), &"john@doe.com".to_string());
-        let yaml_str = serde_yaml::to_string(&manifest).unwrap();
-        let manifest_deserialized: ConfigManifest = serde_yaml::from_str(&yaml_str).unwrap();
-        assert_eq!(
-            manifest.metadata.manager_name,
-            manifest_deserialized.metadata.manager_name
-        );
     }
 }

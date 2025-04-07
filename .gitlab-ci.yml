@@ -1,18 +1,13 @@
-image: rust:latest
+stages:
+  - test
+  - build
+  - release
 
 variables:
-  CARGO_TERM_COLOR: always
-  ARTIFACT_PREFIX: "tasktaskrevolution"
-  RUSTFLAGS: "-C target-cpu=native"
-  CARGO_INCREMENTAL: 0
-
-stages:
-  - prepare
-  - build
-  - test
-  - security
-  - release
-  - changelog
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+  RUSTFLAGS: "-Dwarnings"
+  CARGO_PROFILE_RELEASE_LTO: "fat"
+  CARGO_PROFILE_RELEASE_STRIP: "symbols"
 
 cache:
   key:
@@ -22,114 +17,88 @@ cache:
   paths:
     - .cargo/
     - target/
-  policy: pull-push
 
-# Instalação de dependências como sccache (para builds rápidos)
-prepare:
-  stage: prepare
-  script:
-    - cargo install sccache
-    - cargo install git-cliff
-  cache:
-    paths:
-      - .cargo/bin/sccache
-      - .cargo/bin/git-cliff
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ || $CI_COMMIT_BRANCH == "develop"
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^release\/.*$/ || $CI_COMMIT_BRANCH == "main"
+      when: always
+    - when: never
 
-# Build do projeto para múltiplos sistemas operacionais
-build:
-  stage: build
-  parallel: matrix
-  strategy:
-    matrix:
-      - target:
-          [
-            "x86_64-unknown-linux-gnu",
-            "x86_64-pc-windows-gnu",
-            "x86_64-apple-darwin",
-          ]
-  script:
-    - export RUSTC_WRAPPER="sccache"
-    - cargo build --release --target $target
-  artifacts:
-    paths:
-      - target/$target/release/ttr
-    expire_in: 1 week
-
-# Testes automatizados com paralelismo habilitado
 test:
   stage: test
+  image: rust:1.86-bookworm
   script:
-    - cargo test --release -- --test-threads=3
+    - cargo test --all-targets --verbose
 
-# Análise de segurança com cargo-audit e cargo-deny
-security_analysis:
-  stage: security
+lint:
+  stage: test
+  image: rust:1.86-bookworm
   script:
-    - cargo install cargo-audit cargo-deny
-    - cargo audit --deny warnings
-    - cargo deny check bans
+    - rustup component add clippy
+    - cargo clippy --all-targets -- -D warnings
+    - rustup component add rustfmt
+    - cargo fmt --check
 
-# Release para múltiplas plataformas com compactação Zstandard (máxima eficiência)
-release_linux:
-  stage: release
+audit:
+  stage: test
   image: rust:latest
+  cache:
+    paths:
+      - $CARGO_HOME/bin/
+      - $CARGO_HOME/registry/
   before_script:
+    - rustc --version
+    - cargo --version
+  script:
+    - cargo install cargo-audit --locked || true
+    - cargo audit || exit 1
+
+build:
+  stage: build
+  image: rust:1.86-bookworm
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH =~ /^release\/.*$/
+      when: always
+  script:
     - apt-get update && apt-get install -y zstd
-  script:
-    - cargo build --release --target x86_64-unknown-linux-gnu
-    - zstd --ultra -22 --rm target/x86_64-unknown-linux-gnu/release/ttr -o ${ARTIFACT_PREFIX}-linux.zst
+    - cargo build --profile release
+    - zstd --compress -22 --ultra target/release/ttr -o ${CI_PROJECT_NAME}.zst
+    - sha512sum ${CI_PROJECT_NAME}.zst > ${CI_PROJECT_NAME}.sha512
   artifacts:
     paths:
-      - ${ARTIFACT_PREFIX}-linux.zst
-    expire_in: never
-  only:
-    - tags
+      - ${CI_PROJECT_NAME}.zst
+      - ${CI_PROJECT_NAME}.sha512
 
-release_windows:
+prepare_changelog:
   stage: release
-  image: rust:latest
-  before_script:
-    - apt-get update && apt-get install -y mingw-w64 zstd
-    - rustup target add x86_64-pc-windows-gnu
+  image: orhunp/git-cliff:latest@sha256:d5b8f19a8c0af8d37e90c6a157c3b3c4e4d5e8e0c9d8e8f7a6b5c4d3e2f1a0
+  rules:
+    - if: $CI_COMMIT_TAG
   script:
-    - cargo build --release --target x86_64-pc-windows-gnu
-    - zstd --ultra -22 --rm target/x86_64-pc-windows-gnu/release/ttr.exe -o ${ARTIFACT_PREFIX}-windows.zst
+    - git-cliff --tag $CI_COMMIT_TAG --output CHANGELOG.md
   artifacts:
     paths:
-      - ${ARTIFACT_PREFIX}-windows.zst
-    expire_in: never
-  only:
-    - tags
+      - CHANGELOG.md
+    expire_in: 1 hour
 
-release_macos:
+release:
   stage: release
-  image: rust:latest
-  before_script:
-    - apt-get update && apt-get install -y clang zstd
-    - rustup target add x86_64-apple-darwin
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - prepare_changelog
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_TAG != null
+      when: always
   script:
-    - cargo build --release --target x86_64-apple-darwin
-    - zstd --ultra -22 --rm target/x86_64-apple-darwin/release/ttr -o ${ARTIFACT_PREFIX}-macos.zst
-  artifacts:
-    paths:
-      - ${ARTIFACT_PREFIX}-macos.zst
-    expire_in: never
-  only:
-    - tags
-
-# Atualização automática do changelog usando Git Cliff durante releases (tags)
-update_changelog:
-  stage: changelog
-  image: rust:latest
-  script:
-    # Gere o changelog automaticamente com base nos commits convencionais.
-    - git cliff > CHANGELOG.md
-
-    # Adicione o changelog ao commit e envie para o repositório.
-    # Certifique-se de que o pipeline tem permissões para fazer push.
-    - git add CHANGELOG.md
-    - git commit -m "chore(release): update changelog for $CI_COMMIT_TAG"
-    # Push das alterações diretamente na branch/tag atual.
-    # Pode ser necessário configurar um token de acesso.
-    - git push origin $CI_COMMIT_BRANCH
-
+    - echo "Lançando versão ${CI_COMMIT_TAG}"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    description: "Release ${CI_COMMIT_TAG}"
+    assets:
+      links:
+        - name: "Binário"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts/${CI_PROJECT_NAME}.zst"
+        - name: "Changelog"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${prepare_changelog.id}/artifacts/CHANGELOG.md"

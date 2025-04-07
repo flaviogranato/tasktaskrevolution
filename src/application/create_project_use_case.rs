@@ -1,7 +1,7 @@
 use crate::domain::{
     project::{
-        project::{Project, ProjectStatus},
-        project_repository::ProjectRepository,
+        model::{Project, ProjectStatus},
+        repository::ProjectRepository,
     },
     shared_kernel::errors::DomainError,
 };
@@ -42,7 +42,7 @@ mod test {
     use super::*;
     use crate::domain::shared_kernel::errors::DomainError;
     use std::cell::RefCell;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     struct MockProjectRepository {
         should_fail: bool,
