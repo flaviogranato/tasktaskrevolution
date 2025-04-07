@@ -1,19 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct LayoffPeriod {
     pub start_date: String,
     pub end_date: String,
-}
-
-impl LayoffPeriod {
-    pub fn new(start_date: String, end_date: String) -> Self {
-        Self {
-            start_date,
-            end_date,
-        }
-    }
 }
 
 impl Display for LayoffPeriod {

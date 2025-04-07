@@ -9,7 +9,6 @@ pub struct CreateVacationUseCase<R: ResourceRepository> {
 pub struct CreateVacationResult {
     pub success: bool,
     pub message: String,
-    pub resource_name: String,
 }
 
 impl<R: ResourceRepository> CreateVacationUseCase<R> {
@@ -40,7 +39,6 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
             return Ok(CreateVacationResult {
                 success: false,
                 message: "Data de início deve ser anterior à data de fim".to_string(),
-                resource_name: String::new(),
             });
         }
 
@@ -57,12 +55,10 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
                     "Período de férias adicionado com sucesso para {}",
                     resource.name
                 ),
-                resource_name: resource.name,
             }),
             Err(e) => Ok(CreateVacationResult {
                 success: false,
                 message: format!("Erro ao adicionar período de férias: {}", e),
-                resource_name: String::new(),
             }),
         }
     }
@@ -167,8 +163,7 @@ mod tests {
         );
 
         assert!(result.is_ok());
-        let updated_resource = result.unwrap();
-        assert_eq!(updated_resource.resource_name, "John Doe");
+        let _updated_resource = result.unwrap();
     }
 
     #[test]
@@ -195,7 +190,6 @@ mod tests {
         );
 
         assert!(result.is_ok());
-        let updated_resource = result.unwrap();
-        assert_eq!(updated_resource.resource_name, "");
+        let _updated_resource = result.unwrap();
     }
 }

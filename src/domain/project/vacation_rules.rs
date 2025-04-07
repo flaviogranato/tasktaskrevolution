@@ -2,28 +2,12 @@ use crate::domain::project::layoff_period::LayoffPeriod;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct VacationRules {
     pub max_concurrent_vacations: Option<u32>,
     pub allow_layoff_vacations: Option<bool>,
     pub require_layoff_vacation_period: Option<bool>,
     pub layoff_periods: Option<Vec<LayoffPeriod>>,
-}
-
-impl VacationRules {
-    pub fn new(
-        max_concurrent_vacations: Option<u32>,
-        allow_layoff_vacations: Option<bool>,
-        require_layoff_vacation_period: Option<bool>,
-        layoff_periods: Option<Vec<LayoffPeriod>>,
-    ) -> Self {
-        Self {
-            max_concurrent_vacations,
-            allow_layoff_vacations,
-            require_layoff_vacation_period,
-            layoff_periods,
-        }
-    }
 }
 
 impl Display for VacationRules {

@@ -9,8 +9,6 @@ pub struct CreateTimeOffUseCase<R: ResourceRepository> {
 pub struct CreateTimeOffResult {
     pub success: bool,
     pub message: String,
-    pub resource_name: String,
-    pub hours: u32,
     pub time_off_balance: u32,
     pub description: Option<String>,
     pub date: String,
@@ -55,8 +53,6 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
                     "{} horas adicionadas com sucesso para {}",
                     hours, resource.name
                 ),
-                resource_name: resource.name,
-                hours,
                 time_off_balance: resource.time_off_balance,
                 description,
                 date,

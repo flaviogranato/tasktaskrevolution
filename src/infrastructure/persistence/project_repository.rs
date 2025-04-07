@@ -6,66 +6,20 @@ use crate::infrastructure::persistence::manifests::project_manifest::ProjectMani
 use serde_yaml;
 use std::default::Default;
 use std::error::Error;
-use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-// Implementação simples do NotFoundError
-#[derive(Debug)]
-struct NotFoundError {
-    message: String,
-}
-
-impl NotFoundError {
-    fn new(message: &str) -> Self {
-        Self {
-            message: message.to_string(),
-        }
-    }
-}
-
-impl fmt::Display for NotFoundError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
-
-impl Error for NotFoundError {}
-
-pub struct FileProjectRepository {
-    base_path: PathBuf,
-}
+#[derive(Default)]
+pub struct FileProjectRepository;
 
 impl FileProjectRepository {
-    pub fn new() -> Self {
-        Self {
-            base_path: PathBuf::from("."),
-        }
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
     }
 
     fn get_project_file_path(&self, path: &Path) -> PathBuf {
         path.to_path_buf()
-    }
-
-    fn get_project_path(&self, project_code: &str) -> PathBuf {
-        self.base_path.join("projects").join(project_code)
-    }
-
-    pub fn load_project(&self, project_code: &str) -> Result<Project, Box<dyn Error>> {
-        let project_path = self.get_project_path(project_code);
-        if !project_path.exists() {
-            return Err(Box::new(NotFoundError::new(&format!(
-                "Projeto com código '{}' não encontrado",
-                project_code
-            ))));
-        }
-
-        let project_yaml = fs::read_to_string(project_path.join("project.yaml"))?;
-        let project_manifest: ProjectManifest = serde_yaml::from_str(&project_yaml)?;
-
-        Ok(<ProjectManifest as Convertable<Project>>::to(
-            &project_manifest,
-        ))
     }
 
     fn load_manifest(&self, path: &Path) -> Result<ProjectManifest, Box<dyn Error>> {
@@ -101,12 +55,6 @@ impl ProjectRepository for FileProjectRepository {
                 "Falha ao carregar o arquivo do projeto".to_string(),
             ))
         }
-    }
-}
-
-impl Default for FileProjectRepository {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
