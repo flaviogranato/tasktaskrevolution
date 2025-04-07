@@ -1,6 +1,6 @@
-use chrono::NaiveDate;
-use crate::domain::task::{Task, TaskRepository};
 use crate::domain::shared_kernel::errors::DomainError;
+use crate::domain::task::{Task, TaskRepository};
+use chrono::NaiveDate;
 
 pub trait CreateTaskUseCase {
     fn execute(
@@ -29,7 +29,9 @@ impl<R: TaskRepository> CreateTaskUseCase for CreateTaskUseCaseImpl<R> {
         due_date: NaiveDate,
     ) -> Result<Task, DomainError> {
         let task = Task::new(title, description, due_date)?;
-        self.task_repository.save(task).map_err(|e| DomainError::Generic(e.to_string()))
+        self.task_repository
+            .save(task)
+            .map_err(|e| DomainError::Generic(e.to_string()))
     }
 }
 
@@ -74,11 +76,7 @@ mod tests {
 
         let due_date = Utc::now().naive_utc().date();
         let task = use_case
-            .execute(
-                "Test Task".to_string(),
-                "Description".to_string(),
-                due_date,
-            )
+            .execute("Test Task".to_string(), "Description".to_string(), due_date)
             .unwrap();
 
         assert_eq!(task.title(), "Test Task");

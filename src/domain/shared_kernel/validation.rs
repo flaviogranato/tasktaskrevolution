@@ -35,4 +35,3 @@ pub fn validate_uuid(uuid: &str) -> Result<(), ValidationError> {
     }
     Ok(())
 }
-

@@ -2,10 +2,10 @@ use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::task::Task;
 use crate::domain::task::TaskRepository;
 use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
-use std::fs;
-use std::path::Path;
-use std::io;
 use serde_yaml;
+use std::fs;
+use std::io;
+use std::path::Path;
 
 pub struct FileTaskRepository {
     base_path: std::path::PathBuf,
@@ -23,7 +23,7 @@ impl FileTaskRepository {
             .to_lowercase()
             .replace(' ', "-")
             .replace(|c: char| !c.is_alphanumeric() && c != '-', "");
-        
+
         self.base_path
             .join("tasks")
             .join(format!("{}.yaml", sanitized_title))
@@ -44,7 +44,7 @@ impl TaskRepository for FileTaskRepository {
 
         let manifest = <TaskManifest as Convertable<Task>>::from(task.clone());
         let task_path = self.get_task_path(task.title());
-        
+
         let yaml = serde_yaml::to_string(&manifest)?;
         fs::write(&task_path, yaml)?;
 
@@ -53,14 +53,14 @@ impl TaskRepository for FileTaskRepository {
 
     fn find_by_title(&self, title: &str) -> Result<Option<Task>, Box<dyn std::error::Error>> {
         let task_path = self.get_task_path(title);
-        
+
         if !task_path.exists() {
             return Ok(None);
         }
 
         let yaml = fs::read_to_string(&task_path)?;
         let manifest: TaskManifest = serde_yaml::from_str(&yaml)?;
-        
+
         Ok(Some(manifest.to()))
     }
 

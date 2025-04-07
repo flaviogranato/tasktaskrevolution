@@ -1,12 +1,12 @@
 use std::{env, path::PathBuf};
 
-use clap::{Parser, Subcommand};
 use chrono::{NaiveDate, Utc};
+use clap::{Parser, Subcommand};
 
 use crate::{
     application::{
         create_project_use_case::CreateProjectUseCase,
-        create_resource_use_case::CreateResourceUseCase, 
+        create_resource_use_case::CreateResourceUseCase,
         create_task_use_case::{CreateTaskUseCase, CreateTaskUseCaseImpl},
         create_time_off_use_case::CreateTimeOffUseCase,
         create_vacation_use_case::CreateVacationUseCase,
@@ -15,10 +15,8 @@ use crate::{
         validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
-        config_repository::FileConfigRepository, 
-        project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository, 
-        task_repository::FileTaskRepository,
+        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
+        resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
     },
 };
 
@@ -180,7 +178,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileResourceRepository::new();
                 let use_case = CreateTimeOffUseCase::new(repository);
 
-                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone()) {
+                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone())
+                {
                     Ok(result) => {
                         if result.success {
                             println!("✅ {}", result.message);
@@ -258,16 +257,15 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
     Ok(())
 }
 
-fn handle_create_task<T: CreateTaskUseCase>(args: &CreateTaskArgs, use_case: &T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    match use_case.execute(
-        args.title.clone(),
-        args.description.clone(),
-        args.due_date,
-    ) {
+fn handle_create_task<T: CreateTaskUseCase>(
+    args: &CreateTaskArgs,
+    use_case: &T,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    match use_case.execute(args.title.clone(), args.description.clone(), args.due_date) {
         Ok(task) => {
             println!("✅ Tarefa '{}' criada com sucesso", task.title());
             Ok(())
-        },
+        }
         Err(e) => {
             println!("❌ Erro ao criar tarefa: {}", e);
             Ok(())
