@@ -1,5 +1,5 @@
 use std::path::Path;
-use crate::domain::project::project::Project;
+use crate::domain::project::model::Project;
 use crate::domain::shared_kernel::errors::DomainError;
 
 pub trait ProjectRepository {

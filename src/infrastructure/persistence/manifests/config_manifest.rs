@@ -1,9 +1,8 @@
-use serde::{Deserialize, Serialize};
-use chrono::Utc;
-
-use crate::domain::config::config::Config;
+use crate::domain::config::model::Config;
 use crate::domain::shared_kernel::convertable::Convertable;
 use crate::infrastructure::persistence::manifests::project_manifest::VacationRulesManifest;
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]

@@ -1,10 +1,10 @@
 use crate::domain::{
-    project::{project_repository::ProjectRepository, vacation_rules::VacationRules},
-    resource::resource::Period,
-    resource::resource_repository::ResourceRepository,
+    project::{repository::ProjectRepository, vacation_rules::VacationRules},
+    resource::model::Period,
+    resource::repository::ResourceRepository,
     shared_kernel::errors::DomainError,
 };
-use chrono::{DateTime, Local, NaiveDate, FixedOffset, Offset};
+use chrono::{DateTime, FixedOffset, Local, NaiveDate, Offset};
 
 pub struct ValidateVacationsUseCase<P: ProjectRepository, R: ResourceRepository> {
     project_repository: P,
@@ -23,7 +23,11 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
         period1.start_date <= period2.end_date && period2.start_date <= period1.end_date
     }
 
-    fn check_layoff_overlap(&self, vacation_period: &Period, layoff_period: &(String, String)) -> bool {
+    fn check_layoff_overlap(
+        &self,
+        vacation_period: &Period,
+        layoff_period: &(String, String),
+    ) -> bool {
         let layoff_start = NaiveDate::parse_from_str(&layoff_period.0, "%Y-%m-%d")
             .unwrap()
             .and_hms_opt(0, 0, 0)
@@ -32,22 +36,34 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
             .unwrap()
             .and_hms_opt(0, 0, 0)
             .unwrap();
-        
+
         let offset = Local::now().offset().fix();
-        let layoff_start: DateTime<FixedOffset> = DateTime::from_naive_utc_and_offset(layoff_start, offset);
-        let layoff_end: DateTime<FixedOffset> = DateTime::from_naive_utc_and_offset(layoff_end, offset);
+        let layoff_start: DateTime<FixedOffset> =
+            DateTime::from_naive_utc_and_offset(layoff_start, offset);
+        let layoff_end: DateTime<FixedOffset> =
+            DateTime::from_naive_utc_and_offset(layoff_end, offset);
 
         vacation_period.start_date <= layoff_end && layoff_start <= vacation_period.end_date
     }
 
-    fn has_valid_layoff_vacation(&self, vacations: &[Period], vacation_rules: &VacationRules) -> bool {
+    fn has_valid_layoff_vacation(
+        &self,
+        vacations: &[Period],
+        vacation_rules: &VacationRules,
+    ) -> bool {
         if let Some(layoff_periods) = &vacation_rules.layoff_periods {
             if let Some(require_layoff) = vacation_rules.require_layoff_vacation_period {
                 if require_layoff {
                     // Verifica se pelo menos uma férias coincide com algum período de layoff
                     for vacation in vacations {
                         for layoff_period in layoff_periods {
-                            if self.check_layoff_overlap(vacation, &(layoff_period.start_date.clone(), layoff_period.end_date.clone())) {
+                            if self.check_layoff_overlap(
+                                vacation,
+                                &(
+                                    layoff_period.start_date.clone(),
+                                    layoff_period.end_date.clone(),
+                                ),
+                            ) {
                                 return true;
                             }
                         }
@@ -61,7 +77,9 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 
     pub fn execute(&self) -> Result<Vec<String>, DomainError> {
         let resources = self.resource_repository.find_all()?;
-        let project = self.project_repository.load(&std::path::PathBuf::from("."))?;
+        let project = self
+            .project_repository
+            .load(&std::path::PathBuf::from("."))?;
         let mut mensagens = Vec::new();
 
         // Verificar sobreposição entre todos os recursos
@@ -111,7 +129,7 @@ mod tests {
     use super::*;
     use crate::domain::{
         project::{layoff_period::LayoffPeriod, vacation_rules::VacationRules},
-        resource::resource::{PeriodType, Resource},
+        resource::model::{PeriodType, Resource},
     };
     use chrono::{Duration, Local};
     use std::path::Path;
@@ -127,19 +145,22 @@ mod tests {
     impl ProjectRepository for MockProjectRepository {
         fn save(
             &self,
-            _project: crate::domain::project::project::Project,
+            _project: crate::domain::project::model::Project,
         ) -> Result<(), DomainError> {
             Ok(())
         }
 
-        fn load(&self, _path: &Path) -> Result<crate::domain::project::project::Project, DomainError> {
-            Ok(crate::domain::project::project::Project {
+        fn load(
+            &self,
+            _path: &Path,
+        ) -> Result<crate::domain::project::model::Project, DomainError> {
+            Ok(crate::domain::project::model::Project {
                 id: None,
                 name: "Test Project".to_string(),
                 description: None,
                 start_date: None,
                 end_date: None,
-                status: crate::domain::project::project::ProjectStatus::InProgress,
+                status: crate::domain::project::model::ProjectStatus::InProgress,
                 vacation_rules: self.vacation_rules.clone(),
             })
         }
@@ -154,15 +175,32 @@ mod tests {
             Ok(self.resources.clone())
         }
 
-        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        fn save_time_off(
+            &self,
+            _resource_name: String,
+            _hours: u32,
+            _date: String,
+            _description: Option<String>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
-        fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
+        fn save_vacation(
+            &self,
+            _resource_name: String,
+            _start_date: String,
+            _end_date: String,
+            _is_time_off_compensation: bool,
+            _compensated_hours: Option<u32>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
-        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &DateTime<Local>,
+            _end_date: &DateTime<Local>,
+        ) -> bool {
             false
         }
     }
@@ -216,9 +254,11 @@ mod tests {
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result
-            .iter()
-            .any(|msg| msg.contains("Sobreposição detectada")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("Sobreposição detectada"))
+        );
     }
 
     #[test]
@@ -231,7 +271,10 @@ mod tests {
             None,
             Some(true),
             Some(true),
-            Some(vec![LayoffPeriod::new(layoff_start.clone(), layoff_end.clone())]),
+            Some(vec![LayoffPeriod::new(
+                layoff_start.clone(),
+                layoff_end.clone(),
+            )]),
         );
 
         // Recurso sem férias durante o layoff
@@ -282,12 +325,16 @@ mod tests {
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result
-            .iter()
-            .any(|msg| msg.contains("não possui férias durante nenhum período de layoff")));
-        assert!(!result
-            .iter()
-            .any(|msg| msg.contains("Maria") && msg.contains("layoff")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("não possui férias durante nenhum período de layoff"))
+        );
+        assert!(
+            !result
+                .iter()
+                .any(|msg| msg.contains("Maria") && msg.contains("layoff"))
+        );
     }
 
     fn create_resource_with_approved_vacation() -> Resource {

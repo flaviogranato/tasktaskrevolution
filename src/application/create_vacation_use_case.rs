@@ -1,12 +1,5 @@
-use crate::domain::{
-    project::project_repository::ProjectRepository,
-    resource::{
-        resource::Resource,
-        resource_repository::ResourceRepository,
-    },
-    shared_kernel::errors::DomainError,
-};
-use chrono::{NaiveDate, DateTime, Local};
+use crate::domain::resource::repository::ResourceRepository;
+use chrono::NaiveDate;
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
     repository: R,
@@ -60,7 +53,10 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
         ) {
             Ok(resource) => Ok(CreateVacationResult {
                 success: true,
-                message: format!("Período de férias adicionado com sucesso para {}", resource.name),
+                message: format!(
+                    "Período de férias adicionado com sucesso para {}",
+                    resource.name
+                ),
                 resource_name: resource.name,
             }),
             Err(e) => Ok(CreateVacationResult {
@@ -104,22 +100,40 @@ mod tests {
             Ok(self.resources.borrow().clone())
         }
 
-        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        fn save_time_off(
+            &self,
+            _resource_name: String,
+            _hours: u32,
+            _date: String,
+            _description: Option<String>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
-        fn save_vacation(&self, resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
+        fn save_vacation(
+            &self,
+            resource_name: String,
+            _start_date: String,
+            _end_date: String,
+            _is_time_off_compensation: bool,
+            _compensated_hours: Option<u32>,
+        ) -> Result<Resource, DomainError> {
             let mut resources = self.resources.borrow_mut();
-            let resource = resources.iter_mut()
+            let resource = resources
+                .iter_mut()
                 .find(|r| r.id == Some(resource_name.clone()))
                 .ok_or_else(|| DomainError::Generic("Recurso não encontrado".to_string()))?;
-            
+
             // Aqui você pode adicionar a lógica para salvar as férias no recurso
             // Por enquanto, apenas retornamos o recurso sem modificações
             Ok(resource.clone())
         }
 
-        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &DateTime<Local>,
+            _end_date: &DateTime<Local>,
+        ) -> bool {
             false
         }
     }

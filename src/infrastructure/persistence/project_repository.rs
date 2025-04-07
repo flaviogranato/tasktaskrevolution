@@ -1,5 +1,5 @@
 use crate::domain::{
-    project::{project::Project, project_repository::ProjectRepository},
+    project::{model::Project, repository::ProjectRepository},
     shared_kernel::{errors::DomainError, convertable::Convertable},
 };
 use std::path::{Path, PathBuf};

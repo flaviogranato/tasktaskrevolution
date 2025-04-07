@@ -1,13 +1,9 @@
-use std::{fs, path::PathBuf};
-
-use serde_yaml::to_string;
-
-use crate::domain::config::config::Config;
+use crate::domain::config::model::Config;
 use crate::domain::shared_kernel::convertable::Convertable;
-use crate::domain::{
-    config::config_repository::ConfigRepository, shared_kernel::errors::DomainError,
-};
+use crate::domain::{config::repository::ConfigRepository, shared_kernel::errors::DomainError};
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
+use serde_yaml::to_string;
+use std::{fs, path::PathBuf};
 
 pub struct FileConfigRepository;
 
