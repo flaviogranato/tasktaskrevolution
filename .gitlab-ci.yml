@@ -1,14 +1,21 @@
 stages:
   - test
+  - lint
+  - audit
   - build
   - release
 
 variables:
   CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
   RUSTFLAGS: "-Dwarnings"
+  CARGO_PROFILE_RELEASE_LTO: "fat"
+  CARGO_PROFILE_RELEASE_STRIP: "symbols"
 
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - Cargo.lock
+    prefix: ${CI_COMMIT_REF_SLUG}
   paths:
     - .cargo/
     - target/
@@ -17,39 +24,67 @@ workflow:
   rules:
     - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ || $CI_COMMIT_BRANCH == "develop"
       when: always
-    - if: $CI_COMMIT_BRANCH =~ /^release\/.*$/ || $CI_COMMIT_BRANCH == "master"
+    - if: $CI_COMMIT_BRANCH =~ /^release\/.*$/ || $CI_COMMIT_BRANCH == "main"
       when: always
     - when: never
 
 test:
   stage: test
-  image: rust:1.85
+  image: rust:1.86-bookworm
   script:
-    - cargo test --verbose
+    - cargo test --all-targets --verbose
+
+lint:
+  stage: lint
+  image: rust:1.86-bookworm
+  script:
     - rustup component add clippy
-    - cargo clippy -- -D warnings
+    - cargo clippy --all-targets -- -D warnings
     - rustup component add rustfmt
-    - cargo fmt -- --check
+    - cargo fmt --check
+
+audit:
+  stage: audit
+  image: cargo-audit:latest
+  script:
+    - cargo install cargo-audit
+    - cargo audit
 
 build:
   stage: build
-  image: rust:1.85
+  image: rust:1.86-bookworm
   rules:
     - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH =~ /^release\/.*$/
       when: always
   script:
     - apt-get update && apt-get install -y zstd
-    - cargo build --release
-    - zstd -19 --ultra target/release/${CI_PROJECT_NAME} -o ${CI_PROJECT_NAME}.zst
+    - cargo build --profile release
+    - zstd --compress -22 --ultra target/release/${CI_PROJECT_NAME} -o ${CI_PROJECT_NAME}.zst
+    - sha512sum ${CI_PROJECT_NAME}.zst > ${CI_PROJECT_NAME}.sha512
   artifacts:
     paths:
       - ${CI_PROJECT_NAME}.zst
+      - ${CI_PROJECT_NAME}.sha512
+
+prepare_changelog:
+  stage: release
+  image: orhunp/git-cliff:latest@sha256:d5b8f19a8c0af8d37e90c6a157c3b3c4e4d5e8e0c9d8e8f7a6b5c4d3e2f1a0
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - git-cliff --tag $CI_COMMIT_TAG --output CHANGELOG.md
+  artifacts:
+    paths:
+      - CHANGELOG.md
+    expire_in: 1 hour
 
 release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - prepare_changelog
   rules:
-    - if: $CI_COMMIT_BRANCH == "master" && $CI_COMMIT_TAG != null
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_TAG != null
       when: always
   script:
     - echo "Lançando versão ${CI_COMMIT_TAG}"
@@ -58,6 +93,7 @@ release:
     description: "Release ${CI_COMMIT_TAG}"
     assets:
       links:
-        - name: "Binário Compactado"
-          url: "${CI_JOB_URL}/artifacts/download"
-          link_type: "other"
+        - name: "Binário"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts/${CI_PROJECT_NAME}.zst"
+        - name: "Changelog"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${prepare_changelog.id}/artifacts/CHANGELOG.md"
