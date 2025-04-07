@@ -1,7 +1,4 @@
-use crate::domain::{
-    resource::resource_repository::ResourceRepository,
-    shared_kernel::errors::DomainError,
-};
+use crate::domain::{resource::repository::ResourceRepository, shared_kernel::errors::DomainError};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -12,8 +9,6 @@ pub struct CreateTimeOffUseCase<R: ResourceRepository> {
 pub struct CreateTimeOffResult {
     pub success: bool,
     pub message: String,
-    pub resource_name: String,
-    pub hours: u32,
     pub time_off_balance: u32,
     pub description: Option<String>,
     pub date: String,
@@ -27,7 +22,9 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
     #[allow(dead_code)]
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
         let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-            .map_err(|_| DomainError::Generic("Formato de data inválido. Use YYYY-MM-DD".to_string()))?
+            .map_err(|_| {
+                DomainError::Generic("Formato de data inválido. Use YYYY-MM-DD".to_string())
+            })?
             .and_hms_opt(0, 0, 0)
             .ok_or_else(|| DomainError::Generic("Erro ao converter hora".to_string()))?;
 
@@ -44,12 +41,18 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         date: String,
         description: Option<String>,
     ) -> Result<CreateTimeOffResult, Box<dyn std::error::Error>> {
-        match self.repository.save_time_off(resource.clone(), hours, date.clone(), description.clone()) {
+        match self.repository.save_time_off(
+            resource.clone(),
+            hours,
+            date.clone(),
+            description.clone(),
+        ) {
             Ok(resource) => Ok(CreateTimeOffResult {
                 success: true,
-                message: format!("{} horas adicionadas com sucesso para {}", hours, resource.name),
-                resource_name: resource.name,
-                hours,
+                message: format!(
+                    "{} horas adicionadas com sucesso para {}",
+                    hours, resource.name
+                ),
                 time_off_balance: resource.time_off_balance,
                 description,
                 date,
@@ -62,8 +65,8 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::resource::model::Resource;
     use std::cell::RefCell;
-    use crate::domain::resource::resource::Resource;
 
     struct MockResourceRepository {
         resources: RefCell<Vec<Resource>>,
@@ -92,21 +95,39 @@ mod tests {
             Ok(self.resources.borrow().clone())
         }
 
-        fn save_time_off(&self, resource_name: String, hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        fn save_time_off(
+            &self,
+            resource_name: String,
+            hours: u32,
+            _date: String,
+            _description: Option<String>,
+        ) -> Result<Resource, DomainError> {
             let mut resources = self.resources.borrow_mut();
-            let resource = resources.iter_mut()
+            let resource = resources
+                .iter_mut()
                 .find(|r| r.id == Some(resource_name.clone()))
                 .ok_or_else(|| DomainError::Generic("Recurso não encontrado".to_string()))?;
-            
+
             resource.time_off_balance += hours;
             Ok(resource.clone())
         }
 
-        fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
+        fn save_vacation(
+            &self,
+            _resource_name: String,
+            _start_date: String,
+            _end_date: String,
+            _is_time_off_compensation: bool,
+            _compensated_hours: Option<u32>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
-        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &DateTime<Local>,
+            _end_date: &DateTime<Local>,
+        ) -> bool {
             false
         }
     }
@@ -205,12 +226,7 @@ mod tests {
         let repository = MockResourceRepository::new(vec![resource]);
         let use_case = CreateTimeOffUseCase::new(repository);
 
-        let result = use_case.execute(
-            "john-doe".to_string(),
-            4,
-            "2024-01-01".to_string(),
-            None,
-        );
+        let result = use_case.execute("john-doe".to_string(), 4, "2024-01-01".to_string(), None);
 
         assert!(result.is_ok());
         let updated_resource = result.unwrap();

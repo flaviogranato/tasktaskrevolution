@@ -2,7 +2,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{
-    resource::resource::{Period, PeriodType, ProjectAssignment, Resource},
+    resource::model::{Period, PeriodType, ProjectAssignment, Resource},
     shared_kernel::convertable::Convertable,
 };
 
@@ -135,36 +135,6 @@ impl Convertable<PeriodType> for PeriodTypeManifest {
     }
 }
 
-impl ResourceManifest {
-    pub fn new(name: String, email: Option<String>, resource_type: String) -> Self {
-        let code = name.to_lowercase().replace(" ", "-");
-        Self {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
-            kind: "Resource".to_string(),
-            metadata: ResourceMetadata {
-                name,
-                email,
-                code,
-                resource_type,
-            },
-            spec: ResourceSpec::default(),
-        }
-    }
-    pub fn basic(name: String, resource_type: String) -> Self {
-        ResourceManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
-            kind: "Resource".to_string(),
-            metadata: ResourceMetadata {
-                code: "".to_string(),
-                name,
-                email: None,
-                resource_type,
-            },
-            spec: ResourceSpec::default(),
-        }
-    }
-}
-
 impl Convertable<Resource> for ResourceManifest {
     fn from(source: Resource) -> Self {
         Self {
@@ -198,8 +168,14 @@ impl Convertable<Resource> for ResourceManifest {
             self.metadata.name.clone(),
             self.metadata.email.clone(),
             self.metadata.resource_type.clone(),
-            self.spec.vacations.as_ref().map(|v| v.iter().map(|p| p.to()).collect()),
-            self.spec.project_assignments.as_ref().map(|pa| pa.iter().map(|a| a.to()).collect()),
+            self.spec
+                .vacations
+                .as_ref()
+                .map(|v| v.iter().map(|p| p.to()).collect()),
+            self.spec
+                .project_assignments
+                .as_ref()
+                .map(|pa| pa.iter().map(|a| a.to()).collect()),
             self.spec.time_off_balance,
         )
     }
@@ -233,20 +209,6 @@ mod tests {
         "#;
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
         assert_eq!(manifest.metadata.name, "John Doe");
-        assert_eq!(manifest.metadata.code, "john-doe");
-        assert_eq!(manifest.metadata.resource_type, "Developer");
-    }
-
-    #[test]
-    fn test_serialize_deserialize() {
-        let manifest = ResourceManifest::new(
-            "John Doe".to_string(),
-            Some("john@doe.com".to_string()),
-            "Developer".to_string(),
-        );
-        let yaml_str = serde_yaml::to_string(&manifest).unwrap();
-        let manifest_deserialized: ResourceManifest = serde_yaml::from_str(&yaml_str).unwrap();
-        assert_eq!(manifest.metadata.name, manifest_deserialized.metadata.name);
         assert_eq!(manifest.metadata.code, "john-doe");
         assert_eq!(manifest.metadata.resource_type, "Developer");
     }
