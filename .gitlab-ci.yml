@@ -1,80 +1,104 @@
-image: rust:latest
-
-variables:
-  CARGO_TERM_COLOR: always
-
 stages:
-  - build
   - test
+  - build
   - release
 
-# Cache as dependências entre jobs
+variables:
+  CARGO_HOME: "${CI_PROJECT_DIR}/.cargo"
+  RUSTFLAGS: "-Dwarnings"
+  CARGO_PROFILE_RELEASE_LTO: "fat"
+  CARGO_PROFILE_RELEASE_STRIP: "symbols"
+
 cache:
-  key: ${CI_COMMIT_REF_SLUG}
+  key:
+    files:
+      - Cargo.lock
+    prefix: ${CI_COMMIT_REF_SLUG}
   paths:
     - .cargo/
     - target/
 
-# Job de build
-build:
-  stage: build
-  script:
-    - cargo build --release
-  artifacts:
-    paths:
-      - target/release/
-    expire_in: 1 week
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^feature\/.*$/ || $CI_COMMIT_BRANCH == "develop"
+      when: always
+    - if: $CI_COMMIT_BRANCH =~ /^release\/.*$/ || $CI_COMMIT_BRANCH == "main"
+      when: always
+    - when: never
 
-# Job de teste
 test:
   stage: test
+  image: rust:1.86-bookworm
   script:
-    - cargo test --release
+    - cargo test --all-targets --verbose
 
-# Job de release para Linux
-release_linux:
-  stage: release
-  image: rust:latest
+lint:
+  stage: test
+  image: rust:1.86-bookworm
   script:
-    - cargo build --release
-    - tar czf tasktaskrevolution-linux.tar.gz -C target/release tasktaskrevolution
-  artifacts:
+    - rustup component add clippy
+    - cargo clippy --all-targets -- -D warnings
+    - rustup component add rustfmt
+    - cargo fmt --check
+
+audit:
+  stage: test
+  image: rust:latest
+  cache:
     paths:
-      - tasktaskrevolution-linux.tar.gz
-    expire_in: never
-  only:
-    - tags
-
-# Job de release para Windows
-release_windows:
-  stage: release
-  image: rust:latest
+      - $CARGO_HOME/bin/
+      - $CARGO_HOME/registry/
   before_script:
-    - apt-get update && apt-get install -y mingw-w64
-    - rustup target add x86_64-pc-windows-gnu
+    - rustc --version
+    - cargo --version
   script:
-    - cargo build --release --target x86_64-pc-windows-gnu
-    - zip tasktaskrevolution-windows.zip target/x86_64-pc-windows-gnu/release/tasktaskrevolution.exe
-  artifacts:
-    paths:
-      - tasktaskrevolution-windows.zip
-    expire_in: never
-  only:
-    - tags
+    - cargo install cargo-audit --locked || true
+    - cargo audit || exit 1
 
-# Job de release para macOS
-release_macos:
-  stage: release
-  image: rust:latest
-  before_script:
-    - apt-get update && apt-get install -y clang
-    - rustup target add x86_64-apple-darwin
+build:
+  stage: build
+  image: rust:1.86-bookworm
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH =~ /^release\/.*$/
+      when: always
   script:
-    - cargo build --release --target x86_64-apple-darwin
-    - tar czf tasktaskrevolution-macos.tar.gz -C target/x86_64-apple-darwin/release tasktaskrevolution
+    - apt-get update && apt-get install -y zstd
+    - cargo build --profile release
+    - zstd --compress -22 --ultra target/release/ttr -o ${CI_PROJECT_NAME}.zst
+    - sha512sum ${CI_PROJECT_NAME}.zst > ${CI_PROJECT_NAME}.sha512
   artifacts:
     paths:
-      - tasktaskrevolution-macos.tar.gz
-    expire_in: never
-  only:
-    - tags 
+      - ${CI_PROJECT_NAME}.zst
+      - ${CI_PROJECT_NAME}.sha512
+
+prepare_changelog:
+  stage: release
+  image: orhunp/git-cliff:latest@sha256:d5b8f19a8c0af8d37e90c6a157c3b3c4e4d5e8e0c9d8e8f7a6b5c4d3e2f1a0
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - git-cliff --tag $CI_COMMIT_TAG --output CHANGELOG.md
+  artifacts:
+    paths:
+      - CHANGELOG.md
+    expire_in: 1 hour
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - prepare_changelog
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_TAG != null
+      when: always
+  script:
+    - echo "Lançando versão ${CI_COMMIT_TAG}"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    description: "Release ${CI_COMMIT_TAG}"
+    assets:
+      links:
+        - name: "Binário"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${CI_JOB_ID}/artifacts/${CI_PROJECT_NAME}.zst"
+        - name: "Changelog"
+          url: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/${prepare_changelog.id}/artifacts/CHANGELOG.md"

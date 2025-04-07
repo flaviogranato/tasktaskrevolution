@@ -1,13 +1,7 @@
-use std::{env, path::PathBuf};
-
-use clap::{Parser, Subcommand};
-use chrono::{NaiveDate, Utc};
-
 use crate::{
     application::{
         create_project_use_case::CreateProjectUseCase,
-        create_resource_use_case::CreateResourceUseCase, 
-        create_task_use_case::{CreateTaskUseCase, CreateTaskUseCaseImpl},
+        create_resource_use_case::CreateResourceUseCase,
         create_time_off_use_case::CreateTimeOffUseCase,
         create_vacation_use_case::CreateVacationUseCase,
         initialize_repository_use_case::InitializeRepositoryUseCase,
@@ -15,12 +9,12 @@ use crate::{
         validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
-        config_repository::FileConfigRepository, 
-        project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository, 
-        task_repository::FileTaskRepository,
+        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
+        resource_repository::FileResourceRepository,
     },
 };
+use clap::{Parser, Subcommand};
+use std::{env, path::PathBuf};
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"),
@@ -108,13 +102,6 @@ enum ReportCommands {
     Vacation,
 }
 
-#[derive(Debug)]
-pub struct CreateTaskArgs {
-    pub title: String,
-    pub description: String,
-    pub due_date: NaiveDate,
-}
-
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     match &cli.command {
         Commands::Init {
@@ -180,7 +167,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileResourceRepository::new();
                 let use_case = CreateTimeOffUseCase::new(repository);
 
-                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone()) {
+                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone())
+                {
                     Ok(result) => {
                         if result.success {
                             println!("✅ {}", result.message);
@@ -196,30 +184,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Err(e) => println!("❌ Erro inesperado: {}", e),
                 }
             }
-            CreateCommands::Task {
-                name,
-                description,
-                due_date,
-            } => {
-                let current_dir = std::env::current_dir()?;
-                let repository = FileTaskRepository::new(current_dir);
-                let use_case = CreateTaskUseCaseImpl::new(repository);
-
-                let due_date = due_date
-                    .as_ref()
-                    .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
-                    .transpose()?
-                    .unwrap_or_else(|| Utc::now().naive_utc().date());
-
-                handle_create_task(
-                    &CreateTaskArgs {
-                        title: name.clone(),
-                        description: description.clone().unwrap_or_default(),
-                        due_date,
-                    },
-                    &use_case,
-                )?;
-            }
+            &CreateCommands::Task { .. } => todo!(),
         },
         Commands::Validate { validate_command } => match validate_command {
             ValidateCommands::Vacations => {
@@ -256,21 +221,4 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
     }
 
     Ok(())
-}
-
-fn handle_create_task<T: CreateTaskUseCase>(args: &CreateTaskArgs, use_case: &T) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    match use_case.execute(
-        args.title.clone(),
-        args.description.clone(),
-        args.due_date,
-    ) {
-        Ok(task) => {
-            println!("✅ Tarefa '{}' criada com sucesso", task.title());
-            Ok(())
-        },
-        Err(e) => {
-            println!("❌ Erro ao criar tarefa: {}", e);
-            Ok(())
-        }
-    }
 }
