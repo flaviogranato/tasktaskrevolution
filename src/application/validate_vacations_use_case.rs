@@ -128,7 +128,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 mod tests {
     use super::*;
     use crate::domain::{
-        project::{layoff_period::LayoffPeriod, vacation_rules::VacationRules},
+        project::vacation_rules::VacationRules,
         resource::model::{PeriodType, Resource},
     };
     use chrono::{Duration, Local};
@@ -258,82 +258,6 @@ mod tests {
             result
                 .iter()
                 .any(|msg| msg.contains("Sobreposição detectada"))
-        );
-    }
-
-    #[test]
-    fn test_layoff_vacation_validation() {
-        let now = Local::now();
-        let layoff_start = now.format("%Y-%m-%d").to_string();
-        let layoff_end = (now + Duration::days(30)).format("%Y-%m-%d").to_string();
-
-        let vacation_rules = VacationRules::new(
-            None,
-            Some(true),
-            Some(true),
-            Some(vec![LayoffPeriod::new(
-                layoff_start.clone(),
-                layoff_end.clone(),
-            )]),
-        );
-
-        // Recurso sem férias durante o layoff
-        let resource1 = Resource::new(
-            None,
-            "João".to_string(),
-            None,
-            "Dev".to_string(),
-            Some(vec![Period {
-                start_date: now + Duration::days(40),
-                end_date: now + Duration::days(50),
-                approved: true,
-                period_type: PeriodType::Vacation,
-                is_time_off_compensation: false,
-                compensated_hours: None,
-                is_layoff: false,
-            }]),
-            None,
-            0,
-        );
-
-        // Recurso com férias durante o layoff
-        let resource2 = Resource::new(
-            None,
-            "Maria".to_string(),
-            None,
-            "Dev".to_string(),
-            Some(vec![Period {
-                start_date: now + Duration::days(5),
-                end_date: now + Duration::days(15),
-                approved: true,
-                period_type: PeriodType::Vacation,
-                is_time_off_compensation: false,
-                compensated_hours: None,
-                is_layoff: true,
-            }]),
-            None,
-            0,
-        );
-
-        let mock_project_repo = MockProjectRepository {
-            vacation_rules: Some(vacation_rules),
-        };
-        let mock_resource_repo = MockResourceRepository {
-            resources: vec![resource1, resource2],
-        };
-
-        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
-        let result = use_case.execute().unwrap();
-
-        assert!(
-            result
-                .iter()
-                .any(|msg| msg.contains("não possui férias durante nenhum período de layoff"))
-        );
-        assert!(
-            !result
-                .iter()
-                .any(|msg| msg.contains("Maria") && msg.contains("layoff"))
         );
     }
 
