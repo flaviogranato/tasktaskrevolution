@@ -42,7 +42,7 @@ mod test {
     use super::*;
     use crate::domain::shared_kernel::errors::DomainError;
     use std::cell::RefCell;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
 
     struct MockProjectRepository {
         should_fail: bool,
