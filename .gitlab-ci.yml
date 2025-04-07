@@ -64,7 +64,7 @@ build:
   script:
     - apt-get update && apt-get install -y zstd
     - cargo build --profile release
-    - zstd --compress -22 --ultra target/release/${CI_PROJECT_NAME} -o ${CI_PROJECT_NAME}.zst
+    - zstd --compress -22 --ultra target/release/ttr -o ${CI_PROJECT_NAME}.zst
     - sha512sum ${CI_PROJECT_NAME}.zst > ${CI_PROJECT_NAME}.sha512
   artifacts:
     paths:
