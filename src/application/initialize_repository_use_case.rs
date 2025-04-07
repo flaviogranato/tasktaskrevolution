@@ -1,5 +1,5 @@
-use crate::domain::config::config::Config;
-use crate::domain::config::config_repository::ConfigRepository;
+use crate::domain::config::model::Config;
+use crate::domain::config::repository::ConfigRepository;
 use crate::domain::shared_kernel::convertable::Convertable;
 use crate::domain::shared_kernel::errors::DomainError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
