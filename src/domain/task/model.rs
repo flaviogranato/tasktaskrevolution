@@ -1,16 +1,23 @@
-use chrono::NaiveDate;
 use crate::domain::shared_kernel::errors::DomainError;
 use crate::domain::shared_kernel::validation::DomainValidation;
+use chrono::NaiveDate;
 use validator::Validate;
 
 #[derive(Debug, Clone, Validate)]
 pub struct Task {
-    #[validate(length(min = 1, max = 100, message = "O título deve ter entre 1 e 100 caracteres"))]
+    #[validate(length(
+        min = 1,
+        max = 100,
+        message = "O título deve ter entre 1 e 100 caracteres"
+    ))]
     title: String,
-    
-    #[validate(length(max = 1000, message = "A descrição não pode ter mais de 1000 caracteres"))]
+
+    #[validate(length(
+        max = 1000,
+        message = "A descrição não pode ter mais de 1000 caracteres"
+    ))]
     description: String,
-    
+
     due_date: NaiveDate,
     completed: bool,
 }
@@ -18,14 +25,18 @@ pub struct Task {
 impl DomainValidation for Task {}
 
 impl Task {
-    pub fn new(title: String, description: String, due_date: NaiveDate) -> Result<Self, DomainError> {
+    pub fn new(
+        title: String,
+        description: String,
+        due_date: NaiveDate,
+    ) -> Result<Self, DomainError> {
         let task = Self {
             title,
             description,
             due_date,
             completed: false,
         };
-        
+
         task.validate_domain()?;
         Ok(task)
     }
@@ -92,7 +103,8 @@ mod tests {
             "Tarefa original".to_string(),
             "Descrição original".to_string(),
             Utc::now().naive_utc().date(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let new_title = "Novo título".to_string();
         let new_description = "Nova descrição".to_string();
@@ -113,7 +125,8 @@ mod tests {
             "Tarefa".to_string(),
             "Descrição".to_string(),
             Utc::now().naive_utc().date(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(!task.is_completed());
         task.complete().unwrap();

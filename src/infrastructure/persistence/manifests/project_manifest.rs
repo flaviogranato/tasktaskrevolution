@@ -178,7 +178,9 @@ impl Convertable<VacationRules> for VacationRulesManifest {
             max_concurrent_vacations: self.max_concurrent_vacations,
             allow_layoff_vacations: self.allow_layoff_vacations,
             require_layoff_vacation_period: self.require_layoff_vacation_period,
-            layoff_periods: self.layoff_periods.as_ref()
+            layoff_periods: self
+                .layoff_periods
+                .as_ref()
                 .map(|periods| periods.iter().map(|period| period.to()).collect()),
         }
     }

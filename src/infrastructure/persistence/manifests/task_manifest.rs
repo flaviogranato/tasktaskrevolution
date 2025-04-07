@@ -51,7 +51,8 @@ impl Convertable<Task> for TaskManifest {
             self.spec.title.clone(),
             self.spec.description.clone(),
             self.metadata.due_date,
-        ).unwrap() // TODO: Handle this error properly
+        )
+        .unwrap() // TODO: Handle this error properly
     }
 }
 
@@ -95,8 +96,7 @@ mod date_format {
         D: Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        NaiveDate::parse_from_str(&s, "%Y-%m-%d")
-            .map_err(serde::de::Error::custom)
+        NaiveDate::parse_from_str(&s, "%Y-%m-%d").map_err(serde::de::Error::custom)
     }
 }
 
@@ -111,8 +111,9 @@ mod tests {
             "Test Task".to_string(),
             "Test Description".to_string(),
             Utc::now().naive_utc().date(),
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         let manifest = <TaskManifest as Convertable<Task>>::from(task);
 
         let yaml = serde_yaml::to_string(&manifest).unwrap();
