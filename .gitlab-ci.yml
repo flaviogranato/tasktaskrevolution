@@ -1,7 +1,5 @@
 stages:
   - test
-  - lint
-  - audit
   - build
   - release
 
@@ -35,7 +33,7 @@ test:
     - cargo test --all-targets --verbose
 
 lint:
-  stage: lint
+  stage: test
   image: rust:1.86-bookworm
   script:
     - rustup component add clippy
@@ -44,11 +42,18 @@ lint:
     - cargo fmt --check
 
 audit:
-  stage: audit
-  image: cargo-audit:latest
+  stage: test
+  image: rust:latest
+  cache:
+    paths:
+      - $CARGO_HOME/bin/
+      - $CARGO_HOME/registry/
+  before_script:
+    - rustc --version
+    - cargo --version
   script:
-    - cargo install cargo-audit
-    - cargo audit
+    - cargo install cargo-audit --locked || true
+    - cargo audit || exit 1
 
 build:
   stage: build
