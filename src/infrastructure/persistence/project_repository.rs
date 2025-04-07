@@ -64,13 +64,6 @@ pub struct MockProjectRepository {
 }
 
 #[cfg(test)]
-impl MockProjectRepository {
-    pub fn new(project: Project) -> Self {
-        Self { project }
-    }
-}
-
-#[cfg(test)]
 impl ProjectRepository for MockProjectRepository {
     fn save(&self, _project: Project) -> Result<(), DomainError> {
         Ok(())
