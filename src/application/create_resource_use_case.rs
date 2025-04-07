@@ -1,7 +1,4 @@
-use chrono::NaiveDate;
-use crate::domain::{
-    resource::{resource::Resource, resource_repository::ResourceRepository},
-};
+use crate::domain::resource::{model::Resource, repository::ResourceRepository};
 use crate::domain::shared_kernel::errors::DomainError;
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
@@ -24,8 +21,8 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
 mod test {
     use super::*;
     use crate::domain::shared_kernel::errors::DomainError;
-    use std::cell::RefCell;
     use chrono::{DateTime, Local};
+    use std::cell::RefCell;
 
     struct MockResourceRepository {
         should_fail: bool,
@@ -55,18 +52,36 @@ mod test {
             Ok(vec![])
         }
 
-        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        fn save_time_off(
+            &self,
+            _resource_name: String,
+            _hours: u32,
+            _date: String,
+            _description: Option<String>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
-        fn save_vacation(&self, _resource_name: String, _start_date: String, _end_date: String, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<Resource, DomainError> {
+        fn save_vacation(
+            &self,
+            _resource_name: String,
+            _start_date: String,
+            _end_date: String,
+            _is_time_off_compensation: bool,
+            _compensated_hours: Option<u32>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
-        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &DateTime<Local>,
+            _end_date: &DateTime<Local>,
+        ) -> bool {
             false
         }
     }
+
     #[test]
     fn test_create_project_success() {
         let mock_repo = MockResourceRepository::new(false);

@@ -1,7 +1,7 @@
 use crate::domain::{
     project::{
-        project::{Project, ProjectStatus},
-        project_repository::ProjectRepository,
+        model::{Project, ProjectStatus},
+        repository::ProjectRepository,
     },
     shared_kernel::errors::DomainError,
 };

@@ -1,5 +1,5 @@
-use validator::{Validate, ValidationError};
 use crate::domain::shared_kernel::errors::DomainError;
+use validator::{Validate, ValidationError};
 
 /// Trait para validação de entidades do domínio
 pub trait DomainValidation: Validate {
@@ -20,7 +20,10 @@ pub fn create_validation_error(_field: &str, message: &str) -> ValidationError {
 /// Função para validar datas
 pub fn validate_date(date: &str) -> Result<(), ValidationError> {
     if chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").is_err() {
-        return Err(create_validation_error("date", "Data inválida. Use o formato YYYY-MM-DD"));
+        return Err(create_validation_error(
+            "date",
+            "Data inválida. Use o formato YYYY-MM-DD",
+        ));
     }
     Ok(())
 }
@@ -31,4 +34,5 @@ pub fn validate_uuid(uuid: &str) -> Result<(), ValidationError> {
         return Err(create_validation_error("uuid", "UUID inválido"));
     }
     Ok(())
-} 
+}
+

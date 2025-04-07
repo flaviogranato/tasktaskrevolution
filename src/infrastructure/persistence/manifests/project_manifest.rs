@@ -1,5 +1,5 @@
 use crate::domain::project::layoff_period::LayoffPeriod;
-use crate::domain::project::project::{Project, ProjectStatus};
+use crate::domain::project::model::{Project, ProjectStatus};
 use crate::domain::project::vacation_rules::VacationRules;
 use crate::domain::shared_kernel::convertable::Convertable;
 
