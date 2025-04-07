@@ -95,6 +95,7 @@ impl TaskRepository for FileTaskRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
     use tempfile::tempdir;
 
     #[test]

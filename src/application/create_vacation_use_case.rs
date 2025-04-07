@@ -70,7 +70,12 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::application::create_vacation_use_case::CreateVacationUseCase;
+    use crate::domain::resource::model::Resource;
+    use crate::domain::resource::repository::ResourceRepository;
+    use crate::domain::shared_kernel::errors::DomainError;
+    use chrono::DateTime;
+    use chrono::Local;
     use std::cell::RefCell;
 
     struct MockResourceRepository {

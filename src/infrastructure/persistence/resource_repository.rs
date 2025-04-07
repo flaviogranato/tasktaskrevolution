@@ -464,7 +464,7 @@ mod tests {
                                     }),
                                 ) {
                                     // Verificar se os períodos se sobrepõem
-                                    if (start_date <= &layoff_end && end_date >= &layoff_start) {
+                                    if start_date <= &layoff_end && end_date >= &layoff_start {
                                         return true;
                                     }
                                 }
