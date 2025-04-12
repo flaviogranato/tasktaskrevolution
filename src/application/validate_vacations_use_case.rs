@@ -254,8 +254,10 @@ mod tests {
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result
-            .iter()
-            .any(|msg| msg.contains("Sobreposição detectada")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("Sobreposição detectada"))
+        );
     }
 }
