@@ -1,4 +1,4 @@
-use crate::domain::project::layoff_period::LayoffPeriod;
+use crate::domain::project_management::layoff_period::LayoffPeriod;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 

@@ -2,8 +2,8 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{
-    resource::model::{Period, PeriodType, ProjectAssignment, Resource},
-    shared_kernel::convertable::Convertable,
+    resource_management::resource::{Period, PeriodType, ProjectAssignment, Resource},
+    shared::convertable::Convertable,
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]

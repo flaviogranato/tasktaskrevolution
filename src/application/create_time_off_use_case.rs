@@ -1,4 +1,6 @@
-use crate::domain::{resource::repository::ResourceRepository, shared_kernel::errors::DomainError};
+use crate::domain::{
+    resource_management::repository::ResourceRepository, shared::errors::DomainError,
+};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -65,7 +67,7 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource::model::Resource;
+    use crate::domain::resource_management::resource::Resource;
     use std::cell::RefCell;
 
     struct MockResourceRepository {

@@ -1,7 +1,7 @@
-use crate::domain::config::model::Config;
-use crate::domain::config::repository::ConfigRepository;
-use crate::domain::shared_kernel::convertable::Convertable;
-use crate::domain::shared_kernel::errors::DomainError;
+use crate::domain::company_settings::config::Config;
+use crate::domain::company_settings::repository::ConfigRepository;
+use crate::domain::shared::convertable::Convertable;
+use crate::domain::shared::errors::DomainError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
 
@@ -32,7 +32,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared_kernel::errors::DomainError;
+    use crate::domain::shared::errors::DomainError;
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
 
