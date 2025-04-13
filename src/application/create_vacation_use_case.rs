@@ -1,4 +1,4 @@
-use crate::domain::resource::repository::ResourceRepository;
+use crate::domain::resource_management::repository::ResourceRepository;
 use chrono::NaiveDate;
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
@@ -67,9 +67,9 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
 #[cfg(test)]
 mod tests {
     use crate::application::create_vacation_use_case::CreateVacationUseCase;
-    use crate::domain::resource::model::Resource;
-    use crate::domain::resource::repository::ResourceRepository;
-    use crate::domain::shared_kernel::errors::DomainError;
+    use crate::domain::resource_management::repository::ResourceRepository;
+    use crate::domain::resource_management::resource::Resource;
+    use crate::domain::shared::errors::DomainError;
     use chrono::DateTime;
     use chrono::Local;
     use std::cell::RefCell;

@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.4.0] - 2025-04-11
 
 ### 🚀 Features
 
@@ -12,32 +12,35 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
-- Corrige importações e tipos de parâmetros nos testes
+- Corrige importações e tipos de parâmetros para testes
+- *(ci)* Correct YAML validation for GitLab CI using Nushell
+- Fixed some tests
+- Fixed tests and cargo clippy
+- Removed unnecessary code
+- Cargo-audit
+- Binary name
 
 ### 🚜 Refactor
 
 - Ajustes nas implementações dos casos de uso e repositórios
-- Remove TaskService da camada de aplicação para respeitar arquitetura DDD
+- Corrige todos os avisos do Clippy e configura lints para ignorar avisos específicos
+- Remove TaskService da camada de aplicação
+- *(ci)* Remove sccache and optimize GitLab CI pipeline for free runners
+- Migrated the structure do respect Rust Edition 2024
 
 ### 📚 Documentation
 
 - Adiciona licença Creative Commons BY-SA 4.0
 - Melhora a documentação do README com instruções de uso e licença CC BY-NC-SA 4.0
 - Adiciona guia de contribuição com padrões e diretrizes do projeto
-
-### 🧹 Lints
-
-- Corrige todos os avisos do Clippy:
-  - Remove chamadas de .clone() desnecessárias em tipos Copy
-  - Adiciona implementações Default para várias estruturas
-  - Corrige tipos de parâmetros em traits (PathBuf para Path)
-  - Simplifica closures redundantes
-  - Melhora padrões para loops sobre Option
-  - Resolve imports não utilizados
+- Atualização do changelog
+- Atualiza changelog com remoção de TaskService
+- Atualiza changelog com correção dos testes
 
 ### 🎨 Styling
 
 - *(all)* Format all files
+- Reformating code
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -46,6 +49,21 @@ All notable changes to this project will be documented in this file.
 - *(cargo)* Update cargo.lock
 - *(dependencies)* Updated dependencies
 - Adiciona pipeline GitLab CI para build, teste e release
+- Adiciona anotações globais para suprimir avisos de código não utilizado
+- *(github)* Removed unnecessary github configuration
+- Pipeline
+- Pipeline
+- Removed unnecessary files
+- Integrate git-cliff for automatic CHANGELOG.md generation
+- Removed unnecessary configuration
+
+### 🛡️ Security
+
+- *(ci)* Enhance pipeline with parallel builds, changelog automation, and advanced compression
+
+### Build
+
+- *(ci)* Improve pipeline with advanced compression and changelog automation
 
 ## [0.3.0] - 2025-02-26
 

@@ -1,8 +1,8 @@
 use crate::domain::{
-    project::{repository::ProjectRepository, vacation_rules::VacationRules},
-    resource::model::Period,
-    resource::repository::ResourceRepository,
-    shared_kernel::errors::DomainError,
+    project_management::{repository::ProjectRepository, vacation_rules::VacationRules},
+    resource_management::repository::ResourceRepository,
+    resource_management::resource::Period,
+    shared::errors::DomainError,
 };
 use chrono::{DateTime, FixedOffset, Local, NaiveDate, Offset};
 
@@ -128,8 +128,8 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 mod tests {
     use super::*;
     use crate::domain::{
-        project::vacation_rules::VacationRules,
-        resource::model::{PeriodType, Resource},
+        project_management::vacation_rules::VacationRules,
+        resource_management::resource::{PeriodType, Resource},
     };
     use chrono::{Duration, Local};
     use std::path::Path;
@@ -145,7 +145,7 @@ mod tests {
     impl ProjectRepository for MockProjectRepository {
         fn save(
             &self,
-            _project: crate::domain::project::model::Project,
+            _project: crate::domain::project_management::project::Project,
         ) -> Result<(), DomainError> {
             Ok(())
         }
@@ -153,14 +153,14 @@ mod tests {
         fn load(
             &self,
             _path: &Path,
-        ) -> Result<crate::domain::project::model::Project, DomainError> {
-            Ok(crate::domain::project::model::Project {
+        ) -> Result<crate::domain::project_management::project::Project, DomainError> {
+            Ok(crate::domain::project_management::project::Project {
                 id: None,
                 name: "Test Project".to_string(),
                 description: None,
                 start_date: None,
                 end_date: None,
-                status: crate::domain::project::model::ProjectStatus::InProgress,
+                status: crate::domain::project_management::project::ProjectStatus::InProgress,
                 vacation_rules: self.vacation_rules.clone(),
             })
         }

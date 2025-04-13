@@ -1,4 +1,4 @@
-use crate::domain::{config::repository::ConfigRepository, shared_kernel::errors::DomainError};
+use crate::domain::{company_settings::repository::ConfigRepository, shared::errors::DomainError};
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use serde_yaml::to_string;
 use std::{fs, path::PathBuf};

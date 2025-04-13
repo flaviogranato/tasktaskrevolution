@@ -1,5 +1,6 @@
 use crate::domain::{
-    project::repository::ProjectRepository, resource::repository::ResourceRepository,
+    project_management::repository::ProjectRepository,
+    resource_management::repository::ResourceRepository,
 };
 use crate::infrastructure::persistence::{
     project_repository::FileProjectRepository, resource_repository::FileResourceRepository,

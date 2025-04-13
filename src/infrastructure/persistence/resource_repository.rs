@@ -1,10 +1,10 @@
 use crate::domain::{
-    project::repository::ProjectRepository,
-    resource::{
-        model::{Period, PeriodType, Resource},
+    project_management::repository::ProjectRepository,
+    resource_management::{
         repository::ResourceRepository,
+        resource::{Period, PeriodType, Resource},
     },
-    shared_kernel::{convertable::Convertable, errors::DomainError},
+    shared::{convertable::Convertable, errors::DomainError},
 };
 use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
 use chrono::{DateTime, Local, NaiveDate, Offset};
@@ -218,7 +218,7 @@ impl Default for FileResourceRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource::model::Resource;
+    use crate::domain::resource_management::resource::Resource;
     use tempfile::tempdir;
 
     fn create_test_resource(name: &str) -> Resource {
