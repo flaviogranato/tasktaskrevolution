@@ -1,5 +1,5 @@
-use super::model::Resource;
-use crate::domain::shared_kernel::errors::DomainError;
+use crate::domain::resource_management::resource::Resource;
+use crate::domain::shared::errors::DomainError;
 use chrono::{DateTime, Local};
 
 pub trait ResourceRepository {

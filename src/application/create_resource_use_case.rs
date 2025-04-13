@@ -1,5 +1,5 @@
-use crate::domain::resource::{model::Resource, repository::ResourceRepository};
-use crate::domain::shared_kernel::errors::DomainError;
+use crate::domain::resource_management::{repository::ResourceRepository, resource::Resource};
+use crate::domain::shared::errors::DomainError;
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
@@ -20,7 +20,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared_kernel::errors::DomainError;
+    use crate::domain::shared::errors::DomainError;
     use chrono::{DateTime, Local};
     use std::cell::RefCell;
 

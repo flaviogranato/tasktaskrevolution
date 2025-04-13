@@ -1,6 +1,6 @@
 use crate::domain::{
-    project::{model::Project, repository::ProjectRepository},
-    shared_kernel::{convertable::Convertable, errors::DomainError},
+    project_management::{project::Project, repository::ProjectRepository},
+    shared::{convertable::Convertable, errors::DomainError},
 };
 use crate::infrastructure::persistence::manifests::project_manifest::ProjectManifest;
 use serde_yaml;

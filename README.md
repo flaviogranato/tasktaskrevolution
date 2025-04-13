@@ -10,30 +10,6 @@ Um utilitário de linha de comando para gerenciar suas tarefas e projetos de for
 
 ## Funcionalidades
 
-### Logging e Telemetria
-
-O projeto utiliza o sistema de logging `tracing` e métricas `metrics` para monitoramento:
-
-- Logs estruturados com diferentes níveis (info, warn, error, debug)
-- Métricas de performance disponíveis em `http://localhost:9090/metrics`
-- Contadores de operações e histogramas de duração
-
-### Validação de Dados
-
-Implementamos validação robusta de dados usando o crate `validator`:
-
-- Validação automática de entidades do domínio
-- Funções auxiliares para validação de datas e UUIDs
-- Mensagens de erro personalizadas em português
-
-### Benchmarks
-
-Para garantir a performance do código, incluímos benchmarks usando `criterion`:
-
-- Medição de tempo de criação de tarefas
-- Validação de performance
-- Executar benchmarks: `cargo bench`
-
 ### Qualidade de Código
 
 O projeto utiliza hooks de pre-commit para garantir qualidade:
@@ -43,59 +19,6 @@ O projeto utiliza hooks de pre-commit para garantir qualidade:
 - Verificação de formatação
 - Auditoria de dependências
 - Verificação de documentação
-
-## Estrutura do Projeto
-
-```
-src/
-├── domain/
-│   ├── shared_kernel/
-│   │   ├── metadata.rs           # ObjectMeta
-│   │   ├── kubernetes_resource.rs # Trait KubernetesResource
-│   │   ├── value_objects.rs      # Value Objects compartilhados
-│   │   ├── errors.rs             # Erros genéricos do domínio
-│   │   └── mod.rs
-│   ├── order/
-│   │   ├── order.rs              # Entidade Order
-│   │   ├── order_item.rs         # Value Object OrderItem
-│   │   ├── errors.rs             # Erros específicos de Order
-│   │   └── mod.rs
-│   ├── product/
-│   │   ├── product.rs            # Entidade Product
-│   │   ├── errors.rs             # Erros específicos de Product
-│   │   └── mod.rs
-│   ├── deployment/
-│   │   ├── deployment.rs         # Entidade Deployment
-│   │   ├── errors.rs             # Erros específicos de Deployment
-│   │   └── mod.rs
-│   ├── service/
-│   │   ├── service.rs            # Entidade Service
-│   │   ├── errors.rs             # Erros específicos de Service
-│   │   └── mod.rs
-│   └── mod.rs
-├── application/
-│   ├── create_order.rs           # Caso de uso: Criar Pedido
-│   ├── list_products.rs          # Caso de uso: Listar Produtos
-│   └── mod.rs
-├── infrastructure/
-│   ├── persistence/
-│   │   ├── order_repository.rs   # Interface do Repositório de Pedidos
-│   │   ├── order_repository_impl.rs # Implementação do Repositório
-│   │   ├── product_repository.rs # Interface do Repositório de Produtos
-│   │   ├── product_repository_impl.rs # Implementação do Repositório
-│   │   └── mod.rs
-│   ├── api/
-│   │   ├── rest.rs               # Adaptadores de API REST
-│   │   └── mod.rs
-│   └── mod.rs
-├── interface/
-│   ├── cli.rs                    # Interface de linha de comando
-│   └── mod.rs
-├── config/                       # Arquivos de configuração
-├── Cargo.toml                    # Manifesto do projeto
-├── Cargo.lock                    # Lockfile de dependências
-└── main.rs                       # Ponto de entrada da aplicação
-```
 
 ## Uso
 
@@ -246,10 +169,12 @@ Atualmente, este projeto é mantido exclusivamente por Flavio Granato. Como é u
 Este projeto está licenciado sob a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 Esta licença permite que você:
+
 - Compartilhe: copie e redistribua o material em qualquer formato
 - Adapte: remixe, transforme e construa sobre o material
 
 Sob os seguintes termos:
+
 - Atribuição: Você deve dar crédito apropriado, fornecer um link para a licença e indicar se foram feitas alterações.
 - Não Comercial: Você não pode usar o material para fins comerciais.
 - Compartilha Igual: Se você remixar, transformar ou construir sobre o material, você deve distribuir suas contribuições sob a mesma licença que o original.

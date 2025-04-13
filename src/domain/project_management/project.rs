@@ -1,4 +1,4 @@
-use crate::domain::project::VacationRules;
+use crate::domain::project_management::vacation_rules::VacationRules;
 use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, PartialEq)]

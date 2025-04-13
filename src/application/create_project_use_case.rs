@@ -1,9 +1,9 @@
 use crate::domain::{
-    project::{
-        model::{Project, ProjectStatus},
+    project_management::{
+        project::{Project, ProjectStatus},
         repository::ProjectRepository,
     },
-    shared_kernel::errors::DomainError,
+    shared::errors::DomainError,
 };
 
 pub struct CreateProjectUseCase<R: ProjectRepository> {
@@ -40,7 +40,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared_kernel::errors::DomainError;
+    use crate::domain::shared::errors::DomainError;
     use std::cell::RefCell;
     use std::path::Path;
 
