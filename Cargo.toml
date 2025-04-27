@@ -11,17 +11,15 @@ name = "ttr"
 path = "src/main.rs"
 
 [dependencies]
-syn = "2.0.100"
-clap = { version = "4.5.36", features = ["derive"] }
+clap = { version = "4.5.37", features = ["derive"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34-deprecated"
 chrono = { version = "0.4.40", features = ["serde"] }
-uuid = { version = "1.16.0", features = ["v7", "serde"] }
+uuid7 = "1.1.0"
 csv = "1.3.1"
 
 [dev-dependencies]
 tempfile = "3.19.1"
-serde_test = "1.0.177"
 speculate = "0.1.2"
 criterion = "0.5.1"
 
