@@ -103,9 +103,7 @@ impl Convertable<Project> for ProjectManifest {
                 start_date: source.start_date,
                 end_date: source.end_date,
                 status: <ProjectStatusManifest as Convertable<ProjectStatus>>::from(source.status),
-                vacation_rules: source
-                    .vacation_rules
-                    .map(<VacationRulesManifest as Convertable<VacationRules>>::from),
+                vacation_rules: source.vacation_rules.map(<VacationRulesManifest as Convertable<VacationRules>>::from),
             },
         }
     }
@@ -238,14 +236,8 @@ layoffPeriods:
         assert_eq!(deserialized.allow_layoff_vacations, Some(true));
         assert_eq!(deserialized.require_layoff_vacation_period, Some(true));
         assert_eq!(deserialized.layoff_periods.as_ref().unwrap().len(), 2);
-        assert_eq!(
-            deserialized.layoff_periods.as_ref().unwrap()[0].start_date,
-            "2024-01-01"
-        );
-        assert_eq!(
-            deserialized.layoff_periods.as_ref().unwrap()[1].end_date,
-            "2024-07-31"
-        );
+        assert_eq!(deserialized.layoff_periods.as_ref().unwrap()[0].start_date, "2024-01-01");
+        assert_eq!(deserialized.layoff_periods.as_ref().unwrap()[1].end_date, "2024-07-31");
     }
 
     #[test]
@@ -281,10 +273,7 @@ spec:
         assert_eq!(manifest.kind, "Project");
         assert_eq!(manifest.metadata.code, Some("ABC123".to_string()));
         assert_eq!(manifest.metadata.name, "Meu Projeto".to_string());
-        assert_eq!(
-            manifest.metadata.description,
-            Some("Descrição do Projeto".to_string())
-        );
+        assert_eq!(manifest.metadata.description, Some("Descrição do Projeto".to_string()));
         assert_eq!(manifest.spec.start_date, Some("2024-01-10".to_string()));
         assert_eq!(manifest.spec.end_date, Some("2024-12-20".to_string()));
         assert_eq!(manifest.spec.status, ProjectStatusManifest::InProgress);
@@ -294,13 +283,7 @@ spec:
         assert_eq!(vr.allow_layoff_vacations, Some(true));
         assert_eq!(vr.require_layoff_vacation_period, Some(false));
         assert_eq!(vr.layoff_periods.as_ref().unwrap().len(), 2);
-        assert_eq!(
-            vr.layoff_periods.as_ref().unwrap()[0].start_date,
-            "2024-05-15"
-        );
-        assert_eq!(
-            vr.layoff_periods.as_ref().unwrap()[1].end_date,
-            "2024-11-30"
-        );
+        assert_eq!(vr.layoff_periods.as_ref().unwrap()[0].start_date, "2024-05-15");
+        assert_eq!(vr.layoff_periods.as_ref().unwrap()[1].end_date, "2024-11-30");
     }
 }

@@ -1,4 +1,4 @@
-use super::model::{Task, TaskError, TaskStatus};
+use super::task::{Task, TaskError, TaskStatus};
 use chrono::NaiveDate;
 use std::marker::PhantomData;
 use uuid7::uuid7;
@@ -48,11 +48,7 @@ impl TaskBuilder<New> {
 }
 
 impl TaskBuilder<WithName> {
-    pub fn dates(
-        self,
-        start: NaiveDate,
-        due: NaiveDate,
-    ) -> Result<TaskBuilder<WithDates>, TaskError> {
+    pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, TaskError> {
         if start > due {
             return Err(TaskError::InvalidDateRange);
         }
@@ -91,10 +87,7 @@ impl TaskBuilder<WithResources> {
         self
     }
 
-    pub fn validate_vacations(
-        self,
-        resource_vacations: &[(String, NaiveDate, NaiveDate)],
-    ) -> Result<TaskBuilder<Ready>, TaskError> {
+    pub fn validate_vacations(self, resource_vacations: &[(String, NaiveDate, NaiveDate)]) -> Result<TaskBuilder<Ready>, TaskError> {
         let start = self.start_date.unwrap();
         let due = self.due_date.unwrap();
 

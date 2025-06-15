@@ -1,6 +1,7 @@
 pub mod builder;
-pub mod model;
+pub mod repository;
 pub mod resource_assignment;
+pub mod task;
 
 pub use builder::TaskBuilder;
-pub use model::{Task, TaskError, TaskStatus};
+pub use task::{Task, TaskError, TaskStatus};
