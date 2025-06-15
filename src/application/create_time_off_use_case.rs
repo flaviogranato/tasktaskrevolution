@@ -1,6 +1,4 @@
-use crate::domain::{
-    resource_management::repository::ResourceRepository, shared::errors::DomainError,
-};
+use crate::domain::{resource_management::repository::ResourceRepository, shared::errors::DomainError};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -24,9 +22,7 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
     #[allow(dead_code)]
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
         let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-            .map_err(|_| {
-                DomainError::Generic("Formato de data inválido. Use YYYY-MM-DD".to_string())
-            })?
+            .map_err(|_| DomainError::Generic("Formato de data inválido. Use YYYY-MM-DD".to_string()))?
             .and_hms_opt(0, 0, 0)
             .ok_or_else(|| DomainError::Generic("Erro ao converter hora".to_string()))?;
 
@@ -43,12 +39,10 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         date: String,
         description: Option<String>,
     ) -> Result<CreateTimeOffResult, Box<dyn std::error::Error>> {
-        match self.repository.save_time_off(
-            resource.clone(),
-            hours,
-            date.clone(),
-            description.clone(),
-        ) {
+        match self
+            .repository
+            .save_time_off(resource.clone(), hours, date.clone(), description.clone())
+        {
             Ok(resource) => Ok(CreateTimeOffResult {
                 success: true,
                 message: format!(
@@ -76,9 +70,7 @@ mod tests {
 
     impl MockResourceRepository {
         fn new(resources: Vec<Resource>) -> Self {
-            Self {
-                resources: RefCell::new(resources),
-            }
+            Self { resources: RefCell::new(resources) }
         }
     }
 
@@ -97,13 +89,7 @@ mod tests {
             Ok(self.resources.borrow().clone())
         }
 
-        fn save_time_off(
-            &self,
-            resource_name: String,
-            hours: u32,
-            _date: String,
-            _description: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        fn save_time_off(&self, resource_name: String, hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
             let mut resources = self.resources.borrow_mut();
             let resource = resources
                 .iter_mut()
@@ -125,11 +111,7 @@ mod tests {
             unimplemented!("Not needed for these tests")
         }
 
-        fn check_if_layoff_period(
-            &self,
-            _start_date: &DateTime<Local>,
-            _end_date: &DateTime<Local>,
-        ) -> bool {
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
     }

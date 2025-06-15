@@ -15,10 +15,7 @@ impl Display for VacationRules {
         write!(
             f,
             "VacationRules {{ max_concurrent_vacations: {:?}, allow_layoff_vacations: {:?}, require_layoff_vacation_period: {:?}, layoff_periods: {:?} }}",
-            self.max_concurrent_vacations,
-            self.allow_layoff_vacations,
-            self.require_layoff_vacation_period,
-            self.layoff_periods
+            self.max_concurrent_vacations, self.allow_layoff_vacations, self.require_layoff_vacation_period, self.layoff_periods
         )
     }
 }

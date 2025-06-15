@@ -31,10 +31,7 @@ mod test {
 
     impl MockResourceRepository {
         fn new(should_fail: bool) -> Self {
-            Self {
-                should_fail,
-                saved_config: RefCell::new(None),
-            }
+            Self { should_fail, saved_config: RefCell::new(None) }
         }
     }
 
@@ -52,13 +49,7 @@ mod test {
             Ok(vec![])
         }
 
-        fn save_time_off(
-            &self,
-            _resource_name: String,
-            _hours: u32,
-            _date: String,
-            _description: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -73,11 +64,7 @@ mod test {
             unimplemented!("Not needed for these tests")
         }
 
-        fn check_if_layoff_period(
-            &self,
-            _start_date: &DateTime<Local>,
-            _end_date: &DateTime<Local>,
-        ) -> bool {
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
     }

@@ -13,12 +13,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
-    pub fn execute(
-        &self,
-        path: PathBuf,
-        manager_name: String,
-        manager_email: String,
-    ) -> Result<(), DomainError> {
+    pub fn execute(&self, path: PathBuf, manager_name: String, manager_email: String) -> Result<(), DomainError> {
         let config = Config::new(manager_name.clone(), manager_email.clone());
         let config_manifest = <ConfigManifest as Convertable<Config>>::from(config);
         self.repository.create_repository_dir(path.clone())?;
@@ -44,11 +39,7 @@ mod test {
 
     impl MockConfigRepository {
         fn new(should_fail: bool) -> Self {
-            Self {
-                should_fail,
-                saved_config: RefCell::new(None),
-                created_path: RefCell::new(None),
-            }
+            Self { should_fail, saved_config: RefCell::new(None), created_path: RefCell::new(None) }
         }
     }
 

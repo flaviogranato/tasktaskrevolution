@@ -36,10 +36,7 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
         compensated_hours: Option<u32>,
     ) -> Result<CreateVacationResult, Box<dyn std::error::Error>> {
         if !Self::validate_dates(&start_date, &end_date) {
-            return Ok(CreateVacationResult {
-                success: false,
-                message: "Data de início deve ser anterior à data de fim".to_string(),
-            });
+            return Ok(CreateVacationResult { success: false, message: "Data de início deve ser anterior à data de fim".to_string() });
         }
 
         match self.repository.save_vacation(
@@ -56,10 +53,7 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
                     resource.name
                 ),
             }),
-            Err(e) => Ok(CreateVacationResult {
-                success: false,
-                message: format!("Erro ao adicionar período de férias: {}", e),
-            }),
+            Err(e) => Ok(CreateVacationResult { success: false, message: format!("Erro ao adicionar período de férias: {}", e) }),
         }
     }
 }
@@ -80,9 +74,7 @@ mod tests {
 
     impl MockResourceRepository {
         fn new(resources: Vec<Resource>) -> Self {
-            Self {
-                resources: RefCell::new(resources),
-            }
+            Self { resources: RefCell::new(resources) }
         }
     }
 
@@ -101,13 +93,7 @@ mod tests {
             Ok(self.resources.borrow().clone())
         }
 
-        fn save_time_off(
-            &self,
-            _resource_name: String,
-            _hours: u32,
-            _date: String,
-            _description: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -130,11 +116,7 @@ mod tests {
             Ok(resource.clone())
         }
 
-        fn check_if_layoff_period(
-            &self,
-            _start_date: &DateTime<Local>,
-            _end_date: &DateTime<Local>,
-        ) -> bool {
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
     }

@@ -29,7 +29,10 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
 
         // Verificar se já existe uma task com o mesmo código
         if let Ok(Some(_)) = self.repository.find_by_code(&code) {
-            return Err(DomainError::Generic(format!("Task com código '{}' já existe", code)));
+            return Err(DomainError::Generic(format!(
+                "Task com código '{}' já existe",
+                code
+            )));
         }
 
         // Criar a task
@@ -71,11 +74,7 @@ mod test {
 
     impl MockTaskRepository {
         fn new(should_fail: bool) -> Self {
-            Self {
-                should_fail,
-                saved_task: RefCell::new(None),
-                tasks: RefCell::new(HashMap::new()),
-            }
+            Self { should_fail, saved_task: RefCell::new(None), tasks: RefCell::new(HashMap::new()) }
         }
 
         fn add_existing_task(&self, task: Task) {
@@ -216,10 +215,22 @@ mod test {
         let start_date = NaiveDate::from_ymd_opt(2024, 1, 30).unwrap();
         let due_date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        let result = use_case.execute("TSK001".to_string(), "Task inválida".to_string(), None, start_date, due_date, vec![]);
+        let result = use_case.execute(
+            "TSK001".to_string(),
+            "Task inválida".to_string(),
+            None,
+            start_date,
+            due_date,
+            vec![],
+        );
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Data de início não pode ser posterior"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Data de início não pode ser posterior")
+        );
     }
 
     #[test]

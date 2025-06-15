@@ -22,15 +22,7 @@ impl Project {
         status: ProjectStatus,
         vacation_rules: Option<VacationRules>,
     ) -> Self {
-        Self {
-            id,
-            name,
-            description,
-            start_date,
-            end_date,
-            status,
-            vacation_rules,
-        }
+        Self { id, name, description, start_date, end_date, status, vacation_rules }
     }
 }
 
