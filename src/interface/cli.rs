@@ -1,16 +1,13 @@
 use crate::{
     application::{
-        create_project_use_case::CreateProjectUseCase,
-        create_resource_use_case::CreateResourceUseCase,
-        create_time_off_use_case::CreateTimeOffUseCase,
-        create_vacation_use_case::CreateVacationUseCase,
-        initialize_repository_use_case::InitializeRepositoryUseCase,
-        vacation_report_use_case::VacationReportUseCase,
+        create_project_use_case::CreateProjectUseCase, create_resource_use_case::CreateResourceUseCase, create_task_use_case::CreateTaskUseCase,
+        create_time_off_use_case::CreateTimeOffUseCase, create_vacation_use_case::CreateVacationUseCase,
+        initialize_repository_use_case::InitializeRepositoryUseCase, vacation_report_use_case::VacationReportUseCase,
         validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
-        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository,
+        config_repository::FileConfigRepository, project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
+        task_repository::FileTaskRepository,
     },
 };
 use clap::{Parser, Subcommand};
@@ -84,11 +81,17 @@ pub enum CreateCommands {
     },
     Task {
         #[arg(long, short)]
+        code: String,
+        #[arg(long, short)]
         name: String,
         #[arg(long, short)]
         description: Option<String>,
-        #[arg(long)]
-        due_date: Option<String>,
+        #[arg(long, short)]
+        start_date: String,
+        #[arg(long, short)]
+        due_date: String,
+        #[arg(long, short, value_delimiter = ',')]
+        assignees: Vec<String>,
     },
 }
 
@@ -122,10 +125,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 use_case.execute(name.clone(), description.clone())?;
             }
-            CreateCommands::Resource {
-                name,
-                resource_type,
-            } => {
+            CreateCommands::Resource { name, resource_type } => {
                 let repository = FileResourceRepository::new();
                 let use_case = CreateResourceUseCase::new(repository);
 
@@ -167,8 +167,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileResourceRepository::new();
                 let use_case = CreateTimeOffUseCase::new(repository);
 
-                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone())
-                {
+                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone()) {
                     Ok(result) => {
                         if result.success {
                             println!("✅ {}", result.message);
@@ -184,14 +183,61 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Err(e) => println!("❌ Erro inesperado: {}", e),
                 }
             }
-            &CreateCommands::Task { .. } => todo!(),
+            CreateCommands::Task {
+                code,
+                name,
+                description,
+                start_date,
+                due_date,
+                assignees,
+            } => {
+                use chrono::NaiveDate;
+
+                // Parse das datas
+                let start = match NaiveDate::parse_from_str(start_date, "%Y-%m-%d") {
+                    Ok(date) => date,
+                    Err(_) => {
+                        println!("❌ Erro: Data de início inválida. Use o formato YYYY-MM-DD");
+                        return Ok(());
+                    }
+                };
+
+                let due = match NaiveDate::parse_from_str(due_date, "%Y-%m-%d") {
+                    Ok(date) => date,
+                    Err(_) => {
+                        println!("❌ Erro: Data de vencimento inválida. Use o formato YYYY-MM-DD");
+                        return Ok(());
+                    }
+                };
+
+                // Criar repository e use case
+                let repository = FileTaskRepository::new();
+                let use_case = CreateTaskUseCase::new(repository);
+
+                // Executar use case
+                match use_case.execute(code.clone(), name.clone(), description.clone(), start, due, assignees.clone()) {
+                    Ok(_) => {
+                        println!("✅ Task '{}' criada com sucesso!", name);
+                        println!("📋 Código: {}", code);
+                        if let Some(desc) = description {
+                            println!("📝 Descrição: {}", desc);
+                        }
+                        println!("📅 Período: {} até {}", start_date, due_date);
+                        if !assignees.is_empty() {
+                            println!("👥 Responsáveis: {}", assignees.join(", "));
+                        }
+                    }
+                    Err(e) => {
+                        println!("❌ Erro ao criar task: {}", e);
+                    }
+                }
+            }
         },
         Commands::Validate { validate_command } => match validate_command {
             ValidateCommands::Vacations => {
                 let project_repository = FileProjectRepository::new();
                 let resource_repository = FileResourceRepository::new();
-                let use_case =
-                    ValidateVacationsUseCase::new(project_repository, resource_repository);
+                let use_case = ValidateVacationsUseCase::new(project_repository, resource_repository);
 
                 match use_case.execute() {
                     Ok(mensagens) => {
