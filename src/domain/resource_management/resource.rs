@@ -76,16 +76,7 @@ impl Resource {
         project_assignments: Option<Vec<ProjectAssignment>>,
         time_off_balance: u32,
     ) -> Self {
-        Self {
-            id,
-            name,
-            email,
-            resource_type,
-            vacations,
-            project_assignments,
-            time_off_balance,
-            time_off_history: Some(Vec::new()),
-        }
+        Self { id, name, email, resource_type, vacations, project_assignments, time_off_balance, time_off_history: Some(Vec::new()) }
     }
 }
 
@@ -94,13 +85,7 @@ impl Display for Resource {
         write!(
             f,
             "Resource {{ id: {:?}, name: {}, email: {:?}, resource_type: {}, vacations: {:?}, project_assignments: {:?}, time_off_balance: {} }}",
-            self.id,
-            self.name,
-            self.email,
-            self.resource_type,
-            self.vacations,
-            self.project_assignments,
-            self.time_off_balance
+            self.id, self.name, self.email, self.resource_type, self.vacations, self.project_assignments, self.time_off_balance
         )
     }
 }
@@ -110,13 +95,7 @@ impl Display for Period {
         write!(
             f,
             "Period {{ start_date: {}, end_date: {}, approved: {}, period_type: {}, is_time_off_compensation: {}, compensated_hours: {:?}, is_layoff: {} }}",
-            self.start_date,
-            self.end_date,
-            self.approved,
-            self.period_type,
-            self.is_time_off_compensation,
-            self.compensated_hours,
-            self.is_layoff
+            self.start_date, self.end_date, self.approved, self.period_type, self.is_time_off_compensation, self.compensated_hours, self.is_layoff
         )
     }
 }

@@ -33,14 +33,11 @@ impl ProjectRepository for FileProjectRepository {
     fn save(&self, project: Project) -> Result<(), DomainError> {
         let file_path = self.get_project_file_path(&PathBuf::from(&project.name));
         let project_manifest = <ProjectManifest as Convertable<Project>>::from(project);
-        let yaml = serde_yaml::to_string(&project_manifest)
-            .map_err(|e| DomainError::Generic(format!("Erro ao serializar projeto: {}", e)))?;
+        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| DomainError::Generic(format!("Erro ao serializar projeto: {}", e)))?;
 
-        fs::create_dir_all(file_path.parent().unwrap())
-            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {}", e)))?;
+        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {}", e)))?;
 
-        fs::write(file_path, yaml)
-            .map_err(|e| DomainError::Generic(format!("Erro ao salvar projeto: {}", e)))?;
+        fs::write(file_path, yaml).map_err(|e| DomainError::Generic(format!("Erro ao salvar projeto: {}", e)))?;
 
         Ok(())
     }

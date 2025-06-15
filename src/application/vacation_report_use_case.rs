@@ -1,10 +1,5 @@
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository,
-};
-use crate::infrastructure::persistence::{
-    project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
-};
+use crate::domain::{project_management::repository::ProjectRepository, resource_management::repository::ResourceRepository};
+use crate::infrastructure::persistence::{project_repository::FileProjectRepository, resource_repository::FileResourceRepository};
 use csv::Writer;
 use std::{io, path::PathBuf};
 
@@ -22,10 +17,7 @@ pub struct VacationReportResult {
 
 impl VacationReportUseCase {
     pub fn new() -> Self {
-        Self {
-            project_repository: FileProjectRepository::new(),
-            resource_repository: FileResourceRepository::new(),
-        }
+        Self { project_repository: FileProjectRepository::new(), resource_repository: FileResourceRepository::new() }
     }
 
     pub fn execute(&self) -> Result<VacationReportResult, io::Error> {
@@ -53,11 +45,7 @@ impl VacationReportUseCase {
 
         writer.flush()?;
 
-        Ok(VacationReportResult {
-            success: true,
-            message: "Relatório de férias gerado com sucesso".to_string(),
-            file_path: file_path.to_string(),
-        })
+        Ok(VacationReportResult { success: true, message: "Relatório de férias gerado com sucesso".to_string(), file_path: file_path.to_string() })
     }
 }
 

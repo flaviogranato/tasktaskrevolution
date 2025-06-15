@@ -46,10 +46,10 @@ impl std::fmt::Display for TaskError {
             TaskError::InvalidDateRange => write!(f, "Data inicial é posterior à data final."),
             TaskError::ResourceOnVacation(res) => {
                 write!(f, "Recurso {} está de férias neste período.", res)
-            }
+            },
             TaskError::MissingField(field) => {
                 write!(f, "Campo obrigatório não informado: {}", field)
-            }
+            },
         }
     }
 }

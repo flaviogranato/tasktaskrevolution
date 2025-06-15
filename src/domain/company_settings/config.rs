@@ -8,10 +8,7 @@ pub struct Config {
 
 impl Config {
     pub fn new(manager_name: String, manager_email: String) -> Self {
-        Self {
-            manager_name,
-            manager_email,
-        }
+        Self { manager_name, manager_email }
     }
 }
 

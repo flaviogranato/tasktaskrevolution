@@ -13,21 +13,14 @@ pub struct ValidateVacationsUseCase<P: ProjectRepository, R: ResourceRepository>
 
 impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R> {
     pub fn new(project_repository: P, resource_repository: R) -> Self {
-        Self {
-            project_repository,
-            resource_repository,
-        }
+        Self { project_repository, resource_repository }
     }
 
     fn check_vacation_overlap(&self, period1: &Period, period2: &Period) -> bool {
         period1.start_date <= period2.end_date && period2.start_date <= period1.end_date
     }
 
-    fn check_layoff_overlap(
-        &self,
-        vacation_period: &Period,
-        layoff_period: &(String, String),
-    ) -> bool {
+    fn check_layoff_overlap(&self, vacation_period: &Period, layoff_period: &(String, String)) -> bool {
         let layoff_start = NaiveDate::parse_from_str(&layoff_period.0, "%Y-%m-%d")
             .unwrap()
             .and_hms_opt(0, 0, 0)
@@ -38,19 +31,13 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
             .unwrap();
 
         let offset = Local::now().offset().fix();
-        let layoff_start: DateTime<FixedOffset> =
-            DateTime::from_naive_utc_and_offset(layoff_start, offset);
-        let layoff_end: DateTime<FixedOffset> =
-            DateTime::from_naive_utc_and_offset(layoff_end, offset);
+        let layoff_start: DateTime<FixedOffset> = DateTime::from_naive_utc_and_offset(layoff_start, offset);
+        let layoff_end: DateTime<FixedOffset> = DateTime::from_naive_utc_and_offset(layoff_end, offset);
 
         vacation_period.start_date <= layoff_end && layoff_start <= vacation_period.end_date
     }
 
-    fn has_valid_layoff_vacation(
-        &self,
-        vacations: &[Period],
-        vacation_rules: &VacationRules,
-    ) -> bool {
+    fn has_valid_layoff_vacation(&self, vacations: &[Period], vacation_rules: &VacationRules) -> bool {
         if let Some(layoff_periods) = &vacation_rules.layoff_periods {
             if let Some(require_layoff) = vacation_rules.require_layoff_vacation_period {
                 if require_layoff {
@@ -143,17 +130,11 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(
-            &self,
-            _project: crate::domain::project_management::project::Project,
-        ) -> Result<(), DomainError> {
+        fn save(&self, _project: crate::domain::project_management::project::Project) -> Result<(), DomainError> {
             Ok(())
         }
 
-        fn load(
-            &self,
-            _path: &Path,
-        ) -> Result<crate::domain::project_management::project::Project, DomainError> {
+        fn load(&self, _path: &Path) -> Result<crate::domain::project_management::project::Project, DomainError> {
             Ok(crate::domain::project_management::project::Project {
                 id: None,
                 name: "Test Project".to_string(),
@@ -175,13 +156,7 @@ mod tests {
             Ok(self.resources.clone())
         }
 
-        fn save_time_off(
-            &self,
-            _resource_name: String,
-            _hours: u32,
-            _date: String,
-            _description: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -196,11 +171,7 @@ mod tests {
             unimplemented!("Not needed for these tests")
         }
 
-        fn check_if_layoff_period(
-            &self,
-            _start_date: &DateTime<Local>,
-            _end_date: &DateTime<Local>,
-        ) -> bool {
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
     }
@@ -244,12 +215,8 @@ mod tests {
             0,
         );
 
-        let mock_project_repo = MockProjectRepository {
-            vacation_rules: None,
-        };
-        let mock_resource_repo = MockResourceRepository {
-            resources: vec![resource1, resource2],
-        };
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository { resources: vec![resource1, resource2] };
 
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();

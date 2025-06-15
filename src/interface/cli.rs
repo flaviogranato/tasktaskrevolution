@@ -107,37 +107,27 @@ enum ReportCommands {
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     match &cli.command {
-        Commands::Init {
-            path,
-            manager_name,
-            manager_email,
-        } => {
+        Commands::Init { path, manager_name, manager_email } => {
             let repository = FileConfigRepository::new();
             let use_case = InitializeRepositoryUseCase::new(repository);
             let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
 
             use_case.execute(repo_path, manager_name.clone(), manager_email.clone())?;
-        }
+        },
         Commands::Create { create_command } => match create_command {
             CreateCommands::Project { name, description } => {
                 let repository = FileProjectRepository::new();
                 let use_case = CreateProjectUseCase::new(repository);
 
                 use_case.execute(name.clone(), description.clone())?;
-            }
+            },
             CreateCommands::Resource { name, resource_type } => {
                 let repository = FileResourceRepository::new();
                 let use_case = CreateResourceUseCase::new(repository);
 
                 let _ = use_case.execute(name.clone(), resource_type.clone());
-            }
-            CreateCommands::Vacation {
-                resource,
-                start_date,
-                end_date,
-                is_time_off_compensation,
-                compensated_hours,
-            } => {
+            },
+            CreateCommands::Vacation { resource, start_date, end_date, is_time_off_compensation, compensated_hours } => {
                 let repository = FileResourceRepository::new();
                 let use_case = CreateVacationUseCase::new(repository);
 
@@ -154,16 +144,11 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         } else {
                             println!("❌ {}", result.message);
                         }
-                    }
+                    },
                     Err(e) => println!("❌ Erro inesperado: {}", e),
                 }
-            }
-            CreateCommands::TimeOff {
-                resource,
-                hours,
-                date,
-                description,
-            } => {
+            },
+            CreateCommands::TimeOff { resource, hours, date, description } => {
                 let repository = FileResourceRepository::new();
                 let use_case = CreateTimeOffUseCase::new(repository);
 
@@ -179,18 +164,11 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         } else {
                             println!("❌ {}", result.message);
                         }
-                    }
+                    },
                     Err(e) => println!("❌ Erro inesperado: {}", e),
                 }
-            }
-            CreateCommands::Task {
-                code,
-                name,
-                description,
-                start_date,
-                due_date,
-                assignees,
-            } => {
+            },
+            CreateCommands::Task { code, name, description, start_date, due_date, assignees } => {
                 use chrono::NaiveDate;
 
                 // Parse das datas
@@ -199,7 +177,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Err(_) => {
                         println!("❌ Erro: Data de início inválida. Use o formato YYYY-MM-DD");
                         return Ok(());
-                    }
+                    },
                 };
 
                 let due = match NaiveDate::parse_from_str(due_date, "%Y-%m-%d") {
@@ -207,7 +185,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Err(_) => {
                         println!("❌ Erro: Data de vencimento inválida. Use o formato YYYY-MM-DD");
                         return Ok(());
-                    }
+                    },
                 };
 
                 // Criar repository e use case
@@ -215,7 +193,14 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let use_case = CreateTaskUseCase::new(repository);
 
                 // Executar use case
-                match use_case.execute(code.clone(), name.clone(), description.clone(), start, due, assignees.clone()) {
+                match use_case.execute(
+                    code.clone(),
+                    name.clone(),
+                    description.clone(),
+                    start,
+                    due,
+                    assignees.clone(),
+                ) {
                     Ok(_) => {
                         println!("✅ Task '{}' criada com sucesso!", name);
                         println!("📋 Código: {}", code);
@@ -226,12 +211,12 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         if !assignees.is_empty() {
                             println!("👥 Responsáveis: {}", assignees.join(", "));
                         }
-                    }
+                    },
                     Err(e) => {
                         println!("❌ Erro ao criar task: {}", e);
-                    }
+                    },
                 }
-            }
+            },
         },
         Commands::Validate { validate_command } => match validate_command {
             ValidateCommands::Vacations => {
@@ -246,10 +231,10 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         for mensagem in mensagens {
                             println!("{}", mensagem);
                         }
-                    }
+                    },
                     Err(e) => println!("Erro ao validar férias: {}", e),
                 }
-            }
+            },
         },
         Commands::Report { report_command } => match report_command {
             ReportCommands::Vacation => {
@@ -259,10 +244,10 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         if result.success {
                             println!("✅ {}: {}", result.message, result.file_path);
                         }
-                    }
+                    },
                     Err(e) => println!("❌ Erro ao gerar relatório: {}", e),
                 }
-            }
+            },
         },
     }
 
