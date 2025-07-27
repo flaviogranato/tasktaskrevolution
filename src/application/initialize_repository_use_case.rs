@@ -1,7 +1,7 @@
-use crate::domain::config::model::Config;
-use crate::domain::config::repository::ConfigRepository;
-use crate::domain::shared_kernel::convertable::Convertable;
-use crate::domain::shared_kernel::errors::DomainError;
+use crate::domain::company_settings::config::Config;
+use crate::domain::company_settings::repository::ConfigRepository;
+use crate::domain::shared::convertable::Convertable;
+use crate::domain::shared::errors::DomainError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
 
@@ -13,12 +13,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
-    pub fn execute(
-        &self,
-        path: PathBuf,
-        manager_name: String,
-        manager_email: String,
-    ) -> Result<(), DomainError> {
+    pub fn execute(&self, path: PathBuf, manager_name: String, manager_email: String) -> Result<(), DomainError> {
         let config = Config::new(manager_name.clone(), manager_email.clone());
         let config_manifest = <ConfigManifest as Convertable<Config>>::from(config);
         self.repository.create_repository_dir(path.clone())?;
@@ -32,7 +27,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared_kernel::errors::DomainError;
+    use crate::domain::shared::errors::DomainError;
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
 
@@ -103,13 +98,7 @@ mod test {
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
-        assert_eq!(
-            saved_config.as_ref().unwrap().metadata.manager_name,
-            manager_name
-        );
-        assert_eq!(
-            saved_config.as_ref().unwrap().metadata.manager_email,
-            manager_email
-        );
+        assert_eq!(saved_config.as_ref().unwrap().metadata.manager_name, manager_name);
+        assert_eq!(saved_config.as_ref().unwrap().metadata.manager_email, manager_email);
     }
 }

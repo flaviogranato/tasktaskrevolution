@@ -1,10 +1,10 @@
 use crate::domain::{
-    project::repository::ProjectRepository,
-    resource::{
-        model::{Period, PeriodType, Resource},
+    project_management::repository::ProjectRepository,
+    resource_management::{
         repository::ResourceRepository,
+        resource::{Period, PeriodType, Resource},
     },
-    shared_kernel::{convertable::Convertable, errors::DomainError},
+    shared::{convertable::Convertable, errors::DomainError},
 };
 use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
 use chrono::{DateTime, Local, NaiveDate, Offset};
@@ -24,9 +24,7 @@ impl FileResourceRepository {
     }
 
     fn get_resource_file_path(&self, resource_name: &str) -> PathBuf {
-        self.base_path
-            .join("resources")
-            .join(format!("{}.yaml", resource_name))
+        self.base_path.join("resources").join(format!("{resource_name}.yaml"))
     }
 }
 
@@ -35,13 +33,12 @@ impl ResourceRepository for FileResourceRepository {
         let file_path = self.get_resource_file_path(&resource.name);
         let resource_manifest = <ResourceManifest as Convertable<Resource>>::from(resource.clone());
         let yaml = serde_yaml::to_string(&resource_manifest)
-            .map_err(|e| DomainError::Generic(format!("Erro ao serializar recurso: {}", e)))?;
+            .map_err(|e| DomainError::Generic(format!("Erro ao serializar recurso: {e}")))?;
 
         fs::create_dir_all(file_path.parent().unwrap())
-            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {}", e)))?;
+            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {e}")))?;
 
-        fs::write(file_path, yaml)
-            .map_err(|e| DomainError::Generic(format!("Erro ao salvar recurso: {}", e)))?;
+        fs::write(file_path, yaml).map_err(|e| DomainError::Generic(format!("Erro ao salvar recurso: {e}")))?;
 
         Ok(resource)
     }
@@ -53,32 +50,25 @@ impl ResourceRepository for FileResourceRepository {
         }
 
         let mut resources = Vec::new();
-        for entry in fs::read_dir(resources_dir).map_err(|e| {
-            DomainError::Generic(format!("Erro ao ler diretório de recursos: {}", e))
-        })? {
-            let entry = entry.map_err(|e| {
-                DomainError::Generic(format!("Erro ao ler entrada do diretório: {}", e))
-            })?;
+        for entry in fs::read_dir(resources_dir)
+            .map_err(|e| DomainError::Generic(format!("Erro ao ler diretório de recursos: {e}")))?
+        {
+            let entry = entry.map_err(|e| DomainError::Generic(format!("Erro ao ler entrada do diretório: {e}")))?;
 
             if entry
                 .file_type()
-                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {}", e)))?
+                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {e}")))?
                 .is_file()
             {
                 let file_path = entry.path();
                 if file_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    let yaml = fs::read_to_string(&file_path).map_err(|e| {
-                        DomainError::Generic(format!("Erro ao ler arquivo de recurso: {}", e))
-                    })?;
+                    let yaml = fs::read_to_string(&file_path)
+                        .map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de recurso: {e}")))?;
 
-                    let resource_manifest: ResourceManifest =
-                        serde_yaml::from_str(&yaml).map_err(|e| {
-                            DomainError::Generic(format!("Erro ao deserializar recurso: {}", e))
-                        })?;
+                    let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml)
+                        .map_err(|e| DomainError::Generic(format!("Erro ao deserializar recurso: {e}")))?;
 
-                    resources.push(<ResourceManifest as Convertable<Resource>>::to(
-                        &resource_manifest,
-                    ));
+                    resources.push(<ResourceManifest as Convertable<Resource>>::to(&resource_manifest));
                 }
             }
         }
@@ -119,12 +109,12 @@ impl ResourceRepository for FileResourceRepository {
             .ok_or_else(|| DomainError::Generic("Recurso não encontrado".to_string()))?;
 
         let start_date = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-            .map_err(|e| DomainError::Generic(format!("Data de início inválida: {}", e)))?
+            .map_err(|e| DomainError::Generic(format!("Data de início inválida: {e}")))?
             .and_hms_opt(0, 0, 0)
             .unwrap();
 
         let end_date = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-            .map_err(|e| DomainError::Generic(format!("Data de fim inválida: {}", e)))?
+            .map_err(|e| DomainError::Generic(format!("Data de fim inválida: {e}")))?
             .and_hms_opt(0, 0, 0)
             .unwrap();
 
@@ -159,11 +149,7 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resource.clone())
     }
 
-    fn check_if_layoff_period(
-        &self,
-        start_date: &DateTime<Local>,
-        end_date: &DateTime<Local>,
-    ) -> bool {
+    fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool {
         use crate::infrastructure::persistence::project_repository::FileProjectRepository;
         use std::path::PathBuf;
 
@@ -175,25 +161,12 @@ impl ResourceRepository for FileResourceRepository {
                     for layoff_period in layoff_periods {
                         // Converter as datas de string para DateTime
                         if let (Ok(layoff_start), Ok(layoff_end)) = (
-                            chrono::NaiveDate::parse_from_str(
-                                &layoff_period.start_date,
-                                "%Y-%m-%d",
-                            )
-                            .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
-                            .map(|dt| {
-                                DateTime::<Local>::from_naive_utc_and_offset(
-                                    dt,
-                                    *start_date.offset(),
-                                )
-                            }),
+                            chrono::NaiveDate::parse_from_str(&layoff_period.start_date, "%Y-%m-%d")
+                                .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
+                                .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *start_date.offset())),
                             chrono::NaiveDate::parse_from_str(&layoff_period.end_date, "%Y-%m-%d")
                                 .map(|d| d.and_hms_opt(23, 59, 59).unwrap())
-                                .map(|dt| {
-                                    DateTime::<Local>::from_naive_utc_and_offset(
-                                        dt,
-                                        *end_date.offset(),
-                                    )
-                                }),
+                                .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *end_date.offset())),
                         ) {
                             // Verificar se os períodos se sobrepõem
                             if start_date <= &layoff_end && end_date >= &layoff_start {
@@ -218,7 +191,7 @@ impl Default for FileResourceRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource::model::Resource;
+    use crate::domain::resource_management::resource::Resource;
     use tempfile::tempdir;
 
     fn create_test_resource(name: &str) -> Resource {

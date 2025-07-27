@@ -1,75 +1,160 @@
 use crate::domain::{
-    project::{model::Project, repository::ProjectRepository},
-    shared_kernel::{convertable::Convertable, errors::DomainError},
+    project_management::{project::Project, repository::ProjectRepository},
+    shared::{convertable::Convertable, errors::DomainError},
 };
 use crate::infrastructure::persistence::manifests::project_manifest::ProjectManifest;
 use serde_yaml;
-use std::default::Default;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Default)]
-pub struct FileProjectRepository;
+/// `FileProjectRepository` é uma implementação da trait `ProjectRepository`
+/// que persiste os dados do projeto no sistema de arquivos.
+///
+/// A estrutura de diretórios esperada é:
+/// /<base_path>/<project_name>/project.yaml
+pub struct FileProjectRepository {
+    base_path: PathBuf,
+}
 
 impl FileProjectRepository {
-    #[must_use]
-    pub const fn new() -> Self {
-        Self
+    /// Cria uma nova instância do repositório que opera a partir do diretório de trabalho atual.
+    pub fn new() -> Self {
+        Self {
+            base_path: PathBuf::from("."),
+        }
     }
 
-    fn get_project_file_path(&self, path: &Path) -> PathBuf {
-        path.to_path_buf()
+    /// Cria uma nova instância do repositório que opera a partir de um diretório base específico.
+    /// Esta função é primariamente para uso em testes.
+    #[cfg(test)]
+    fn with_base_path(base_path: PathBuf) -> Self {
+        Self { base_path }
     }
 
+    /// Carrega e deserializa o manifesto de um projeto de um arquivo YAML.
     fn load_manifest(&self, path: &Path) -> Result<ProjectManifest, Box<dyn Error>> {
-        let yaml = fs::read_to_string(path).map_err(|e| Box::new(e) as Box<dyn Error>)?;
-
-        serde_yaml::from_str(&yaml).map_err(|e| Box::new(e) as Box<dyn Error>)
+        let yaml = fs::read_to_string(path)?;
+        serde_yaml::from_str(&yaml).map_err(|e| e.into())
     }
 }
 
 impl ProjectRepository for FileProjectRepository {
+    /// Salva um projeto.
+    /// Cria um diretório com o nome do projeto e salva um arquivo `project.yaml` dentro dele.
     fn save(&self, project: Project) -> Result<(), DomainError> {
-        let file_path = self.get_project_file_path(&PathBuf::from(&project.name));
+        let project_dir = self.base_path.join(&project.name);
+
+        fs::create_dir_all(&project_dir)
+            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório do projeto: {e}")))?;
+
+        let manifest_path = project_dir.join("project.yaml");
         let project_manifest = <ProjectManifest as Convertable<Project>>::from(project);
         let yaml = serde_yaml::to_string(&project_manifest)
-            .map_err(|e| DomainError::Generic(format!("Erro ao serializar projeto: {}", e)))?;
+            .map_err(|e| DomainError::Generic(format!("Erro ao serializar projeto: {e}")))?;
 
-        fs::create_dir_all(file_path.parent().unwrap())
-            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {}", e)))?;
-
-        fs::write(file_path, yaml)
-            .map_err(|e| DomainError::Generic(format!("Erro ao salvar projeto: {}", e)))?;
+        fs::write(&manifest_path, yaml)
+            .map_err(|e| DomainError::Generic(format!("Erro ao salvar arquivo do projeto: {e}")))?;
 
         Ok(())
     }
 
+    /// Carrega um projeto.
+    /// `path` deve ser o caminho para o diretório do projeto.
     fn load(&self, path: &Path) -> Result<Project, DomainError> {
-        let manifest_path = path.join("project.yaml");
+        let manifest_path = self.base_path.join(path).join("project.yaml");
 
-        if let Ok(manifest) = self.load_manifest(&manifest_path) {
-            Ok(manifest.to())
-        } else {
-            Err(DomainError::Generic(
-                "Falha ao carregar o arquivo do projeto".to_string(),
-            ))
+        if !manifest_path.exists() {
+            return Err(DomainError::Generic(format!(
+                "Arquivo de manifesto não encontrado em: {manifest_path:?}"
+            )));
+        }
+
+        match self.load_manifest(&manifest_path) {
+            Ok(manifest) => Ok(manifest.to()),
+            Err(e) => Err(DomainError::Generic(format!(
+                "Falha ao carregar ou deserializar o arquivo do projeto: {e}"
+            ))),
         }
     }
 }
 
-#[cfg(test)]
-pub struct MockProjectRepository {
-    project: Project,
-}
+// ===================================
+// TESTES
+// ===================================
 
 #[cfg(test)]
-impl ProjectRepository for MockProjectRepository {
-    fn save(&self, _project: Project) -> Result<(), DomainError> {
-        Ok(())
+mod tests {
+    use super::*;
+    use crate::domain::project_management::project::ProjectStatus;
+    use tempfile::tempdir;
+
+    /// Cria um projeto de teste simples.
+    fn create_test_project(name: &str) -> Project {
+        Project::new(
+            Some(format!("id-{name}")),
+            name.to_string(),
+            Some(format!("Descrição para {name}")),
+            Some("2025-01-01".to_string()),
+            Some("2025-12-31".to_string()),
+            ProjectStatus::Planned,
+            None,
+        )
     }
 
-    fn load(&self, _path: &Path) -> Result<Project, DomainError> {
-        Ok(self.project.clone())
+    #[test]
+    fn test_save_and_load_project() {
+        // 1. Setup
+        let temp_dir = tempdir().expect("Não foi possível criar diretório temporário");
+        let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
+        let original_project = create_test_project("MeuProjetoDeTeste");
+        let project_name = original_project.name.clone();
+
+        // 2. Salvar o projeto
+        let save_result = repo.save(original_project.clone());
+        assert!(save_result.is_ok());
+
+        // 3. Verificar se a estrutura de arquivos foi criada corretamente
+        let project_dir_path = temp_dir.path().join(&project_name);
+        assert!(project_dir_path.exists(), "O diretório do projeto deve existir");
+        assert!(project_dir_path.is_dir());
+
+        let manifest_path = project_dir_path.join("project.yaml");
+        assert!(manifest_path.exists(), "O arquivo project.yaml deve existir");
+        assert!(manifest_path.is_file());
+
+        // 4. Carregar o projeto de volta
+        // A função `load` espera o nome do diretório do projeto (relativo ao base_path)
+        let loaded_project = repo
+            .load(&PathBuf::from(&project_name))
+            .expect("O carregamento do projeto não deve falhar");
+
+        // 5. Verificar se os dados são consistentes
+        // A conversão para/de manifesto pode alterar alguns campos (como o ID, que pode não ser salvo),
+        // então comparamos os campos importantes.
+        assert_eq!(original_project.name, loaded_project.name);
+        assert_eq!(original_project.description, loaded_project.description);
+        assert_eq!(original_project.status, loaded_project.status);
+        assert_eq!(original_project.start_date, loaded_project.start_date);
+        assert_eq!(original_project.end_date, loaded_project.end_date);
+    }
+
+    #[test]
+    fn test_load_non_existent_project() {
+        // 1. Setup
+        let temp_dir = tempdir().expect("Não foi possível criar diretório temporário");
+        let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
+        let project_path = PathBuf::from("projeto-que-nao-existe");
+
+        // 2. Tentar carregar
+        let result = repo.load(&project_path);
+
+        // 3. Verificar
+        assert!(result.is_err());
+        if let Err(DomainError::Generic(msg)) = result {
+            assert!(msg.contains("Arquivo de manifesto não encontrado"));
+        } else {
+            panic!("Esperado um DomainError::Generic");
+        }
     }
 }

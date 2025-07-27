@@ -1,0 +1,17 @@
+# A largura máxima das linhas.
+max_width = 120
+
+# Usar espaços em vez de tabs.
+hard_tabs = false
+
+# Número de espaços por nível de indentação.
+tab_spaces = 4
+
+# Estilo de nova linha (Auto, Unix, Windows).
+newline_style = "Auto"
+
+# Reordenar 'use' e 'extern crate' alfabeticamente.
+reorder_imports = true
+
+# Controla como os imports são agrupados.
+imports_granularity = "Crate"
