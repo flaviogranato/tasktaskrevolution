@@ -106,7 +106,10 @@ impl Convertable<Config> for ConfigManifest {
     }
 
     fn to(&self) -> Config {
-        Config { manager_name: self.spec.manager_name.clone(), manager_email: self.spec.manager_email.clone() }
+        Config {
+            manager_name: self.spec.manager_name.clone(),
+            manager_email: self.spec.manager_email.clone(),
+        }
     }
 }
 

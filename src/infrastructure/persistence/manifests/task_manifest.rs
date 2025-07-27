@@ -25,17 +25,17 @@ pub struct Metadata {
 pub struct Spec {
     pub project_code: String,
     pub assignee: String,
-    pub status: Status,
-    pub priority: Priority,
+    status: Status,
+    priority: Priority,
     pub estimated_start_date: Option<NaiveDate>,
     pub estimated_end_date: Option<NaiveDate>,
     pub actual_start_date: Option<NaiveDate>,
     pub actual_end_date: Option<NaiveDate>,
     pub dependencies: Vec<String>,
     pub tags: Vec<String>,
-    pub effort: Effort,
+    effort: Effort,
     pub acceptance_criteria: Vec<String>,
-    pub comments: Vec<Comment>,
+    comments: Vec<Comment>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -82,26 +82,30 @@ impl Convertable<Task> for TaskManifest {
             TaskStatus::InProgress { progress } => {
                 comments.push(Comment {
                     author: "system".to_string(),
-                    message: format!("Progresso atual: {}%", progress),
+                    message: format!("Progresso atual: {progress}%"),
                     timestamp: chrono::Utc::now().naive_utc().date(),
                 });
                 Status::InProgress
-            },
+            }
             TaskStatus::Blocked { ref reason } => {
                 comments.push(Comment {
                     author: "system".to_string(),
-                    message: format!("Tarefa bloqueada: {}", reason),
+                    message: format!("Tarefa bloqueada: {reason}"),
                     timestamp: chrono::Utc::now().naive_utc().date(),
                 });
                 Status::Blocked
-            },
+            }
             TaskStatus::Cancelled => Status::Cancelled,
         };
 
         TaskManifest {
             api_version: "v1".to_string(),
             kind: "Task".to_string(),
-            metadata: Metadata { code: source.code, name: source.name, description: source.description },
+            metadata: Metadata {
+                code: source.code,
+                name: source.name,
+                description: source.description,
+            },
             spec: Spec {
                 project_code: source.id.clone(),
                 assignee: source
@@ -117,7 +121,14 @@ impl Convertable<Task> for TaskManifest {
                 actual_end_date: source.actual_end_date,
                 dependencies: Vec::new(),
                 tags: source.assigned_resources.clone(),
-                effort: Effort { estimated_hours: 8.0, actual_hours: if matches!(source.status, TaskStatus::Completed) { Some(8.0) } else { None } },
+                effort: Effort {
+                    estimated_hours: 8.0,
+                    actual_hours: if matches!(source.status, TaskStatus::Completed) {
+                        Some(8.0)
+                    } else {
+                        None
+                    },
+                },
                 acceptance_criteria: Vec::new(),
                 comments,
             },
@@ -142,7 +153,7 @@ impl Convertable<Task> for TaskManifest {
                     })
                     .unwrap_or(50);
                 TaskStatus::InProgress { progress }
-            },
+            }
             Status::Done => TaskStatus::Completed,
             Status::Blocked => {
                 let reason = self
@@ -154,7 +165,7 @@ impl Convertable<Task> for TaskManifest {
                     .map(|s| s.to_string())
                     .unwrap_or_else(|| "Motivo não especificado".to_string());
                 TaskStatus::Blocked { reason }
-            },
+            }
             Status::Cancelled => TaskStatus::Cancelled,
         };
 
@@ -243,7 +254,10 @@ mod convertable_tests {
                 actual_end_date: None,
                 dependencies: vec![],
                 tags: vec!["dev1".to_string(), "dev2".to_string()],
-                effort: Effort { estimated_hours: 8.0, actual_hours: None },
+                effort: Effort {
+                    estimated_hours: 8.0,
+                    actual_hours: None,
+                },
                 acceptance_criteria: vec![],
                 comments: vec![],
             },
@@ -304,7 +318,9 @@ mod convertable_tests {
     #[test]
     fn test_task_to_manifest_blocked_status() {
         let mut task = create_basic_task();
-        task.status = TaskStatus::Blocked { reason: "Aguardando aprovação do cliente".to_string() };
+        task.status = TaskStatus::Blocked {
+            reason: "Aguardando aprovação do cliente".to_string(),
+        };
 
         let manifest = <TaskManifest as Convertable<Task>>::from(task);
 
@@ -372,10 +388,7 @@ mod convertable_tests {
         assert_eq!(task.id, "TASK-001");
         assert_eq!(task.code, "TSK001");
         assert_eq!(task.name, "Tarefa de Teste");
-        assert_eq!(
-            task.description,
-            Some("Descrição da tarefa de teste".to_string())
-        );
+        assert_eq!(task.description, Some("Descrição da tarefa de teste".to_string()));
         assert_eq!(task.status, TaskStatus::Planned);
         assert_eq!(task.start_date, test_date(2024, 1, 15));
         assert_eq!(task.due_date, test_date(2024, 1, 30));
@@ -550,14 +563,8 @@ mod convertable_tests {
         assert_eq!(converted_task.status, original_task.status);
         assert_eq!(converted_task.start_date, original_task.start_date);
         assert_eq!(converted_task.due_date, original_task.due_date);
-        assert_eq!(
-            converted_task.actual_end_date,
-            original_task.actual_end_date
-        );
-        assert_eq!(
-            converted_task.assigned_resources,
-            original_task.assigned_resources
-        );
+        assert_eq!(converted_task.actual_end_date, original_task.actual_end_date);
+        assert_eq!(converted_task.assigned_resources, original_task.assigned_resources);
     }
 
     #[test]
@@ -572,7 +579,7 @@ mod convertable_tests {
         match (original_task.status, converted_task.status) {
             (TaskStatus::InProgress { progress: orig }, TaskStatus::InProgress { progress: conv }) => {
                 assert_eq!(orig, conv);
-            },
+            }
             _ => panic!("Status should be InProgress for both"),
         }
 
@@ -585,7 +592,9 @@ mod convertable_tests {
     #[test]
     fn test_bidirectional_conversion_blocked_task() {
         let mut original_task = create_basic_task();
-        original_task.status = TaskStatus::Blocked { reason: "Aguardando revisão de código".to_string() };
+        original_task.status = TaskStatus::Blocked {
+            reason: "Aguardando revisão de código".to_string(),
+        };
 
         let manifest = <TaskManifest as Convertable<Task>>::from(original_task.clone());
         let converted_task = manifest.to();
@@ -594,7 +603,7 @@ mod convertable_tests {
         match (original_task.status, converted_task.status) {
             (TaskStatus::Blocked { reason: orig }, TaskStatus::Blocked { reason: conv }) => {
                 assert_eq!(orig, conv);
-            },
+            }
             _ => panic!("Status should be Blocked for both"),
         }
     }
@@ -609,10 +618,7 @@ mod convertable_tests {
         let converted_task = manifest.to();
 
         assert_eq!(converted_task.status, TaskStatus::Completed);
-        assert_eq!(
-            converted_task.actual_end_date,
-            original_task.actual_end_date
-        );
+        assert_eq!(converted_task.actual_end_date, original_task.actual_end_date);
     }
 
     #[test]
@@ -714,7 +720,7 @@ mod convertable_tests {
     #[test]
     fn test_long_resource_list() {
         let mut task = create_basic_task();
-        task.assigned_resources = (1..=20).map(|i| format!("dev{}", i)).collect();
+        task.assigned_resources = (1..=20).map(|i| format!("dev{i}")).collect();
 
         let manifest = <TaskManifest as Convertable<Task>>::from(task.clone());
         let converted_task = manifest.to();

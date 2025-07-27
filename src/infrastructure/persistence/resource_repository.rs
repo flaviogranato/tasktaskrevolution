@@ -18,13 +18,13 @@ pub struct FileResourceRepository {
 
 impl FileResourceRepository {
     pub fn new() -> Self {
-        Self { base_path: PathBuf::from(".") }
+        Self {
+            base_path: PathBuf::from("."),
+        }
     }
 
     fn get_resource_file_path(&self, resource_name: &str) -> PathBuf {
-        self.base_path
-            .join("resources")
-            .join(format!("{}.yaml", resource_name))
+        self.base_path.join("resources").join(format!("{resource_name}.yaml"))
     }
 }
 
@@ -32,11 +32,13 @@ impl ResourceRepository for FileResourceRepository {
     fn save(&self, resource: Resource) -> Result<Resource, DomainError> {
         let file_path = self.get_resource_file_path(&resource.name);
         let resource_manifest = <ResourceManifest as Convertable<Resource>>::from(resource.clone());
-        let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| DomainError::Generic(format!("Erro ao serializar recurso: {}", e)))?;
+        let yaml = serde_yaml::to_string(&resource_manifest)
+            .map_err(|e| DomainError::Generic(format!("Erro ao serializar recurso: {e}")))?;
 
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {}", e)))?;
+        fs::create_dir_all(file_path.parent().unwrap())
+            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório: {e}")))?;
 
-        fs::write(file_path, yaml).map_err(|e| DomainError::Generic(format!("Erro ao salvar recurso: {}", e)))?;
+        fs::write(file_path, yaml).map_err(|e| DomainError::Generic(format!("Erro ao salvar recurso: {e}")))?;
 
         Ok(resource)
     }
@@ -48,24 +50,25 @@ impl ResourceRepository for FileResourceRepository {
         }
 
         let mut resources = Vec::new();
-        for entry in fs::read_dir(resources_dir).map_err(|e| DomainError::Generic(format!("Erro ao ler diretório de recursos: {}", e)))? {
-            let entry = entry.map_err(|e| DomainError::Generic(format!("Erro ao ler entrada do diretório: {}", e)))?;
+        for entry in fs::read_dir(resources_dir)
+            .map_err(|e| DomainError::Generic(format!("Erro ao ler diretório de recursos: {e}")))?
+        {
+            let entry = entry.map_err(|e| DomainError::Generic(format!("Erro ao ler entrada do diretório: {e}")))?;
 
             if entry
                 .file_type()
-                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {}", e)))?
+                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {e}")))?
                 .is_file()
             {
                 let file_path = entry.path();
                 if file_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    let yaml = fs::read_to_string(&file_path).map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de recurso: {}", e)))?;
+                    let yaml = fs::read_to_string(&file_path)
+                        .map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de recurso: {e}")))?;
 
-                    let resource_manifest: ResourceManifest =
-                        serde_yaml::from_str(&yaml).map_err(|e| DomainError::Generic(format!("Erro ao deserializar recurso: {}", e)))?;
+                    let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml)
+                        .map_err(|e| DomainError::Generic(format!("Erro ao deserializar recurso: {e}")))?;
 
-                    resources.push(<ResourceManifest as Convertable<Resource>>::to(
-                        &resource_manifest,
-                    ));
+                    resources.push(<ResourceManifest as Convertable<Resource>>::to(&resource_manifest));
                 }
             }
         }
@@ -73,7 +76,13 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resources)
     }
 
-    fn save_time_off(&self, resource_name: String, hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+    fn save_time_off(
+        &self,
+        resource_name: String,
+        hours: u32,
+        _date: String,
+        _description: Option<String>,
+    ) -> Result<Resource, DomainError> {
         let mut resources = self.find_all()?;
         let resource = resources
             .iter_mut()
@@ -100,12 +109,12 @@ impl ResourceRepository for FileResourceRepository {
             .ok_or_else(|| DomainError::Generic("Recurso não encontrado".to_string()))?;
 
         let start_date = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
-            .map_err(|e| DomainError::Generic(format!("Data de início inválida: {}", e)))?
+            .map_err(|e| DomainError::Generic(format!("Data de início inválida: {e}")))?
             .and_hms_opt(0, 0, 0)
             .unwrap();
 
         let end_date = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
-            .map_err(|e| DomainError::Generic(format!("Data de fim inválida: {}", e)))?
+            .map_err(|e| DomainError::Generic(format!("Data de fim inválida: {e}")))?
             .and_hms_opt(0, 0, 0)
             .unwrap();
 
@@ -200,7 +209,9 @@ mod tests {
     #[test]
     fn test_save_and_find_all() {
         let temp_dir = tempdir().unwrap();
-        let repo = FileResourceRepository { base_path: temp_dir.path().to_path_buf() };
+        let repo = FileResourceRepository {
+            base_path: temp_dir.path().to_path_buf(),
+        };
 
         let resource1 = create_test_resource("test1");
         let resource2 = create_test_resource("test2");
@@ -217,7 +228,9 @@ mod tests {
     #[test]
     fn test_save_vacation() {
         let temp_dir = tempdir().unwrap();
-        let repo = FileResourceRepository { base_path: temp_dir.path().to_path_buf() };
+        let repo = FileResourceRepository {
+            base_path: temp_dir.path().to_path_buf(),
+        };
 
         let resource = create_test_resource("test");
         repo.save(resource).unwrap();
@@ -238,7 +251,9 @@ mod tests {
     #[test]
     fn test_save_time_off() {
         let temp_dir = tempdir().unwrap();
-        let repo = FileResourceRepository { base_path: temp_dir.path().to_path_buf() };
+        let repo = FileResourceRepository {
+            base_path: temp_dir.path().to_path_buf(),
+        };
 
         let resource = create_test_resource("test");
         repo.save(resource).unwrap();
@@ -258,7 +273,9 @@ mod tests {
     #[test]
     fn test_save_vacation_with_compensation() {
         let temp_dir = tempdir().unwrap();
-        let repo = FileResourceRepository { base_path: temp_dir.path().to_path_buf() };
+        let repo = FileResourceRepository {
+            base_path: temp_dir.path().to_path_buf(),
+        };
 
         let resource = create_test_resource("test");
         repo.save(resource).unwrap();
@@ -282,7 +299,9 @@ mod tests {
     #[test]
     fn test_save_vacation_invalid_dates() {
         let temp_dir = tempdir().unwrap();
-        let repo = FileResourceRepository { base_path: temp_dir.path().to_path_buf() };
+        let repo = FileResourceRepository {
+            base_path: temp_dir.path().to_path_buf(),
+        };
 
         let resource = create_test_resource("test");
         repo.save(resource).unwrap();
@@ -301,7 +320,9 @@ mod tests {
     #[test]
     fn test_save_vacation_nonexistent_resource() {
         let temp_dir = tempdir().unwrap();
-        let repo = FileResourceRepository { base_path: temp_dir.path().to_path_buf() };
+        let repo = FileResourceRepository {
+            base_path: temp_dir.path().to_path_buf(),
+        };
 
         let result = repo.save_vacation(
             "nonexistent".to_string(),

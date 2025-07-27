@@ -76,7 +76,16 @@ impl Resource {
         project_assignments: Option<Vec<ProjectAssignment>>,
         time_off_balance: u32,
     ) -> Self {
-        Self { id, name, email, resource_type, vacations, project_assignments, time_off_balance, time_off_history: Some(Vec::new()) }
+        Self {
+            id,
+            name,
+            email,
+            resource_type,
+            vacations,
+            project_assignments,
+            time_off_balance,
+            time_off_history: Some(Vec::new()),
+        }
     }
 }
 
@@ -85,7 +94,13 @@ impl Display for Resource {
         write!(
             f,
             "Resource {{ id: {:?}, name: {}, email: {:?}, resource_type: {}, vacations: {:?}, project_assignments: {:?}, time_off_balance: {} }}",
-            self.id, self.name, self.email, self.resource_type, self.vacations, self.project_assignments, self.time_off_balance
+            self.id,
+            self.name,
+            self.email,
+            self.resource_type,
+            self.vacations,
+            self.project_assignments,
+            self.time_off_balance
         )
     }
 }
@@ -95,7 +110,13 @@ impl Display for Period {
         write!(
             f,
             "Period {{ start_date: {}, end_date: {}, approved: {}, period_type: {}, is_time_off_compensation: {}, compensated_hours: {:?}, is_layoff: {} }}",
-            self.start_date, self.end_date, self.approved, self.period_type, self.is_time_off_compensation, self.compensated_hours, self.is_layoff
+            self.start_date,
+            self.end_date,
+            self.approved,
+            self.period_type,
+            self.is_time_off_compensation,
+            self.compensated_hours,
+            self.is_layoff
         )
     }
 }
@@ -107,5 +128,78 @@ impl Display for ProjectAssignment {
             "ProjectAssignment: {{ project_id: {}, start_date: {}, end_date: {} }}",
             self.project_id, self.start_date, self.end_date
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{DateTime, Local, TimeZone};
+
+    // Helper to create a DateTime<Local> for tests
+    fn dt(year: i32, month: u32, day: u32) -> DateTime<Local> {
+        Local.with_ymd_and_hms(year, month, day, 0, 0, 0).unwrap()
+    }
+
+    #[test]
+    fn test_period_type_display() {
+        assert_eq!(PeriodType::Vacation.to_string(), "Vacation");
+        assert_eq!(PeriodType::TimeOff.to_string(), "TimeOff");
+        assert_eq!(PeriodType::BirthdayBreak.to_string(), "BirthdayBreak");
+        assert_eq!(PeriodType::DayOff.to_string(), "DayOff");
+        assert_eq!(PeriodType::SickLeave.to_string(), "SickLeave");
+        assert_eq!(PeriodType::PersonalLeave.to_string(), "PersonalLeave");
+        assert_eq!(PeriodType::TimeOffCompensation.to_string(), "TimeOffCompensation");
+    }
+
+    #[test]
+    fn test_period_display() {
+        let period = Period {
+            start_date: dt(2025, 1, 1),
+            end_date: dt(2025, 1, 10),
+            approved: true,
+            period_type: PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+        let expected = format!(
+            "Period {{ start_date: {}, end_date: {}, approved: true, period_type: Vacation, is_time_off_compensation: false, compensated_hours: None, is_layoff: false }}",
+            dt(2025, 1, 1),
+            dt(2025, 1, 10)
+        );
+        assert_eq!(period.to_string(), expected);
+    }
+
+    #[test]
+    fn test_project_assignment_display() {
+        let assignment = ProjectAssignment {
+            project_id: "PROJ-R-US".to_string(),
+            start_date: dt(2025, 2, 1),
+            end_date: dt(2025, 8, 1),
+            allocation_percentage: 100,
+        };
+        let expected = format!(
+            "ProjectAssignment: {{ project_id: PROJ-R-US, start_date: {}, end_date: {} }}",
+            dt(2025, 2, 1),
+            dt(2025, 8, 1)
+        );
+        assert_eq!(assignment.to_string(), expected);
+    }
+
+    #[test]
+    fn test_resource_display() {
+        let resource = Resource {
+            id: Some("res-007".to_string()),
+            name: "James".to_string(),
+            email: Some("james@test.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: None,
+            project_assignments: None,
+            time_off_balance: 40,
+            time_off_history: None,
+        };
+        let expected = "Resource { id: Some(\"res-007\"), name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, project_assignments: None, time_off_balance: 40 }";
+        assert_eq!(resource.to_string(), expected);
     }
 }

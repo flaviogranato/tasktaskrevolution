@@ -3,12 +3,18 @@ use chrono::NaiveDate;
 use std::marker::PhantomData;
 use uuid7::uuid7;
 
+#[allow(dead_code)]
 pub struct New;
+#[allow(dead_code)]
 pub struct WithName;
+#[allow(dead_code)]
 pub struct WithDates;
+#[allow(dead_code)]
 pub struct WithResources;
+#[allow(dead_code)]
 pub struct Ready;
 
+#[allow(dead_code)]
 pub struct TaskBuilder<State> {
     id: String,
     code: String,
@@ -19,6 +25,7 @@ pub struct TaskBuilder<State> {
     _state: PhantomData<State>,
 }
 
+#[allow(dead_code)]
 impl TaskBuilder<New> {
     pub fn new() -> Self {
         let id = uuid7().to_string();
@@ -47,6 +54,7 @@ impl TaskBuilder<New> {
     }
 }
 
+#[allow(dead_code)]
 impl TaskBuilder<WithName> {
     pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, TaskError> {
         if start > due {
@@ -65,6 +73,7 @@ impl TaskBuilder<WithName> {
     }
 }
 
+#[allow(dead_code)]
 impl TaskBuilder<WithDates> {
     pub fn assign_resource(mut self, resource_id: impl Into<String>) -> TaskBuilder<WithResources> {
         self.assigned_resources.push(resource_id.into());
@@ -81,13 +90,17 @@ impl TaskBuilder<WithDates> {
     }
 }
 
+#[allow(dead_code)]
 impl TaskBuilder<WithResources> {
     pub fn assign_resource(mut self, resource_id: impl Into<String>) -> Self {
         self.assigned_resources.push(resource_id.into());
         self
     }
 
-    pub fn validate_vacations(self, resource_vacations: &[(String, NaiveDate, NaiveDate)]) -> Result<TaskBuilder<Ready>, TaskError> {
+    pub fn validate_vacations(
+        self,
+        resource_vacations: &[(String, NaiveDate, NaiveDate)],
+    ) -> Result<TaskBuilder<Ready>, TaskError> {
         let start = self.start_date.unwrap();
         let due = self.due_date.unwrap();
 
@@ -111,6 +124,7 @@ impl TaskBuilder<WithResources> {
     }
 }
 
+#[allow(dead_code)]
 impl TaskBuilder<Ready> {
     pub fn build(self) -> Result<Task, TaskError> {
         Ok(Task {
@@ -149,10 +163,7 @@ mod tests {
 
         assert_eq!(task.name, "Test Task");
         assert_eq!(task.assigned_resources, vec!["RES-001".to_string()]);
-        assert_eq!(
-            task.start_date,
-            NaiveDate::from_ymd_opt(2025, 5, 1).unwrap()
-        );
+        assert_eq!(task.start_date, NaiveDate::from_ymd_opt(2025, 5, 1).unwrap());
         assert_eq!(task.due_date, NaiveDate::from_ymd_opt(2025, 5, 10).unwrap());
         assert!(task.code.starts_with("TASK-"));
     }
@@ -196,7 +207,6 @@ mod tests {
         //     NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),
         // );
         // Isso é garantido pelo typestate!
-        assert!(true);
     }
 
     #[test]
@@ -206,7 +216,6 @@ mod tests {
         //     .name("Sem datas")
         //     .build();
         // Isso é garantido pelo typestate!
-        assert!(true);
     }
 
     #[test]

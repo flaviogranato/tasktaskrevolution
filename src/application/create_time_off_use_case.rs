@@ -45,10 +45,7 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         {
             Ok(resource) => Ok(CreateTimeOffResult {
                 success: true,
-                message: format!(
-                    "{} horas adicionadas com sucesso para {}",
-                    hours, resource.name
-                ),
+                message: format!("{} horas adicionadas com sucesso para {}", hours, resource.name),
                 time_off_balance: resource.time_off_balance,
                 description,
                 date,
@@ -70,7 +67,9 @@ mod tests {
 
     impl MockResourceRepository {
         fn new(resources: Vec<Resource>) -> Self {
-            Self { resources: RefCell::new(resources) }
+            Self {
+                resources: RefCell::new(resources),
+            }
         }
     }
 
@@ -89,7 +88,13 @@ mod tests {
             Ok(self.resources.borrow().clone())
         }
 
-        fn save_time_off(&self, resource_name: String, hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        fn save_time_off(
+            &self,
+            resource_name: String,
+            hours: u32,
+            _date: String,
+            _description: Option<String>,
+        ) -> Result<Resource, DomainError> {
             let mut resources = self.resources.borrow_mut();
             let resource = resources
                 .iter_mut()

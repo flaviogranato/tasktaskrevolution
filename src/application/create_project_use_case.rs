@@ -27,7 +27,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         );
 
         self.repository.save(project)?;
-        println!("Projeto {} criado", name);
+        println!("Projeto {name} criado");
         Ok(())
     }
 

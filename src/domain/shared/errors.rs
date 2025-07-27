@@ -8,7 +8,7 @@ pub enum DomainError {
 impl fmt::Display for DomainError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DomainError::Generic(msg) => write!(f, "Erro genérico: {}", msg),
+            DomainError::Generic(msg) => write!(f, "Erro genérico: {msg}"),
         }
     }
 }
