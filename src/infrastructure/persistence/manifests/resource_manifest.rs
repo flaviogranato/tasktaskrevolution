@@ -168,10 +168,7 @@ impl Convertable<Resource> for ResourceManifest {
             self.metadata.name.clone(),
             self.metadata.email.clone(),
             self.metadata.resource_type.clone(),
-            self.spec
-                .vacations
-                .as_ref()
-                .map(|v| v.iter().map(|p| p.to()).collect()),
+            self.spec.vacations.as_ref().map(|v| v.iter().map(|p| p.to()).collect()),
             self.spec
                 .project_assignments
                 .as_ref()

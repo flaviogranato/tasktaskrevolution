@@ -12,7 +12,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn execute(&self, name: String, resource_type: String) -> Result<(), DomainError> {
         let r = Resource::new(None, name.clone(), None, resource_type, None, None, 0);
         self.repository.save(r)?;
-        println!("Recurso {} criado.", name);
+        println!("Recurso {name} criado.");
         Ok(())
     }
 }
@@ -31,7 +31,10 @@ mod test {
 
     impl MockResourceRepository {
         fn new(should_fail: bool) -> Self {
-            Self { should_fail, saved_config: RefCell::new(None) }
+            Self {
+                should_fail,
+                saved_config: RefCell::new(None),
+            }
         }
     }
 
@@ -49,7 +52,13 @@ mod test {
             Ok(vec![])
         }
 
-        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        fn save_time_off(
+            &self,
+            _resource_name: String,
+            _hours: u32,
+            _date: String,
+            _description: Option<String>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 

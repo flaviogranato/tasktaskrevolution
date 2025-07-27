@@ -5,7 +5,13 @@ use chrono::{DateTime, Local};
 pub trait ResourceRepository {
     fn save(&self, resource: Resource) -> Result<Resource, DomainError>;
     fn find_all(&self) -> Result<Vec<Resource>, DomainError>;
-    fn save_time_off(&self, resource_name: String, hours: u32, date: String, description: Option<String>) -> Result<Resource, DomainError>;
+    fn save_time_off(
+        &self,
+        resource_name: String,
+        hours: u32,
+        date: String,
+        description: Option<String>,
+    ) -> Result<Resource, DomainError>;
     fn save_vacation(
         &self,
         resource_name: String,
