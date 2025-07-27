@@ -1,7 +1,7 @@
-use crate::domain::project::layoff_period::LayoffPeriod;
-use crate::domain::project::model::{Project, ProjectStatus};
-use crate::domain::project::vacation_rules::VacationRules;
-use crate::domain::shared_kernel::convertable::Convertable;
+use crate::domain::project_management::layoff_period::LayoffPeriod;
+use crate::domain::project_management::project::{Project, ProjectStatus};
+use crate::domain::project_management::vacation_rules::VacationRules;
+use crate::domain::shared::convertable::Convertable;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -242,10 +242,7 @@ layoffPeriods:
             deserialized.layoff_periods.as_ref().unwrap()[0].start_date,
             "2024-01-01"
         );
-        assert_eq!(
-            deserialized.layoff_periods.as_ref().unwrap()[1].end_date,
-            "2024-07-31"
-        );
+        assert_eq!(deserialized.layoff_periods.as_ref().unwrap()[1].end_date, "2024-07-31");
     }
 
     #[test]
@@ -281,10 +278,7 @@ spec:
         assert_eq!(manifest.kind, "Project");
         assert_eq!(manifest.metadata.code, Some("ABC123".to_string()));
         assert_eq!(manifest.metadata.name, "Meu Projeto".to_string());
-        assert_eq!(
-            manifest.metadata.description,
-            Some("Descrição do Projeto".to_string())
-        );
+        assert_eq!(manifest.metadata.description, Some("Descrição do Projeto".to_string()));
         assert_eq!(manifest.spec.start_date, Some("2024-01-10".to_string()));
         assert_eq!(manifest.spec.end_date, Some("2024-12-20".to_string()));
         assert_eq!(manifest.spec.status, ProjectStatusManifest::InProgress);
@@ -294,13 +288,7 @@ spec:
         assert_eq!(vr.allow_layoff_vacations, Some(true));
         assert_eq!(vr.require_layoff_vacation_period, Some(false));
         assert_eq!(vr.layoff_periods.as_ref().unwrap().len(), 2);
-        assert_eq!(
-            vr.layoff_periods.as_ref().unwrap()[0].start_date,
-            "2024-05-15"
-        );
-        assert_eq!(
-            vr.layoff_periods.as_ref().unwrap()[1].end_date,
-            "2024-11-30"
-        );
+        assert_eq!(vr.layoff_periods.as_ref().unwrap()[0].start_date, "2024-05-15");
+        assert_eq!(vr.layoff_periods.as_ref().unwrap()[1].end_date, "2024-11-30");
     }
 }

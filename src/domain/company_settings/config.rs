@@ -24,3 +24,18 @@ impl Display for Config {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_config_display() {
+        let config = Config {
+            manager_name: "Admin User".to_string(),
+            manager_email: "admin@example.com".to_string(),
+        };
+        let expected = "Config { name: Admin User, email: admin@example.com }";
+        assert_eq!(config.to_string(), expected);
+    }
+}

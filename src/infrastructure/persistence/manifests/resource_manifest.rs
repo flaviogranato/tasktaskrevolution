@@ -2,8 +2,8 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::{
-    resource::model::{Period, PeriodType, ProjectAssignment, Resource},
-    shared_kernel::convertable::Convertable,
+    resource_management::resource::{Period, PeriodType, ProjectAssignment, Resource},
+    shared::convertable::Convertable,
 };
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -168,10 +168,7 @@ impl Convertable<Resource> for ResourceManifest {
             self.metadata.name.clone(),
             self.metadata.email.clone(),
             self.metadata.resource_type.clone(),
-            self.spec
-                .vacations
-                .as_ref()
-                .map(|v| v.iter().map(|p| p.to()).collect()),
+            self.spec.vacations.as_ref().map(|v| v.iter().map(|p| p.to()).collect()),
             self.spec
                 .project_assignments
                 .as_ref()

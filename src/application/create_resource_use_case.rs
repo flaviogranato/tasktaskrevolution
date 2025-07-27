@@ -1,5 +1,5 @@
-use crate::domain::resource::{model::Resource, repository::ResourceRepository};
-use crate::domain::shared_kernel::errors::DomainError;
+use crate::domain::resource_management::{repository::ResourceRepository, resource::Resource};
+use crate::domain::shared::errors::DomainError;
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
@@ -12,7 +12,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn execute(&self, name: String, resource_type: String) -> Result<(), DomainError> {
         let r = Resource::new(None, name.clone(), None, resource_type, None, None, 0);
         self.repository.save(r)?;
-        println!("Recurso {} criado.", name);
+        println!("Recurso {name} criado.");
         Ok(())
     }
 }
@@ -20,7 +20,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared_kernel::errors::DomainError;
+    use crate::domain::shared::errors::DomainError;
     use chrono::{DateTime, Local};
     use std::cell::RefCell;
 
@@ -73,11 +73,7 @@ mod test {
             unimplemented!("Not needed for these tests")
         }
 
-        fn check_if_layoff_period(
-            &self,
-            _start_date: &DateTime<Local>,
-            _end_date: &DateTime<Local>,
-        ) -> bool {
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
     }

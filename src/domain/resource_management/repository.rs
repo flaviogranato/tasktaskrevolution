@@ -1,5 +1,5 @@
-use super::model::Resource;
-use crate::domain::shared_kernel::errors::DomainError;
+use crate::domain::resource_management::resource::Resource;
+use crate::domain::shared::errors::DomainError;
 use chrono::{DateTime, Local};
 
 pub trait ResourceRepository {
@@ -20,9 +20,5 @@ pub trait ResourceRepository {
         is_time_off_compensation: bool,
         compensated_hours: Option<u32>,
     ) -> Result<Resource, DomainError>;
-    fn check_if_layoff_period(
-        &self,
-        start_date: &DateTime<Local>,
-        end_date: &DateTime<Local>,
-    ) -> bool;
+    fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool;
 }

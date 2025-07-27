@@ -1,4 +1,5 @@
-pub mod config;
-pub mod project;
-pub mod resource;
-pub mod shared_kernel;
+pub mod company_settings;
+pub mod project_management;
+pub mod resource_management;
+pub mod shared;
+pub mod task_management;
