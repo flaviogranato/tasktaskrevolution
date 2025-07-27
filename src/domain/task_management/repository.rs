@@ -7,6 +7,7 @@ pub trait TaskRepository {
     fn save(&self, task: Task) -> Result<(), DomainError>;
 
     /// Carrega uma task de um arquivo específico
+    #[allow(dead_code)]
     fn load(&self, path: &Path) -> Result<Task, DomainError>;
 
     /// Busca uma task pelo código
@@ -18,18 +19,27 @@ pub trait TaskRepository {
     /// Retorna todas as tasks
     fn find_all(&self) -> Result<Vec<Task>, DomainError>;
 
-    /// Deleta uma task pelo código
-    fn delete(&self, code: &str) -> Result<(), DomainError>;
+    /// Deleta uma task pelo ID
+    #[allow(dead_code)]
+    fn delete(&self, id: &str) -> Result<(), DomainError>;
 
     /// Atualiza o status de uma task
+    #[allow(dead_code)]
     fn update_status(&self, code: &str, new_status: TaskStatus) -> Result<Task, DomainError>;
 
     /// Busca tasks por responsável
+    #[allow(dead_code)]
     fn find_by_assignee(&self, assignee: &str) -> Result<Vec<Task>, DomainError>;
 
     /// Busca tasks por status
+    #[allow(dead_code)]
     fn find_by_status(&self, status: &TaskStatus) -> Result<Vec<Task>, DomainError>;
 
     /// Busca tasks por intervalo de datas
-    fn find_by_date_range(&self, start_date: chrono::NaiveDate, end_date: chrono::NaiveDate) -> Result<Vec<Task>, DomainError>;
+    #[allow(dead_code)]
+    fn find_by_date_range(
+        &self,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> Result<Vec<Task>, DomainError>;
 }

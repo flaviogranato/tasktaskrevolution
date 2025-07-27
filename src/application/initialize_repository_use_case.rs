@@ -39,7 +39,11 @@ mod test {
 
     impl MockConfigRepository {
         fn new(should_fail: bool) -> Self {
-            Self { should_fail, saved_config: RefCell::new(None), created_path: RefCell::new(None) }
+            Self {
+                should_fail,
+                saved_config: RefCell::new(None),
+                created_path: RefCell::new(None),
+            }
         }
     }
 
@@ -94,13 +98,7 @@ mod test {
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
-        assert_eq!(
-            saved_config.as_ref().unwrap().metadata.manager_name,
-            manager_name
-        );
-        assert_eq!(
-            saved_config.as_ref().unwrap().metadata.manager_email,
-            manager_email
-        );
+        assert_eq!(saved_config.as_ref().unwrap().metadata.manager_name, manager_name);
+        assert_eq!(saved_config.as_ref().unwrap().metadata.manager_email, manager_email);
     }
 }

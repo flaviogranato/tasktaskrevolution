@@ -11,9 +11,12 @@ pub struct FileTaskRepository {
     base_path: PathBuf,
 }
 
+#[allow(dead_code)]
 impl FileTaskRepository {
     pub fn new() -> Self {
-        Self { base_path: PathBuf::from(".") }
+        Self {
+            base_path: PathBuf::from("."),
+        }
     }
 
     pub fn with_base_path(base_path: PathBuf) -> Self {
@@ -21,9 +24,7 @@ impl FileTaskRepository {
     }
 
     fn get_task_file_path(&self, task_code: &str) -> PathBuf {
-        self.base_path
-            .join("tasks")
-            .join(format!("{}.yaml", task_code))
+        self.base_path.join("tasks").join(format!("{task_code}.yaml"))
     }
 
     fn get_tasks_directory(&self) -> PathBuf {
@@ -31,20 +32,23 @@ impl FileTaskRepository {
     }
 
     fn load_manifest(&self, path: &Path) -> Result<TaskManifest, DomainError> {
-        let yaml = fs::read_to_string(path).map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de task: {}", e)))?;
+        let yaml =
+            fs::read_to_string(path).map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de task: {e}")))?;
 
-        serde_yaml::from_str(&yaml).map_err(|e| DomainError::Generic(format!("Erro ao deserializar task: {}", e)))
+        serde_yaml::from_str(&yaml).map_err(|e| DomainError::Generic(format!("Erro ao deserializar task: {e}")))
     }
 
     fn save_manifest(&self, task_manifest: &TaskManifest) -> Result<(), DomainError> {
         let file_path = self.get_task_file_path(&task_manifest.metadata.code);
 
-        let yaml = serde_yaml::to_string(task_manifest).map_err(|e| DomainError::Generic(format!("Erro ao serializar task: {}", e)))?;
+        let yaml = serde_yaml::to_string(task_manifest)
+            .map_err(|e| DomainError::Generic(format!("Erro ao serializar task: {e}")))?;
 
         // Criar diretório tasks se não existir
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::Generic(format!("Erro ao criar diretório tasks: {}", e)))?;
+        fs::create_dir_all(file_path.parent().unwrap())
+            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório tasks: {e}")))?;
 
-        fs::write(file_path, yaml).map_err(|e| DomainError::Generic(format!("Erro ao salvar task: {}", e)))?;
+        fs::write(file_path, yaml).map_err(|e| DomainError::Generic(format!("Erro ao salvar task: {e}")))?;
 
         Ok(())
     }
@@ -66,7 +70,7 @@ impl FileTaskRepository {
     pub fn update_assigned_resources(&self, code: &str, resources: Vec<String>) -> Result<Task, DomainError> {
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         task.assigned_resources = resources;
         self.save(task.clone())?;
@@ -77,7 +81,7 @@ impl FileTaskRepository {
     pub fn add_assignee(&self, code: &str, assignee: String) -> Result<Task, DomainError> {
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         if !task.assigned_resources.contains(&assignee) {
             task.assigned_resources.push(assignee);
@@ -90,7 +94,7 @@ impl FileTaskRepository {
     pub fn remove_assignee(&self, code: &str, assignee: &str) -> Result<Task, DomainError> {
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         task.assigned_resources.retain(|r| r != assignee);
         self.save(task.clone())?;
@@ -107,7 +111,7 @@ impl FileTaskRepository {
 
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         // Atualizar status para InProgress com o novo progresso
         task.status = TaskStatus::InProgress { progress };
@@ -128,7 +132,7 @@ impl FileTaskRepository {
     pub fn block_task(&self, code: &str, reason: String) -> Result<Task, DomainError> {
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         task.status = TaskStatus::Blocked { reason };
         self.save(task.clone())?;
@@ -139,7 +143,7 @@ impl FileTaskRepository {
     pub fn unblock_task(&self, code: &str) -> Result<Task, DomainError> {
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         // Se estava bloqueada, voltar para Planned
         if matches!(task.status, TaskStatus::Blocked { .. }) {
@@ -156,7 +160,9 @@ impl FileTaskRepository {
 
         Ok(all_tasks
             .into_iter()
-            .filter(|task| task.due_date < today && !matches!(task.status, TaskStatus::Completed | TaskStatus::Cancelled))
+            .filter(|task| {
+                task.due_date < today && !matches!(task.status, TaskStatus::Completed | TaskStatus::Cancelled)
+            })
             .collect())
     }
 
@@ -167,15 +173,22 @@ impl FileTaskRepository {
 
         Ok(all_tasks
             .into_iter()
-            .filter(|task| task.due_date == target_date && !matches!(task.status, TaskStatus::Completed | TaskStatus::Cancelled))
+            .filter(|task| {
+                task.due_date == target_date && !matches!(task.status, TaskStatus::Completed | TaskStatus::Cancelled)
+            })
             .collect())
     }
 
     /// Atualiza as datas de uma task
-    pub fn update_dates(&self, code: &str, start_date: Option<chrono::NaiveDate>, due_date: Option<chrono::NaiveDate>) -> Result<Task, DomainError> {
+    pub fn update_dates(
+        &self,
+        code: &str,
+        start_date: Option<chrono::NaiveDate>,
+        due_date: Option<chrono::NaiveDate>,
+    ) -> Result<Task, DomainError> {
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         if let Some(start) = start_date {
             task.start_date = start;
@@ -197,25 +210,24 @@ impl FileTaskRepository {
     }
 
     /// Clona uma task existente com um novo código
-    pub fn clone_task(&self, original_code: &str, new_code: &str, new_name: Option<String>) -> Result<Task, DomainError> {
+    pub fn clone_task(
+        &self,
+        original_code: &str,
+        new_code: &str,
+        new_name: Option<String>,
+    ) -> Result<Task, DomainError> {
         let original_task = self.find_by_code(original_code)?.ok_or_else(|| {
-            DomainError::Generic(format!(
-                "Task original com código '{}' não encontrada",
-                original_code
-            ))
+            DomainError::Generic(format!("Task original com código '{original_code}' não encontrada"))
         })?;
 
         // Verificar se o novo código já existe
         if self.find_by_code(new_code)?.is_some() {
-            return Err(DomainError::Generic(format!(
-                "Task com código '{}' já existe",
-                new_code
-            )));
+            return Err(DomainError::Generic(format!("Task com código '{new_code}' já existe")));
         }
 
         let mut new_task = original_task.clone();
         new_task.code = new_code.to_string();
-        new_task.id = format!("TASK-{}", new_code);
+        new_task.id = format!("TASK-{new_code}");
         new_task.name = new_name.unwrap_or_else(|| format!("{} (Cópia)", original_task.name));
         new_task.status = TaskStatus::Planned; // Nova task sempre começa como Planned
         new_task.actual_end_date = None; // Limpar data de conclusão
@@ -274,14 +286,11 @@ impl FileTaskRepository {
             report.push_str(&format!("- **Vencimento:** {}\n", task.due_date));
 
             if !task.assigned_resources.is_empty() {
-                report.push_str(&format!(
-                    "- **Recursos:** {}\n",
-                    task.assigned_resources.join(", ")
-                ));
+                report.push_str(&format!("- **Recursos:** {}\n", task.assigned_resources.join(", ")));
             }
 
             if let Some(description) = &task.description {
-                report.push_str(&format!("- **Descrição:** {}\n", description));
+                report.push_str(&format!("- **Descrição:** {description}\n"));
             }
 
             report.push('\n');
@@ -291,6 +300,7 @@ impl FileTaskRepository {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Default)]
 pub struct TaskStatistics {
     pub total: usize,
@@ -302,13 +312,22 @@ pub struct TaskStatistics {
     pub overdue: usize,
 }
 
+#[allow(dead_code)]
 impl TaskStatistics {
     pub fn completion_rate(&self) -> f64 {
-        if self.total == 0 { 0.0 } else { (self.completed as f64 / self.total as f64) * 100.0 }
+        if self.total == 0 {
+            0.0
+        } else {
+            (self.completed as f64 / self.total as f64) * 100.0
+        }
     }
 
     pub fn overdue_rate(&self) -> f64 {
-        if self.total == 0 { 0.0 } else { (self.overdue as f64 / self.total as f64) * 100.0 }
+        if self.total == 0 {
+            0.0
+        } else {
+            (self.overdue as f64 / self.total as f64) * 100.0
+        }
     }
 }
 
@@ -356,12 +375,14 @@ impl TaskRepository for FileTaskRepository {
 
         let mut tasks = Vec::new();
 
-        for entry in fs::read_dir(tasks_dir).map_err(|e| DomainError::Generic(format!("Erro ao ler diretório de tasks: {}", e)))? {
-            let entry = entry.map_err(|e| DomainError::Generic(format!("Erro ao ler entrada do diretório: {}", e)))?;
+        for entry in
+            fs::read_dir(tasks_dir).map_err(|e| DomainError::Generic(format!("Erro ao ler diretório de tasks: {e}")))?
+        {
+            let entry = entry.map_err(|e| DomainError::Generic(format!("Erro ao ler entrada do diretório: {e}")))?;
 
             if entry
                 .file_type()
-                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {}", e)))?
+                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {e}")))?
                 .is_file()
             {
                 let file_path = entry.path();
@@ -369,11 +390,11 @@ impl TaskRepository for FileTaskRepository {
                     match self.load_manifest(&file_path) {
                         Ok(manifest) => {
                             tasks.push(<TaskManifest as Convertable<Task>>::to(&manifest));
-                        },
+                        }
                         Err(e) => {
                             // Log do erro mas continua processando outros arquivos
-                            eprintln!("Erro ao carregar task de {:?}: {}", file_path, e);
-                        },
+                            eprintln!("Erro ao carregar task de {file_path:?}: {e}");
+                        }
                     }
                 }
             }
@@ -382,25 +403,20 @@ impl TaskRepository for FileTaskRepository {
         Ok(tasks)
     }
 
-    fn delete(&self, code: &str) -> Result<(), DomainError> {
-        let file_path = self.get_task_file_path(code);
+    fn delete(&self, id: &str) -> Result<(), DomainError> {
+        let task_to_delete = self
+            .find_by_id(id)?
+            .ok_or_else(|| DomainError::Generic(format!("Task com id '{id}' não encontrada")))?;
 
-        if !file_path.exists() {
-            return Err(DomainError::Generic(format!(
-                "Task com código '{}' não encontrada",
-                code
-            )));
-        }
+        let file_path = self.get_task_file_path(&task_to_delete.code);
 
-        fs::remove_file(file_path).map_err(|e| DomainError::Generic(format!("Erro ao deletar task: {}", e)))?;
-
-        Ok(())
+        fs::remove_file(file_path).map_err(|e| DomainError::Generic(format!("Erro ao deletar o arquivo da task: {e}")))
     }
 
     fn update_status(&self, code: &str, new_status: TaskStatus) -> Result<Task, DomainError> {
         let mut task = self
             .find_by_code(code)?
-            .ok_or_else(|| DomainError::Generic(format!("Task com código '{}' não encontrada", code)))?;
+            .ok_or_else(|| DomainError::Generic(format!("Task com código '{code}' não encontrada")))?;
 
         task.status = new_status;
 
@@ -429,7 +445,11 @@ impl TaskRepository for FileTaskRepository {
             .collect())
     }
 
-    fn find_by_date_range(&self, start_date: chrono::NaiveDate, end_date: chrono::NaiveDate) -> Result<Vec<Task>, DomainError> {
+    fn find_by_date_range(
+        &self,
+        start_date: chrono::NaiveDate,
+        end_date: chrono::NaiveDate,
+    ) -> Result<Vec<Task>, DomainError> {
         let all_tasks = self.find_all()?;
         Ok(all_tasks
             .into_iter()
@@ -457,10 +477,10 @@ mod tests {
 
     fn create_test_task(code: &str, name: &str) -> Task {
         Task {
-            id: format!("TASK-{}", code),
+            id: format!("TASK-{code}"),
             code: code.to_string(),
             name: name.to_string(),
-            description: Some(format!("Descrição da task {}", name)),
+            description: Some(format!("Descrição da task {name}")),
             status: TaskStatus::Planned,
             start_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2024, 1, 30).unwrap(),
@@ -509,10 +529,7 @@ mod tests {
 
         // Atualizar progresso para 75%
         let updated_task = repo.update_progress("TSK001", 75).unwrap();
-        assert!(matches!(
-            updated_task.status,
-            TaskStatus::InProgress { progress: 75 }
-        ));
+        assert!(matches!(updated_task.status, TaskStatus::InProgress { progress: 75 }));
 
         // Atualizar progresso para 100% deve completar a task
         let completed_task = repo.update_progress("TSK001", 100).unwrap();
@@ -566,9 +583,146 @@ mod tests {
         let actual_rate = stats.completion_rate();
         assert!(
             (actual_rate - expected_rate).abs() < 0.001,
-            "Expected completion rate around {:.3}, got {:.3}",
-            expected_rate,
-            actual_rate
+            "Expected completion rate around {expected_rate:.3}, got {actual_rate:.3}"
         );
+    }
+
+    #[test]
+    fn test_add_and_remove_assignee() {
+        let temp_dir = tempdir().unwrap();
+        let repo = FileTaskRepository::with_base_path(temp_dir.path().to_path_buf());
+
+        // Criar task com um recurso inicial "dev1"
+        let task = create_test_task("TSK001", "Test Task Assignee");
+        repo.save(task).unwrap();
+
+        // Adicionar "dev2"
+        let updated_task = repo.add_assignee("TSK001", "dev2".to_string()).unwrap();
+        assert_eq!(updated_task.assigned_resources.len(), 2);
+        assert!(updated_task.assigned_resources.contains(&"dev1".to_string()));
+        assert!(updated_task.assigned_resources.contains(&"dev2".to_string()));
+
+        // Tentar adicionar "dev2" novamente (não deve duplicar)
+        let same_task = repo.add_assignee("TSK001", "dev2".to_string()).unwrap();
+        assert_eq!(same_task.assigned_resources.len(), 2);
+
+        // Remover "dev1"
+        let removed_task = repo.remove_assignee("TSK001", "dev1").unwrap();
+        assert_eq!(removed_task.assigned_resources.len(), 1);
+        assert!(!removed_task.assigned_resources.contains(&"dev1".to_string()));
+        assert!(removed_task.assigned_resources.contains(&"dev2".to_string()));
+    }
+
+    #[test]
+    fn test_block_and_unblock_task() {
+        let temp_dir = tempdir().unwrap();
+        let repo = FileTaskRepository::with_base_path(temp_dir.path().to_path_buf());
+
+        let task = create_test_task("TSK001", "Test Task Block");
+        repo.save(task).unwrap();
+
+        // Bloquear a task
+        let reason = "Aguardando dependência externa".to_string();
+        let blocked_task = repo.block_task("TSK001", reason.clone()).unwrap();
+        assert!(matches!(
+            blocked_task.status,
+            TaskStatus::Blocked { reason: r } if r == reason
+        ));
+
+        // Desbloquear a task
+        let unblocked_task = repo.unblock_task("TSK001").unwrap();
+        assert!(matches!(unblocked_task.status, TaskStatus::Planned));
+    }
+
+    #[test]
+    fn test_clone_task() {
+        let temp_dir = tempdir().unwrap();
+        let repo = FileTaskRepository::with_base_path(temp_dir.path().to_path_buf());
+
+        let original_task = create_test_task("TSK-ORIG", "Original Task");
+        repo.save(original_task.clone()).unwrap();
+
+        let new_code = "TSK-CLONE";
+        let new_name = "Cloned Task".to_string();
+        let cloned_task = repo.clone_task("TSK-ORIG", new_code, Some(new_name.clone())).unwrap();
+
+        // Verificar a task clonada
+        assert_eq!(cloned_task.code, new_code);
+        assert_eq!(cloned_task.name, new_name);
+        assert_eq!(cloned_task.id, format!("TASK-{new_code}"));
+        assert!(matches!(cloned_task.status, TaskStatus::Planned));
+        assert_eq!(cloned_task.assigned_resources, original_task.assigned_resources);
+        assert!(cloned_task.actual_end_date.is_none());
+
+        // Verificar se a nova task foi salva
+        let found_cloned_task = repo.find_by_code(new_code).unwrap();
+        assert!(found_cloned_task.is_some());
+        assert_eq!(found_cloned_task.unwrap().name, new_name);
+
+        // Verificar se a task original não foi alterada
+        let found_original_task = repo.find_by_code("TSK-ORIG").unwrap().unwrap();
+        assert_eq!(found_original_task.name, "Original Task");
+        assert!(matches!(found_original_task.status, TaskStatus::Planned));
+    }
+
+    #[test]
+    fn test_delete_task() {
+        let temp_dir = tempdir().unwrap();
+        let repo = FileTaskRepository::with_base_path(temp_dir.path().to_path_buf());
+
+        let task1 = create_test_task("TSK-DEL", "Task to be Deleted");
+        let task2 = create_test_task("TSK-KEEP", "Task to be Kept");
+
+        repo.save(task1.clone()).unwrap();
+        repo.save(task2.clone()).unwrap();
+
+        // Deletar a primeira task
+        repo.delete(&task1.id).unwrap();
+
+        // Verificar se a task foi deletada
+        let deleted_task = repo.find_by_code("TSK-DEL").unwrap();
+        assert!(deleted_task.is_none());
+
+        // Verificar se a outra task ainda existe
+        let kept_task = repo.find_by_code("TSK-KEEP").unwrap();
+        assert!(kept_task.is_some());
+
+        let all_tasks = repo.find_all().unwrap();
+        assert_eq!(all_tasks.len(), 1);
+        assert_eq!(all_tasks[0].code, "TSK-KEEP");
+    }
+
+    #[test]
+    fn test_date_queries() {
+        let temp_dir = tempdir().unwrap();
+        let repo = FileTaskRepository::with_base_path(temp_dir.path().to_path_buf());
+        let today = chrono::Utc::now().naive_utc().date();
+
+        // Tarefa atrasada
+        let mut overdue_task = create_test_task("TSK-OVERDUE", "Overdue Task");
+        overdue_task.due_date = today - chrono::Duration::days(1);
+        repo.save(overdue_task).unwrap();
+
+        // Tarefa não atrasada
+        let mut future_task = create_test_task("TSK-FUTURE", "Future Task");
+        future_task.due_date = today + chrono::Duration::days(10);
+        repo.save(future_task).unwrap();
+
+        // Verificar find_overdue_tasks
+        let overdue_tasks = repo.find_overdue_tasks().unwrap();
+        assert_eq!(overdue_tasks.len(), 1);
+        assert_eq!(overdue_tasks[0].code, "TSK-OVERDUE");
+
+        // Atualizar data da tarefa atrasada
+        let new_due_date = today + chrono::Duration::days(20);
+        repo.update_dates("TSK-OVERDUE", None, Some(new_due_date)).unwrap();
+
+        // Verificar novamente as tarefas atrasadas
+        let overdue_tasks_after_update = repo.find_overdue_tasks().unwrap();
+        assert!(overdue_tasks_after_update.is_empty());
+
+        // Verificar se a data foi realmente atualizada
+        let updated_task = repo.find_by_code("TSK-OVERDUE").unwrap().unwrap();
+        assert_eq!(updated_task.due_date, new_due_date);
     }
 }

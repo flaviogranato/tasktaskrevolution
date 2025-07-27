@@ -13,7 +13,10 @@ pub struct ValidateVacationsUseCase<P: ProjectRepository, R: ResourceRepository>
 
 impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R> {
     pub fn new(project_repository: P, resource_repository: R) -> Self {
-        Self { project_repository, resource_repository }
+        Self {
+            project_repository,
+            resource_repository,
+        }
     }
 
     fn check_vacation_overlap(&self, period1: &Period, period2: &Period) -> bool {
@@ -46,10 +49,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
                         for layoff_period in layoff_periods {
                             if self.check_layoff_overlap(
                                 vacation,
-                                &(
-                                    layoff_period.start_date.clone(),
-                                    layoff_period.end_date.clone(),
-                                ),
+                                &(layoff_period.start_date.clone(), layoff_period.end_date.clone()),
                             ) {
                                 return true;
                             }
@@ -64,9 +64,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 
     pub fn execute(&self) -> Result<Vec<String>, DomainError> {
         let resources = self.resource_repository.find_all()?;
-        let project = self
-            .project_repository
-            .load(&std::path::PathBuf::from("."))?;
+        let project = self.project_repository.load(&std::path::PathBuf::from("."))?;
         let mut mensagens = Vec::new();
 
         // Verificar sobreposição entre todos os recursos
@@ -156,7 +154,13 @@ mod tests {
             Ok(self.resources.clone())
         }
 
-        fn save_time_off(&self, _resource_name: String, _hours: u32, _date: String, _description: Option<String>) -> Result<Resource, DomainError> {
+        fn save_time_off(
+            &self,
+            _resource_name: String,
+            _hours: u32,
+            _date: String,
+            _description: Option<String>,
+        ) -> Result<Resource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -216,15 +220,13 @@ mod tests {
         );
 
         let mock_project_repo = MockProjectRepository { vacation_rules: None };
-        let mock_resource_repo = MockResourceRepository { resources: vec![resource1, resource2] };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1, resource2],
+        };
 
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(
-            result
-                .iter()
-                .any(|msg| msg.contains("Sobreposição detectada"))
-        );
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
     }
 }
