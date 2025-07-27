@@ -22,7 +22,15 @@ impl Project {
         status: ProjectStatus,
         vacation_rules: Option<VacationRules>,
     ) -> Self {
-        Self { id, name, description, start_date, end_date, status, vacation_rules }
+        Self {
+            id,
+            name,
+            description,
+            start_date,
+            end_date,
+            status,
+            vacation_rules,
+        }
     }
 }
 
@@ -52,5 +60,49 @@ impl Display for ProjectStatus {
             ProjectStatus::Completed => write!(f, "Completed"),
             ProjectStatus::Cancelled => write!(f, "Cancelled"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_project_status_display() {
+        assert_eq!(ProjectStatus::Planned.to_string(), "Planned");
+        assert_eq!(ProjectStatus::InProgress.to_string(), "InProgress");
+        assert_eq!(ProjectStatus::Completed.to_string(), "Completed");
+        assert_eq!(ProjectStatus::Cancelled.to_string(), "Cancelled");
+    }
+
+    #[test]
+    fn test_project_display() {
+        let project_with_id = Project {
+            id: Some("ID-123".to_string()),
+            name: "Project A".to_string(),
+            description: None,
+            start_date: None,
+            end_date: None,
+            status: ProjectStatus::Planned,
+            vacation_rules: None,
+        };
+        assert_eq!(
+            project_with_id.to_string(),
+            "Project { id: Some(\"ID-123\"), name: Project A, status: Planned }"
+        );
+
+        let project_without_id = Project {
+            id: None,
+            name: "Project B".to_string(),
+            description: None,
+            start_date: None,
+            end_date: None,
+            status: ProjectStatus::Completed,
+            vacation_rules: None,
+        };
+        assert_eq!(
+            project_without_id.to_string(),
+            "Project { id: None, name: Project B, status: Completed }"
+        );
     }
 }

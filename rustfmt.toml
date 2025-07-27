@@ -1,52 +1,17 @@
-# Configuração básica
-max_width = 150
+# A largura máxima das linhas.
+max_width = 120
+
+# Usar espaços em vez de tabs.
 hard_tabs = false
+
+# Número de espaços por nível de indentação.
 tab_spaces = 4
-newline_style = "Unix"  # Padrão para sistemas Unix-like
 
-# Controle de formatação de código
-use_small_heuristics = "Max"  # Otimiza formatação para código conciso
-binop_separator = "Front"  # Coloca operadores na linha anterior em quebras
-brace_style = "SameLineWhere"  # Estilo de chaves similar ao Rust idiomático
-empty_item_single_line = true  # Itens vazios em uma única linha
-error_on_line_overflow = false  # Não falhar em linhas longas
-format_code_in_doc_comments = true  # Formata código em docs
-format_strings = true  # Formata strings longas
-group_imports = "StdExternalCrate"  # Agrupa imports de forma padrão
-imports_granularity = "Crate"  # Nível de granularidade para imports
-merge_derives = true  # Combina múltiplos derives
-reorder_impl_items = true  # Reordena itens de impl
-reorder_imports = true  # Reordena imports alfabeticamente
-reorder_modules = true  # Reordena módulos
-short_array_element_width_threshold = 10  # Limite para arrays em linha única
-wrap_comments = true  # Quebra comentários longos
+# Estilo de nova linha (Auto, Unix, Windows).
+newline_style = "Auto"
 
-# Configurações para macros
-format_macro_matchers = true
-format_macro_bodies = true
-format_macro_constants = true
+# Reordenar 'use' e 'extern crate' alfabeticamente.
+reorder_imports = true
 
-# Configurações para testes (opcional)
-format_doc_comments = true
-format_macro_definitions = true
-
-# Configurações para closures
-chain_width = 60  # Largura para encadeamento de métodos
-fn_call_width = 60  # Largura para chamadas de função
-closure_body_width = 60  # Largura para corpos de closure
-
-# Configurações para match
-match_arm_blocks = true
-match_block_trailing_comma = true
-match_expression_indent = 4
-match_wildcard_trailing_comma = true
-
-# Configurações para estruturas de controle
-control_brace_style = "AlwaysSameLine"
-indent_style = "Block"
-overflow_delimited_expr = true
-
-# Configurações para comentários
-comment_width = 80
-normalize_comments = true
-normalize_doc_attributes = true
+# Controla como os imports são agrupados.
+imports_granularity = "Crate"

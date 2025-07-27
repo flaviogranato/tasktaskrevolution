@@ -29,15 +29,12 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
 
         // Verificar se já existe uma task com o mesmo código
         if let Ok(Some(_)) = self.repository.find_by_code(&code) {
-            return Err(DomainError::Generic(format!(
-                "Task com código '{}' já existe",
-                code
-            )));
+            return Err(DomainError::Generic(format!("Task com código '{code}' já existe")));
         }
 
         // Criar a task
         let task = Task {
-            id: format!("TASK-{}", code),
+            id: format!("TASK-{code}"),
             code: code.clone(),
             name: name.clone(),
             description,
@@ -51,7 +48,7 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
         // Salvar a task
         self.repository.save(task)?;
 
-        println!("Task {} criada com sucesso.", name);
+        println!("Task {name} criada com sucesso.");
         Ok(())
     }
 }
@@ -74,7 +71,11 @@ mod test {
 
     impl MockTaskRepository {
         fn new(should_fail: bool) -> Self {
-            Self { should_fail, saved_task: RefCell::new(None), tasks: RefCell::new(HashMap::new()) }
+            Self {
+                should_fail,
+                saved_task: RefCell::new(None),
+                tasks: RefCell::new(HashMap::new()),
+            }
         }
 
         fn add_existing_task(&self, task: Task) {
@@ -203,7 +204,7 @@ mod test {
         assert_eq!(task.assigned_resources, assigned_resources);
         assert!(matches!(task.status, TaskStatus::Planned));
         assert!(task.actual_end_date.is_none());
-        assert_eq!(task.id, format!("TASK-{}", code));
+        assert_eq!(task.id, format!("TASK-{code}"));
     }
 
     #[test]
