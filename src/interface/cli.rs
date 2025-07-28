@@ -1,8 +1,9 @@
 use crate::{
     application::{
-        create_project_use_case::CreateProjectUseCase, create_resource_use_case::CreateResourceUseCase,
-        create_task_use_case::CreateTaskUseCase, create_time_off_use_case::CreateTimeOffUseCase,
-        create_vacation_use_case::CreateVacationUseCase, initialize_repository_use_case::InitializeRepositoryUseCase,
+        build_use_case::BuildUseCase, create_project_use_case::CreateProjectUseCase,
+        create_resource_use_case::CreateResourceUseCase, create_task_use_case::CreateTaskUseCase,
+        create_time_off_use_case::CreateTimeOffUseCase, create_vacation_use_case::CreateVacationUseCase,
+        initialize_repository_use_case::InitializeRepositoryUseCase, task_report_use_case::TaskReportUseCase,
         vacation_report_use_case::VacationReportUseCase, validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
@@ -33,6 +34,11 @@ enum Commands {
         manager_name: String,
         #[clap(long, value_name = "EMAIL")]
         manager_email: String,
+    },
+    Build {
+        /// Opcional: Caminho para o diretório do projeto.
+        /// Se não for fornecido, usa o diretório atual.
+        path: Option<PathBuf>,
     },
     Create {
         #[clap(subcommand)]
@@ -104,6 +110,7 @@ enum ValidateCommands {
 #[derive(Subcommand)]
 enum ReportCommands {
     Vacation,
+    Task,
 }
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -118,6 +125,25 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
 
             use_case.execute(repo_path, manager_name.clone(), manager_email.clone())?;
+            Ok(())
+        }
+        Commands::Build { path } => {
+            let project_path = path.clone().unwrap_or_else(|| PathBuf::from("."));
+            let project_repo = FileProjectRepository::with_base_path(project_path.clone());
+            let resource_repo = FileResourceRepository::with_base_path(project_path.clone());
+            let task_repo = FileTaskRepository::with_base_path(project_path.clone());
+            let output_dir = project_path.join("public");
+
+            match BuildUseCase::new(project_repo, resource_repo, task_repo, output_dir.to_str().unwrap()) {
+                Ok(use_case) => {
+                    if let Err(e) = use_case.execute() {
+                        println!("❌ Erro ao construir o site: {e}");
+                    }
+                }
+                Err(e) => {
+                    println!("❌ Erro ao inicializar o builder: {e}");
+                }
+            }
             Ok(())
         }
         Commands::Create { create_command } => match create_command {
@@ -244,46 +270,68 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 Ok(())
             }
         },
-        Commands::Validate { validate_command } => match validate_command {
-            ValidateCommands::Vacations => {
-                let project_repository = FileProjectRepository::new();
-                let resource_repository = FileResourceRepository::new();
-                let use_case = ValidateVacationsUseCase::new(project_repository, resource_repository);
+        Commands::Validate { validate_command } => {
+            match validate_command {
+                ValidateCommands::Vacations => {
+                    let project_repository = FileProjectRepository::new();
+                    let resource_repository = FileResourceRepository::new();
+                    let use_case = ValidateVacationsUseCase::new(project_repository, resource_repository);
 
-                match use_case.execute() {
-                    Ok(mensagens) => {
-                        println!("\nResultado da validação de férias:");
-                        println!("--------------------------------");
-                        for mensagem in mensagens {
-                            println!("{mensagem}");
+                    match use_case.execute() {
+                        Ok(mensagens) => {
+                            println!("\nResultado da validação de férias:");
+                            println!("--------------------------------");
+                            for mensagem in mensagens {
+                                println!("{mensagem}");
+                            }
                         }
-                    }
-                    Err(e) => println!("Erro ao validar férias: {e}"),
-                };
-                Ok(())
-            }
-        },
-        Commands::Report { report_command } => match report_command {
-            ReportCommands::Vacation => {
-                let project_repository = FileProjectRepository::new();
-                let resource_repository = FileResourceRepository::new();
-                let use_case = VacationReportUseCase::new(project_repository, resource_repository);
-
-                let file_path = "vacation_report.csv";
-                match Writer::from_path(file_path) {
-                    Ok(mut writer) => {
-                        if let Err(e) = use_case.execute(&mut writer) {
-                            println!("❌ Erro ao gerar relatório: {e}");
-                        } else {
-                            println!("✅ Relatório de férias gerado com sucesso em: {file_path}");
-                        }
-                    }
-                    Err(e) => {
-                        println!("❌ Erro ao criar arquivo de relatório: {e}");
+                        Err(e) => println!("Erro ao validar férias: {e}"),
                     }
                 }
-                Ok(())
             }
-        },
+            Ok(())
+        }
+        Commands::Report { report_command } => {
+            match report_command {
+                ReportCommands::Vacation => {
+                    let project_repository = FileProjectRepository::new();
+                    let resource_repository = FileResourceRepository::new();
+                    let use_case = VacationReportUseCase::new(project_repository, resource_repository);
+
+                    let file_path = "vacation_report.csv";
+                    match Writer::from_path(file_path) {
+                        Ok(mut writer) => {
+                            if let Err(e) = use_case.execute(&mut writer) {
+                                println!("❌ Erro ao gerar relatório: {e}");
+                            } else {
+                                println!("✅ Relatório de férias gerado com sucesso em: {file_path}");
+                            }
+                        }
+                        Err(e) => {
+                            println!("❌ Erro ao criar arquivo de relatório: {e}");
+                        }
+                    }
+                }
+                ReportCommands::Task => {
+                    let task_repo = FileTaskRepository::new();
+                    let use_case = TaskReportUseCase::new(task_repo);
+
+                    let file_path = "tasks_report.csv";
+                    match Writer::from_path(file_path) {
+                        Ok(mut writer) => {
+                            if let Err(e) = use_case.execute(&mut writer) {
+                                println!("❌ Erro ao gerar relatório de tarefas: {e}");
+                            } else {
+                                println!("✅ Relatório de tarefas gerado com sucesso em: {file_path}");
+                            }
+                        }
+                        Err(e) => {
+                            println!("❌ Erro ao criar arquivo de relatório de tarefas: {e}");
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
     }
 }

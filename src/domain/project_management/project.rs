@@ -1,7 +1,8 @@
 use crate::domain::project_management::vacation_rules::VacationRules;
+use serde::Serialize;
 use std::fmt::{Debug, Display};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Project {
     pub id: Option<String>,
     pub name: String,
@@ -44,7 +45,7 @@ impl Display for Project {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum ProjectStatus {
     Planned,
     InProgress,

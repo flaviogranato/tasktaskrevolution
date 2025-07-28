@@ -38,9 +38,9 @@ pub struct Spec {
     comments: Vec<Comment>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
-enum Status {
+pub enum Status {
     ToDo,
     InProgress,
     Done,

@@ -1,6 +1,7 @@
 use chrono::NaiveDate;
+use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Task {
     pub id: String,
     pub code: String,
@@ -13,7 +14,8 @@ pub struct Task {
     pub assigned_resources: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "PascalCase")]
 pub enum TaskStatus {
     Completed,
     Planned,

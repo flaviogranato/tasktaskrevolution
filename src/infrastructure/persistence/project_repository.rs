@@ -27,8 +27,7 @@ impl FileProjectRepository {
 
     /// Cria uma nova instância do repositório que opera a partir de um diretório base específico.
     /// Esta função é primariamente para uso em testes.
-    #[cfg(test)]
-    fn with_base_path(base_path: PathBuf) -> Self {
+    pub fn with_base_path(base_path: PathBuf) -> Self {
         Self { base_path }
     }
 
