@@ -23,6 +23,10 @@ impl FileResourceRepository {
         }
     }
 
+    pub fn with_base_path(base_path: PathBuf) -> Self {
+        Self { base_path }
+    }
+
     fn get_resource_file_path(&self, resource_name: &str) -> PathBuf {
         self.base_path.join("resources").join(format!("{resource_name}.yaml"))
     }
