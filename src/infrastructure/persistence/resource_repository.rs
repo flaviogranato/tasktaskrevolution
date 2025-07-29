@@ -159,7 +159,7 @@ impl ResourceRepository for FileResourceRepository {
 
         let project_repo = FileProjectRepository::new();
 
-        if let Ok(project) = project_repo.load(&PathBuf::from(".")) {
+        if let Ok(project) = project_repo.load() {
             if let Some(vacation_rules) = project.vacation_rules {
                 if let Some(layoff_periods) = vacation_rules.layoff_periods {
                     for layoff_period in layoff_periods {

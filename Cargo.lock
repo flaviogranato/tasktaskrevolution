@@ -10,6 +10,7 @@ dependencies = [
  "clap",
  "criterion",
  "csv",
+ "globwalk",
  "rust-embed",
  "serde",
  "serde_yaml",

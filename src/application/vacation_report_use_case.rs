@@ -38,7 +38,7 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
 
         // Carregar o projeto do diretório atual.
         // A lógica assume que há um único projeto de referência no contexto.
-        let project = self.project_repository.load(&PathBuf::from("."))?;
+        let project = self.project_repository.load()?;
         let resources = self.resource_repository.find_all()?;
 
         // Iterar sobre os recursos e seus períodos de férias

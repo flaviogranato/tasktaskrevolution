@@ -17,6 +17,31 @@ block content %}
                 <div v-if="resource.email" class="email">
                     Email: ${ resource.email }
                 </div>
+                <div
+                    v-if="resource.vacations && resource.vacations.length > 0"
+                    class="vacations"
+                >
+                    <h4>Absences & Vacations:</h4>
+                    <ul>
+                        <li
+                            v-for="period in resource.vacations"
+                            :key="period.start_date"
+                        >
+                            <strong>${ period.period_type }</strong>:
+                            <span
+                                >${ new
+                                Date(period.start_date).toLocaleDateString() } -
+                                ${ new
+                                Date(period.end_date).toLocaleDateString()
+                                }</span
+                            >
+                            <span v-if="period.approved" class="status-approved"
+                                >(Approved)</span
+                            >
+                            <span v-else class="status-pending">(Pending)</span>
+                        </li>
+                    </ul>
+                </div>
             </li>
         </ul>
         <p v-if="filteredResources.length === 0">
@@ -70,6 +95,37 @@ block content %}
         font-size: 0.9em;
         color: #777;
         padding-left: 10px;
+    }
+    .vacations {
+        margin-top: 10px;
+        padding: 10px;
+        background-color: #f9f9f9;
+        border-radius: 4px;
+        border: 1px solid #eee;
+    }
+    .vacations h4 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 1em;
+        color: #333;
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 5px;
+    }
+    .vacations ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    .vacations li {
+        padding: 4px 0;
+        font-size: 0.95em;
+    }
+    .status-approved {
+        color: #27ae60;
+        font-weight: bold;
+    }
+    .status-pending {
+        color: #f39c12;
+        font-weight: bold;
     }
 </style>
 {% endblock scripts %}

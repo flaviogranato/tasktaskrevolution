@@ -64,7 +64,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 
     pub fn execute(&self) -> Result<Vec<String>, DomainError> {
         let resources = self.resource_repository.find_all()?;
-        let project = self.project_repository.load(&std::path::PathBuf::from("."))?;
+        let project = self.project_repository.load()?;
         let mut mensagens = Vec::new();
 
         // Verificar sobreposição entre todos os recursos
