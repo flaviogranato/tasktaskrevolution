@@ -14,30 +14,6 @@ pub struct Project {
     pub timezone: Option<String>,
 }
 
-impl Project {
-    pub fn new(
-        id: Option<String>,
-        name: String,
-        description: Option<String>,
-        start_date: Option<String>,
-        end_date: Option<String>,
-        status: ProjectStatus,
-        vacation_rules: Option<VacationRules>,
-        timezone: Option<String>,
-    ) -> Self {
-        Self {
-            id,
-            name,
-            description,
-            start_date,
-            end_date,
-            status,
-            vacation_rules,
-            timezone,
-        }
-    }
-}
-
 impl Display for Project {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

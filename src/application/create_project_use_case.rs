@@ -1,8 +1,5 @@
 use crate::domain::{
-    project_management::{
-        project::{Project, ProjectStatus},
-        repository::ProjectRepository,
-    },
+    project_management::{builder::ProjectBuilder, repository::ProjectRepository},
     shared::errors::DomainError,
 };
 
@@ -16,16 +13,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
     }
 
     pub fn execute(&self, name: String, description: Option<String>) -> Result<(), DomainError> {
-        let project = Project::new(
-            None,
-            name.to_string(),
-            description.clone(),
-            None,
-            None,
-            ProjectStatus::Planned,
-            None,
-            None,
-        );
+        let project = ProjectBuilder::new(name.clone()).description(description).build();
 
         self.repository.save(project)?;
         println!("Projeto {name} criado");
@@ -41,9 +29,9 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::domain::project_management::project::Project;
     use crate::domain::shared::errors::DomainError;
     use std::cell::RefCell;
-    use std::path::Path;
 
     struct MockProjectRepository {
         should_fail: bool,
@@ -56,16 +44,9 @@ mod test {
             Self {
                 should_fail,
                 saved_config: RefCell::new(None),
-                project: Project::new(
-                    None,
-                    "John".to_string(),
-                    Some("a simple test project".to_string()),
-                    None,
-                    None,
-                    ProjectStatus::Planned,
-                    None,
-                    None,
-                ),
+                project: ProjectBuilder::new("John".to_string())
+                    .description(Some("a simple test project".to_string()))
+                    .build(),
             }
         }
     }
@@ -79,7 +60,7 @@ mod test {
             Ok(())
         }
 
-        fn load(&self, _path: &Path) -> Result<Project, DomainError> {
+        fn load(&self) -> Result<Project, DomainError> {
             Ok(self.project.clone())
         }
     }

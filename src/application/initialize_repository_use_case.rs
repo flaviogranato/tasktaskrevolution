@@ -62,6 +62,15 @@ mod test {
             *self.created_path.borrow_mut() = Some(path.clone());
             Ok(())
         }
+
+        fn load(&self) -> Result<(Config, PathBuf), DomainError> {
+            if self.should_fail {
+                return Err(DomainError::Generic("Erro mockado ao carregar".to_string()));
+            }
+            let config = Config::new("mock".to_string(), "mock@email.com".to_string(), "UTC".to_string());
+            let path = PathBuf::from("/mock/path");
+            Ok((config, path))
+        }
     }
     #[test]
     fn test_create_config_success() {

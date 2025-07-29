@@ -2,6 +2,16 @@ use crate::domain::shared::errors::DomainError;
 use crate::domain::task_management::{Task, TaskStatus, repository::TaskRepository};
 use chrono::NaiveDate;
 
+pub struct CreateTaskArgs {
+    pub project_code: String,
+    pub code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub start_date: NaiveDate,
+    pub due_date: NaiveDate,
+    pub assigned_resources: Vec<String>,
+}
+
 pub struct CreateTaskUseCase<T: TaskRepository> {
     repository: T,
 }
@@ -11,16 +21,17 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
         Self { repository }
     }
 
-    pub fn execute(
-        &self,
-        project_code: String,
-        code: String,
-        name: String,
-        description: Option<String>,
-        start_date: NaiveDate,
-        due_date: NaiveDate,
-        assigned_resources: Vec<String>,
-    ) -> Result<(), DomainError> {
+    pub fn execute(&self, args: CreateTaskArgs) -> Result<(), DomainError> {
+        let CreateTaskArgs {
+            project_code,
+            code,
+            name,
+            description,
+            start_date,
+            due_date,
+            assigned_resources,
+        } = args;
+
         // Validar que a data de início não é posterior à data de vencimento
         if start_date > due_date {
             return Err(DomainError::Generic(
@@ -145,15 +156,16 @@ mod test {
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
 
-        let result = use_case.execute(
-            "PROJ-1".to_string(),
-            "TSK001".to_string(),
-            "Implementar autenticação".to_string(),
-            Some("Implementar sistema de login com JWT".to_string()),
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            code: "TSK001".to_string(),
+            name: "Implementar autenticação".to_string(),
+            description: Some("Implementar sistema de login com JWT".to_string()),
             start_date,
             due_date,
-            vec!["dev1".to_string(), "dev2".to_string()],
-        );
+            assigned_resources: vec!["dev1".to_string(), "dev2".to_string()],
+        };
+        let result = use_case.execute(args);
 
         assert!(result.is_ok());
     }
@@ -164,15 +176,16 @@ mod test {
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
 
-        let result = use_case.execute(
-            "PROJ-1".to_string(),
-            "TSK001".to_string(),
-            "Implementar autenticação".to_string(),
-            Some("Implementar sistema de login com JWT".to_string()),
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            code: "TSK001".to_string(),
+            name: "Implementar autenticação".to_string(),
+            description: Some("Implementar sistema de login com JWT".to_string()),
             start_date,
             due_date,
-            vec!["dev1".to_string()],
-        );
+            assigned_resources: vec!["dev1".to_string()],
+        };
+        let result = use_case.execute(args);
 
         assert!(result.is_err());
     }
@@ -188,15 +201,16 @@ mod test {
         let assigned_resources = vec!["dev1".to_string(), "dev2".to_string()];
 
         let project_code = "PROJ-1".to_string();
-        let _ = use_case.execute(
-            project_code.clone(),
-            code.clone(),
-            name.clone(),
-            description.clone(),
+        let args = CreateTaskArgs {
+            project_code: project_code.clone(),
+            code: code.clone(),
+            name: name.clone(),
+            description: description.clone(),
             start_date,
             due_date,
-            assigned_resources.clone(),
-        );
+            assigned_resources: assigned_resources.clone(),
+        };
+        let _ = use_case.execute(args);
 
         let saved_task = use_case.repository.saved_task.borrow();
         assert!(saved_task.is_some());
@@ -223,15 +237,16 @@ mod test {
         let start_date = NaiveDate::from_ymd_opt(2024, 1, 30).unwrap();
         let due_date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        let result = use_case.execute(
-            "PROJ-1".to_string(),
-            "TSK001".to_string(),
-            "Task inválida".to_string(),
-            None,
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            code: "TSK001".to_string(),
+            name: "Task inválida".to_string(),
+            description: None,
             start_date,
             due_date,
-            vec![],
-        );
+            assigned_resources: vec![],
+        };
+        let result = use_case.execute(args);
 
         assert!(result.is_err());
         assert!(
@@ -264,15 +279,16 @@ mod test {
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
 
-        let result = use_case.execute(
-            "PROJ-1".to_string(),
-            "TSK001".to_string(), // Mesmo código da task existente
-            "Nova task".to_string(),
-            None,
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            code: "TSK001".to_string(), // Mesmo código da task existente
+            name: "Nova task".to_string(),
+            description: None,
             start_date,
             due_date,
-            vec![],
-        );
+            assigned_resources: vec![],
+        };
+        let result = use_case.execute(args);
 
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("já existe"));
@@ -284,15 +300,16 @@ mod test {
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
 
-        let result = use_case.execute(
-            "PROJ-1".to_string(),
-            "TSK001".to_string(),
-            "Task sem descrição".to_string(),
-            None, // Sem descrição
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            code: "TSK001".to_string(),
+            name: "Task sem descrição".to_string(),
+            description: None, // Sem descrição
             start_date,
             due_date,
-            vec!["dev1".to_string()],
-        );
+            assigned_resources: vec!["dev1".to_string()],
+        };
+        let result = use_case.execute(args);
 
         assert!(result.is_ok());
 
@@ -307,15 +324,16 @@ mod test {
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
 
-        let result = use_case.execute(
-            "PROJ-1".to_string(),
-            "TSK001".to_string(),
-            "Task sem recursos".to_string(),
-            Some("Task sem recursos atribuídos".to_string()),
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            code: "TSK001".to_string(),
+            name: "Task sem recursos".to_string(),
+            description: Some("Task sem recursos atribuídos".to_string()),
             start_date,
             due_date,
-            vec![], // Sem recursos atribuídos
-        );
+            assigned_resources: vec![], // Sem recursos atribuídos
+        };
+        let result = use_case.execute(args);
 
         assert!(result.is_ok());
 
@@ -331,15 +349,16 @@ mod test {
 
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        let result = use_case.execute(
-            "PROJ-1".to_string(),
-            "TSK001".to_string(),
-            "Task de um dia".to_string(),
-            Some("Task que começa e termina no mesmo dia".to_string()),
-            date,
-            date, // Mesma data
-            vec!["dev1".to_string()],
-        );
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            code: "TSK001".to_string(),
+            name: "Task de um dia".to_string(),
+            description: Some("Task que começa e termina no mesmo dia".to_string()),
+            start_date: date,
+            due_date: date, // Mesma data
+            assigned_resources: vec!["dev1".to_string()],
+        };
+        let result = use_case.execute(args);
 
         assert!(result.is_ok());
 

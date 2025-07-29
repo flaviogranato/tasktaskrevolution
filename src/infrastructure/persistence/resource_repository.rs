@@ -143,7 +143,6 @@ impl ResourceRepository for FileResourceRepository {
 
     fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool {
         use crate::infrastructure::persistence::project_repository::FileProjectRepository;
-        use std::path::PathBuf;
 
         let project_repo = FileProjectRepository::new();
 

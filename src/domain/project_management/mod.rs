@@ -1,3 +1,4 @@
+pub mod builder;
 pub mod layoff_period;
 pub mod project;
 pub mod repository;

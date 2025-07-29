@@ -63,7 +63,7 @@ impl FileTaskRepository {
         let all_tasks = self.find_all()?;
         Ok(all_tasks
             .into_iter()
-            .filter(|task| task.id.starts_with(project_code))
+            .filter(|task| task.project_code == project_code)
             .collect())
     }
 
@@ -372,17 +372,15 @@ impl TaskRepository for FileTaskRepository {
         let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
 
         let mut tasks = Vec::new();
-        for entry in walker {
-            if let Ok(entry) = entry {
-                let file_path = entry.path();
-                match self.load_manifest(&file_path) {
-                    Ok(manifest) => {
-                        tasks.push(<TaskManifest as Convertable<Task>>::to(&manifest));
-                    }
-                    Err(e) => {
-                        // Log do erro mas continua processando outros arquivos
-                        eprintln!("Erro ao carregar task de {:?}: {}", file_path, e);
-                    }
+        for entry in walker.flatten() {
+            let file_path = entry.path();
+            match self.load_manifest(file_path) {
+                Ok(manifest) => {
+                    tasks.push(<TaskManifest as Convertable<Task>>::to(&manifest));
+                }
+                Err(e) => {
+                    // Log do erro mas continua processando outros arquivos
+                    eprintln!("Erro ao carregar task de {file_path:?}: {e}");
                 }
             }
         }
@@ -465,6 +463,7 @@ mod tests {
     fn create_test_task(code: &str, name: &str) -> Task {
         Task {
             id: format!("TASK-{code}"),
+            project_code: "TEST_PROJECT".to_string(),
             code: code.to_string(),
             name: name.to_string(),
             description: Some(format!("Descrição da task {name}")),
@@ -530,10 +529,10 @@ mod tests {
         let repo = FileTaskRepository::with_base_path(temp_dir.path().to_path_buf());
 
         let mut task1 = create_test_task("TSK001", "Test Task 1");
-        task1.id = "PROJ1-TSK001".to_string();
+        task1.project_code = "PROJ1".to_string();
 
         let mut task2 = create_test_task("TSK002", "Test Task 2");
-        task2.id = "PROJ2-TSK002".to_string();
+        task2.project_code = "PROJ2".to_string();
 
         repo.save(task1).unwrap();
         repo.save(task2).unwrap();

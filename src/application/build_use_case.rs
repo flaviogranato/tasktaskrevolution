@@ -119,7 +119,7 @@ impl BuildUseCase {
 
             let rendered_page = self.tera.render("resource_detail.html", &detail_context)?;
             let safe_name = resource.name.replace(' ', "_").to_lowercase();
-            let file_path = resource_dir.join(format!("{}.html", safe_name));
+            let file_path = resource_dir.join(format!("{safe_name}.html"));
             fs::write(file_path, rendered_page)?;
         }
 
@@ -138,7 +138,7 @@ mod tests {
 
     fn setup_test_environment() -> PathBuf {
         let temp_dir = tempdir().unwrap();
-        let root = temp_dir.path();
+        let root = temp_dir.path().to_path_buf();
 
         // Create config.yaml
         let config_content = r#"
@@ -152,7 +152,7 @@ spec:
   defaultTimezone: "America/Sao_Paulo"
 "#;
         let mut config_file = File::create(root.join("config.yaml")).unwrap();
-        writeln!(config_file, "{}", config_content).unwrap();
+        writeln!(config_file, "{config_content}").unwrap();
 
         // Create project subdirectory and project.yaml
         let project_dir = root.join("my-project");
@@ -167,7 +167,7 @@ spec:
   status: "InProgress"
 "#;
         let mut project_file = File::create(project_dir.join("project.yaml")).unwrap();
-        writeln!(project_file, "{}", project_content).unwrap();
+        writeln!(project_file, "{project_content}").unwrap();
 
         // Create tasks subdirectory
         fs::create_dir(project_dir.join("tasks")).unwrap();
@@ -175,7 +175,9 @@ spec:
         // Create resources subdirectory
         fs::create_dir(project_dir.join("resources")).unwrap();
 
-        temp_dir.into_path()
+        // Persist the temporary directory for inspection after the test.
+        let _ = temp_dir.keep();
+        root
     }
 
     #[test]

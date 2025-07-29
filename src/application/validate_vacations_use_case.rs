@@ -113,11 +113,10 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 mod tests {
     use super::*;
     use crate::domain::{
-        project_management::vacation_rules::VacationRules,
+        project_management::{builder::ProjectBuilder, vacation_rules::VacationRules},
         resource_management::resource::{PeriodType, Resource},
     };
     use chrono::{Duration, Local};
-    use std::path::Path;
 
     struct MockProjectRepository {
         vacation_rules: Option<VacationRules>,
@@ -132,16 +131,15 @@ mod tests {
             Ok(())
         }
 
-        fn load(&self, _path: &Path) -> Result<crate::domain::project_management::project::Project, DomainError> {
-            Ok(crate::domain::project_management::project::Project {
-                id: None,
-                name: "Test Project".to_string(),
-                description: None,
-                start_date: None,
-                end_date: None,
-                status: crate::domain::project_management::project::ProjectStatus::InProgress,
-                vacation_rules: self.vacation_rules.clone(),
-            })
+        fn load(&self) -> Result<crate::domain::project_management::project::Project, DomainError> {
+            let mut builder = ProjectBuilder::new("Test Project".to_string())
+                .status(crate::domain::project_management::project::ProjectStatus::InProgress);
+
+            if let Some(rules) = self.vacation_rules.clone() {
+                builder = builder.vacation_rules(rules);
+            }
+
+            Ok(builder.build())
         }
     }
 

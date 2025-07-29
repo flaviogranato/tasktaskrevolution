@@ -114,6 +114,7 @@ mod tests {
         // 1. Setup: Criar dados de teste
         let task1 = Task {
             id: "TASK-001".to_string(),
+            project_code: "PROJ".to_string(),
             code: "TSK-001".to_string(),
             name: "Implement Login".to_string(),
             description: None,
@@ -125,6 +126,7 @@ mod tests {
         };
         let task2 = Task {
             id: "TASK-002".to_string(),
+            project_code: "PROJ".to_string(),
             code: "TSK-002".to_string(),
             name: "Setup Database".to_string(),
             description: None,

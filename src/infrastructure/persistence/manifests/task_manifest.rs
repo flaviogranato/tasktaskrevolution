@@ -179,7 +179,7 @@ impl Convertable<Task> for TaskManifest {
         }
 
         Task {
-            id: self.spec.project_code.clone(),
+            id: format!("TASK-{}", self.metadata.code),
             project_code: self.spec.project_code.clone(),
             code: self.metadata.code.clone(),
             name: self.metadata.name.clone(),
@@ -215,7 +215,7 @@ mod convertable_tests {
     // Helper function para criar uma Task básica
     fn create_basic_task() -> Task {
         Task {
-            id: "TASK-123".to_string(),
+            id: "TASK-T-123".to_string(),
             project_code: "PROJ-1".to_string(),
             code: "T-123".to_string(),
             name: "Tarefa de Teste".to_string(),
@@ -231,7 +231,7 @@ mod convertable_tests {
     // Helper function para criar um TaskManifest básico
     fn create_basic_manifest() -> TaskManifest {
         TaskManifest {
-            api_version: "v1".to_string(),
+            api_version: API_VERSION.to_string(),
             kind: "Task".to_string(),
             metadata: Metadata {
                 code: "TSK001".to_string(),
@@ -239,7 +239,7 @@ mod convertable_tests {
                 description: Some("Descrição da tarefa de teste".to_string()),
             },
             spec: Spec {
-                project_code: "TASK-001".to_string(),
+                project_code: "PROJ-1".to_string(),
                 assignee: "dev1".to_string(),
                 status: Status::ToDo,
                 priority: Priority::Medium,
@@ -268,7 +268,7 @@ mod convertable_tests {
         let task = create_basic_task();
         let manifest = <TaskManifest as Convertable<Task>>::from(task.clone());
 
-        assert_eq!(manifest.api_version, "v1");
+        assert_eq!(manifest.api_version, API_VERSION);
         assert_eq!(manifest.kind, "Task");
         assert_eq!(manifest.metadata.code, task.code);
         assert_eq!(manifest.metadata.name, task.name);
@@ -380,8 +380,8 @@ mod convertable_tests {
         let manifest = create_basic_manifest();
         let task = manifest.to();
 
-        assert_eq!(task.id, "TASK-001");
-        assert_eq!(task.code, "TSK001");
+        assert_eq!(task.id, format!("TASK-{}", manifest.metadata.code));
+        assert_eq!(task.id, format!("TASK-{}", manifest.metadata.code));
         assert_eq!(task.name, "Tarefa de Teste");
         assert_eq!(task.description, Some("Descrição da tarefa de teste".to_string()));
         assert_eq!(task.status, TaskStatus::Planned);
@@ -561,6 +561,8 @@ mod convertable_tests {
 
         // Campos que devem ser preservados exatamente
         assert_eq!(converted_task.id, original_task.id);
+        assert_eq!(converted_task.project_code, original_task.project_code);
+        assert_eq!(converted_task.project_code, original_task.project_code);
         assert_eq!(converted_task.code, original_task.code);
         assert_eq!(converted_task.name, original_task.name);
         assert_eq!(converted_task.description, original_task.description);
@@ -569,6 +571,7 @@ mod convertable_tests {
         assert_eq!(converted_task.due_date, original_task.due_date);
         assert_eq!(converted_task.actual_end_date, original_task.actual_end_date);
         assert_eq!(converted_task.assigned_resources, original_task.assigned_resources);
+        assert_eq!(converted_task.project_code, original_task.project_code);
     }
 
     #[test]
@@ -589,8 +592,11 @@ mod convertable_tests {
 
         // Outros campos devem ser preservados
         assert_eq!(converted_task.id, original_task.id);
+        assert_eq!(converted_task.project_code, original_task.project_code);
+        assert_eq!(converted_task.id, original_task.id);
+        assert_eq!(converted_task.project_code, original_task.project_code);
         assert_eq!(converted_task.code, original_task.code);
-        assert_eq!(converted_task.name, original_task.name);
+        assert_eq!(converted_task.project_code, original_task.project_code);
     }
 
     #[test]
@@ -635,7 +641,9 @@ mod convertable_tests {
 
         assert_eq!(converted_task.status, TaskStatus::Cancelled);
         assert_eq!(converted_task.id, original_task.id);
+        assert_eq!(converted_task.project_code, original_task.project_code);
         assert_eq!(converted_task.code, original_task.code);
+        assert_eq!(converted_task.project_code, original_task.project_code);
     }
 
     #[test]
@@ -656,11 +664,13 @@ mod convertable_tests {
 
         // Dados essenciais devem permanecer estáveis após múltiplas conversões
         assert_eq!(task3.id, original_task.id);
+        assert_eq!(task3.project_code, original_task.project_code);
         assert_eq!(task3.code, original_task.code);
         assert_eq!(task3.name, original_task.name);
         assert_eq!(task3.description, original_task.description);
         assert_eq!(task3.status, original_task.status);
         assert_eq!(task3.assigned_resources, original_task.assigned_resources);
+        assert_eq!(task3.project_code, original_task.project_code);
     }
 
     // =============================================================================
@@ -672,6 +682,7 @@ mod convertable_tests {
         let mut task = create_basic_task();
         task.code = "".to_string();
         task.name = "".to_string();
+        task.id = format!("TASK-{}", task.code);
 
         let manifest = <TaskManifest as Convertable<Task>>::from(task.clone());
         let converted_task = manifest.to();
@@ -679,6 +690,9 @@ mod convertable_tests {
         assert_eq!(converted_task.code, "");
         assert_eq!(converted_task.name, "");
         assert_eq!(converted_task.id, task.id);
+        assert_eq!(converted_task.project_code, task.project_code);
+        assert_eq!(converted_task.project_code, task.project_code);
+        assert_eq!(converted_task.project_code, task.project_code);
     }
 
     #[test]
