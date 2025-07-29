@@ -23,11 +23,11 @@ endblock title %} {% block content %}
                 <li>
                     <strong>{{ task.name }} ({{ task.code }})</strong>
                     <div class="details">
-                        Status: {% if task.status.Planned is defined %}Planned
-                        {% elif task.status.Completed is defined %}Completed
-                        {% elif task.status.InProgress is defined %}In Progress ({{ task.status.InProgress.progress }}%)
+                        Status: {% if task.status.InProgress is defined %}In Progress ({{ task.status.InProgress.progress }}%)
                         {% elif task.status.Blocked is defined %}Blocked: {{ task.status.Blocked.reason }}
-                        {% elif task.status.Cancelled is defined %}Cancelled
+                        {% elif task.status == "Planned" %}Planned
+                        {% elif task.status == "Completed" %}Completed
+                        {% elif task.status == "Cancelled" %}Cancelled
                         {% else %}Unknown{% endif %}
                     </div>
                 </li>
