@@ -13,6 +13,7 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
 
     pub fn execute(
         &self,
+        project_code: String,
         code: String,
         name: String,
         description: Option<String>,
@@ -35,6 +36,7 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
         // Criar a task
         let task = Task {
             id: format!("TASK-{code}"),
+            project_code: project_code.clone(),
             code: code.clone(),
             name: name.clone(),
             description,
@@ -144,6 +146,7 @@ mod test {
         let (start_date, due_date) = create_test_dates();
 
         let result = use_case.execute(
+            "PROJ-1".to_string(),
             "TSK001".to_string(),
             "Implementar autenticação".to_string(),
             Some("Implementar sistema de login com JWT".to_string()),
@@ -162,6 +165,7 @@ mod test {
         let (start_date, due_date) = create_test_dates();
 
         let result = use_case.execute(
+            "PROJ-1".to_string(),
             "TSK001".to_string(),
             "Implementar autenticação".to_string(),
             Some("Implementar sistema de login com JWT".to_string()),
@@ -183,7 +187,9 @@ mod test {
         let description = Some("Implementar sistema de login com JWT".to_string());
         let assigned_resources = vec!["dev1".to_string(), "dev2".to_string()];
 
+        let project_code = "PROJ-1".to_string();
         let _ = use_case.execute(
+            project_code.clone(),
             code.clone(),
             name.clone(),
             description.clone(),
@@ -196,6 +202,7 @@ mod test {
         assert!(saved_task.is_some());
 
         let task = saved_task.as_ref().unwrap();
+        assert_eq!(task.project_code, project_code);
         assert_eq!(task.code, code);
         assert_eq!(task.name, name);
         assert_eq!(task.description, description);
@@ -217,6 +224,7 @@ mod test {
         let due_date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
         let result = use_case.execute(
+            "PROJ-1".to_string(),
             "TSK001".to_string(),
             "Task inválida".to_string(),
             None,
@@ -241,6 +249,7 @@ mod test {
         // Adicionar uma task existente
         let existing_task = Task {
             id: "TASK-TSK001".to_string(),
+            project_code: "PROJ-1".to_string(),
             code: "TSK001".to_string(),
             name: "Task existente".to_string(),
             description: None,
@@ -256,6 +265,7 @@ mod test {
         let (start_date, due_date) = create_test_dates();
 
         let result = use_case.execute(
+            "PROJ-1".to_string(),
             "TSK001".to_string(), // Mesmo código da task existente
             "Nova task".to_string(),
             None,
@@ -275,6 +285,7 @@ mod test {
         let (start_date, due_date) = create_test_dates();
 
         let result = use_case.execute(
+            "PROJ-1".to_string(),
             "TSK001".to_string(),
             "Task sem descrição".to_string(),
             None, // Sem descrição
@@ -297,6 +308,7 @@ mod test {
         let (start_date, due_date) = create_test_dates();
 
         let result = use_case.execute(
+            "PROJ-1".to_string(),
             "TSK001".to_string(),
             "Task sem recursos".to_string(),
             Some("Task sem recursos atribuídos".to_string()),
@@ -320,6 +332,7 @@ mod test {
         let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
         let result = use_case.execute(
+            "PROJ-1".to_string(),
             "TSK001".to_string(),
             "Task de um dia".to_string(),
             Some("Task que começa e termina no mesmo dia".to_string()),

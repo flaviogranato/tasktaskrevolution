@@ -88,6 +88,8 @@ pub enum CreateCommands {
     },
     Task {
         #[arg(long, short)]
+        project_code: String,
+        #[arg(long, short)]
         code: String,
         #[arg(long, short)]
         name: String,
@@ -216,6 +218,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 Ok(())
             }
             CreateCommands::Task {
+                project_code,
                 code,
                 name,
                 description,
@@ -245,6 +248,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let use_case = CreateTaskUseCase::new(repository);
 
                 match use_case.execute(
+                    project_code.clone(),
                     code.clone(),
                     name.clone(),
                     description.clone(),

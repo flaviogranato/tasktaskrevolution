@@ -108,7 +108,7 @@ impl Convertable<Task> for TaskManifest {
                 description: source.description,
             },
             spec: Spec {
-                project_code: "<CORRIGIR>".to_string(),
+                project_code: source.project_code,
                 assignee: source
                     .assigned_resources
                     .first()
@@ -178,6 +178,7 @@ impl Convertable<Task> for TaskManifest {
 
         Task {
             id: self.spec.project_code.clone(),
+            project_code: self.spec.project_code.clone(),
             code: self.metadata.code.clone(),
             name: self.metadata.name.clone(),
             description: self.metadata.description.clone(),
@@ -212,8 +213,9 @@ mod convertable_tests {
     // Helper function para criar uma Task básica
     fn create_basic_task() -> Task {
         Task {
-            id: "TASK-001".to_string(),
-            code: "TSK001".to_string(),
+            id: "TASK-123".to_string(),
+            project_code: "PROJ-1".to_string(),
+            code: "T-123".to_string(),
             name: "Tarefa de Teste".to_string(),
             description: Some("Descrição da tarefa de teste".to_string()),
             status: TaskStatus::Planned,
@@ -269,7 +271,7 @@ mod convertable_tests {
         assert_eq!(manifest.metadata.code, task.code);
         assert_eq!(manifest.metadata.name, task.name);
         assert_eq!(manifest.metadata.description, task.description);
-        assert_eq!(manifest.spec.project_code, task.id);
+        assert_eq!(manifest.spec.project_code, task.project_code);
         assert_eq!(manifest.spec.assignee, "dev1");
         assert_eq!(manifest.spec.status, Status::Planned);
         assert_eq!(manifest.spec.priority, Priority::Medium);
@@ -392,6 +394,7 @@ mod convertable_tests {
         let mut manifest = create_basic_manifest();
         manifest.spec.status = Status::Planned;
         let task = manifest.to();
+        assert_eq!(task.project_code, manifest.spec.project_code);
         assert_eq!(task.status, TaskStatus::Planned);
     }
 

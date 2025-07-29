@@ -1,0 +1,8 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Config
+metadata:
+  createdAt: 2025-07-29T15:03:04.660449271Z
+spec:
+  managerName: Flavio Granato
+  managerEmail: flavio.granato@protonmail.com
+  defaultTimezone: UTC

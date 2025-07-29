@@ -6,6 +6,8 @@ use uuid7::uuid7;
 #[allow(dead_code)]
 pub struct New;
 #[allow(dead_code)]
+pub struct WithProjectCode;
+#[allow(dead_code)]
 pub struct WithName;
 #[allow(dead_code)]
 pub struct WithDates;
@@ -17,6 +19,7 @@ pub struct Ready;
 #[allow(dead_code)]
 pub struct TaskBuilder<State> {
     id: String,
+    project_code: Option<String>,
     code: String,
     name: Option<String>,
     start_date: Option<NaiveDate>,
@@ -33,6 +36,7 @@ impl TaskBuilder<New> {
         Self {
             code: format!("TASK-{}", &id[..8]),
             id,
+            project_code: None,
             name: None,
             start_date: None,
             due_date: None,
@@ -41,10 +45,27 @@ impl TaskBuilder<New> {
         }
     }
 
+    pub fn project_code(self, project_code: impl Into<String>) -> TaskBuilder<WithProjectCode> {
+        TaskBuilder {
+            id: self.id,
+            code: self.code,
+            project_code: Some(project_code.into()),
+            name: self.name,
+            start_date: self.start_date,
+            due_date: self.due_date,
+            assigned_resources: self.assigned_resources,
+            _state: PhantomData,
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl TaskBuilder<WithProjectCode> {
     pub fn name(self, name: impl Into<String>) -> TaskBuilder<WithName> {
         TaskBuilder {
             id: self.id,
             code: self.code,
+            project_code: self.project_code,
             name: Some(name.into()),
             start_date: self.start_date,
             due_date: self.due_date,
@@ -64,6 +85,7 @@ impl TaskBuilder<WithName> {
         Ok(TaskBuilder {
             id: self.id,
             code: self.code,
+            project_code: self.project_code,
             name: self.name,
             start_date: Some(start),
             due_date: Some(due),
@@ -81,6 +103,7 @@ impl TaskBuilder<WithDates> {
         TaskBuilder {
             id: self.id,
             code: self.code,
+            project_code: self.project_code,
             name: self.name,
             start_date: self.start_date,
             due_date: self.due_date,
@@ -115,6 +138,7 @@ impl TaskBuilder<WithResources> {
         Ok(TaskBuilder {
             id: self.id,
             code: self.code,
+            project_code: self.project_code,
             name: self.name,
             start_date: self.start_date,
             due_date: self.due_date,
@@ -129,6 +153,7 @@ impl TaskBuilder<Ready> {
     pub fn build(self) -> Result<Task, TaskError> {
         Ok(Task {
             id: self.id,
+            project_code: self.project_code.ok_or(TaskError::MissingField("project_code"))?,
             code: self.code,
             name: self.name.ok_or(TaskError::MissingField("name"))?,
             description: None,
@@ -149,6 +174,7 @@ mod tests {
     #[test]
     fn test_successful_task_creation() {
         let task = TaskBuilder::new()
+            .project_code("PROJ-TEST")
             .name("Test Task")
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
@@ -161,6 +187,7 @@ mod tests {
             .build()
             .unwrap();
 
+        assert_eq!(task.project_code, "PROJ-TEST");
         assert_eq!(task.name, "Test Task");
         assert_eq!(task.assigned_resources, vec!["RES-001".to_string()]);
         assert_eq!(task.start_date, NaiveDate::from_ymd_opt(2025, 5, 1).unwrap());
@@ -170,10 +197,13 @@ mod tests {
 
     #[test]
     fn test_invalid_date_range() {
-        let result = TaskBuilder::new().name("Task com datas invertidas").dates(
-            NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),
-            NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
-        );
+        let result = TaskBuilder::new()
+            .project_code("PROJ-TEST")
+            .name("Task com datas invertidas")
+            .dates(
+                NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),
+                NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
+            );
 
         assert!(matches!(result, Err(TaskError::InvalidDateRange)));
     }
@@ -187,6 +217,7 @@ mod tests {
         )];
 
         let result = TaskBuilder::new()
+            .project_code("PROJ-TEST")
             .name("Task com conflito de férias")
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
@@ -227,6 +258,7 @@ mod tests {
         )];
 
         let task = TaskBuilder::new()
+            .project_code("PROJ-TEST")
             .name("Task multi recursos")
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
