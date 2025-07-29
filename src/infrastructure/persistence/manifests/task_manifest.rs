@@ -3,6 +3,8 @@ use crate::domain::task_management::{Task, TaskStatus};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
+const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskManifest {
@@ -100,7 +102,7 @@ impl Convertable<Task> for TaskManifest {
         };
 
         TaskManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
+            api_version: API_VERSION.to_string(),
             kind: "Task".to_string(),
             metadata: Metadata {
                 code: source.code,
