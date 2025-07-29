@@ -67,7 +67,7 @@ impl ProjectRepository for FileProjectRepository {
 
         if let Some(Ok(entry)) = walker.into_iter().next() {
             let manifest_path = entry.path();
-            match self.load_manifest(&manifest_path) {
+            match self.load_manifest(manifest_path) {
                 Ok(manifest) => Ok(manifest.to()),
                 Err(e) => Err(DomainError::Generic(format!(
                     "Falha ao carregar ou deserializar o arquivo do projeto: {e}"
@@ -88,20 +88,19 @@ impl ProjectRepository for FileProjectRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::project_management::builder::ProjectBuilder;
     use crate::domain::project_management::project::ProjectStatus;
     use tempfile::tempdir;
 
     /// Cria um projeto de teste simples.
     fn create_test_project(name: &str) -> Project {
-        Project::new(
-            Some(format!("id-{name}")),
-            name.to_string(),
-            Some(format!("Descrição para {name}")),
-            Some("2025-01-01".to_string()),
-            Some("2025-12-31".to_string()),
-            ProjectStatus::Planned,
-            None,
-        )
+        ProjectBuilder::new(name.to_string())
+            .id(format!("id-{name}"))
+            .description(Some(format!("Descrição para {name}")))
+            .start_date("2025-01-01".to_string())
+            .end_date("2025-12-31".to_string())
+            .status(ProjectStatus::Planned)
+            .build()
     }
 
     #[test]
@@ -144,7 +143,6 @@ mod tests {
         // 1. Setup
         let temp_dir = tempdir().expect("Não foi possível criar diretório temporário");
         let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
-        let project_path = PathBuf::from("projeto-que-nao-existe");
 
         // 2. Tentar carregar
         let result = repo.load();
@@ -152,7 +150,7 @@ mod tests {
         // 3. Verificar
         assert!(result.is_err());
         if let Err(DomainError::Generic(msg)) = result {
-            assert!(msg.contains("Arquivo de manifesto não encontrado"));
+            assert!(msg.contains("Nenhum arquivo 'project.yaml' encontrado nos subdiretórios."));
         } else {
             panic!("Esperado um DomainError::Generic");
         }

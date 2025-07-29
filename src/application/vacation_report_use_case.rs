@@ -4,7 +4,6 @@ use crate::domain::{
 use csv::Writer;
 use std::error::Error;
 use std::io;
-use std::path::PathBuf;
 
 /// `VacationReportUseCase` gera um relatório em formato CSV com os períodos de férias
 /// de todos os recursos, associados ao projeto atual.
@@ -71,12 +70,14 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
 mod tests {
     use super::*;
     use crate::domain::{
-        project_management::project::{Project, ProjectStatus},
+        project_management::{
+            builder::ProjectBuilder,
+            project::{Project, ProjectStatus},
+        },
         resource_management::resource::{Period, PeriodType, Resource},
         shared::errors::DomainError,
     };
     use chrono::{Local, TimeZone};
-    use std::path::Path;
 
     // --- Mocks ---
 
@@ -87,7 +88,7 @@ mod tests {
         fn save(&self, _project: Project) -> Result<(), DomainError> {
             unimplemented!()
         }
-        fn load(&self, _path: &Path) -> Result<Project, DomainError> {
+        fn load(&self) -> Result<Project, DomainError> {
             Ok(self.project.clone())
         }
     }
@@ -131,15 +132,9 @@ mod tests {
     #[test]
     fn test_vacation_report_generation() {
         // 1. Setup: Criar dados de teste
-        let project = Project::new(
-            None,
-            "ProjetoTTR".to_string(),
-            None,
-            None,
-            None,
-            ProjectStatus::InProgress,
-            None,
-        );
+        let project = ProjectBuilder::new("ProjetoTTR".to_string())
+            .status(ProjectStatus::InProgress)
+            .build();
 
         let mut resource1 = Resource::new(None, "Alice".to_string(), None, "Dev".to_string(), None, None, 0);
         resource1.vacations = Some(vec![Period {

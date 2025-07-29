@@ -1,10 +1,15 @@
 use crate::{
     application::{
-        build_use_case::BuildUseCase, create_project_use_case::CreateProjectUseCase,
-        create_resource_use_case::CreateResourceUseCase, create_task_use_case::CreateTaskUseCase,
-        create_time_off_use_case::CreateTimeOffUseCase, create_vacation_use_case::CreateVacationUseCase,
-        initialize_repository_use_case::InitializeRepositoryUseCase, task_report_use_case::TaskReportUseCase,
-        vacation_report_use_case::VacationReportUseCase, validate_vacations_use_case::ValidateVacationsUseCase,
+        build_use_case::BuildUseCase,
+        create_project_use_case::CreateProjectUseCase,
+        create_resource_use_case::CreateResourceUseCase,
+        create_task_use_case::{CreateTaskArgs, CreateTaskUseCase},
+        create_time_off_use_case::CreateTimeOffUseCase,
+        create_vacation_use_case::CreateVacationUseCase,
+        initialize_repository_use_case::InitializeRepositoryUseCase,
+        task_report_use_case::TaskReportUseCase,
+        vacation_report_use_case::VacationReportUseCase,
+        validate_vacations_use_case::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
         config_repository::FileConfigRepository, project_repository::FileProjectRepository,
@@ -244,15 +249,17 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileTaskRepository::new();
                 let use_case = CreateTaskUseCase::new(repository);
 
-                match use_case.execute(
-                    project_code.clone(),
-                    code.clone(),
-                    name.clone(),
-                    description.clone(),
-                    start,
-                    due,
-                    assignees.clone(),
-                ) {
+                let args = CreateTaskArgs {
+                    project_code: project_code.clone(),
+                    code: code.clone(),
+                    name: name.clone(),
+                    description: description.clone(),
+                    start_date: start,
+                    due_date: due,
+                    assigned_resources: assignees.clone(),
+                };
+
+                match use_case.execute(args) {
                     Ok(_) => {
                         println!("✅ Task '{name}' criada com sucesso!");
                         println!("📋 Código: {code}");
