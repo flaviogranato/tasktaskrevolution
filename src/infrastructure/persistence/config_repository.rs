@@ -1,13 +1,24 @@
-use crate::domain::{company_settings::repository::ConfigRepository, shared::errors::DomainError};
+use crate::domain::{
+    company_settings::{Config, repository::ConfigRepository},
+    shared::{convertable::Convertable, errors::DomainError},
+};
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use serde_yaml::to_string;
 use std::{fs, path::PathBuf};
 
-pub struct FileConfigRepository;
+pub struct FileConfigRepository {
+    base_path: PathBuf,
+}
 
 impl FileConfigRepository {
     pub fn new() -> Self {
-        Self
+        Self {
+            base_path: PathBuf::from("."),
+        }
+    }
+
+    pub fn with_base_path(path: PathBuf) -> Self {
+        Self { base_path: path }
     }
 }
 
@@ -31,5 +42,22 @@ impl ConfigRepository for FileConfigRepository {
             println!("Criado o repositório de configurações.");
         }
         Ok(())
+    }
+
+    fn load(&self) -> Result<Config, DomainError> {
+        let config_path = self.base_path.join("config.yaml");
+        if !config_path.exists() {
+            return Err(DomainError::Generic(format!(
+                "Arquivo de configuração não encontrado em: {}",
+                config_path.display()
+            )));
+        }
+
+        let file_content = fs::read_to_string(&config_path).map_err(|e| DomainError::Generic(e.to_string()))?;
+
+        let manifest: ConfigManifest =
+            serde_yaml::from_str(&file_content).map_err(|e| DomainError::Generic(e.to_string()))?;
+
+        Ok(manifest.to())
     }
 }

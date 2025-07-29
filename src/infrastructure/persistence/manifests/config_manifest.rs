@@ -101,6 +101,7 @@ impl Convertable<Config> for ConfigManifest {
         Config {
             manager_name: self.spec.manager_name.clone(),
             manager_email: self.spec.manager_email.clone(),
+            default_timezone: self.spec.default_timezone.clone(),
         }
     }
 }

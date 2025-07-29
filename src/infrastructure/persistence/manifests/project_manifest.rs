@@ -120,6 +120,7 @@ impl Convertable<Project> for ProjectManifest {
             start_date: self.spec.start_date.clone(),
             end_date: self.spec.end_date.clone(),
             status: <ProjectStatusManifest as Convertable<ProjectStatus>>::to(&self.spec.status),
+            timezone: self.spec.timezone.clone(),
             vacation_rules: self.spec.vacation_rules.as_ref().map(|vr| vr.to()),
         }
     }

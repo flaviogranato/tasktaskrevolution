@@ -24,6 +24,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
             None,
             ProjectStatus::Planned,
             None,
+            None,
         );
 
         self.repository.save(project)?;
@@ -62,6 +63,7 @@ mod test {
                     None,
                     None,
                     ProjectStatus::Planned,
+                    None,
                     None,
                 ),
             }

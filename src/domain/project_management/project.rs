@@ -11,6 +11,7 @@ pub struct Project {
     pub end_date: Option<String>,
     pub status: ProjectStatus,
     pub vacation_rules: Option<VacationRules>,
+    pub timezone: Option<String>,
 }
 
 impl Project {
@@ -22,6 +23,7 @@ impl Project {
         end_date: Option<String>,
         status: ProjectStatus,
         vacation_rules: Option<VacationRules>,
+        timezone: Option<String>,
     ) -> Self {
         Self {
             id,
@@ -31,6 +33,7 @@ impl Project {
             end_date,
             status,
             vacation_rules,
+            timezone,
         }
     }
 }
@@ -86,6 +89,7 @@ mod tests {
             end_date: None,
             status: ProjectStatus::Planned,
             vacation_rules: None,
+            timezone: None,
         };
         assert_eq!(
             project_with_id.to_string(),
@@ -100,6 +104,7 @@ mod tests {
             end_date: None,
             status: ProjectStatus::Completed,
             vacation_rules: None,
+            timezone: None,
         };
         assert_eq!(
             project_without_id.to_string(),

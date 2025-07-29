@@ -14,7 +14,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
         Self { repository }
     }
     pub fn execute(&self, path: PathBuf, manager_name: String, manager_email: String) -> Result<(), DomainError> {
-        let config = Config::new(manager_name.clone(), manager_email.clone());
+        let config = Config::new(manager_name.clone(), manager_email.clone(), "UTC".to_string());
         let config_manifest = <ConfigManifest as Convertable<Config>>::from(config);
         self.repository.create_repository_dir(path.clone())?;
         self.repository.save(config_manifest, path.clone())?;
@@ -98,7 +98,7 @@ mod test {
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
-        assert_eq!(saved_config.as_ref().unwrap().metadata.manager_name, manager_name);
-        assert_eq!(saved_config.as_ref().unwrap().metadata.manager_email, manager_email);
+        assert_eq!(saved_config.as_ref().unwrap().spec.manager_name, manager_name);
+        assert_eq!(saved_config.as_ref().unwrap().spec.manager_email, manager_email);
     }
 }
