@@ -4,6 +4,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 pub struct Task {
     pub id: String,
+    pub project_code: String,
     pub code: String,
     pub name: String,
     pub description: Option<String>,
