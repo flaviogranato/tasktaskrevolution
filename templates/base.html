@@ -7,23 +7,19 @@
             {% block title %}{{ project.name | default(value="TTR Project") }}{%
             endblock title %}
         </title>
-        <link rel="stylesheet" href="style.css" />
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.css"
-        />
+        <link rel="stylesheet" href="{{ relative_path_prefix }}style.css" />
     </head>
     <body>
         <header>
             <h1>
-                <a href="index.html"
+                <a href="{{ relative_path_prefix }}index.html"
                     >{{ project.name | default(value="Project Report") }}</a
                 >
             </h1>
             <nav>
-                <a href="index.html">Dashboard</a>
-                <a href="tasks.html">Tasks</a>
-                <a href="resources.html">Resources</a>
+                <a href="{{ relative_path_prefix }}index.html">Dashboard</a>
+                <a href="{{ relative_path_prefix }}tasks.html">Tasks</a>
+                <a href="{{ relative_path_prefix }}resources.html">Resources</a>
             </nav>
         </header>
 
@@ -36,9 +32,6 @@
             </p>
         </footer>
 
-        <!-- Adicionar Vue.js -->
-        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frappe-gantt/dist/frappe-gantt.min.js"></script>
         {% block scripts %}{% endblock scripts %}
     </body>
 </html>

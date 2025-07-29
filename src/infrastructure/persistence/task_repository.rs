@@ -3,6 +3,7 @@ use crate::domain::{
     task_management::{Task, TaskStatus, repository::TaskRepository},
 };
 use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
+use globwalk::glob;
 use serde_yaml;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -367,34 +368,20 @@ impl TaskRepository for FileTaskRepository {
     }
 
     fn find_all(&self) -> Result<Vec<Task>, DomainError> {
-        let tasks_dir = self.get_tasks_directory();
-
-        if !tasks_dir.exists() {
-            return Ok(Vec::new());
-        }
+        let pattern = self.base_path.join("**/tasks/**/*.yaml");
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
 
         let mut tasks = Vec::new();
-
-        for entry in
-            fs::read_dir(tasks_dir).map_err(|e| DomainError::Generic(format!("Erro ao ler diretório de tasks: {e}")))?
-        {
-            let entry = entry.map_err(|e| DomainError::Generic(format!("Erro ao ler entrada do diretório: {e}")))?;
-
-            if entry
-                .file_type()
-                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {e}")))?
-                .is_file()
-            {
+        for entry in walker {
+            if let Ok(entry) = entry {
                 let file_path = entry.path();
-                if file_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    match self.load_manifest(&file_path) {
-                        Ok(manifest) => {
-                            tasks.push(<TaskManifest as Convertable<Task>>::to(&manifest));
-                        }
-                        Err(e) => {
-                            // Log do erro mas continua processando outros arquivos
-                            eprintln!("Erro ao carregar task de {file_path:?}: {e}");
-                        }
+                match self.load_manifest(&file_path) {
+                    Ok(manifest) => {
+                        tasks.push(<TaskManifest as Convertable<Task>>::to(&manifest));
+                    }
+                    Err(e) => {
+                        // Log do erro mas continua processando outros arquivos
+                        eprintln!("Erro ao carregar task de {:?}: {}", file_path, e);
                     }
                 }
             }

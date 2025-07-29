@@ -44,20 +44,30 @@ impl ConfigRepository for FileConfigRepository {
         Ok(())
     }
 
-    fn load(&self) -> Result<Config, DomainError> {
-        let config_path = self.base_path.join("config.yaml");
-        if !config_path.exists() {
-            return Err(DomainError::Generic(format!(
-                "Arquivo de configuração não encontrado em: {}",
-                config_path.display()
-            )));
+    fn load(&self) -> Result<(Config, PathBuf), DomainError> {
+        let mut current_path = self
+            .base_path
+            .canonicalize()
+            .map_err(|e| DomainError::Generic(e.to_string()))?;
+
+        loop {
+            let config_path = current_path.join("config.yaml");
+
+            if config_path.exists() {
+                let file_content = fs::read_to_string(&config_path).map_err(|e| DomainError::Generic(e.to_string()))?;
+                let manifest: ConfigManifest =
+                    serde_yaml::from_str(&file_content).map_err(|e| DomainError::Generic(e.to_string()))?;
+
+                return Ok((manifest.to(), current_path));
+            }
+
+            if !current_path.pop() {
+                break;
+            }
         }
 
-        let file_content = fs::read_to_string(&config_path).map_err(|e| DomainError::Generic(e.to_string()))?;
-
-        let manifest: ConfigManifest =
-            serde_yaml::from_str(&file_content).map_err(|e| DomainError::Generic(e.to_string()))?;
-
-        Ok(manifest.to())
+        Err(DomainError::Generic(
+            "Não foi possível encontrar o arquivo 'config.yaml' nos diretórios pais.".to_string(),
+        ))
     }
 }

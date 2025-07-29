@@ -8,6 +8,7 @@ use crate::domain::{
 };
 use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
 use chrono::{DateTime, Local, NaiveDate, Offset};
+use globwalk::glob;
 use serde_yaml;
 use std::fs;
 use std::path::PathBuf;
@@ -48,33 +49,20 @@ impl ResourceRepository for FileResourceRepository {
     }
 
     fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
-        let resources_dir = self.base_path.join("resources");
-        if !resources_dir.exists() {
-            return Ok(Vec::new());
-        }
-
+        let pattern = self.base_path.join("**/resources/**/*.yaml");
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
         let mut resources = Vec::new();
-        for entry in fs::read_dir(resources_dir)
-            .map_err(|e| DomainError::Generic(format!("Erro ao ler diretório de recursos: {e}")))?
-        {
-            let entry = entry.map_err(|e| DomainError::Generic(format!("Erro ao ler entrada do diretório: {e}")))?;
 
-            if entry
-                .file_type()
-                .map_err(|e| DomainError::Generic(format!("Erro ao obter tipo do arquivo: {e}")))?
-                .is_file()
-            {
-                let file_path = entry.path();
-                if file_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    let yaml = fs::read_to_string(&file_path)
-                        .map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de recurso: {e}")))?;
+        for entry in walker {
+            let entry = entry.map_err(|e| DomainError::Generic(e.to_string()))?;
+            let file_path = entry.path();
+            let yaml = fs::read_to_string(file_path)
+                .map_err(|e| DomainError::Generic(format!("Erro ao ler arquivo de recurso: {e}")))?;
 
-                    let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml)
-                        .map_err(|e| DomainError::Generic(format!("Erro ao deserializar recurso: {e}")))?;
+            let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml)
+                .map_err(|e| DomainError::Generic(format!("Erro ao deserializar recurso: {e}")))?;
 
-                    resources.push(<ResourceManifest as Convertable<Resource>>::to(&resource_manifest));
-                }
-            }
+            resources.push(<ResourceManifest as Convertable<Resource>>::to(&resource_manifest));
         }
 
         Ok(resources)

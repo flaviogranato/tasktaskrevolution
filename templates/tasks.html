@@ -1,55 +1,45 @@
 {% extends "base.html" %} {% block title %}Tasks{% endblock title %} {% block
 content %}
-<section id="app" v-cloak>
-    <h2>All Tasks (${ tasks.length }$)</h2>
+<section>
+    <h2>All Tasks ({{ tasks | length }})</h2>
 
     <div class="list-container">
+        {% if tasks %}
         <ul>
-            <li v-for="task in tasks" :key="task.id">
-                <strong>${ task.name }$ (${ task.code }$)</strong>
-                <span v-if="typeof task.status === 'object'">
-                    (In Progress: ${ task.status.InProgress.progress }%)
-                </span>
-                <span v-else-if="task.status === 'Completed'">(Completed)</span>
-                <span v-else-if="task.status === 'Planned'">(Planned)</span>
-                <span v-else-if="task.status === 'Blocked'">(Blocked)</span>
-                <span v-else-if="task.status === 'Cancelled'">(Cancelled)</span>
-                - Due: ${ task.due_date }$
-                <div
-                    v-if="task.assigned_resources.length > 0"
-                    class="assignees"
-                >
-                    Assignees: ${ task.assigned_resources.join(', ') }$
+            {% for task in tasks %}
+            <li>
+                <strong>{{ task.name }} ({{ task.code }})</strong> - Due: {{
+                task.due_date }}
+                <div class="details">
+                    Status: {% if task.status.Planned is defined %}Planned {%
+                    elif task.status.Completed is defined %}Completed {% elif
+                    task.status.InProgress is defined %}In Progress ({{
+                    task.status.InProgress.progress }}%){% elif
+                    task.status.Blocked is defined %}Blocked: {{
+                    task.status.Blocked.reason }} {% elif task.status.Cancelled
+                    is defined %}Cancelled {% else %}Unknown {% endif %}
                 </div>
+                {% if task.assigned_resources %}
+                <div class="assignees">
+                    Assignees: {{ task.assigned_resources | join(sep=", ") }}
+                </div>
+                {% endif %}
             </li>
+            {% endfor %}
         </ul>
-        <p v-if="tasks.length === 0">No tasks have been created yet.</p>
+        {% else %}
+        <p>No tasks have been created yet.</p>
+        {% endif %}
     </div>
 </section>
 {% endblock content %} {% block scripts %}
-<script>
-    const { createApp, ref } = Vue;
-
-    createApp({
-        setup() {
-            // Use Tera to safely inject the tasks data as a JSON object
-            const tasks = ref({{ tasks | json_encode() | safe }});
-
-            return {
-                tasks,
-            };
-        },
-        delimiters: ['${', '}$'] // Change delimiters to avoid conflict with Tera
-    }).mount('#app');
-</script>
 <style>
-    [v-cloak] {
-        display: none;
-    }
+    .details,
     .assignees {
         font-size: 0.9em;
         color: #555;
         padding-left: 10px;
+        margin-top: 5px;
     }
 </style>
 {% endblock scripts %}
