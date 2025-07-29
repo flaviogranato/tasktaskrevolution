@@ -169,20 +169,9 @@ impl Convertable<Task> for TaskManifest {
             Status::Cancelled => TaskStatus::Cancelled,
         };
 
-        let mut assigned_resources = Vec::new();
-
-        if self.spec.assignee != "unassigned" {
-            assigned_resources.push(self.spec.assignee.clone());
-        }
-
-        for tag in &self.spec.tags {
-            if tag != "unassigned" && !assigned_resources.contains(tag) {
-                assigned_resources.push(tag.clone());
-            }
-        }
-
-        if assigned_resources.is_empty() && !self.spec.tags.is_empty() {
-            assigned_resources = self.spec.tags.clone();
+        let mut assigned_resources = self.spec.tags.clone();
+        if self.spec.assignee != "unassigned" && !assigned_resources.contains(&self.spec.assignee) {
+            assigned_resources.insert(0, self.spec.assignee.clone());
         }
 
         Task {
