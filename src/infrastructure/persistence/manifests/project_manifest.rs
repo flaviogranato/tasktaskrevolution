@@ -26,8 +26,6 @@ pub struct ProjectMetadata {
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectSpec {
-    pub name: String,
-    pub description: Option<String>,
     pub timezone: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub start_date: Option<String>,
@@ -97,8 +95,6 @@ impl Convertable<Project> for ProjectManifest {
                 description: source.description.clone(),
             },
             spec: ProjectSpec {
-                name: source.name,
-                description: source.description,
                 timezone: None,
                 start_date: source.start_date,
                 end_date: source.end_date,

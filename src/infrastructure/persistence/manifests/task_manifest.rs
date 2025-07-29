@@ -41,6 +41,7 @@ pub struct Spec {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum Status {
+    Planned,
     ToDo,
     InProgress,
     Done,
@@ -78,7 +79,7 @@ impl Convertable<Task> for TaskManifest {
 
         let status = match source.status {
             TaskStatus::Completed => Status::Done,
-            TaskStatus::Planned => Status::ToDo,
+            TaskStatus::Planned => Status::Planned,
             TaskStatus::InProgress { progress } => {
                 comments.push(Comment {
                     author: "system".to_string(),
@@ -99,7 +100,7 @@ impl Convertable<Task> for TaskManifest {
         };
 
         TaskManifest {
-            api_version: "v1".to_string(),
+            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Task".to_string(),
             metadata: Metadata {
                 code: source.code,
@@ -107,7 +108,7 @@ impl Convertable<Task> for TaskManifest {
                 description: source.description,
             },
             spec: Spec {
-                project_code: source.id.clone(),
+                project_code: "<CORRIGIR>".to_string(),
                 assignee: source
                     .assigned_resources
                     .first()
@@ -137,6 +138,7 @@ impl Convertable<Task> for TaskManifest {
 
     fn to(&self) -> Task {
         let status = match self.spec.status {
+            Status::Planned => TaskStatus::Planned,
             Status::ToDo => TaskStatus::Planned,
             Status::InProgress => {
                 let progress = self
@@ -269,7 +271,7 @@ mod convertable_tests {
         assert_eq!(manifest.metadata.description, task.description);
         assert_eq!(manifest.spec.project_code, task.id);
         assert_eq!(manifest.spec.assignee, "dev1");
-        assert_eq!(manifest.spec.status, Status::ToDo);
+        assert_eq!(manifest.spec.status, Status::Planned);
         assert_eq!(manifest.spec.priority, Priority::Medium);
         assert_eq!(manifest.spec.estimated_start_date, Some(task.start_date));
         assert_eq!(manifest.spec.estimated_end_date, Some(task.due_date));
@@ -383,6 +385,14 @@ mod convertable_tests {
         assert_eq!(task.due_date, test_date(2024, 1, 30));
         assert_eq!(task.actual_end_date, None);
         assert_eq!(task.assigned_resources, vec!["dev1", "dev2"]);
+    }
+
+    #[test]
+    fn test_manifest_to_task_planned_status() {
+        let mut manifest = create_basic_manifest();
+        manifest.spec.status = Status::Planned;
+        let task = manifest.to();
+        assert_eq!(task.status, TaskStatus::Planned);
     }
 
     #[test]
