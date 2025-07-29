@@ -4,6 +4,8 @@ use crate::infrastructure::persistence::manifests::project_manifest::VacationRul
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
+const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigManifest {
@@ -49,7 +51,7 @@ fn default_timezone() -> String {
 impl ConfigManifest {
     pub fn new() -> Self {
         ConfigManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
+            api_version: API_VERSION.to_string(),
             kind: "Config".to_string(),
             metadata: ConfigMetadata { created_at: Utc::now() },
             spec: ConfigSpec {
@@ -77,7 +79,7 @@ impl Default for ConfigManifest {
 impl Convertable<Config> for ConfigManifest {
     fn from(source: Config) -> Self {
         ConfigManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
+            api_version: API_VERSION.to_string(),
             kind: "Config".to_string(),
             metadata: ConfigMetadata { created_at: Utc::now() },
             spec: ConfigSpec {

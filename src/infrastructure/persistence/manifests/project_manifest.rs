@@ -4,6 +4,8 @@ use crate::domain::project_management::vacation_rules::VacationRules;
 use crate::domain::shared::convertable::Convertable;
 use serde::{Deserialize, Serialize};
 
+const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectManifest {
@@ -87,7 +89,7 @@ impl Convertable<ProjectStatus> for ProjectStatusManifest {
 impl Convertable<Project> for ProjectManifest {
     fn from(source: Project) -> Self {
         ProjectManifest {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
+            api_version: API_VERSION.to_string(),
             kind: "Project".to_string(),
             metadata: ProjectMetadata {
                 code: source.id.clone(),

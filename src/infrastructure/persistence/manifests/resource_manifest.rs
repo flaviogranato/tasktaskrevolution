@@ -6,6 +6,8 @@ use crate::domain::{
     shared::convertable::Convertable,
 };
 
+const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceManifest {
@@ -138,7 +140,7 @@ impl Convertable<PeriodType> for PeriodTypeManifest {
 impl Convertable<Resource> for ResourceManifest {
     fn from(source: Resource) -> Self {
         Self {
-            api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
+            api_version: API_VERSION.to_string(),
             kind: "Resource".to_string(),
             metadata: ResourceMetadata {
                 name: source.name.clone(),
