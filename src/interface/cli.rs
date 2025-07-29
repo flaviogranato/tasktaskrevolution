@@ -131,12 +131,19 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         }
         Commands::Build { path } => {
             let project_path = path.clone().unwrap_or_else(|| PathBuf::from("."));
+            let config_repo = FileConfigRepository::with_base_path(project_path.clone());
             let project_repo = FileProjectRepository::with_base_path(project_path.clone());
             let resource_repo = FileResourceRepository::with_base_path(project_path.clone());
             let task_repo = FileTaskRepository::with_base_path(project_path.clone());
             let output_dir = project_path.join("public");
 
-            match BuildUseCase::new(project_repo, resource_repo, task_repo, output_dir.to_str().unwrap()) {
+            match BuildUseCase::new(
+                config_repo,
+                project_repo,
+                resource_repo,
+                task_repo,
+                output_dir.to_str().unwrap(),
+            ) {
                 Ok(use_case) => {
                     if let Err(e) = use_case.execute() {
                         println!("❌ Erro ao construir o site: {e}");

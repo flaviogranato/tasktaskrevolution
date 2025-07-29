@@ -4,13 +4,15 @@ use std::fmt::Display;
 pub struct Config {
     pub manager_name: String,
     pub manager_email: String,
+    pub default_timezone: String,
 }
 
 impl Config {
-    pub fn new(manager_name: String, manager_email: String) -> Self {
+    pub fn new(manager_name: String, manager_email: String, default_timezone: String) -> Self {
         Self {
             manager_name,
             manager_email,
+            default_timezone,
         }
     }
 }
@@ -34,6 +36,7 @@ mod tests {
         let config = Config {
             manager_name: "Admin User".to_string(),
             manager_email: "admin@example.com".to_string(),
+            default_timezone: "UTC".to_string(),
         };
         let expected = "Config { name: Admin User, email: admin@example.com }";
         assert_eq!(config.to_string(), expected);

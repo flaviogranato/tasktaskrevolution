@@ -1,6 +1,6 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, resource_management::repository::ResourceRepository,
-    task_management::repository::TaskRepository,
+    company_settings::repository::ConfigRepository, project_management::repository::ProjectRepository,
+    resource_management::repository::ResourceRepository, task_management::repository::TaskRepository,
 };
 use crate::interface::assets::{StaticAssets, TemplateAssets};
 
@@ -20,12 +20,14 @@ struct SiteContext {
 }
 
 /// `BuildUseCase` is responsible for orchestrating the static site generation.
-pub struct BuildUseCase<P, R, T>
+pub struct BuildUseCase<C, P, R, T>
 where
+    C: ConfigRepository,
     P: ProjectRepository,
     R: ResourceRepository,
     T: TaskRepository,
 {
+    config_repo: C,
     project_repo: P,
     resource_repo: R,
     task_repo: T,
@@ -33,13 +35,20 @@ where
     output_dir: PathBuf,
 }
 
-impl<P, R, T> BuildUseCase<P, R, T>
+impl<C, P, R, T> BuildUseCase<C, P, R, T>
 where
+    C: ConfigRepository,
     P: ProjectRepository,
     R: ResourceRepository,
     T: TaskRepository,
 {
-    pub fn new(project_repo: P, resource_repo: R, task_repo: T, output_dir: &str) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        config_repo: C,
+        project_repo: P,
+        resource_repo: R,
+        task_repo: T,
+        output_dir: &str,
+    ) -> Result<Self, Box<dyn Error>> {
         let mut tera = Tera::default();
         for filename in TemplateAssets::iter() {
             let file = TemplateAssets::get(filename.as_ref()).unwrap();
@@ -48,6 +57,7 @@ where
         }
 
         Ok(Self {
+            config_repo,
             project_repo,
             resource_repo,
             task_repo,
@@ -72,11 +82,17 @@ where
         }
 
         // 3. Load all necessary data from the repositories.
-        let project = self.project_repo.load(Path::new("."))?;
+        let config = self.config_repo.load()?;
+        let mut project = self.project_repo.load(Path::new("."))?;
         let tasks = self.task_repo.find_all()?;
         let resources = self.resource_repo.find_all()?;
 
-        // 4. Create the context for Tera.
+        // 4. Inherit timezone from config if not set in project.
+        if project.timezone.is_none() {
+            project.timezone = Some(config.default_timezone);
+        }
+
+        // 5. Create the context for Tera.
         let site_data = SiteContext {
             project,
             tasks,
@@ -84,7 +100,7 @@ where
         };
         let context = Context::from_serialize(&site_data)?;
 
-        // 5. Render each template and write it to the output directory.
+        // 6. Render each template and write it to the output directory.
         let templates_to_render: Vec<_> = self
             .tera
             .get_template_names()
