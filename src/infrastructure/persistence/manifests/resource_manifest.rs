@@ -29,7 +29,8 @@ pub struct ResourceSpec {
 #[serde(rename_all = "camelCase")]
 pub struct ResourceMetadata {
     pub name: String,
-    pub email: Option<String>,
+    #[serde(default)]
+    pub email: String,
     pub code: String,
     pub resource_type: String,
 }
@@ -144,7 +145,7 @@ impl Convertable<Resource> for ResourceManifest {
             kind: "Resource".to_string(),
             metadata: ResourceMetadata {
                 name: source.name.clone(),
-                email: source.email.clone(),
+                email: source.email.clone().unwrap_or_default(),
                 code: source.id.unwrap_or_default(),
                 resource_type: source.resource_type,
             },
@@ -168,7 +169,11 @@ impl Convertable<Resource> for ResourceManifest {
         Resource::new(
             Some(self.metadata.code.clone()),
             self.metadata.name.clone(),
-            self.metadata.email.clone(),
+            if self.metadata.email.is_empty() {
+                None
+            } else {
+                Some(self.metadata.email.clone())
+            },
             self.metadata.resource_type.clone(),
             self.spec.vacations.as_ref().map(|v| v.iter().map(|p| p.to()).collect()),
             self.spec
