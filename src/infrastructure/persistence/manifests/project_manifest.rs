@@ -21,8 +21,8 @@ pub struct ProjectMetadata {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    #[serde(default)]
+    pub description: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -94,7 +94,7 @@ impl Convertable<Project> for ProjectManifest {
             metadata: ProjectMetadata {
                 code: source.id.clone(),
                 name: source.name.clone(),
-                description: source.description.clone(),
+                description: source.description.clone().unwrap_or_default(),
             },
             spec: ProjectSpec {
                 timezone: None,
@@ -112,7 +112,11 @@ impl Convertable<Project> for ProjectManifest {
         Project {
             id: None, // TODO: Você precisará gerar um ID aqui, se necessário
             name: self.metadata.name.clone(),
-            description: self.metadata.description.clone(),
+            description: if self.metadata.description.is_empty() {
+                None
+            } else {
+                Some(self.metadata.description.clone())
+            },
             start_date: self.spec.start_date.clone(),
             end_date: self.spec.end_date.clone(),
             status: <ProjectStatusManifest as Convertable<ProjectStatus>>::to(&self.spec.status),
@@ -276,7 +280,7 @@ spec:
         assert_eq!(manifest.kind, "Project");
         assert_eq!(manifest.metadata.code, Some("ABC123".to_string()));
         assert_eq!(manifest.metadata.name, "Meu Projeto".to_string());
-        assert_eq!(manifest.metadata.description, Some("Descrição do Projeto".to_string()));
+        assert_eq!(manifest.metadata.description, "Descrição do Projeto".to_string());
         assert_eq!(manifest.spec.start_date, Some("2024-01-10".to_string()));
         assert_eq!(manifest.spec.end_date, Some("2024-12-20".to_string()));
         assert_eq!(manifest.spec.status, ProjectStatusManifest::InProgress);
