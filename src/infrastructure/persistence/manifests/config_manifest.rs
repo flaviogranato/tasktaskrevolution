@@ -16,8 +16,6 @@ pub struct ConfigManifest {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigMetadata {
-    pub manager_name: String,
-    pub manager_email: String,
     pub created_at: chrono::DateTime<Utc>,
 }
 
@@ -53,11 +51,7 @@ impl ConfigManifest {
         ConfigManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata {
-                manager_name: "Default Manager".to_string(),
-                manager_email: "email@example.com".to_string(),
-                created_at: Utc::now(),
-            },
+            metadata: ConfigMetadata { created_at: Utc::now() },
             spec: ConfigSpec {
                 manager_name: "Default Manager".to_string(),
                 manager_email: "email@example.com".to_string(),
@@ -85,11 +79,7 @@ impl Convertable<Config> for ConfigManifest {
         ConfigManifest {
             api_version: "tasktaskrevolution.io/v1alpha1".to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata {
-                manager_name: source.manager_name.clone(),
-                manager_email: source.manager_email.clone(),
-                created_at: Utc::now(),
-            },
+            metadata: ConfigMetadata { created_at: Utc::now() },
             spec: ConfigSpec {
                 manager_name: source.manager_name,
                 manager_email: source.manager_email,
@@ -130,8 +120,6 @@ mod tests {
             apiVersion: tasktaskrevolution.io/v1alpha1
             kind: Config
             metadata:
-                managerName: "John Doe"
-                managerEmail: "john@doe.com"
                 createdAt: "2024-01-01T00:00:00Z"
             spec:
                 managerName: "John Doe"
@@ -139,6 +127,6 @@ mod tests {
                 defaultTimezone: "UTC"
         "#;
         let manifest: ConfigManifest = serde_yaml::from_str(yaml_str).unwrap();
-        assert_eq!(manifest.metadata.manager_name, "John Doe");
+        assert_eq!(manifest.spec.manager_name, "John Doe");
     }
 }
