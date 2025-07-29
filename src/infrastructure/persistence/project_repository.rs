@@ -3,6 +3,7 @@ use crate::domain::{
     shared::{convertable::Convertable, errors::DomainError},
 };
 use crate::infrastructure::persistence::manifests::project_manifest::ProjectManifest;
+use globwalk::glob;
 use serde_yaml;
 use std::error::Error;
 use std::fs;
@@ -60,20 +61,22 @@ impl ProjectRepository for FileProjectRepository {
 
     /// Carrega um projeto.
     /// `path` deve ser o caminho para o diretório do projeto.
-    fn load(&self, path: &Path) -> Result<Project, DomainError> {
-        let manifest_path = self.base_path.join(path).join("project.yaml");
+    fn load(&self) -> Result<Project, DomainError> {
+        let pattern = self.base_path.join("**/project.yaml");
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
 
-        if !manifest_path.exists() {
-            return Err(DomainError::Generic(format!(
-                "Arquivo de manifesto não encontrado em: {manifest_path:?}"
-            )));
-        }
-
-        match self.load_manifest(&manifest_path) {
-            Ok(manifest) => Ok(manifest.to()),
-            Err(e) => Err(DomainError::Generic(format!(
-                "Falha ao carregar ou deserializar o arquivo do projeto: {e}"
-            ))),
+        if let Some(Ok(entry)) = walker.into_iter().next() {
+            let manifest_path = entry.path();
+            match self.load_manifest(&manifest_path) {
+                Ok(manifest) => Ok(manifest.to()),
+                Err(e) => Err(DomainError::Generic(format!(
+                    "Falha ao carregar ou deserializar o arquivo do projeto: {e}"
+                ))),
+            }
+        } else {
+            Err(DomainError::Generic(
+                "Nenhum arquivo 'project.yaml' encontrado nos subdiretórios.".to_string(),
+            ))
         }
     }
 }
@@ -124,9 +127,7 @@ mod tests {
 
         // 4. Carregar o projeto de volta
         // A função `load` espera o nome do diretório do projeto (relativo ao base_path)
-        let loaded_project = repo
-            .load(&PathBuf::from(&project_name))
-            .expect("O carregamento do projeto não deve falhar");
+        let loaded_project = repo.load().expect("O carregamento do projeto não deve falhar");
 
         // 5. Verificar se os dados são consistentes
         // A conversão para/de manifesto pode alterar alguns campos (como o ID, que pode não ser salvo),
@@ -146,7 +147,7 @@ mod tests {
         let project_path = PathBuf::from("projeto-que-nao-existe");
 
         // 2. Tentar carregar
-        let result = repo.load(&project_path);
+        let result = repo.load();
 
         // 3. Verificar
         assert!(result.is_err());

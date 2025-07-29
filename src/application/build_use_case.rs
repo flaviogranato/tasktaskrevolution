@@ -83,7 +83,7 @@ where
 
         // 3. Load all necessary data from the repositories.
         let config = self.config_repo.load()?;
-        let mut project = self.project_repo.load(Path::new("."))?;
+        let mut project = self.project_repo.load()?;
         let tasks = self.task_repo.find_all()?;
         let resources = self.resource_repo.find_all()?;
 
