@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>
-            Resources
+            Resource: Flavio
         </title>
         <link rel="stylesheet" href="/style.css" />
     </head>
@@ -24,22 +24,19 @@
 
         <main>
 <section>
-    <h2>All Resources (2)</h2>
-    <div class="list-container">
+    <h2>Flavio</h2>
+
+    <div class="list-container resource-details">
+        <h3>Details</h3>
+        <p><strong>Type:</strong> devops</p>
         
-        <ul>
-            
-            <li>
-                <strong><a href="resources/joao.html">Joao</a></strong> - dev 
-                <div class="email">Email: null</div>
-                 
-            </li>
-            
-            <li>
-                <strong><a href="resources/flavio.html">Flavio</a></strong> - devops  
-            </li>
-            
-        </ul>
+        <p><strong>Time Off Balance:</strong> 0 hours</p>
+    </div>
+
+    <div class="list-container vacations-list">
+        <h3>Absences & Vacations</h3>
+        
+            <p>This resource has no scheduled absences or vacations.</p>
         
     </div>
 </section>
@@ -53,33 +50,16 @@
 
         
 <style>
-    .email {
-        font-size: 0.9em;
-        color: #777;
-        padding-left: 10px;
+    .resource-details p {
+        margin-bottom: 10px;
+        font-size: 1.1rem;
     }
-    .vacations {
-        margin-top: 10px;
-        padding: 10px;
-        background-color: #f9f9f9;
-        border-radius: 4px;
-        border: 1px solid #eee;
+    .vacations-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
     }
-    .vacations h4 {
-        margin-top: 0;
-        margin-bottom: 8px;
-        font-size: 1em;
-        color: #333;
-        border-bottom: 1px solid #e0e0e0;
-        padding-bottom: 5px;
-    }
-    .vacations ul {
-        list-style-type: none;
-        padding-left: 0;
-    }
-    .vacations li {
-        padding: 4px 0;
-        font-size: 0.95em;
+    .vacations-list li:last-child {
+        border-bottom: none;
     }
     .status-approved {
         color: #27ae60;

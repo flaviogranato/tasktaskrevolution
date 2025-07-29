@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Resource: {{ resource.name }}{% endblock title %}
+
+{% block content %}
+<section>
+    <h2>{{ resource.name }}</h2>
+
+    <div class="list-container resource-details">
+        <h3>Details</h3>
+        <p><strong>Type:</strong> {{ resource.resource_type }}</p>
+        {% if resource.email %}
+            <p><strong>Email:</strong> {{ resource.email }}</p>
+        {% endif %}
+        <p><strong>Time Off Balance:</strong> {{ resource.time_off_balance }} hours</p>
+    </div>
+
+    <div class="list-container vacations-list">
+        <h3>Absences & Vacations</h3>
+        {% if resource.vacations and resource.vacations | length > 0 %}
+            <ul>
+                {% for period in resource.vacations %}
+                    <li>
+                        <strong>{{ period.period_type }}</strong>:
+                        <span>
+                            {{ period.start_date | date(format="%Y-%m-%d") }} -
+                            {{ period.end_date | date(format="%Y-%m-%d") }}
+                        </span>
+                        {% if period.approved %}
+                            <span class="status-approved">(Approved)</span>
+                        {% else %}
+                            <span class="status-pending">(Pending)</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>This resource has no scheduled absences or vacations.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+<style>
+    .resource-details p {
+        margin-bottom: 10px;
+        font-size: 1.1rem;
+    }
+    .vacations-list li {
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .vacations-list li:last-child {
+        border-bottom: none;
+    }
+    .status-approved {
+        color: #27ae60;
+        font-weight: bold;
+    }
+    .status-pending {
+        color: #f39c12;
+        font-weight: bold;
+    }
+</style>
+{% endblock scripts %}

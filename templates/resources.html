@@ -1,96 +1,45 @@
 {% extends "base.html" %} {% block title %}Resources{% endblock title %} {%
 block content %}
-<section id="app" v-cloak>
-    <h2>All Resources (${ filteredResources.length })</h2>
-
+<section>
+    <h2>All Resources ({{ resources | length }})</h2>
     <div class="list-container">
-        <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="Filter resources by name..."
-            class="resource-filter-input"
-        />
+        {% if resources %}
         <ul>
-            <li v-for="resource in filteredResources" :key="resource.id">
-                <strong>${ resource.name }</strong> - ${ resource.resource_type
-                }
-                <div v-if="resource.email" class="email">
-                    Email: ${ resource.email }
-                </div>
-                <div
-                    v-if="resource.vacations && resource.vacations.length > 0"
-                    class="vacations"
-                >
+            {% for resource in resources %}
+            <li>
+                <strong><a href="resources/{{ resource.name | replace(from=" ", to="_") | lower }}.html">{{ resource.name }}</a></strong> - {{ resource.resource_type
+                }} {% if resource.email %}
+                <div class="email">Email: {{ resource.email }}</div>
+                {% endif %} {% if resource.vacations and resource.vacations |
+                length > 0 %}
+                <div class="vacations">
                     <h4>Absences & Vacations:</h4>
                     <ul>
-                        <li
-                            v-for="period in resource.vacations"
-                            :key="period.start_date"
-                        >
-                            <strong>${ period.period_type }</strong>:
-                            <span
-                                >${ new
-                                Date(period.start_date).toLocaleDateString() } -
-                                ${ new
-                                Date(period.end_date).toLocaleDateString()
-                                }</span
-                            >
-                            <span v-if="period.approved" class="status-approved"
-                                >(Approved)</span
-                            >
-                            <span v-else class="status-pending">(Pending)</span>
+                        {% for period in resource.vacations %}
+                        <li>
+                            <strong>{{ period.period_type }}</strong>: {{
+                            period.start_date | date(format="%Y-%m-%d") }} - {{
+                            period.end_date | date(format="%Y-%m-%d") }} {% if
+                            period.approved %}
+                            <span class="status-approved">(Approved)</span>
+                            {% else %}
+                            <span class="status-pending">(Pending)</span>
+                            {% endif %}
                         </li>
+                        {% endfor %}
                     </ul>
                 </div>
+                {% endif %}
             </li>
+            {% endfor %}
         </ul>
-        <p v-if="filteredResources.length === 0">
-            No resources match your filter.
-        </p>
+        {% else %}
+        <p>No resources have been created yet.</p>
+        {% endif %}
     </div>
 </section>
 {% endblock content %} {% block scripts %}
-<script>
-    const { createApp, ref, computed } = Vue;
-
-    createApp({
-        setup() {
-            const searchQuery = ref('');
-            // Safely inject the resources data from Tera as a JSON object
-            const resources = ref({{ resources | json_encode() | safe }});
-
-            const filteredResources = computed(() => {
-                if (!searchQuery.value) {
-                    return resources.value;
-                }
-                const lowerCaseQuery = searchQuery.value.toLowerCase();
-                return resources.value.filter(resource =>
-                    resource.name.toLowerCase().includes(lowerCaseQuery)
-                );
-            });
-
-            return {
-                searchQuery,
-                resources,
-                filteredResources,
-            };
-        },
-        delimiters: ['${', '}$'] // Avoid conflict with Tera
-    }).mount('#app');
-</script>
 <style>
-    [v-cloak] {
-        display: none;
-    }
-    .resource-filter-input {
-        width: 100%;
-        padding: 8px 10px;
-        margin-bottom: 20px;
-        box-sizing: border-box;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 1rem;
-    }
     .email {
         font-size: 0.9em;
         color: #777;
