@@ -15,38 +15,29 @@ endblock title %} {% block content %}
     </div>
 
     <div class="list-container">
-        <h3>All Tasks (${ filteredTasks.length }$)</h3>
+        <h3>Gantt Chart (${ filteredTasks.length }$)</h3>
         <input
             type="text"
             v-model="searchQuery"
             placeholder="Filter tasks by name..."
             class="task-filter-input"
         />
-        <ul>
-            <li v-for="task in filteredTasks" :key="task.id">
-                <strong>${ task.name }$</strong>
-                <span v-if="task.status.InProgress"
-                    >(In Progress: ${ task.status.InProgress.progress }%)</span
-                >
-                <span v-else-if="task.status.Completed">(Completed)</span>
-                <span v-else-if="task.status.Planned">(Planned)</span>
-                <span v-else-if="task.status.Blocked">(Blocked)</span>
-                <span v-else-if="task.status.Cancelled">(Cancelled)</span>
-                - Due: ${ task.due_date }$
-            </li>
-        </ul>
+        <div class="gantt-wrapper">
+            <svg ref="ganttContainer"></svg>
+        </div>
         <p v-if="filteredTasks.length === 0">No tasks match your filter.</p>
     </div>
 </section>
 {% endblock content %} {% block scripts %}
 <script>
-    const { createApp, ref, computed } = Vue;
+    const { createApp, ref, computed, watchEffect } = Vue;
 
     createApp({
         setup() {
             const searchQuery = ref('');
-            // Use Tera to safely inject the tasks data as a JSON object
             const tasks = ref({{ tasks | json_encode() | safe }});
+            const ganttContainer = ref(null);
+            let ganttChart = null; // Not a ref, as we don't need gantt itself to be reactive
 
             const filteredTasks = computed(() => {
                 if (!searchQuery.value) {
@@ -58,10 +49,57 @@ endblock title %} {% block content %}
                 );
             });
 
+            const ganttTasks = computed(() => {
+                return filteredTasks.value.map(task => {
+                    // Frappe Gantt requires a start and end date in 'YYYY-MM-DD' format.
+                    // If a task lacks either, we cannot display it on the chart.
+                    if (!task.start_date || !task.due_date) {
+                        return null;
+                    }
+
+                    let progress = 0;
+                    if (task.status.InProgress) {
+                        progress = task.status.InProgress.progress;
+                    } else if (task.status.Completed) {
+                        progress = 100;
+                    }
+
+                    const isOverdue = new Date(task.due_date) < new Date() && !task.status.Completed;
+
+                    const startDate = task.start_date.substring(0, 10);
+                    const endDate = task.due_date.substring(0, 10);
+
+                    return {
+                        id: String(task.id),
+                        name: task.name,
+                        start: startDate,
+                        end: endDate,
+                        progress: progress,
+                        custom_class: isOverdue ? 'bar-overdue' : ''
+                    };
+                }).filter(task => task); // Filter out null tasks
+            });
+
+            watchEffect(() => {
+                if (ganttContainer.value) { // ensure container is mounted
+                    if (!ganttChart && ganttTasks.value.length > 0) {
+                        // Initialize chart if it doesn't exist and there are tasks
+                        ganttChart = new Gantt(ganttContainer.value, ganttTasks.value, {
+                            view_mode: 'Week',
+                            language: 'en'
+                        });
+                    } else if (ganttChart) {
+                        // Refresh existing chart. This will also clear the chart if ganttTasks is empty.
+                        ganttChart.refresh(ganttTasks.value);
+                    }
+                }
+            });
+
             return {
                 searchQuery,
                 tasks,
                 filteredTasks,
+                ganttContainer,
             };
         },
         delimiters: ['${', '}$'] // Change delimiters to avoid conflict with Tera
@@ -79,6 +117,17 @@ endblock title %} {% block content %}
         border: 1px solid #ddd;
         border-radius: 4px;
         font-size: 1rem;
+    }
+    .gantt-wrapper {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden; /* To contain the rounded corners of the chart */
+    }
+    .gantt .bar-overdue .bar {
+        fill: #e74c3c; /* A distinct red for overdue tasks */
+    }
+    .gantt .bar-overdue .bar-progress {
+        fill: #c0392b;
     }
 </style>
 {% endblock scripts %}

@@ -1,64 +1,42 @@
-{% extends "base.html" %}
-
-{% block title %}Tasks{% endblock title %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Tasks{% endblock title %} {% block
+content %}
 <section id="app" v-cloak>
-    <h2>All Tasks (${ filteredTasks.length }$)</h2>
+    <h2>All Tasks (${ tasks.length }$)</h2>
 
     <div class="list-container">
-        <input
-            type="text"
-            v-model="searchQuery"
-            placeholder="Filter tasks by name or code..."
-            class="task-filter-input"
-        />
         <ul>
-            <li v-for="task in filteredTasks" :key="task.id">
+            <li v-for="task in tasks" :key="task.id">
                 <strong>${ task.name }$ (${ task.code }$)</strong>
-                <span v-if="task.status.InProgress">
+                <span v-if="typeof task.status === 'object'">
                     (In Progress: ${ task.status.InProgress.progress }%)
                 </span>
-                <span v-else-if="task.status.Completed">(Completed)</span>
-                <span v-else-if="task.status.Planned">(Planned)</span>
-                <span v-else-if="task.status.Blocked">(Blocked)</span>
-                <span v-else-if="task.status.Cancelled">(Cancelled)</span>
+                <span v-else-if="task.status === 'Completed'">(Completed)</span>
+                <span v-else-if="task.status === 'Planned'">(Planned)</span>
+                <span v-else-if="task.status === 'Blocked'">(Blocked)</span>
+                <span v-else-if="task.status === 'Cancelled'">(Cancelled)</span>
                 - Due: ${ task.due_date }$
-                <div v-if="task.assigned_resources.length > 0" class="assignees">
+                <div
+                    v-if="task.assigned_resources.length > 0"
+                    class="assignees"
+                >
                     Assignees: ${ task.assigned_resources.join(', ') }$
                 </div>
             </li>
         </ul>
-        <p v-if="filteredTasks.length === 0">No tasks match your filter.</p>
+        <p v-if="tasks.length === 0">No tasks have been created yet.</p>
     </div>
 </section>
-{% endblock content %}
-
-{% block scripts %}
+{% endblock content %} {% block scripts %}
 <script>
-    const { createApp, ref, computed } = Vue;
+    const { createApp, ref } = Vue;
 
     createApp({
         setup() {
-            const searchQuery = ref('');
             // Use Tera to safely inject the tasks data as a JSON object
             const tasks = ref({{ tasks | json_encode() | safe }});
 
-            const filteredTasks = computed(() => {
-                if (!searchQuery.value) {
-                    return tasks.value;
-                }
-                const lowerCaseQuery = searchQuery.value.toLowerCase();
-                return tasks.value.filter(task =>
-                    task.name.toLowerCase().includes(lowerCaseQuery) ||
-                    task.code.toLowerCase().includes(lowerCaseQuery)
-                );
-            });
-
             return {
-                searchQuery,
                 tasks,
-                filteredTasks,
             };
         },
         delimiters: ['${', '}$'] // Change delimiters to avoid conflict with Tera
@@ -67,15 +45,6 @@
 <style>
     [v-cloak] {
         display: none;
-    }
-    .task-filter-input {
-        width: 100%;
-        padding: 8px 10px;
-        margin-bottom: 20px;
-        box-sizing: border-box;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 1rem;
     }
     .assignees {
         font-size: 0.9em;
