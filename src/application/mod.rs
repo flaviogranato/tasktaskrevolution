@@ -1,3 +1,4 @@
+pub mod assign_resource_to_task_use_case;
 pub mod build_use_case;
 pub mod create_project_use_case;
 pub mod create_resource_use_case;
