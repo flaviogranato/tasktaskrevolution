@@ -1,4 +1,4 @@
-pub mod config;
+pub(crate) mod config;
 pub mod repository;
 
 pub use config::Config;

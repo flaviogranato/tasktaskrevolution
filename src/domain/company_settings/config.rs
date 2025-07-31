@@ -1,4 +1,4 @@
-use std::fmt::Display;
+pub(crate) use std::fmt::Display;
 
 #[derive(Debug)]
 pub struct Config {

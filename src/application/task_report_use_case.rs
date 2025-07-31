@@ -1,4 +1,4 @@
-use crate::domain::task_management::{repository::TaskRepository, task::TaskStatus};
+use crate::domain::task_management::{AnyTask, repository::TaskRepository};
 use csv::Writer;
 use std::error::Error;
 use std::io;
@@ -30,24 +30,65 @@ impl<T: TaskRepository> TaskReportUseCase<T> {
         let tasks = self.task_repository.find_all()?;
 
         // Iterar sobre as tarefas e escrever os registros
-        for task in tasks {
-            let (status_str, progress_str) = match task.status {
-                TaskStatus::Planned => ("Planned", "0".to_string()),
-                TaskStatus::InProgress { progress } => ("InProgress", progress.to_string()),
-                TaskStatus::Completed => ("Completed", "100".to_string()),
-                TaskStatus::Blocked { .. } => ("Blocked", "N/A".to_string()),
-                TaskStatus::Cancelled => ("Cancelled", "N/A".to_string()),
+        for any_task in tasks {
+            // Extrair dados comuns e específicos do estado de cada tarefa
+            let (code, name, start_date, due_date, assigned_resources, status_str, progress_str) = match any_task {
+                AnyTask::Planned(task) => (
+                    task.code,
+                    task.name,
+                    task.start_date,
+                    task.due_date,
+                    task.assigned_resources,
+                    "Planned",
+                    "0".to_string(),
+                ),
+                AnyTask::InProgress(task) => (
+                    task.code,
+                    task.name,
+                    task.start_date,
+                    task.due_date,
+                    task.assigned_resources,
+                    "InProgress",
+                    task.state.progress.to_string(),
+                ),
+                AnyTask::Completed(task) => (
+                    task.code,
+                    task.name,
+                    task.start_date,
+                    task.due_date,
+                    task.assigned_resources,
+                    "Completed",
+                    "100".to_string(),
+                ),
+                AnyTask::Blocked(task) => (
+                    task.code,
+                    task.name,
+                    task.start_date,
+                    task.due_date,
+                    task.assigned_resources,
+                    "Blocked",
+                    "N/A".to_string(),
+                ),
+                AnyTask::Cancelled(task) => (
+                    task.code,
+                    task.name,
+                    task.start_date,
+                    task.due_date,
+                    task.assigned_resources,
+                    "Cancelled",
+                    "N/A".to_string(),
+                ),
             };
 
-            let assignees_str = task.assigned_resources.join(", ");
+            let assignees_str = assigned_resources.join(", ");
 
             writer.write_record([
-                &task.code,
-                &task.name,
+                &code,
+                &name,
                 status_str,
                 &progress_str,
-                &task.start_date.to_string(),
-                &task.due_date.to_string(),
+                &start_date.to_string(),
+                &due_date.to_string(),
                 &assignees_str,
             ])?;
         }
@@ -64,46 +105,45 @@ impl<T: TaskRepository> TaskReportUseCase<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::errors::DomainError;
-    use crate::domain::task_management::{repository::TaskRepository, task::Task};
+    use crate::domain::{
+        shared::errors::DomainError,
+        task_management::{
+            AnyTask, Task,
+            state::{Completed, InProgress},
+        },
+    };
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::path::Path;
 
     // --- Mock ---
     struct MockTaskRepository {
-        tasks: RefCell<Vec<Task>>,
+        tasks: RefCell<Vec<AnyTask>>,
     }
 
     impl TaskRepository for MockTaskRepository {
-        fn save(&self, _task: Task) -> Result<(), DomainError> {
+        fn save(&self, _task: AnyTask) -> Result<(), DomainError> {
             unimplemented!()
         }
-        fn load(&self, _path: &Path) -> Result<Task, DomainError> {
+        fn load(&self, _path: &Path) -> Result<AnyTask, DomainError> {
             unimplemented!()
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<Task>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyTask>, DomainError> {
             unimplemented!()
         }
-        fn find_by_id(&self, _id: &str) -> Result<Option<Task>, DomainError> {
+        fn find_by_id(&self, _id: &str) -> Result<Option<AnyTask>, DomainError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<Task>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
             Ok(self.tasks.borrow().clone())
         }
         fn delete(&self, _id: &str) -> Result<(), DomainError> {
             unimplemented!()
         }
-        fn update_status(&self, _code: &str, _new_status: TaskStatus) -> Result<Task, DomainError> {
+        fn find_by_assignee(&self, _assignee: &str) -> Result<Vec<AnyTask>, DomainError> {
             unimplemented!()
         }
-        fn find_by_assignee(&self, _assignee: &str) -> Result<Vec<Task>, DomainError> {
-            unimplemented!()
-        }
-        fn find_by_status(&self, _status: &TaskStatus) -> Result<Vec<Task>, DomainError> {
-            unimplemented!()
-        }
-        fn find_by_date_range(&self, _start: NaiveDate, _end: NaiveDate) -> Result<Vec<Task>, DomainError> {
+        fn find_by_date_range(&self, _start: NaiveDate, _end: NaiveDate) -> Result<Vec<AnyTask>, DomainError> {
             unimplemented!()
         }
     }
@@ -112,25 +152,25 @@ mod tests {
     #[test]
     fn test_task_report_generation() {
         // 1. Setup: Criar dados de teste
-        let task1 = Task {
+        let task1: Task<InProgress> = Task {
             id: "TASK-001".to_string(),
             project_code: "PROJ".to_string(),
             code: "TSK-001".to_string(),
             name: "Implement Login".to_string(),
             description: None,
-            status: TaskStatus::InProgress { progress: 50 },
+            state: InProgress { progress: 50 },
             start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(),
             actual_end_date: None,
             assigned_resources: vec!["Alice".to_string()],
         };
-        let task2 = Task {
+        let task2: Task<Completed> = Task {
             id: "TASK-002".to_string(),
             project_code: "PROJ".to_string(),
             code: "TSK-002".to_string(),
             name: "Setup Database".to_string(),
             description: None,
-            status: TaskStatus::Completed,
+            state: Completed,
             start_date: NaiveDate::from_ymd_opt(2025, 1, 2).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(),
             actual_end_date: None,
@@ -138,7 +178,7 @@ mod tests {
         };
 
         let mock_repo = MockTaskRepository {
-            tasks: RefCell::new(vec![task1, task2]),
+            tasks: RefCell::new(vec![task1.into(), task2.into()]),
         };
         let use_case = TaskReportUseCase::new(mock_repo);
 

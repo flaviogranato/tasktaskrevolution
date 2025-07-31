@@ -19,7 +19,7 @@ use tera::{Context, Tera};
 #[derive(Serialize)]
 struct SiteContext {
     project: crate::domain::project_management::project::Project,
-    tasks: Vec<crate::domain::task_management::task::Task>,
+    tasks: Vec<crate::domain::task_management::AnyTask>,
     resources: Vec<crate::domain::resource_management::resource::Resource>,
 }
 
@@ -62,12 +62,12 @@ impl BuildUseCase {
         }
 
         // 3. Find root path and instantiate repositories.
-        let config_repo = FileConfigRepository::with_base_path(self.base_path.clone());
+        let config_repo = FileConfigRepository::new();
         let (config, root_path) = config_repo.load()?;
 
-        let project_repo = FileProjectRepository::with_base_path(root_path.clone());
-        let resource_repo = FileResourceRepository::with_base_path(root_path.clone());
-        let task_repo = FileTaskRepository::with_base_path(root_path);
+        let project_repo = FileProjectRepository::new();
+        let resource_repo = FileResourceRepository::new();
+        let task_repo = FileTaskRepository::new(root_path);
 
         // 4. Load all necessary data from the repositories.
         let mut project = project_repo.load()?;
