@@ -1,6 +1,5 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository,
+    project_management::repository::ProjectRepository, resource_management::repository::ResourceRepository,
 };
 use csv::Writer;
 use std::error::Error;
@@ -47,7 +46,7 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
                 for period in periods {
                     writer.write_record([
                         resource.name(),
-                        &project.name,
+                        project.name(),
                         &period.start_date.to_rfc3339(),
                         &period.end_date.to_rfc3339(),
                         &period.is_layoff.to_string(),
@@ -71,10 +70,7 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
 mod tests {
     use super::*;
     use crate::domain::{
-        project_management::{
-            builder::ProjectBuilder,
-            project::{Project, ProjectStatus},
-        },
+        project_management::{AnyProject, builder::ProjectBuilder},
         resource_management::{
             AnyResource,
             resource::{Period, PeriodType, Resource},
@@ -87,13 +83,13 @@ mod tests {
     // --- Mocks ---
 
     struct MockProjectRepository {
-        project: Project,
+        project: AnyProject,
     }
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: Project) -> Result<(), DomainError> {
+        fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
             unimplemented!()
         }
-        fn load(&self) -> Result<Project, DomainError> {
+        fn load(&self) -> Result<AnyProject, DomainError> {
             Ok(self.project.clone())
         }
     }
@@ -137,9 +133,7 @@ mod tests {
     #[test]
     fn test_vacation_report_generation() {
         // 1. Setup: Criar dados de teste
-        let project = ProjectBuilder::new("ProjetoTTR".to_string())
-            .status(ProjectStatus::InProgress)
-            .build();
+        let project: AnyProject = ProjectBuilder::new("ProjetoTTR".to_string()).build().start().into();
 
         let mut resource1 = Resource::<Available>::new(None, "Alice".to_string(), None, "Dev".to_string(), None, 0);
         resource1.vacations = Some(vec![Period {

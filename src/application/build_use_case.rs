@@ -1,6 +1,6 @@
 use crate::domain::{
     company_settings::repository::ConfigRepository,
-    project_management::repository::ProjectRepository,
+    project_management::{AnyProject, repository::ProjectRepository},
     resource_management::{AnyResource, repository::ResourceRepository},
     task_management::repository::TaskRepository,
 };
@@ -20,7 +20,7 @@ use tera::{Context, Tera};
 /// It needs to derive `Serialize` for Tera to be able to use it.
 #[derive(Serialize)]
 struct SiteContext {
-    project: crate::domain::project_management::project::Project,
+    project: crate::domain::project_management::AnyProject,
     tasks: Vec<crate::domain::task_management::AnyTask>,
     resources: Vec<AnyResource>,
 }
@@ -72,15 +72,34 @@ impl BuildUseCase {
         let task_repo = FileTaskRepository::new(root_path);
 
         // 4. Load all necessary data from the repositories.
-        let mut project = project_repo.load()?;
+        let project = project_repo.load()?;
         let tasks = task_repo.find_all()?;
         let resources = resource_repo.find_all()?;
         println!("[DEBUG] Found {} resources.", resources.len());
 
         // 5. Inherit timezone from config if not set in project.
-        if project.timezone.is_none() {
-            project.timezone = Some(config.default_timezone);
-        }
+        let project = if project.timezone().is_none() {
+            match project {
+                AnyProject::Planned(mut p) => {
+                    p.timezone = Some(config.default_timezone);
+                    AnyProject::Planned(p)
+                }
+                AnyProject::InProgress(mut p) => {
+                    p.timezone = Some(config.default_timezone);
+                    AnyProject::InProgress(p)
+                }
+                AnyProject::Completed(mut p) => {
+                    p.timezone = Some(config.default_timezone);
+                    AnyProject::Completed(p)
+                }
+                AnyProject::Cancelled(mut p) => {
+                    p.timezone = Some(config.default_timezone);
+                    AnyProject::Cancelled(p)
+                }
+            }
+        } else {
+            project
+        };
 
         // 6. Create the context for Tera.
         let site_data = SiteContext {

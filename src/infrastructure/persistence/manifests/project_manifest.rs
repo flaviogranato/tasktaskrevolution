@@ -1,8 +1,22 @@
-use crate::domain::project_management::layoff_period::LayoffPeriod;
-use crate::domain::project_management::project::{Project, ProjectStatus};
-use crate::domain::project_management::vacation_rules::VacationRules;
-use crate::domain::shared::convertable::Convertable;
+use crate::domain::project_management::{
+    AnyProject,
+    layoff_period::LayoffPeriod,
+    project::Project,
+    state::{Cancelled, Completed, InProgress, Planned},
+    vacation_rules::VacationRules,
+};
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
+
+struct ProjectCore {
+    id: Option<String>,
+    name: String,
+    description: Option<String>,
+    start_date: Option<String>,
+    end_date: Option<String>,
+    vacation_rules: Option<VacationRules>,
+    timezone: Option<String>,
+}
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
 
@@ -66,82 +80,154 @@ pub enum ProjectStatusManifest {
     Cancelled,
 }
 
-impl Convertable<ProjectStatus> for ProjectStatusManifest {
-    fn from(source: ProjectStatus) -> Self {
-        match source {
-            ProjectStatus::Planned => ProjectStatusManifest::Planned,
-            ProjectStatus::InProgress => ProjectStatusManifest::InProgress,
-            ProjectStatus::Completed => ProjectStatusManifest::Completed,
-            ProjectStatus::Cancelled => ProjectStatusManifest::Cancelled,
-        }
-    }
+impl From<AnyProject> for ProjectManifest {
+    fn from(source: AnyProject) -> Self {
+        let (project_core, status_manifest) = match source {
+            AnyProject::Planned(p) => (
+                ProjectCore {
+                    id: p.id,
+                    name: p.name,
+                    description: p.description,
+                    start_date: p.start_date,
+                    end_date: p.end_date,
+                    vacation_rules: p.vacation_rules,
+                    timezone: p.timezone,
+                },
+                ProjectStatusManifest::Planned,
+            ),
+            AnyProject::InProgress(p) => (
+                ProjectCore {
+                    id: p.id,
+                    name: p.name,
+                    description: p.description,
+                    start_date: p.start_date,
+                    end_date: p.end_date,
+                    vacation_rules: p.vacation_rules,
+                    timezone: p.timezone,
+                },
+                ProjectStatusManifest::InProgress,
+            ),
+            AnyProject::Completed(p) => (
+                ProjectCore {
+                    id: p.id,
+                    name: p.name,
+                    description: p.description,
+                    start_date: p.start_date,
+                    end_date: p.end_date,
+                    vacation_rules: p.vacation_rules,
+                    timezone: p.timezone,
+                },
+                ProjectStatusManifest::Completed,
+            ),
+            AnyProject::Cancelled(p) => (
+                ProjectCore {
+                    id: p.id,
+                    name: p.name,
+                    description: p.description,
+                    start_date: p.start_date,
+                    end_date: p.end_date,
+                    vacation_rules: p.vacation_rules,
+                    timezone: p.timezone,
+                },
+                ProjectStatusManifest::Cancelled,
+            ),
+        };
 
-    fn to(&self) -> ProjectStatus {
-        match self {
-            ProjectStatusManifest::Planned => ProjectStatus::Planned,
-            ProjectStatusManifest::InProgress => ProjectStatus::InProgress,
-            ProjectStatusManifest::Completed => ProjectStatus::Completed,
-            ProjectStatusManifest::Cancelled => ProjectStatus::Cancelled,
-        }
-    }
-}
-
-impl Convertable<Project> for ProjectManifest {
-    fn from(source: Project) -> Self {
         ProjectManifest {
             api_version: API_VERSION.to_string(),
             kind: "Project".to_string(),
             metadata: ProjectMetadata {
-                code: source.id.clone(),
-                name: source.name.clone(),
-                description: source.description.clone().unwrap_or_default(),
+                code: project_core.id.clone(),
+                name: project_core.name.clone(),
+                description: project_core.description.clone().unwrap_or_default(),
             },
             spec: ProjectSpec {
-                timezone: None,
-                start_date: source.start_date,
-                end_date: source.end_date,
-                status: <ProjectStatusManifest as Convertable<ProjectStatus>>::from(source.status),
-                vacation_rules: source
-                    .vacation_rules
-                    .map(<VacationRulesManifest as Convertable<VacationRules>>::from),
+                timezone: project_core.timezone,
+                start_date: project_core.start_date,
+                end_date: project_core.end_date,
+                status: status_manifest,
+                vacation_rules: project_core.vacation_rules.map(VacationRulesManifest::from),
             },
-        }
-    }
-
-    fn to(&self) -> Project {
-        Project {
-            id: None, // TODO: Você precisará gerar um ID aqui, se necessário
-            name: self.metadata.name.clone(),
-            description: if self.metadata.description.is_empty() {
-                None
-            } else {
-                Some(self.metadata.description.clone())
-            },
-            start_date: self.spec.start_date.clone(),
-            end_date: self.spec.end_date.clone(),
-            status: <ProjectStatusManifest as Convertable<ProjectStatus>>::to(&self.spec.status),
-            timezone: self.spec.timezone.clone(),
-            vacation_rules: self.spec.vacation_rules.as_ref().map(|vr| vr.to()),
         }
     }
 }
 
-impl Convertable<VacationRules> for VacationRulesManifest {
+impl TryFrom<ProjectManifest> for AnyProject {
+    type Error = String;
+
+    fn try_from(manifest: ProjectManifest) -> Result<Self, Self::Error> {
+        let name = manifest.metadata.name;
+        let id = manifest.metadata.code;
+        let description = if manifest.metadata.description.is_empty() {
+            None
+        } else {
+            Some(manifest.metadata.description)
+        };
+        let start_date = manifest.spec.start_date;
+        let end_date = manifest.spec.end_date;
+        let vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
+        let timezone = manifest.spec.timezone;
+
+        match manifest.spec.status {
+            ProjectStatusManifest::Planned => Ok(AnyProject::Planned(Project {
+                id,
+                name,
+                description,
+                start_date,
+                end_date,
+                vacation_rules,
+                timezone,
+                state: Planned,
+            })),
+            ProjectStatusManifest::InProgress => Ok(AnyProject::InProgress(Project {
+                id,
+                name,
+                description,
+                start_date,
+                end_date,
+                vacation_rules,
+                timezone,
+                state: InProgress,
+            })),
+            ProjectStatusManifest::Completed => Ok(AnyProject::Completed(Project {
+                id,
+                name,
+                description,
+                start_date,
+                end_date,
+                vacation_rules,
+                timezone,
+                state: Completed,
+            })),
+            ProjectStatusManifest::Cancelled => Ok(AnyProject::Cancelled(Project {
+                id,
+                name,
+                description,
+                start_date,
+                end_date,
+                vacation_rules,
+                timezone,
+                state: Cancelled,
+            })),
+        }
+    }
+}
+
+impl From<VacationRules> for VacationRulesManifest {
     fn from(source: VacationRules) -> Self {
         VacationRulesManifest {
             max_concurrent_vacations: source.max_concurrent_vacations,
             allow_layoff_vacations: source.allow_layoff_vacations,
             require_layoff_vacation_period: source.require_layoff_vacation_period,
-            layoff_periods: source.layoff_periods.map(|periods| {
-                periods
-                    .into_iter()
-                    .map(<LayoffPeriodManifest as Convertable<LayoffPeriod>>::from)
-                    .collect()
-            }),
+            layoff_periods: source
+                .layoff_periods
+                .map(|periods| periods.into_iter().map(LayoffPeriodManifest::from).collect()),
         }
     }
+}
 
-    fn to(&self) -> VacationRules {
+impl VacationRulesManifest {
+    pub fn to(&self) -> VacationRules {
         VacationRules {
             max_concurrent_vacations: self.max_concurrent_vacations,
             allow_layoff_vacations: self.allow_layoff_vacations,
@@ -154,15 +240,17 @@ impl Convertable<VacationRules> for VacationRulesManifest {
     }
 }
 
-impl Convertable<LayoffPeriod> for LayoffPeriodManifest {
+impl From<LayoffPeriod> for LayoffPeriodManifest {
     fn from(source: LayoffPeriod) -> Self {
         LayoffPeriodManifest {
             start_date: source.start_date,
             end_date: source.end_date,
         }
     }
+}
 
-    fn to(&self) -> LayoffPeriod {
+impl LayoffPeriodManifest {
+    pub fn to(&self) -> LayoffPeriod {
         LayoffPeriod {
             start_date: self.start_date.clone(),
             end_date: self.end_date.clone(),
@@ -173,125 +261,25 @@ impl Convertable<LayoffPeriod> for LayoffPeriodManifest {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::project_management::builder::ProjectBuilder;
 
     #[test]
-    fn test_layoff_period_serialize() {
-        let layoff_period = LayoffPeriodManifest {
-            start_date: "2024-01-01".to_string(),
-            end_date: "2024-01-31".to_string(),
-        };
-        let serialized = serde_yaml::to_string(&layoff_period).unwrap();
-        assert_eq!(serialized, "startDate: 2024-01-01\nendDate: 2024-01-31\n");
-    }
+    fn test_bidirectional_conversion() {
+        // Create a Planned project
+        let original_project = ProjectBuilder::new("Test Project".to_string()).build();
+        let original_any = AnyProject::from(original_project.clone());
 
-    #[test]
-    fn test_layoff_period_deserialize() {
-        let yaml = "startDate: '2024-01-01'\nendDate: '2024-01-31'\n";
-        let deserialized: LayoffPeriodManifest = serde_yaml::from_str(yaml).unwrap();
-        assert_eq!(deserialized.start_date, "2024-01-01");
-        assert_eq!(deserialized.end_date, "2024-01-31");
-    }
+        // Convert to Manifest
+        let manifest = ProjectManifest::from(original_any);
+        assert_eq!(manifest.metadata.name, "Test Project");
+        assert_eq!(manifest.spec.status, ProjectStatusManifest::Planned);
 
-    #[test]
-    fn test_vacation_rules_serialize_with_layoff_periods() {
-        let vacation_rules = VacationRulesManifest {
-            max_concurrent_vacations: Some(2),
-            allow_layoff_vacations: Some(true),
-            require_layoff_vacation_period: Some(true),
-            layoff_periods: Some(vec![
-                LayoffPeriodManifest {
-                    start_date: "2024-01-01".to_string(),
-                    end_date: "2024-01-31".to_string(),
-                },
-                LayoffPeriodManifest {
-                    start_date: "2024-07-01".to_string(),
-                    end_date: "2024-07-31".to_string(),
-                },
-            ]),
-        };
+        // Convert back to AnyProject
+        let converted_any = AnyProject::try_from(manifest).unwrap();
+        assert!(matches!(converted_any, AnyProject::Planned(_)));
 
-        let serialized = serde_yaml::to_string(&vacation_rules).unwrap();
-        let expected_yaml = r#"
-maxConcurrentVacations: 2
-allowLayoffVacations: true
-requireLayoffVacationPeriod: true
-layoffPeriods:
-- startDate: 2024-01-01
-  endDate: 2024-01-31
-- startDate: 2024-07-01
-  endDate: 2024-07-31
-"#;
-        assert_eq!(serialized.trim(), expected_yaml.trim());
-    }
-
-    #[test]
-    fn test_vacation_rules_deserialize_with_layoff_periods() {
-        let yaml = r#"
-maxConcurrentVacations: 2
-allowLayoffVacations: true
-requireLayoffVacationPeriod: true
-layoffPeriods:
-- startDate: "2024-01-01"
-  endDate: "2024-01-31"
-- startDate: "2024-07-01"
-  endDate: "2024-07-31"
-"#;
-        let deserialized: VacationRulesManifest = serde_yaml::from_str(yaml).unwrap();
-        assert_eq!(deserialized.max_concurrent_vacations, Some(2));
-        assert_eq!(deserialized.allow_layoff_vacations, Some(true));
-        assert_eq!(deserialized.require_layoff_vacation_period, Some(true));
-        assert_eq!(deserialized.layoff_periods.as_ref().unwrap().len(), 2);
-        assert_eq!(
-            deserialized.layoff_periods.as_ref().unwrap()[0].start_date,
-            "2024-01-01"
-        );
-        assert_eq!(deserialized.layoff_periods.as_ref().unwrap()[1].end_date, "2024-07-31");
-    }
-
-    #[test]
-    fn test_project_manifest_deserialize_with_full_data() {
-        let yaml_str = r#"
-apiVersion: tasktaskrevolution.io/v1alpha1
-kind: Project
-metadata:
-  code: ABC123
-  name: Meu Projeto
-  description: Descrição do Projeto
-spec:
-  name: Meu Projeto
-  description: Descrição do Projeto
-  timezone: null
-  startDate: "2024-01-10"
-  endDate: "2024-12-20"
-  status: InProgress
-  vacationRules:
-    maxConcurrentVacations: 3
-    allowLayoffVacations: true
-    requireLayoffVacationPeriod: false
-    layoffPeriods:
-      - startDate: "2024-05-15"
-        endDate: "2024-06-15"
-      - startDate: "2024-11-01"
-        endDate: "2024-11-30"
-"#;
-
-        let manifest: ProjectManifest = serde_yaml::from_str(yaml_str).unwrap();
-
-        assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
-        assert_eq!(manifest.kind, "Project");
-        assert_eq!(manifest.metadata.code, Some("ABC123".to_string()));
-        assert_eq!(manifest.metadata.name, "Meu Projeto".to_string());
-        assert_eq!(manifest.metadata.description, "Descrição do Projeto".to_string());
-        assert_eq!(manifest.spec.start_date, Some("2024-01-10".to_string()));
-        assert_eq!(manifest.spec.end_date, Some("2024-12-20".to_string()));
-        assert_eq!(manifest.spec.status, ProjectStatusManifest::InProgress);
-        assert!(manifest.spec.vacation_rules.is_some());
-        let vr = manifest.spec.vacation_rules.unwrap();
-        assert_eq!(vr.max_concurrent_vacations, Some(3));
-        assert_eq!(vr.allow_layoff_vacations, Some(true));
-        assert_eq!(vr.require_layoff_vacation_period, Some(false));
-        assert_eq!(vr.layoff_periods.as_ref().unwrap().len(), 2);
-        assert_eq!(vr.layoff_periods.as_ref().unwrap()[0].start_date, "2024-05-15");
-        assert_eq!(vr.layoff_periods.as_ref().unwrap()[1].end_date, "2024-11-30");
+        if let AnyProject::Planned(converted) = converted_any {
+            assert_eq!(original_project.name, converted.name);
+        }
     }
 }

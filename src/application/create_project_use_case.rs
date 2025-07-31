@@ -15,11 +15,12 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
     pub fn execute(&self, name: String, description: Option<String>) -> Result<(), DomainError> {
         let project = ProjectBuilder::new(name.clone()).description(description).build();
 
-        self.repository.save(project)?;
+        self.repository.save(project.into())?;
         println!("Projeto {name} criado");
         Ok(())
     }
 
+    #[allow(dead_code)]
     #[cfg(test)]
     pub fn get_repository(&self) -> &R {
         &self.repository
@@ -29,14 +30,14 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::project_management::project::Project;
+    use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use crate::domain::shared::errors::DomainError;
     use std::cell::RefCell;
 
     struct MockProjectRepository {
         should_fail: bool,
-        saved_config: RefCell<Option<Project>>,
-        project: Project,
+        saved_config: RefCell<Option<AnyProject>>,
+        project: AnyProject,
     }
 
     impl MockProjectRepository {
@@ -46,13 +47,14 @@ mod test {
                 saved_config: RefCell::new(None),
                 project: ProjectBuilder::new("John".to_string())
                     .description(Some("a simple test project".to_string()))
-                    .build(),
+                    .build()
+                    .into(),
             }
         }
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: Project) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
             if self.should_fail {
                 return Err(DomainError::Generic("Erro mockado ao salvar".to_string()));
             }
@@ -60,7 +62,7 @@ mod test {
             Ok(())
         }
 
-        fn load(&self) -> Result<Project, DomainError> {
+        fn load(&self) -> Result<AnyProject, DomainError> {
             Ok(self.project.clone())
         }
     }
@@ -95,9 +97,14 @@ mod test {
         let description = Some("a simple test project".to_string());
         let _ = use_case.execute(name.clone(), description.clone());
 
-        let saved_config = use_case.get_repository().saved_config.borrow();
+        let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
-        assert_eq!(saved_config.as_ref().unwrap().name, name);
-        assert_eq!(saved_config.as_ref().unwrap().description, description);
+        let any_project = saved_config.as_ref().unwrap();
+        assert_eq!(any_project.name(), name);
+        if let AnyProject::Planned(p) = any_project {
+            assert_eq!(p.description, description);
+        } else {
+            panic!("Expected Planned project");
+        }
     }
 }

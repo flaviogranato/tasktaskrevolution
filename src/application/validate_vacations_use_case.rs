@@ -90,7 +90,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
                 }
 
                 // Verificar se há férias durante o período de layoff quando necessário
-                if let Some(vacation_rules) = &project.vacation_rules {
+                if let Some(vacation_rules) = project.vacation_rules() {
                     if !self.has_valid_layoff_vacation(vacations1, vacation_rules) {
                         mensagens.push(format!(
                             "⚠️ {} não possui férias durante nenhum período de layoff",
@@ -131,19 +131,18 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: crate::domain::project_management::project::Project) -> Result<(), DomainError> {
+        fn save(&self, _project: crate::domain::project_management::AnyProject) -> Result<(), DomainError> {
             Ok(())
         }
 
-        fn load(&self) -> Result<crate::domain::project_management::project::Project, DomainError> {
-            let mut builder = ProjectBuilder::new("Test Project".to_string())
-                .status(crate::domain::project_management::project::ProjectStatus::InProgress);
+        fn load(&self) -> Result<crate::domain::project_management::AnyProject, DomainError> {
+            let mut builder = ProjectBuilder::new("Test Project".to_string());
 
             if let Some(rules) = self.vacation_rules.clone() {
                 builder = builder.vacation_rules(rules);
             }
 
-            Ok(builder.build())
+            Ok(builder.build().start().into())
         }
     }
 
