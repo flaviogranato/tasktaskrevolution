@@ -1,6 +1,6 @@
 use crate::domain::{
-    project_management::{project::Project, repository::ProjectRepository},
-    shared::{convertable::Convertable, errors::DomainError},
+    project_management::{AnyProject, repository::ProjectRepository},
+    shared::errors::DomainError,
 };
 use crate::infrastructure::persistence::manifests::project_manifest::ProjectManifest;
 use globwalk::glob;
@@ -42,40 +42,39 @@ impl FileProjectRepository {
 impl ProjectRepository for FileProjectRepository {
     /// Salva um projeto.
     /// Cria um diretório com o nome do projeto e salva um arquivo `project.yaml` dentro dele.
-    fn save(&self, project: Project) -> Result<(), DomainError> {
-        let project_dir = self.base_path.join(&project.name);
+    fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        let project_dir = self.base_path.join(project.name());
 
         fs::create_dir_all(&project_dir)
-            .map_err(|e| DomainError::Generic(format!("Erro ao criar diretório do projeto: {e}")))?;
+            .map_err(|e| DomainError::Io(format!("Error creating project directory: {e}")))?;
 
         let manifest_path = project_dir.join("project.yaml");
-        let project_manifest = <ProjectManifest as Convertable<Project>>::from(project);
+        let project_manifest = ProjectManifest::from(project);
         let yaml = serde_yaml::to_string(&project_manifest)
-            .map_err(|e| DomainError::Generic(format!("Erro ao serializar projeto: {e}")))?;
+            .map_err(|e| DomainError::Serialization(format!("Error serializing project: {e}")))?;
 
-        fs::write(&manifest_path, yaml)
-            .map_err(|e| DomainError::Generic(format!("Erro ao salvar arquivo do projeto: {e}")))?;
+        fs::write(&manifest_path, yaml).map_err(|e| DomainError::Io(format!("Error saving project file: {e}")))?;
 
         Ok(())
     }
 
     /// Carrega um projeto.
     /// `path` deve ser o caminho para o diretório do projeto.
-    fn load(&self) -> Result<Project, DomainError> {
+    fn load(&self) -> Result<AnyProject, DomainError> {
         let pattern = self.base_path.join("**/project.yaml");
         let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
 
         if let Some(Ok(entry)) = walker.into_iter().next() {
             let manifest_path = entry.path();
             match self.load_manifest(manifest_path) {
-                Ok(manifest) => Ok(manifest.to()),
+                Ok(manifest) => AnyProject::try_from(manifest).map_err(DomainError::Serialization),
                 Err(e) => Err(DomainError::Generic(format!(
-                    "Falha ao carregar ou deserializar o arquivo do projeto: {e}"
+                    "Failed to load or deserialize the project file: {e}"
                 ))),
             }
         } else {
-            Err(DomainError::Generic(
-                "Nenhum arquivo 'project.yaml' encontrado nos subdiretórios.".to_string(),
+            Err(DomainError::NotFound(
+                "No 'project.yaml' file found in subdirectories.".to_string(),
             ))
         }
     }
@@ -89,70 +88,69 @@ impl ProjectRepository for FileProjectRepository {
 mod tests {
     use super::*;
     use crate::domain::project_management::builder::ProjectBuilder;
-    use crate::domain::project_management::project::ProjectStatus;
     use tempfile::tempdir;
 
-    /// Cria um projeto de teste simples.
-    fn create_test_project(name: &str) -> Project {
-        ProjectBuilder::new(name.to_string())
+    /// Creates a simple test project.
+    fn create_test_project(name: &str) -> AnyProject {
+        let project = ProjectBuilder::new(name.to_string())
             .id(format!("id-{name}"))
-            .description(Some(format!("Descrição para {name}")))
+            .description(Some(format!("Description for {name}")))
             .start_date("2025-01-01".to_string())
             .end_date("2025-12-31".to_string())
-            .status(ProjectStatus::Planned)
-            .build()
+            .build();
+        project.into()
     }
 
     #[test]
     fn test_save_and_load_project() {
         // 1. Setup
-        let temp_dir = tempdir().expect("Não foi possível criar diretório temporário");
+        let temp_dir = tempdir().expect("Could not create temporary directory");
         let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
-        let original_project = create_test_project("MeuProjetoDeTeste");
-        let project_name = original_project.name.clone();
+        let original_project = create_test_project("MyTestProject");
+        let project_name = original_project.name().to_string();
 
-        // 2. Salvar o projeto
+        // 2. Save the project
         let save_result = repo.save(original_project.clone());
         assert!(save_result.is_ok());
 
-        // 3. Verificar se a estrutura de arquivos foi criada corretamente
+        // 3. Check if the file structure was created correctly
         let project_dir_path = temp_dir.path().join(&project_name);
-        assert!(project_dir_path.exists(), "O diretório do projeto deve existir");
+        assert!(project_dir_path.exists(), "Project directory should exist");
         assert!(project_dir_path.is_dir());
 
         let manifest_path = project_dir_path.join("project.yaml");
-        assert!(manifest_path.exists(), "O arquivo project.yaml deve existir");
+        assert!(manifest_path.exists(), "project.yaml file should exist");
         assert!(manifest_path.is_file());
 
-        // 4. Carregar o projeto de volta
-        // A função `load` espera o nome do diretório do projeto (relativo ao base_path)
-        let loaded_project = repo.load().expect("O carregamento do projeto não deve falhar");
+        // 4. Load the project back
+        let loaded_project = repo.load().expect("Loading the project should not fail");
 
-        // 5. Verificar se os dados são consistentes
-        // A conversão para/de manifesto pode alterar alguns campos (como o ID, que pode não ser salvo),
-        // então comparamos os campos importantes.
-        assert_eq!(original_project.name, loaded_project.name);
-        assert_eq!(original_project.description, loaded_project.description);
-        assert_eq!(original_project.status, loaded_project.status);
-        assert_eq!(original_project.start_date, loaded_project.start_date);
-        assert_eq!(original_project.end_date, loaded_project.end_date);
+        // 5. Verify data consistency
+        assert_eq!(original_project.name(), loaded_project.name());
+        assert!(matches!(loaded_project, AnyProject::Planned(_)));
+
+        if let (AnyProject::Planned(original), AnyProject::Planned(loaded)) = (original_project, loaded_project) {
+            assert_eq!(original.description, loaded.description);
+            assert_eq!(original.start_date, loaded.start_date);
+            assert_eq!(original.end_date, loaded.end_date);
+        }
     }
 
     #[test]
     fn test_load_non_existent_project() {
         // 1. Setup
-        let temp_dir = tempdir().expect("Não foi possível criar diretório temporário");
+        let temp_dir = tempdir().expect("Could not create temporary directory");
         let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
 
-        // 2. Tentar carregar
+        // 2. Try to load
         let result = repo.load();
 
-        // 3. Verificar
+        // 3. Verify
         assert!(result.is_err());
-        if let Err(DomainError::Generic(msg)) = result {
-            assert!(msg.contains("Nenhum arquivo 'project.yaml' encontrado nos subdiretórios."));
+        if let Err(DomainError::NotFound(msg)) = result {
+            assert!(msg.contains("No 'project.yaml' file found"));
         } else {
-            panic!("Esperado um DomainError::Generic");
+            panic!("Expected a DomainError::NotFound");
         }
     }
 }

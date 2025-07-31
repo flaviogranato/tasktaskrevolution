@@ -1,10 +1,7 @@
 use crate::{
     domain::{
         project_management::repository::ProjectRepository,
-        resource_management::{
-            AnyResource, Period, PeriodType,
-            repository::ResourceRepository,
-        },
+        resource_management::{AnyResource, Period, PeriodType, repository::ResourceRepository},
         shared::errors::DomainError,
     },
     infrastructure::persistence::{
@@ -184,8 +181,8 @@ impl ResourceRepository for FileResourceRepository {
         let project_repo = FileProjectRepository::new();
 
         if let Ok(project) = project_repo.load() {
-            if let Some(vacation_rules) = project.vacation_rules {
-                if let Some(layoff_periods) = vacation_rules.layoff_periods {
+            if let Some(vacation_rules) = project.vacation_rules() {
+                if let Some(layoff_periods) = &vacation_rules.layoff_periods {
                     for layoff_period in layoff_periods {
                         if let (Ok(layoff_start), Ok(layoff_end)) = (
                             chrono::NaiveDate::parse_from_str(&layoff_period.start_date, "%Y-%m-%d")

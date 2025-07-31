@@ -22,6 +22,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::domain::resource_management::AnyResource;
     use crate::domain::shared::errors::DomainError;
     use chrono::{DateTime, Local};
     use std::cell::RefCell;

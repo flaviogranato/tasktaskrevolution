@@ -69,7 +69,7 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::task_management::state::Planned;
+    use crate::domain::task_management::{AnyTask, state::Planned};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;

@@ -1,7 +1,4 @@
-use crate::domain::project_management::{
-    project::{Project, ProjectStatus},
-    vacation_rules::VacationRules,
-};
+use crate::domain::project_management::{project::Project, state::Planned, vacation_rules::VacationRules};
 
 /// Builder for the `Project` struct.
 ///
@@ -15,7 +12,6 @@ pub struct ProjectBuilder {
     description: Option<String>,
     start_date: Option<String>,
     end_date: Option<String>,
-    status: Option<ProjectStatus>,
     vacation_rules: Option<VacationRules>,
     timezone: Option<String>,
 }
@@ -56,13 +52,6 @@ impl ProjectBuilder {
         self
     }
 
-    /// Sets the status for the project.
-    #[allow(dead_code)]
-    pub fn status(mut self, status: ProjectStatus) -> Self {
-        self.status = Some(status);
-        self
-    }
-
     /// Sets the vacation rules for the project.
     #[allow(dead_code)]
     pub fn vacation_rules(mut self, vacation_rules: VacationRules) -> Self {
@@ -75,16 +64,16 @@ impl ProjectBuilder {
     /// # Panics
     ///
     /// Panics if the name is not set, which should not happen if `new()` is used.
-    pub fn build(self) -> Project {
+    pub fn build(self) -> Project<Planned> {
         Project {
             id: self.id,
             name: self.name.expect("Project name must be set"),
             description: self.description,
             start_date: self.start_date,
             end_date: self.end_date,
-            status: self.status.unwrap_or(ProjectStatus::Planned),
             vacation_rules: self.vacation_rules,
             timezone: self.timezone,
+            state: Planned,
         }
     }
 }

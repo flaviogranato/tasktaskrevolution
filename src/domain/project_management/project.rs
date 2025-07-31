@@ -1,44 +1,86 @@
+use super::state::{Cancelled, Completed, InProgress, Planned, ProjectState};
 use crate::domain::project_management::vacation_rules::VacationRules;
 use serde::Serialize;
 use std::fmt::{Debug, Display};
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct Project {
+pub struct Project<S: ProjectState> {
     pub id: Option<String>,
     pub name: String,
     pub description: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
-    pub status: ProjectStatus,
     pub vacation_rules: Option<VacationRules>,
     pub timezone: Option<String>,
+    pub state: S,
 }
 
-impl Display for Project {
+impl<S: ProjectState> Display for Project<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Project {{ id: {:?}, name: {}, status: {} }}",
-            self.id, self.name, self.status
+            "Project {{ id: {:?}, name: {}, status: {:?} }}",
+            self.id, self.name, self.state
         )
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize)]
-pub enum ProjectStatus {
-    Planned,
-    InProgress,
-    Completed,
-    Cancelled,
+impl Project<Planned> {
+    #[allow(dead_code)]
+    pub fn start(self) -> Project<InProgress> {
+        Project {
+            id: self.id,
+            name: self.name,
+            description: self.description,
+            start_date: self.start_date,
+            end_date: self.end_date,
+            vacation_rules: self.vacation_rules,
+            timezone: self.timezone,
+            state: InProgress,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn cancel(self) -> Project<Cancelled> {
+        Project {
+            id: self.id,
+            name: self.name,
+            description: self.description,
+            start_date: self.start_date,
+            end_date: self.end_date,
+            vacation_rules: self.vacation_rules,
+            timezone: self.timezone,
+            state: Cancelled,
+        }
+    }
 }
 
-impl Display for ProjectStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ProjectStatus::Planned => write!(f, "Planned"),
-            ProjectStatus::InProgress => write!(f, "InProgress"),
-            ProjectStatus::Completed => write!(f, "Completed"),
-            ProjectStatus::Cancelled => write!(f, "Cancelled"),
+impl Project<InProgress> {
+    #[allow(dead_code)]
+    pub fn complete(self) -> Project<Completed> {
+        Project {
+            id: self.id,
+            name: self.name,
+            description: self.description,
+            start_date: self.start_date,
+            end_date: self.end_date,
+            vacation_rules: self.vacation_rules,
+            timezone: self.timezone,
+            state: Completed,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn cancel(self) -> Project<Cancelled> {
+        Project {
+            id: self.id,
+            name: self.name,
+            description: self.description,
+            start_date: self.start_date,
+            end_date: self.end_date,
+            vacation_rules: self.vacation_rules,
+            timezone: self.timezone,
+            state: Cancelled,
         }
     }
 }
@@ -48,14 +90,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_project_status_display() {
-        assert_eq!(ProjectStatus::Planned.to_string(), "Planned");
-        assert_eq!(ProjectStatus::InProgress.to_string(), "InProgress");
-        assert_eq!(ProjectStatus::Completed.to_string(), "Completed");
-        assert_eq!(ProjectStatus::Cancelled.to_string(), "Cancelled");
-    }
-
-    #[test]
     fn test_project_display() {
         let project_with_id = Project {
             id: Some("ID-123".to_string()),
@@ -63,9 +97,9 @@ mod tests {
             description: None,
             start_date: None,
             end_date: None,
-            status: ProjectStatus::Planned,
             vacation_rules: None,
             timezone: None,
+            state: Planned,
         };
         assert_eq!(
             project_with_id.to_string(),
@@ -78,9 +112,9 @@ mod tests {
             description: None,
             start_date: None,
             end_date: None,
-            status: ProjectStatus::Completed,
             vacation_rules: None,
             timezone: None,
+            state: Completed,
         };
         assert_eq!(
             project_without_id.to_string(),

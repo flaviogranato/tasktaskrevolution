@@ -61,7 +61,10 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource_management::resource::Resource;
+    use crate::domain::{
+        resource_management::{AnyResource, resource::Resource, state::Available},
+        shared::errors::DomainError,
+    };
     use std::cell::RefCell;
 
     struct MockResourceRepository {
@@ -138,7 +141,7 @@ mod tests {
     }
 
     fn create_test_available_resource() -> AnyResource {
-        Resource::new(
+        Resource::<Available>::new(
             Some("john-doe".to_string()),
             "John Doe".to_string(),
             None,
