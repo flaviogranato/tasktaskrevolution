@@ -406,7 +406,56 @@ mod convertable_tests {
         assert_eq!(manifest.spec.comments[0].message, "Progresso atual: 50%");
     }
 
-    // ... more tests for other statuses ...
+    #[test]
+    fn test_task_to_manifest_completed_status() {
+        let task = create_basic_task().start().complete();
+        let manifest = TaskManifest::from(AnyTask::Completed(task));
+
+        assert_eq!(manifest.spec.status, Status::Done);
+        assert_eq!(manifest.spec.effort.actual_hours, Some(8.0));
+        assert!(manifest.spec.comments.is_empty());
+    }
+
+    #[test]
+    fn test_task_to_manifest_blocked_status() {
+        let reason = "Dependency issue".to_string();
+        let task = create_basic_task().start().block(reason.clone());
+        let manifest = TaskManifest::from(AnyTask::Blocked(task));
+
+        assert_eq!(manifest.spec.status, Status::Blocked);
+        assert_eq!(manifest.spec.comments.len(), 1);
+        assert_eq!(
+            manifest.spec.comments[0].message,
+            format!("Tarefa bloqueada: {}", reason)
+        );
+    }
+
+    #[test]
+    fn test_task_to_manifest_cancelled_status() {
+        let task = create_basic_task().start().cancel();
+        let manifest = TaskManifest::from(AnyTask::Cancelled(task));
+
+        assert_eq!(manifest.spec.status, Status::Cancelled);
+        assert!(manifest.spec.comments.is_empty());
+    }
+
+    #[test]
+    fn test_task_to_manifest_no_assigned_resources() {
+        let mut task = create_basic_task();
+        task.assigned_resources = vec![];
+        let manifest = TaskManifest::from(AnyTask::Planned(task));
+
+        assert_eq!(manifest.spec.assignee, "unassigned");
+        assert!(manifest.spec.tags.is_empty());
+    }
+
+    #[test]
+    fn test_task_to_manifest_no_description() {
+        let mut task = create_basic_task();
+        task.description = None;
+        let manifest = TaskManifest::from(AnyTask::Planned(task));
+        assert_eq!(manifest.metadata.description, None);
+    }
 
     // --- Conversion Tests: Manifest -> Task ---
 
@@ -435,7 +484,37 @@ mod convertable_tests {
         }
     }
 
-    // ... more tests for other statuses ...
+    #[test]
+    fn test_manifest_to_task_completed_status() {
+        let manifest = create_basic_manifest(Status::Done);
+        let any_task = AnyTask::try_from(manifest).unwrap();
+        assert!(matches!(any_task, AnyTask::Completed(_)));
+    }
+
+    #[test]
+    fn test_manifest_to_task_blocked_status() {
+        let mut manifest = create_basic_manifest(Status::Blocked);
+        let reason = "Waiting for review".to_string();
+        manifest.spec.comments.push(Comment {
+            author: "system".to_string(),
+            message: format!("Tarefa bloqueada: {}", reason),
+            timestamp: test_date(2024, 1, 5),
+        });
+        let any_task = AnyTask::try_from(manifest).unwrap();
+
+        if let AnyTask::Blocked(task) = any_task {
+            assert_eq!(task.state.reason, reason);
+        } else {
+            panic!("Incorrect status, expected Blocked");
+        }
+    }
+
+    #[test]
+    fn test_manifest_to_task_cancelled_status() {
+        let manifest = create_basic_manifest(Status::Cancelled);
+        let any_task = AnyTask::try_from(manifest).unwrap();
+        assert!(matches!(any_task, AnyTask::Cancelled(_)));
+    }
 
     // --- Bidirectional Conversion Tests ---
 
@@ -465,6 +544,45 @@ mod convertable_tests {
             assert_eq!(original_task.state.progress, converted_task.state.progress);
         } else {
             panic!("Incorrect status after conversion");
+        }
+    }
+
+    #[test]
+    fn test_bidirectional_conversion_completed_task() {
+        let original_task = create_basic_task().start().complete();
+        let manifest = TaskManifest::from(AnyTask::Completed(original_task.clone()));
+        let converted_any = AnyTask::try_from(manifest).unwrap();
+
+        assert!(matches!(converted_any, AnyTask::Completed(_)));
+        if let AnyTask::Completed(converted) = converted_any {
+            assert_eq!(original_task.code, converted.code);
+            assert!(converted.actual_end_date.is_some());
+        }
+    }
+
+    #[test]
+    fn test_bidirectional_conversion_blocked_task() {
+        let reason = "Waiting for dependency".to_string();
+        let original_task = create_basic_task().start().block(reason.clone());
+        let manifest = TaskManifest::from(AnyTask::Blocked(original_task.clone()));
+        let converted_any = AnyTask::try_from(manifest).unwrap();
+
+        assert!(matches!(converted_any, AnyTask::Blocked(_)));
+        if let AnyTask::Blocked(converted) = converted_any {
+            assert_eq!(original_task.code, converted.code);
+            assert_eq!(converted.state.reason, reason);
+        }
+    }
+
+    #[test]
+    fn test_bidirectional_conversion_cancelled_task() {
+        let original_task = create_basic_task().start().cancel();
+        let manifest = TaskManifest::from(AnyTask::Cancelled(original_task.clone()));
+        let converted_any = AnyTask::try_from(manifest).unwrap();
+
+        assert!(matches!(converted_any, AnyTask::Cancelled(_)));
+        if let AnyTask::Cancelled(converted) = converted_any {
+            assert_eq!(original_task.code, converted.code);
         }
     }
 }

@@ -315,4 +315,86 @@ mod tests {
         let converted_any = AnyResource::try_from(manifest).unwrap();
         assert!(matches!(converted_any, AnyResource::Assigned(_)));
     }
+
+    #[test]
+    fn test_inactive_conversion() {
+        // Inactive state is not directly constructible without a state transition.
+        // We'll test that a manifest without assignments converts to Available,
+        // which is the current expected behavior. A more complex system might
+        // use a 'status' field in the manifest to determine if a resource is inactive.
+        let manifest = ResourceManifest {
+            api_version: API_VERSION.to_string(),
+            kind: "Resource".to_string(),
+            metadata: ResourceMetadata {
+                name: "Inactive User".to_string(),
+                email: "".to_string(),
+                code: "res-inactive".to_string(),
+                resource_type: "Former".to_string(),
+            },
+            spec: ResourceSpec {
+                time_off_balance: 0,
+                ..Default::default()
+            },
+        };
+
+        let converted_any = AnyResource::try_from(manifest).unwrap();
+        // Currently defaults to Available, which is correct based on implementation.
+        assert!(matches!(converted_any, AnyResource::Available(_)));
+    }
+
+    #[test]
+    fn test_conversion_with_vacations() {
+        let mut resource = Resource::<Available>::new(
+            Some("res-3".to_string()),
+            "On Holiday".to_string(),
+            None,
+            "Manager".to_string(),
+            None,
+            80,
+        );
+
+        let vacation = Period {
+            start_date: Local::now(),
+            end_date: Local::now(),
+            approved: true,
+            period_type: PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+        resource.vacations = Some(vec![vacation]);
+
+        let manifest = ResourceManifest::from(AnyResource::Available(resource.clone()));
+        assert!(manifest.spec.vacations.is_some());
+        assert_eq!(manifest.spec.vacations.as_ref().unwrap().len(), 1);
+
+        let converted_any = AnyResource::try_from(manifest).unwrap();
+        if let AnyResource::Available(converted) = converted_any {
+            assert_eq!(converted.vacations.unwrap().len(), 1);
+        } else {
+            panic!("Expected Available state");
+        }
+    }
+
+    #[test]
+    fn test_conversion_no_email() {
+        let original_resource = Resource::<Available>::new(
+            Some("res-4".to_string()),
+            "No Email".to_string(),
+            None, // No email
+            "Contractor".to_string(),
+            None,
+            0,
+        );
+
+        let manifest = ResourceManifest::from(AnyResource::Available(original_resource.clone()));
+        assert_eq!(manifest.metadata.email, ""); // Converts to empty string
+
+        let converted_any = AnyResource::try_from(manifest).unwrap();
+        if let AnyResource::Available(converted) = converted_any {
+            assert_eq!(converted.email, None); // Converts back to None
+        } else {
+            panic!("Expected Available state");
+        }
+    }
 }
