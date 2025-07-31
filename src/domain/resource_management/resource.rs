@@ -88,6 +88,7 @@ impl Resource<Available> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn assign_to_project(self, assignment: ProjectAssignment) -> Resource<Assigned> {
         Resource {
             id: self.id,
@@ -105,6 +106,7 @@ impl Resource<Available> {
 }
 
 impl Resource<Assigned> {
+    #[allow(dead_code)]
     pub fn assign_to_another_project(mut self, assignment: ProjectAssignment) -> Self {
         self.state.project_assignments.push(assignment);
         self

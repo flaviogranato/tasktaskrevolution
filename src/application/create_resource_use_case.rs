@@ -1,5 +1,5 @@
 use crate::domain::{
-    resource_management::{AnyResource, repository::ResourceRepository, resource::Resource},
+    resource_management::{repository::ResourceRepository, resource::Resource},
     shared::errors::DomainError,
 };
 

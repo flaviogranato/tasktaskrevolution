@@ -3,6 +3,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 // This is a private helper struct to unify the data from different Task<State> types.
+#[allow(dead_code)]
 struct TaskCore {
     id: String,
     project_code: String,
@@ -61,7 +62,7 @@ pub enum Status {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-enum Priority {
+pub enum Priority {
     Low,
     Medium,
     High,
@@ -70,13 +71,13 @@ enum Priority {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
-struct Effort {
+pub struct Effort {
     estimated_hours: f32,
     actual_hours: Option<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-struct Comment {
+pub struct Comment {
     author: String,
     message: String,
     timestamp: NaiveDate,
