@@ -136,13 +136,17 @@ mod tests {
         }
 
         fn load(&self) -> Result<crate::domain::project_management::AnyProject, DomainError> {
-            let mut builder = ProjectBuilder::new("Test Project".to_string());
+            let mut builder = ProjectBuilder::new("Test Project".to_string()).code("proj-1".to_string());
 
             if let Some(rules) = self.vacation_rules.clone() {
                 builder = builder.vacation_rules(rules);
             }
 
             Ok(builder.build().start().into())
+        }
+
+        fn get_next_code(&self) -> Result<String, DomainError> {
+            Ok("proj-1".to_string())
         }
     }
 
@@ -179,13 +183,17 @@ mod tests {
         fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
+
+        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+            Ok(format!("{}-1", resource_type.to_lowercase()))
+        }
     }
 
     #[test]
     fn test_detect_vacation_overlap() {
         let now = Local::now();
         let resource1 = Resource::<Available>::new(
-            None,
+            "dev-1".to_string(),
             "João".to_string(),
             None,
             "Dev".to_string(),
@@ -202,7 +210,7 @@ mod tests {
         );
 
         let resource2 = Resource::<Available>::new(
-            None,
+            "dev-2".to_string(),
             "Maria".to_string(),
             None,
             "Dev".to_string(),

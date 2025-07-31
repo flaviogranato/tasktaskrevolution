@@ -1,5 +1,7 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use uuid7::{Uuid, uuid7};
 
 use crate::domain::resource_management::{
     AnyResource, Resource, TimeOffEntry,
@@ -31,6 +33,8 @@ pub struct ResourceSpec {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceMetadata {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub name: String,
     #[serde(default)]
     pub email: String,
@@ -149,11 +153,12 @@ impl PeriodTypeManifest {
 
 impl From<AnyResource> for ResourceManifest {
     fn from(source: AnyResource) -> Self {
-        let (name, email, code, resource_type, spec) = match source {
+        let (id, code, name, email, resource_type, spec) = match source {
             AnyResource::Available(r) => (
+                r.id,
+                r.code,
                 r.name,
                 r.email,
-                r.id,
                 r.resource_type,
                 ResourceSpec {
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
@@ -163,9 +168,10 @@ impl From<AnyResource> for ResourceManifest {
                 },
             ),
             AnyResource::Assigned(r) => (
+                r.id,
+                r.code,
                 r.name,
                 r.email,
-                r.id,
                 r.resource_type,
                 ResourceSpec {
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
@@ -181,9 +187,10 @@ impl From<AnyResource> for ResourceManifest {
                 },
             ),
             AnyResource::Inactive(r) => (
+                r.id,
+                r.code,
                 r.name,
                 r.email,
-                r.id,
                 r.resource_type,
                 ResourceSpec {
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
@@ -198,9 +205,10 @@ impl From<AnyResource> for ResourceManifest {
             api_version: API_VERSION.to_string(),
             kind: "Resource".to_string(),
             metadata: ResourceMetadata {
+                id: Some(id.to_string()),
                 name,
                 email: email.unwrap_or_default(),
-                code: code.unwrap_or_default(),
+                code,
                 resource_type,
             },
             spec,
@@ -212,7 +220,14 @@ impl TryFrom<ResourceManifest> for AnyResource {
     type Error = String;
 
     fn try_from(manifest: ResourceManifest) -> Result<Self, Self::Error> {
-        let id = Some(manifest.metadata.code);
+        let id = manifest
+            .metadata
+            .id
+            .map(|id_str| Uuid::from_str(&id_str))
+            .transpose()
+            .map_err(|e| e.to_string())?
+            .unwrap_or_else(uuid7);
+        let code = manifest.metadata.code;
         let name = manifest.metadata.name;
         let email = if manifest.metadata.email.is_empty() {
             None
@@ -229,6 +244,7 @@ impl TryFrom<ResourceManifest> for AnyResource {
                 let project_assignments = assignments_manifest.into_iter().map(|a| a.to()).collect();
                 return Ok(AnyResource::Assigned(Resource {
                     id,
+                    code,
                     name,
                     email,
                     resource_type,
@@ -243,6 +259,7 @@ impl TryFrom<ResourceManifest> for AnyResource {
         // Default to Available
         Ok(AnyResource::Available(Resource {
             id,
+            code,
             name,
             email,
             resource_type,
@@ -258,12 +275,13 @@ impl TryFrom<ResourceManifest> for AnyResource {
 mod tests {
     use super::*;
     use crate::domain::resource_management::state::Available;
+    use uuid7::uuid7;
 
     #[test]
     fn test_bidirectional_conversion() {
         // Create an Available resource
         let original_resource = Resource::<Available>::new(
-            Some("res-1".to_string()),
+            "dev-1".to_string(),
             "John Doe".to_string(),
             Some("john@doe.com".to_string()),
             "Developer".to_string(),
@@ -274,6 +292,7 @@ mod tests {
         // Convert to Manifest
         let manifest = ResourceManifest::from(AnyResource::Available(original_resource.clone()));
         assert_eq!(manifest.metadata.name, "John Doe");
+        assert_eq!(manifest.metadata.code, "dev-1");
         assert_eq!(manifest.spec.time_off_balance, 40);
         assert!(manifest.spec.project_assignments.is_none());
 
@@ -282,6 +301,8 @@ mod tests {
 
         // Assert it's an Available resource with correct data
         if let AnyResource::Available(converted) = converted_any {
+            assert_eq!(original_resource.id, converted.id);
+            assert_eq!(original_resource.code, converted.code);
             assert_eq!(original_resource.name, converted.name);
             assert_eq!(original_resource.email, converted.email);
             assert_eq!(original_resource.time_off_balance, converted.time_off_balance);
@@ -293,7 +314,7 @@ mod tests {
     #[test]
     fn test_assigned_conversion() {
         let resource = Resource::<Available>::new(
-            Some("res-2".to_string()),
+            "qa-1".to_string(),
             "Jane Doe".to_string(),
             None,
             "QA".to_string(),
@@ -318,17 +339,18 @@ mod tests {
 
     #[test]
     fn test_inactive_conversion() {
-        // Inactive state is not directly constructible without a state transition.
-        // We'll test that a manifest without assignments converts to Available,
-        // which is the current expected behavior. A more complex system might
-        // use a 'status' field in the manifest to determine if a resource is inactive.
+        // This test ensures that a manifest can be converted back and forth,
+        // even if the resource is conceptually "inactive". The state is determined
+        // by assignments, so a resource without assignments becomes "Available".
+        let id = uuid7();
         let manifest = ResourceManifest {
             api_version: API_VERSION.to_string(),
             kind: "Resource".to_string(),
             metadata: ResourceMetadata {
+                id: Some(id.to_string()),
                 name: "Inactive User".to_string(),
                 email: "".to_string(),
-                code: "res-inactive".to_string(),
+                code: "former-1".to_string(),
                 resource_type: "Former".to_string(),
             },
             spec: ResourceSpec {
@@ -340,12 +362,16 @@ mod tests {
         let converted_any = AnyResource::try_from(manifest).unwrap();
         // Currently defaults to Available, which is correct based on implementation.
         assert!(matches!(converted_any, AnyResource::Available(_)));
+        if let AnyResource::Available(r) = converted_any {
+            assert_eq!(r.id, id);
+            assert_eq!(r.code, "former-1");
+        }
     }
 
     #[test]
     fn test_conversion_with_vacations() {
         let mut resource = Resource::<Available>::new(
-            Some("res-3".to_string()),
+            "manager-1".to_string(),
             "On Holiday".to_string(),
             None,
             "Manager".to_string(),
@@ -379,7 +405,7 @@ mod tests {
     #[test]
     fn test_conversion_no_email() {
         let original_resource = Resource::<Available>::new(
-            Some("res-4".to_string()),
+            "contractor-1".to_string(),
             "No Email".to_string(),
             None, // No email
             "Contractor".to_string(),

@@ -2,7 +2,7 @@ use super::state::Planned;
 use super::task::{Task, TaskError};
 use chrono::NaiveDate;
 use std::marker::PhantomData;
-use uuid7::uuid7;
+use uuid7::{Uuid, uuid7};
 
 // Type states for the builder
 #[allow(dead_code)]
@@ -14,8 +14,6 @@ pub struct WithName;
 #[allow(dead_code)]
 pub struct WithDates;
 #[allow(dead_code)]
-pub struct WithResources;
-#[allow(dead_code)]
 pub struct Ready;
 
 /// A builder for creating `Task` instances in a controlled way, ensuring all
@@ -23,9 +21,9 @@ pub struct Ready;
 /// It uses the typestate pattern to enforce the order of method calls at compile time.
 #[allow(dead_code)]
 pub struct TaskBuilder<State> {
-    id: String,
+    id: Uuid,
     project_code: Option<String>,
-    code: String,
+    code: Option<String>,
     name: Option<String>,
     start_date: Option<NaiveDate>,
     due_date: Option<NaiveDate>,
@@ -37,11 +35,10 @@ pub struct TaskBuilder<State> {
 impl TaskBuilder<New> {
     /// Starts building a new task.
     pub fn new() -> Self {
-        let id = uuid7().to_string();
         Self {
-            code: format!("TASK-{}", &id[..8]),
-            id,
+            id: uuid7(),
             project_code: None,
+            code: None,
             name: None,
             start_date: None,
             due_date: None,
@@ -90,6 +87,12 @@ impl TaskBuilder<WithProjectCode> {
 
 #[allow(dead_code)]
 impl TaskBuilder<WithName> {
+    /// Sets the code for the task.
+    pub fn code(mut self, code: impl Into<String>) -> Self {
+        self.code = Some(code.into());
+        self
+    }
+
     /// Sets the start and due dates for the task, validating that the range is valid.
     pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, TaskError> {
         if start > due {
@@ -111,25 +114,7 @@ impl TaskBuilder<WithName> {
 
 #[allow(dead_code)]
 impl TaskBuilder<WithDates> {
-    /// Assigns a resource to the task. This moves the builder to the `WithResources` state.
-    pub fn assign_resource(mut self, resource_id: impl Into<String>) -> TaskBuilder<WithResources> {
-        self.assigned_resources.push(resource_id.into());
-        TaskBuilder {
-            id: self.id,
-            code: self.code,
-            project_code: self.project_code,
-            name: self.name,
-            start_date: self.start_date,
-            due_date: self.due_date,
-            assigned_resources: self.assigned_resources,
-            _state: PhantomData,
-        }
-    }
-}
-
-#[allow(dead_code)]
-impl TaskBuilder<WithResources> {
-    /// Assigns another resource to the task.
+    /// Assigns a resource to the task. Can be called multiple times.
     pub fn assign_resource(mut self, resource_id: impl Into<String>) -> Self {
         self.assigned_resources.push(resource_id.into());
         self
@@ -172,7 +157,7 @@ impl TaskBuilder<Ready> {
         Ok(Task {
             id: self.id,
             project_code: self.project_code.ok_or(TaskError::MissingField("project_code"))?,
-            code: self.code,
+            code: self.code.ok_or(TaskError::MissingField("code"))?,
             name: self.name.ok_or(TaskError::MissingField("name"))?,
             description: None,
             state: Planned, // The task starts in the 'Planned' state.
@@ -194,6 +179,7 @@ mod tests {
         let task = TaskBuilder::new()
             .project_code("PROJ-TEST")
             .name("Test Task")
+            .code("task-1".to_string())
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
                 NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),
@@ -210,7 +196,7 @@ mod tests {
         assert_eq!(task.assigned_resources, vec!["RES-001".to_string()]);
         assert_eq!(task.start_date, NaiveDate::from_ymd_opt(2025, 5, 1).unwrap());
         assert_eq!(task.due_date, NaiveDate::from_ymd_opt(2025, 5, 10).unwrap());
-        assert!(task.code.starts_with("TASK-"));
+        assert_eq!(task.code, "task-1");
         // The state is `Planned` by type, no need for a runtime assertion.
     }
 
@@ -219,6 +205,7 @@ mod tests {
         let result = TaskBuilder::new()
             .project_code("PROJ-TEST")
             .name("Task com datas invertidas")
+            .code("task-2".to_string())
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
@@ -238,6 +225,7 @@ mod tests {
         let result = TaskBuilder::new()
             .project_code("PROJ-TEST")
             .name("Task com conflito de férias")
+            .code("task-3".to_string())
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
                 NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),
@@ -260,6 +248,7 @@ mod tests {
         let task = TaskBuilder::new()
             .project_code("PROJ-TEST")
             .name("Task multi recursos")
+            .code("task-4".to_string())
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
                 NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),

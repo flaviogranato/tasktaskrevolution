@@ -269,9 +269,9 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 let args = CreateTaskArgs {
                     project_code: project_code.clone(),
-                    code: code.clone(),
+
                     name: name.clone(),
-                    description: description.clone(),
+
                     start_date: start,
                     due_date: due,
                     assigned_resources: assignees.clone(),
@@ -371,7 +371,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             println!("   New assignees: {}", updated_task.assigned_resources().join(", "));
                         }
                         Err(e) => {
-                            println!("❌ Error assigning resources: {}", e);
+                            println!("❌ Error assigning resources: {e}");
                         }
                     }
                 }

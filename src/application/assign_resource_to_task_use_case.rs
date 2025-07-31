@@ -41,14 +41,12 @@ where
         // 1. Validate that all resources exist.
         // We assume the resource code is stored in the `id` field.
         let all_resources = self.resource_repository.find_all()?;
-        let existing_resource_codes: HashSet<String> = all_resources
-            .iter()
-            .filter_map(|r| r.id().map(|id| id.to_string()))
-            .collect();
+        // We validate against the resource name for now, as the `code` field is not yet implemented.
+        let existing_resource_names: HashSet<String> = all_resources.iter().map(|r| r.name().to_string()).collect();
 
         let not_found_resources: Vec<String> = resource_codes
             .iter()
-            .filter(|rc| !existing_resource_codes.contains(*rc))
+            .filter(|rc| !existing_resource_names.contains(*rc))
             .cloned()
             .collect();
 
@@ -104,11 +102,12 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
-        resource_management::{AnyResource, resource::Resource, state::Available},
+        resource_management::{AnyResource, resource::Resource},
         task_management::{AnyTask, state::Planned, task::Task},
     };
     use chrono::NaiveDate;
     use std::{cell::RefCell, collections::HashMap, path::Path};
+    use uuid7::uuid7;
 
     // Mock Task Repository
     struct MockTaskRepository {
@@ -151,6 +150,10 @@ mod tests {
         fn find_by_date_range(&self, _start: NaiveDate, _end: NaiveDate) -> Result<Vec<AnyTask>, DomainError> {
             unimplemented!()
         }
+
+        fn get_next_code(&self) -> Result<String, DomainError> {
+            Ok("task-1".to_string())
+        }
     }
 
     // Mock Resource Repository
@@ -192,12 +195,16 @@ mod tests {
         ) -> bool {
             unimplemented!()
         }
+
+        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+            Ok(format!("{}-1", resource_type.to_lowercase()))
+        }
     }
 
     // Helper to create a test task
     fn create_test_task(code: &str, assignees: Vec<&str>) -> AnyTask {
         Task::<Planned> {
-            id: format!("task-{}", code),
+            id: uuid7(),
             project_code: "PROJ-1".to_string(),
             code: code.to_string(),
             name: "Test Task".to_string(),
@@ -212,17 +219,15 @@ mod tests {
     }
 
     // Helper to create a test resource
-    fn create_test_resource(code: &str) -> AnyResource {
-        Resource::<Available> {
-            id: Some(code.to_string()),
-            name: format!("Resource {}", code),
-            email: None,
-            resource_type: "Developer".to_string(),
-            vacations: None,
-            time_off_balance: 0,
-            time_off_history: None,
-            state: Available,
-        }
+    fn create_test_resource(name: &str) -> AnyResource {
+        Resource::new(
+            format!("dev-{}", name), // dummy code
+            name.to_string(),
+            None,
+            "Developer".to_string(),
+            None,
+            0,
+        )
         .into()
     }
 

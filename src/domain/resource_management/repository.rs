@@ -21,4 +21,5 @@ pub trait ResourceRepository {
         compensated_hours: Option<u32>,
     ) -> Result<AnyResource, DomainError>;
     fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool;
+    fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError>;
 }

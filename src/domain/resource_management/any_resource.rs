@@ -3,6 +3,7 @@ use super::{
     state::{Assigned, Available, Inactive},
 };
 use serde::Serialize;
+use uuid7::Uuid;
 
 /// An enum to represent a Resource in any of its possible states.
 #[derive(Debug, Clone, Serialize)]
@@ -15,11 +16,11 @@ pub enum AnyResource {
 
 impl AnyResource {
     #[allow(dead_code)]
-    pub fn id(&self) -> Option<&str> {
+    pub fn id(&self) -> &Uuid {
         match self {
-            AnyResource::Available(r) => r.id.as_deref(),
-            AnyResource::Assigned(r) => r.id.as_deref(),
-            AnyResource::Inactive(r) => r.id.as_deref(),
+            AnyResource::Available(r) => &r.id,
+            AnyResource::Assigned(r) => &r.id,
+            AnyResource::Inactive(r) => &r.id,
         }
     }
 

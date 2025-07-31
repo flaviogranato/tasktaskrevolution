@@ -4,6 +4,7 @@ use super::{
 };
 use chrono::NaiveDate;
 use serde::Serialize;
+use uuid7::Uuid;
 
 /// An enum to represent a Task in any of its possible states.
 /// This is useful for storing tasks in a repository or a collection
@@ -31,7 +32,7 @@ impl AnyTask {
         }
     }
 
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &Uuid {
         match self {
             AnyTask::Planned(task) => &task.id,
             AnyTask::InProgress(task) => &task.id,

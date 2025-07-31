@@ -1,5 +1,5 @@
 use crate::domain::project_management::{project::Project, state::Planned, vacation_rules::VacationRules};
-use uuid7::uuid7;
+use uuid7::{Uuid, uuid7};
 
 /// Builder for the `Project` struct.
 ///
@@ -8,7 +8,8 @@ use uuid7::uuid7;
 /// lint in the `Project::new` constructor.
 #[derive(Default)]
 pub struct ProjectBuilder {
-    id: Option<String>,
+    id: Uuid,
+    code: Option<String>,
     name: Option<String>,
     description: Option<String>,
     start_date: Option<String>,
@@ -21,16 +22,15 @@ impl ProjectBuilder {
     /// Creates a new `ProjectBuilder` with a required name.
     pub fn new(name: String) -> Self {
         Self {
-            id: Some(uuid7().to_string()),
+            id: uuid7(),
             name: Some(name),
             ..Default::default()
         }
     }
 
-    /// Sets the ID for the project.
-    #[allow(dead_code)]
-    pub fn id(mut self, id: String) -> Self {
-        self.id = Some(id);
+    /// Sets the code for the project.
+    pub fn code(mut self, code: String) -> Self {
+        self.code = Some(code);
         self
     }
 
@@ -69,6 +69,7 @@ impl ProjectBuilder {
     pub fn build(self) -> Project<Planned> {
         Project {
             id: self.id,
+            code: self.code.expect("Project code must be set"),
             name: self.name.expect("Project name must be set"),
             description: self.description,
             start_date: self.start_date,

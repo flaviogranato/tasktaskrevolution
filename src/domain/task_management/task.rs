@@ -1,10 +1,11 @@
 use super::state::{Blocked, Cancelled, Completed, InProgress, Planned, TaskState};
 use chrono::{NaiveDate, Utc};
 use serde::Serialize;
+use uuid7::Uuid;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Task<S: TaskState> {
-    pub id: String,
+    pub id: Uuid,
     pub project_code: String,
     pub code: String,
     pub name: String,
@@ -193,6 +194,7 @@ impl std::error::Error for TaskError {}
 mod tests {
     use super::*;
     use chrono::NaiveDate;
+    use uuid7::uuid7;
 
     fn d(year: i32, month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(year, month, day).unwrap()
@@ -200,7 +202,7 @@ mod tests {
 
     fn create_planned_task() -> Task<Planned> {
         Task {
-            id: "task-1".to_string(),
+            id: uuid7(),
             project_code: "proj-x".to_string(),
             code: "T1".to_string(),
             name: "My test task".to_string(),
@@ -248,10 +250,11 @@ mod tests {
     #[test]
     fn test_planned_to_in_progress() {
         let task = create_planned_task();
+        let task_id = task.id;
         let in_progress_task = task.start();
         assert_eq!(in_progress_task.state.progress, 0);
         // Verify other fields are carried over
-        assert_eq!(in_progress_task.id, "task-1".to_string());
+        assert_eq!(in_progress_task.id, task_id);
     }
 
     #[test]
@@ -287,9 +290,10 @@ mod tests {
     #[test]
     fn test_cancel_from_planned() {
         let task = create_planned_task();
+        let task_id = task.id;
         let cancelled_task = task.cancel();
         // This is a compile-time check, but we can assert on the type if we had a way to get a string from it.
         // For now, just creating it is enough to test the transition exists.
-        assert_eq!(cancelled_task.id, "task-1");
+        assert_eq!(cancelled_task.id, task_id);
     }
 }

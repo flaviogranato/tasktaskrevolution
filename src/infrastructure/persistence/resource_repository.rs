@@ -203,6 +203,27 @@ impl ResourceRepository for FileResourceRepository {
 
         false
     }
+
+    fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+        let all_resources = self.find_all()?;
+        let prefix = resource_type.to_lowercase();
+        let prefix_with_dash = format!("{}-", prefix);
+
+        let max_num = all_resources
+            .iter()
+            .filter_map(|r| match r {
+                AnyResource::Available(res) => Some((&res.code, &res.resource_type)),
+                AnyResource::Assigned(res) => Some((&res.code, &res.resource_type)),
+                AnyResource::Inactive(res) => Some((&res.code, &res.resource_type)),
+            })
+            .filter(|(_, r_type)| r_type.to_lowercase() == prefix)
+            .filter_map(|(code, _)| code.strip_prefix(&prefix_with_dash))
+            .filter_map(|num_str| num_str.parse::<u32>().ok())
+            .max()
+            .unwrap_or(0);
+
+        Ok(format!("{}{}", prefix_with_dash, max_num + 1))
+    }
 }
 
 impl Default for FileResourceRepository {
@@ -218,12 +239,12 @@ mod tests {
     use crate::domain::resource_management::state::Available;
     use tempfile::tempdir;
 
-    fn create_test_resource(name: &str) -> Resource<Available> {
+    fn create_test_resource(name: &str, code: &str, resource_type: &str) -> Resource<Available> {
         Resource::new(
-            Some(name.to_string()),
+            code.to_string(),
             name.to_string(),
             None,
-            "dev".to_string(),
+            resource_type.to_string(),
             None,
             0,
         )
@@ -234,8 +255,8 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let repo = FileResourceRepository::new(temp_dir.path());
 
-        let resource1 = create_test_resource("test1");
-        let resource2 = create_test_resource("test2");
+        let resource1 = create_test_resource("test1", "dev-1", "dev");
+        let resource2 = create_test_resource("test2", "dev-2", "dev");
 
         repo.save(resource1.clone().into()).unwrap();
         repo.save(resource2.clone().into()).unwrap();
@@ -251,7 +272,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let repo = FileResourceRepository::new(temp_dir.path());
 
-        let resource = create_test_resource("test");
+        let resource = create_test_resource("test", "dev-1", "dev");
         repo.save(resource.into()).unwrap();
 
         let result = repo.save_vacation(
@@ -278,7 +299,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let repo = FileResourceRepository::new(temp_dir.path());
 
-        let resource = create_test_resource("test");
+        let resource = create_test_resource("test", "dev-1", "dev");
         repo.save(resource.into()).unwrap();
 
         let result = repo.save_time_off(
@@ -296,5 +317,26 @@ mod tests {
             AnyResource::Inactive(r) => r.time_off_balance,
         };
         assert_eq!(balance, 10);
+    }
+
+    #[test]
+    fn test_get_next_code() {
+        let temp_dir = tempdir().unwrap();
+        let repo = FileResourceRepository::new(temp_dir.path());
+
+        // Test with no resources of a type
+        assert_eq!(repo.get_next_code("dev").unwrap(), "dev-1");
+
+        // Add some resources
+        repo.save(create_test_resource("res1", "dev-1", "dev").into()).unwrap();
+        repo.save(create_test_resource("res2", "qa-1", "qa").into()).unwrap();
+        repo.save(create_test_resource("res3", "dev-2", "dev").into()).unwrap();
+        repo.save(create_test_resource("res4", "dev-5", "dev").into()) // Test with a gap
+            .unwrap();
+
+        // Test again for both types
+        assert_eq!(repo.get_next_code("dev").unwrap(), "dev-6");
+        assert_eq!(repo.get_next_code("qa").unwrap(), "qa-2");
+        assert_eq!(repo.get_next_code("manager").unwrap(), "manager-1"); // Test new type
     }
 }

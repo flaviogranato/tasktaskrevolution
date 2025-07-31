@@ -151,7 +151,7 @@ impl BuildUseCase {
                 let file_path = resource_dir.join(format!("{safe_name}.html"));
                 fs::write(file_path, rendered_page)?;
             }
-            println!("✅ Project '{}' generated successfully.", project_name);
+            println!("✅ Project '{project_name}' generated successfully.");
         }
 
         Ok(())
@@ -190,6 +190,7 @@ spec:
 apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Project
 metadata:
+  code: "proj-1"
   name: "My Test Project"
   description: "A description for the test project."
 spec:

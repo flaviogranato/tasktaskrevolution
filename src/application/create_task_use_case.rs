@@ -1,12 +1,12 @@
 use crate::domain::shared::errors::DomainError;
-use crate::domain::task_management::{Task, repository::TaskRepository, state::Planned};
+use crate::domain::task_management::{TaskBuilder, repository::TaskRepository};
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {
     pub project_code: String,
-    pub code: String,
+
     pub name: String,
-    pub description: Option<String>,
+
     pub start_date: NaiveDate,
     pub due_date: NaiveDate,
     pub assigned_resources: Vec<String>,
@@ -24,9 +24,9 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
     pub fn execute(&self, args: CreateTaskArgs) -> Result<(), DomainError> {
         let CreateTaskArgs {
             project_code,
-            code,
+
             name,
-            description,
+
             start_date,
             due_date,
             assigned_resources,
@@ -39,26 +39,38 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
             ));
         }
 
-        // Verificar se já existe uma task com o mesmo código
-        if let Ok(Some(_)) = self.repository.find_by_code(&code) {
-            return Err(DomainError::Generic(format!("Task com código '{code}' já existe")));
+        // According to the builder's design, a task must have at least one resource.
+        if assigned_resources.is_empty() {
+            return Err(DomainError::Generic(
+                "A task requires at least one assigned resource.".to_string(),
+            ));
         }
 
-        // Criar a task no estado 'Planned'
-        let task: Task<Planned> = Task {
-            id: format!("TASK-{code}"),
-            project_code,
-            code,
-            name: name.clone(),
-            description,
-            state: Planned,
-            start_date,
-            due_date,
-            actual_end_date: None,
-            assigned_resources,
-        };
+        // Use the builder to create the task, ensuring consistent ID generation
+        // and validation logic.
+        let code = self.repository.get_next_code()?;
+        let builder = TaskBuilder::new()
+            .project_code(project_code)
+            .name(name.clone())
+            .code(code)
+            .dates(start_date, due_date)
+            .map_err(|e| DomainError::Generic(e.to_string()))?;
 
-        // Salvar a task. A conversão para AnyTask permite que o repositório a armazene.
+        let mut iter = assigned_resources.into_iter();
+        // The first resource moves the builder to the `WithResources` state.
+        // We've already checked that `assigned_resources` is not empty.
+        let builder_with_res = builder.assign_resource(iter.next().unwrap());
+
+        // Subsequent resources are added, keeping the state as `WithResources`.
+        let final_builder = iter.fold(builder_with_res, |b, r| b.assign_resource(r));
+
+        let task = final_builder
+            .validate_vacations(&[]) // Now we can validate and build.
+            .unwrap() // This unwrap is safe if the vacations list is empty
+            .build()
+            .map_err(|e| DomainError::Generic(e.to_string()))?;
+
+        // Save the task. The conversion to AnyTask allows the repository to store it.
         self.repository.save(task.into())?;
 
         println!("Task {name} criada com sucesso.");
@@ -69,7 +81,7 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::task_management::{AnyTask, state::Planned};
+    use crate::domain::task_management::AnyTask;
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
@@ -137,6 +149,11 @@ mod test {
         ) -> Result<Vec<AnyTask>, DomainError> {
             unimplemented!("Not needed for these tests")
         }
+
+        fn get_next_code(&self) -> Result<String, DomainError> {
+            let num_tasks = self.tasks.borrow().len();
+            Ok(format!("task-{}", num_tasks + 1))
+        }
     }
 
     fn create_test_dates() -> (NaiveDate, NaiveDate) {
@@ -153,9 +170,8 @@ mod test {
 
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
-            code: "TSK001".to_string(),
+
             name: "Implementar autenticação".to_string(),
-            description: Some("Implementar sistema de login com JWT".to_string()),
             start_date,
             due_date,
             assigned_resources: vec!["dev1".to_string(), "dev2".to_string()],
@@ -173,9 +189,8 @@ mod test {
 
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
-            code: "TSK001".to_string(),
+
             name: "Implementar autenticação".to_string(),
-            description: Some("Implementar sistema de login com JWT".to_string()),
             start_date,
             due_date,
             assigned_resources: vec!["dev1".to_string()],
@@ -190,17 +205,15 @@ mod test {
         let mock_repo = MockTaskRepository::new(false);
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
-        let code = "TSK001".to_string();
+
         let name = "Implementar autenticação".to_string();
-        let description = Some("Implementar sistema de login com JWT".to_string());
         let assigned_resources = vec!["dev1".to_string(), "dev2".to_string()];
         let project_code = "PROJ-1".to_string();
 
         let args = CreateTaskArgs {
             project_code: project_code.clone(),
-            code: code.clone(),
+
             name: name.clone(),
-            description: description.clone(),
             start_date,
             due_date,
             assigned_resources: assigned_resources.clone(),
@@ -212,13 +225,13 @@ mod test {
 
         if let Some(AnyTask::Planned(task)) = saved_task.as_ref() {
             assert_eq!(task.project_code, project_code);
-            assert_eq!(task.code, code);
+            assert_eq!(task.code, "task-1");
             assert_eq!(task.name, name);
-            assert_eq!(task.description, description);
+            assert_eq!(task.description, None);
             assert_eq!(task.start_date, start_date);
             assert_eq!(task.due_date, due_date);
             assert_eq!(task.assigned_resources, assigned_resources);
-            assert_eq!(task.id, format!("TASK-{code}"));
+            assert!(!task.id.to_string().is_empty());
         } else {
             panic!("Saved task was not in the expected Planned state");
         }
@@ -233,12 +246,11 @@ mod test {
 
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
-            code: "TSK001".to_string(),
+
             name: "Task inválida".to_string(),
-            description: None,
             start_date,
             due_date,
-            assigned_resources: vec![],
+            assigned_resources: vec!["res-1".to_string()],
         };
         let result = use_case.execute(args);
 
@@ -247,38 +259,27 @@ mod test {
     }
 
     #[test]
-    fn test_create_task_duplicate_code() {
+    fn test_create_task_with_no_resources_fails() {
         let mock_repo = MockTaskRepository::new(false);
-
-        let existing_task = Task {
-            id: "TASK-TSK001".to_string(),
-            project_code: "PROJ-1".to_string(),
-            code: "TSK001".to_string(),
-            name: "Task existente".to_string(),
-            description: None,
-            state: Planned,
-            start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
-            due_date: NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
-            actual_end_date: None,
-            assigned_resources: vec![],
-        };
-        mock_repo.add_existing_task(existing_task.into());
-
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
-            code: "TSK001".to_string(),
-            name: "Nova task".to_string(),
-            description: None,
+
+            name: "Task without resources".to_string(),
             start_date,
             due_date,
-            assigned_resources: vec![],
+            assigned_resources: vec![], // No resources
         };
         let result = use_case.execute(args);
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("já existe"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("requires at least one assigned resource")
+        );
     }
 }

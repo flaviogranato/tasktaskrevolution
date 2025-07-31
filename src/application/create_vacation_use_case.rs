@@ -175,17 +175,21 @@ mod tests {
         fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
+
+        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+            Ok(format!("{}-1", resource_type.to_lowercase()))
+        }
     }
 
     fn setup_test() -> (MockResourceRepository, AnyResource) {
         let mock_repo = MockResourceRepository::new(false);
         let resource = Resource::new(
-            Some("res-01".to_string()),
+            "res-01".to_string(),
             "John Doe".to_string(),
             None,
             "Developer".to_string(),
             None,
-            40,
+            10,
         );
         let any_resource = AnyResource::Available(resource);
         mock_repo.add_resource(any_resource.clone());

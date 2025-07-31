@@ -1,7 +1,4 @@
-use crate::domain::{
-    resource_management::repository::ResourceRepository,
-    shared::errors::DomainError,
-};
+use crate::domain::{resource_management::repository::ResourceRepository, shared::errors::DomainError};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -138,11 +135,15 @@ mod tests {
         fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
+
+        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+            Ok(format!("{}-1", resource_type.to_lowercase()))
+        }
     }
 
     fn create_test_available_resource() -> AnyResource {
         Resource::<Available>::new(
-            Some("john-doe".to_string()),
+            "developer-1".to_string(), // dummy code
             "John Doe".to_string(),
             None,
             "Developer".to_string(),

@@ -2,7 +2,6 @@ use crate::domain::{
     resource_management::{repository::ResourceRepository, resource::Resource},
     shared::errors::DomainError,
 };
-use uuid7::uuid7;
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
@@ -13,8 +12,8 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         Self { repository }
     }
     pub fn execute(&self, name: String, resource_type: String) -> Result<(), DomainError> {
-        let id = uuid7().to_string();
-        let r = Resource::new(Some(id), name.clone(), None, resource_type, None, 0);
+        let code = self.repository.get_next_code(&resource_type)?;
+        let r = Resource::new(code, name.clone(), None, resource_type, None, 0);
         self.repository.save(r.into())?;
         println!("Recurso {name} criado.");
         Ok(())
@@ -81,6 +80,10 @@ mod test {
         fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
+
+        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+            Ok(format!("{}-1", resource_type.to_lowercase()))
+        }
     }
 
     #[test]
@@ -88,7 +91,7 @@ mod test {
         let mock_repo = MockResourceRepository::new(false);
         let use_case = CreateResourceUseCase::new(mock_repo);
         let name = "John".to_string();
-        let resource_type = "a simple test project".to_string();
+        let resource_type = "Developer".to_string();
 
         let result = use_case.execute(name, resource_type);
         assert!(result.is_ok());
@@ -99,7 +102,7 @@ mod test {
         let mock_repo = MockResourceRepository::new(true);
         let use_case = CreateResourceUseCase::new(mock_repo);
         let name = "John".to_string();
-        let resource_type = "a simple test project".to_string();
+        let resource_type = "Developer".to_string();
 
         let result = use_case.execute(name, resource_type);
         assert!(result.is_err());
@@ -110,7 +113,7 @@ mod test {
         let mock_repo = MockResourceRepository::new(false);
         let use_case = CreateResourceUseCase::new(mock_repo);
         let name = "John".to_string();
-        let resource_type = "a simple test project".to_string();
+        let resource_type = "Developer".to_string();
         let _ = use_case.execute(name.clone(), resource_type.clone());
 
         let saved_config = use_case.repository.saved_config.borrow();
@@ -119,6 +122,7 @@ mod test {
         assert_eq!(any_resource.name(), name);
         if let AnyResource::Available(r) = any_resource {
             assert_eq!(r.resource_type, resource_type);
+            assert_eq!(r.code, "developer-1");
         } else {
             panic!("Expected Available resource");
         }

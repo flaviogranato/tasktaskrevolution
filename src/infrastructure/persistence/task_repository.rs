@@ -6,6 +6,8 @@ use glob::glob;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use uuid7::Uuid;
 
 /// A file-based implementation of the `TaskRepository`.
 ///
@@ -122,8 +124,11 @@ impl TaskRepository for FileTaskRepository {
     }
 
     fn find_by_id(&self, id: &str) -> Result<Option<AnyTask>, DomainError> {
+        let Ok(uuid) = Uuid::from_str(id) else {
+            return Ok(None);
+        };
         let tasks = self.find_all()?;
-        Ok(tasks.into_iter().find(|task| task.id() == id))
+        Ok(tasks.into_iter().find(|task| *task.id() == uuid))
     }
 
     fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
@@ -175,6 +180,33 @@ impl TaskRepository for FileTaskRepository {
             })
             .collect())
     }
+
+    fn get_next_code(&self) -> Result<String, DomainError> {
+        let tasks_dir = self.get_tasks_directory();
+        if !tasks_dir.exists() {
+            return Ok("task-1".to_string());
+        }
+
+        let pattern = tasks_dir.join("*.yaml");
+        let walker = glob(pattern.to_str().unwrap())
+            .map_err(|e| DomainError::Generic(format!("Failed to read glob pattern: {e}")))?;
+
+        let mut max_code = 0;
+
+        for entry in walker.flatten() {
+            if let Ok(manifest) = self.load_manifest(entry.as_path()) {
+                if let Some(num_str) = manifest.metadata.code.strip_prefix("task-") {
+                    if let Ok(num) = num_str.parse::<u32>() {
+                        if num > max_code {
+                            max_code = num;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(format!("task-{}", max_code + 1))
+    }
 }
 
 impl Default for FileTaskRepository {
@@ -188,10 +220,11 @@ mod tests {
     use super::*;
     use crate::domain::task_management::state::{InProgress, Planned};
     use tempfile::tempdir;
+    use uuid7::uuid7;
 
     fn create_planned_task(code: &str) -> Task<Planned> {
         Task {
-            id: format!("TASK-{code}"),
+            id: uuid7(),
             project_code: "PROJ-1".to_string(),
             code: code.to_string(),
             name: "Test Task".to_string(),
@@ -218,7 +251,7 @@ mod tests {
         let found_any_task = found_task_opt.unwrap();
 
         // Assert fields
-        assert_eq!(found_any_task.id(), task.id);
+        assert_eq!(*found_any_task.id(), task.id);
         assert_eq!(found_any_task.code(), task.code);
         assert!(matches!(found_any_task, AnyTask::Planned(_)));
     }
@@ -276,5 +309,22 @@ mod tests {
         let result = repo.update_progress("TSK-FAIL", 50);
         assert!(result.is_err());
         matches!(result.unwrap_err(), DomainError::InvalidState(_));
+    }
+
+    #[test]
+    fn test_get_next_code() {
+        let dir = tempdir().unwrap();
+        let repo = FileTaskRepository::new(dir.path());
+
+        // Test with no tasks
+        assert_eq!(repo.get_next_code().unwrap(), "task-1");
+
+        // Add some tasks
+        repo.save(create_planned_task("task-1").into()).unwrap();
+        repo.save(create_planned_task("task-2").into()).unwrap();
+        repo.save(create_planned_task("task-5").into()).unwrap(); // with a gap
+
+        // Test again
+        assert_eq!(repo.get_next_code().unwrap(), "task-6");
     }
 }
