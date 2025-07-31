@@ -1,8 +1,10 @@
-use super::task::{Task, TaskError, TaskStatus};
+use super::state::Planned;
+use super::task::{Task, TaskError};
 use chrono::NaiveDate;
 use std::marker::PhantomData;
 use uuid7::uuid7;
 
+// Type states for the builder
 #[allow(dead_code)]
 pub struct New;
 #[allow(dead_code)]
@@ -16,6 +18,9 @@ pub struct WithResources;
 #[allow(dead_code)]
 pub struct Ready;
 
+/// A builder for creating `Task` instances in a controlled way, ensuring all
+/// required fields are provided before a task can be built.
+/// It uses the typestate pattern to enforce the order of method calls at compile time.
 #[allow(dead_code)]
 pub struct TaskBuilder<State> {
     id: String,
@@ -30,9 +35,9 @@ pub struct TaskBuilder<State> {
 
 #[allow(dead_code)]
 impl TaskBuilder<New> {
+    /// Starts building a new task.
     pub fn new() -> Self {
         let id = uuid7().to_string();
-
         Self {
             code: format!("TASK-{}", &id[..8]),
             id,
@@ -45,6 +50,7 @@ impl TaskBuilder<New> {
         }
     }
 
+    /// Sets the project code for the task.
     pub fn project_code(self, project_code: impl Into<String>) -> TaskBuilder<WithProjectCode> {
         TaskBuilder {
             id: self.id,
@@ -59,8 +65,15 @@ impl TaskBuilder<New> {
     }
 }
 
+impl Default for TaskBuilder<New> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[allow(dead_code)]
 impl TaskBuilder<WithProjectCode> {
+    /// Sets the name for the task.
     pub fn name(self, name: impl Into<String>) -> TaskBuilder<WithName> {
         TaskBuilder {
             id: self.id,
@@ -77,6 +90,7 @@ impl TaskBuilder<WithProjectCode> {
 
 #[allow(dead_code)]
 impl TaskBuilder<WithName> {
+    /// Sets the start and due dates for the task, validating that the range is valid.
     pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, TaskError> {
         if start > due {
             return Err(TaskError::InvalidDateRange);
@@ -97,9 +111,9 @@ impl TaskBuilder<WithName> {
 
 #[allow(dead_code)]
 impl TaskBuilder<WithDates> {
+    /// Assigns a resource to the task. This moves the builder to the `WithResources` state.
     pub fn assign_resource(mut self, resource_id: impl Into<String>) -> TaskBuilder<WithResources> {
         self.assigned_resources.push(resource_id.into());
-
         TaskBuilder {
             id: self.id,
             code: self.code,
@@ -115,11 +129,14 @@ impl TaskBuilder<WithDates> {
 
 #[allow(dead_code)]
 impl TaskBuilder<WithResources> {
+    /// Assigns another resource to the task.
     pub fn assign_resource(mut self, resource_id: impl Into<String>) -> Self {
         self.assigned_resources.push(resource_id.into());
         self
     }
 
+    /// Validates that no assigned resources are on vacation during the task's date range.
+    /// This moves the builder to the final `Ready` state.
     pub fn validate_vacations(
         self,
         resource_vacations: &[(String, NaiveDate, NaiveDate)],
@@ -150,14 +167,15 @@ impl TaskBuilder<WithResources> {
 
 #[allow(dead_code)]
 impl TaskBuilder<Ready> {
-    pub fn build(self) -> Result<Task, TaskError> {
+    /// Builds the final `Task<Planned>` instance.
+    pub fn build(self) -> Result<Task<Planned>, TaskError> {
         Ok(Task {
             id: self.id,
             project_code: self.project_code.ok_or(TaskError::MissingField("project_code"))?,
             code: self.code,
             name: self.name.ok_or(TaskError::MissingField("name"))?,
             description: None,
-            status: TaskStatus::Planned,
+            state: Planned, // The task starts in the 'Planned' state.
             start_date: self.start_date.unwrap(),
             due_date: self.due_date.unwrap(),
             actual_end_date: None,
@@ -168,7 +186,7 @@ impl TaskBuilder<Ready> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{TaskBuilder, TaskError};
+    use super::*;
     use chrono::NaiveDate;
 
     #[test]
@@ -193,6 +211,7 @@ mod tests {
         assert_eq!(task.start_date, NaiveDate::from_ymd_opt(2025, 5, 1).unwrap());
         assert_eq!(task.due_date, NaiveDate::from_ymd_opt(2025, 5, 10).unwrap());
         assert!(task.code.starts_with("TASK-"));
+        // The state is `Planned` by type, no need for a runtime assertion.
     }
 
     #[test]
@@ -228,25 +247,6 @@ mod tests {
             .validate_vacations(&vacations);
 
         assert!(matches!(result, Err(TaskError::ResourceOnVacation(res)) if res == "RES-002"));
-    }
-
-    #[test]
-    fn test_missing_name_should_not_compile() {
-        // Este teste não compila, pois o builder não permite pular o nome.
-        // let _ = TaskBuilder::new().dates(
-        //     NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
-        //     NaiveDate::from_ymd_opt(2025, 5, 10).unwrap(),
-        // );
-        // Isso é garantido pelo typestate!
-    }
-
-    #[test]
-    fn test_missing_dates_should_not_compile() {
-        // Este teste não compila, pois o builder não permite pular as datas.
-        // let _ = TaskBuilder::new()
-        //     .name("Sem datas")
-        //     .build();
-        // Isso é garantido pelo typestate!
     }
 
     #[test]

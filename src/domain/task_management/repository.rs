@@ -1,45 +1,37 @@
+use super::AnyTask;
 use crate::domain::shared::errors::DomainError;
-use crate::domain::task_management::{Task, TaskStatus};
 use std::path::Path;
 
+/// Trait defining the contract for task persistence.
+/// It works with `AnyTask` to handle tasks in any state.
 pub trait TaskRepository {
-    /// Salva uma task no repositório
-    fn save(&self, task: Task) -> Result<(), DomainError>;
+    /// Saves a task, regardless of its state.
+    fn save(&self, task: AnyTask) -> Result<(), DomainError>;
 
-    /// Carrega uma task de um arquivo específico
+    /// Loads a single task from a specific file path.
     #[allow(dead_code)]
-    fn load(&self, path: &Path) -> Result<Task, DomainError>;
+    fn load(&self, path: &Path) -> Result<AnyTask, DomainError>;
 
-    /// Busca uma task pelo código
-    fn find_by_code(&self, code: &str) -> Result<Option<Task>, DomainError>;
+    /// Finds a task by its unique code.
+    fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, DomainError>;
 
-    /// Busca uma task pelo ID
-    fn find_by_id(&self, id: &str) -> Result<Option<Task>, DomainError>;
+    /// Finds a task by its unique ID.
+    fn find_by_id(&self, id: &str) -> Result<Option<AnyTask>, DomainError>;
 
-    /// Retorna todas as tasks
-    fn find_all(&self) -> Result<Vec<Task>, DomainError>;
+    /// Returns all tasks from the repository.
+    fn find_all(&self) -> Result<Vec<AnyTask>, DomainError>;
 
-    /// Deleta uma task pelo ID
+    /// Deletes a task by its unique ID.
     #[allow(dead_code)]
     fn delete(&self, id: &str) -> Result<(), DomainError>;
 
-    /// Atualiza o status de uma task
-    #[allow(dead_code)]
-    fn update_status(&self, code: &str, new_status: TaskStatus) -> Result<Task, DomainError>;
+    /// Finds all tasks assigned to a specific resource.
+    fn find_by_assignee(&self, assignee: &str) -> Result<Vec<AnyTask>, DomainError>;
 
-    /// Busca tasks por responsável
-    #[allow(dead_code)]
-    fn find_by_assignee(&self, assignee: &str) -> Result<Vec<Task>, DomainError>;
-
-    /// Busca tasks por status
-    #[allow(dead_code)]
-    fn find_by_status(&self, status: &TaskStatus) -> Result<Vec<Task>, DomainError>;
-
-    /// Busca tasks por intervalo de datas
-    #[allow(dead_code)]
+    /// Finds all tasks that are active within a given date range.
     fn find_by_date_range(
         &self,
         start_date: chrono::NaiveDate,
         end_date: chrono::NaiveDate,
-    ) -> Result<Vec<Task>, DomainError>;
+    ) -> Result<Vec<AnyTask>, DomainError>;
 }

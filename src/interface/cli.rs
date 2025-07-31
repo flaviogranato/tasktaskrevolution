@@ -246,7 +246,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                 };
 
-                let repository = FileTaskRepository::new();
+                let repository = FileTaskRepository::new(".");
                 let use_case = CreateTaskUseCase::new(repository);
 
                 let args = CreateTaskArgs {
@@ -321,7 +321,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                 }
                 ReportCommands::Task => {
-                    let task_repo = FileTaskRepository::new();
+                    let task_repo = FileTaskRepository::new(".");
                     let use_case = TaskReportUseCase::new(task_repo);
 
                     let file_path = "tasks_report.csv";
