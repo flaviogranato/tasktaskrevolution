@@ -1,182 +1,105 @@
 # TaskTaskRevolution
 
-Um utilitário de linha de comando para gerenciar suas tarefas e projetos de forma simples e eficiente.
+A command-line static site generator for managing your projects, tasks, and resources through simple YAML files.
 
-## Recursos
+## Core Concept
 
-- Criação de projetos
-- Criação de recursos dentro de projetos
-- Criação de tarefas associadas a projetos e recursos
+TaskTaskRevolution (ttr) transforms a structured directory of YAML files into a clean, modern, and readable static HTML website. Instead of complex commands to manage your project, you manage it by creating and editing simple text files. This approach makes your project data transparent, version-controllable, and easy to manage with your favorite text editor.
 
-## Funcionalidades
+## How It Works
 
-### Qualidade de Código
+1.  **Initialize:** Run `ttr init` in a new directory to create a global `config.yaml`.
+2.  **Define:** Create directories for your projects. Inside each, you define your project (`project.yaml`), your resources (`resources/*.yaml`), and your tasks (`tasks/*.yaml`).
+3.  **Build:** Run `ttr build` from the root directory. `ttr` will discover all your projects and generate a complete HTML static site in the `public` directory, with separate pages for each project.
 
-O projeto utiliza hooks de pre-commit para garantir qualidade:
-
-- Verificação de linting com clippy
-- Execução automática de testes
-- Verificação de formatação
-- Auditoria de dependências
-- Verificação de documentação
-
-## Uso
-
-### Instalação
+## Installation
 
 ```bash
-# Clone o repositório
+# Clone the repository
 git clone https://gitlab.com/flaviogranato/tasktaskrevolution.git
 
-# Entre no diretório
+# Enter the directory
 cd tasktaskrevolution
 
-# Compile o projeto
+# Compile the project
 cargo build --release
+
+# Optional: Add the binary to your PATH
+# e.g., sudo cp target/release/ttr /usr/local/bin/
 ```
 
-### Comandos Básicos
+## Usage
 
-#### Gerenciamento de Projetos
+### Initialize a Repository
+
+To start, create a root directory for all your projects and run the `init` command. This will create a `config.yaml` file to hold global settings.
 
 ```bash
-# Criar um novo projeto
-tasktaskrevolution project create "Nome do Projeto"
-
-# Listar todos os projetos
-tasktaskrevolution project list
-
-# Visualizar detalhes de um projeto
-tasktaskrevolution project show "Nome do Projeto"
-
-# Remover um projeto
-tasktaskrevolution project delete "Nome do Projeto"
+mkdir my-projects
+cd my-projects
+ttr init --manager-name "Your Name" --manager-email "your@email.com"
 ```
 
-#### Gerenciamento de Recursos
+### Define Your Project
+
+Inside your repository, create a directory for each project. At a minimum, each project needs a `project.yaml` file.
+
+**Example Directory Structure:**
+
+```
+my-projects/
+├── config.yaml
+└── my-first-project/
+    ├── project.yaml
+    ├── resources/
+    │   └── john_doe.yaml
+    └── tasks/
+        └── TSK-01.yaml
+```
+
+**`project.yaml` Example:**
+
+```yaml
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Project
+metadata:
+  name: "My First Project"
+  description: "A simple project to get started."
+spec:
+  status: InProgress
+```
+
+### Build the Static Site
+
+From the root directory (`my-projects` in this example), run the `build` command.
 
 ```bash
-# Adicionar um recurso a um projeto
-tasktaskrevolution resource add "Nome do Projeto" "Nome do Recurso"
-
-# Listar recursos de um projeto
-tasktaskrevolution resource list "Nome do Projeto"
-
-# Remover um recurso
-tasktaskrevolution resource delete "Nome do Projeto" "Nome do Recurso"
+ttr build
 ```
 
-#### Gerenciamento de Tarefas
+This will generate the static site in a `public` directory. The output will contain a subdirectory for each project found.
 
-```bash
-# Criar uma nova tarefa
-tasktaskrevolution task create "Nome do Projeto" "Nome do Recurso" "Descrição da Tarefa"
+## Development
 
-# Listar tarefas de um recurso
-tasktaskrevolution task list "Nome do Projeto" "Nome do Recurso"
+This project follows the principles of Clean Architecture and Domain-Driven Design (DDD), organizing the code into well-defined layers:
 
-# Marcar uma tarefa como concluída
-tasktaskrevolution task complete "Nome do Projeto" "Nome do Recurso" "ID da Tarefa"
+-   **Domain**: Contains the core business logic and entities.
+-   **Application**: Implements the application's use cases.
+-   **Infrastructure**: Provides concrete implementations for persistence, etc.
+-   **Interface**: Manages user interaction (CLI).
 
-# Remover uma tarefa
-tasktaskrevolution task delete "Nome do Projeto" "Nome do Recurso" "ID da Tarefa"
-```
+### Setting Up the Environment
 
-### Opções Globais
+1.  Clone the repository.
+2.  Install dependencies: `cargo build`
+3.  Run the tests: `cargo test`
 
-```bash
---help     # Mostra a ajuda
---version  # Mostra a versão do programa
---debug    # Ativa o modo debug
-```
+## Contributing
 
-### Exemplos de Uso
+This is a personal project under active development. For this reason, external contributions are not being accepted at this time.
 
-1. Criando um novo projeto de desenvolvimento:
+## License
 
-```bash
-# Criar o projeto
-tasktaskrevolution project create "Sistema de E-commerce"
+This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
-# Adicionar recursos
-tasktaskrevolution resource add "Sistema de E-commerce" "Frontend"
-tasktaskrevolution resource add "Sistema de E-commerce" "Backend"
-tasktaskrevolution resource add "Sistema de E-commerce" "Banco de Dados"
-
-# Criar tarefas para o Frontend
-tasktaskrevolution task create "Sistema de E-commerce" "Frontend" "Implementar página inicial"
-tasktaskrevolution task create "Sistema de E-commerce" "Frontend" "Criar componente de carrinho"
-```
-
-2. Gerenciando um projeto de manutenção:
-
-```bash
-# Listar projetos existentes
-tasktaskrevolution project list
-
-# Ver detalhes de um projeto específico
-tasktaskrevolution project show "Sistema de E-commerce"
-
-# Listar recursos do projeto
-tasktaskrevolution resource list "Sistema de E-commerce"
-
-# Listar tarefas de um recurso específico
-tasktaskrevolution task list "Sistema de E-commerce" "Frontend"
-```
-
-### Dicas de Uso
-
-- Use aspas para nomes que contenham espaços
-- IDs de tarefas são numéricos e podem ser visualizados no comando `task list`
-- Você pode usar a tecla TAB para autocompletar comandos
-- Use `--help` após qualquer comando para ver mais detalhes sobre suas opções
-
-## Desenvolvimento
-
-Este projeto segue os princípios da Arquitetura Limpa (Clean Architecture) e Domain-Driven Design (DDD), organizando o código em camadas bem definidas:
-
-- **Domain**: Contém as regras de negócio e entidades principais
-- **Application**: Implementa os casos de uso da aplicação
-- **Infrastructure**: Fornece implementações concretas para persistência e APIs
-- **Interface**: Gerencia a interação com o usuário
-
-### Configuração do Ambiente
-
-1. Clone o repositório
-2. Instale as dependências: `cargo build`
-3. Configure os hooks de git: `chmod +x .git/hooks/pre-commit`
-4. Execute os testes: `cargo test`
-5. Execute os benchmarks: `cargo bench`
-
-### Logging
-
-Para ajustar o nível de logging, use a variável de ambiente `RUST_LOG`:
-
-```bash
-RUST_LOG=debug cargo run
-```
-
-### Métricas
-
-As métricas de performance estão disponíveis em `http://localhost:9090/metrics` quando o programa está em execução.
-
-## Contribuindo
-
-Atualmente, este projeto é mantido exclusivamente por Flavio Granato. Como é um projeto pessoal em desenvolvimento, não estamos aceitando contribuições externas no momento.
-
-## Licença
-
-Este projeto está licenciado sob a [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-
-Esta licença permite que você:
-
-- Compartilhe: copie e redistribua o material em qualquer formato
-- Adapte: remixe, transforme e construa sobre o material
-
-Sob os seguintes termos:
-
-- Atribuição: Você deve dar crédito apropriado, fornecer um link para a licença e indicar se foram feitas alterações.
-- Não Comercial: Você não pode usar o material para fins comerciais.
-- Compartilha Igual: Se você remixar, transformar ou construir sobre o material, você deve distribuir suas contribuições sob a mesma licença que o original.
-
-Para mais detalhes, consulte o arquivo [LICENSE](LICENSE) no repositório.
+See the [LICENSE](LICENSE) file for more details.
