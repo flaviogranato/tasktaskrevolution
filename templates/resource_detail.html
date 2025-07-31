@@ -1,66 +1,153 @@
-{% extends "base.html" %}
-
-{% block title %}Resource: {{ resource.name }}{% endblock title %}
-
-{% block content %}
-<section>
-    <h2>{{ resource.name }}</h2>
-
-    <div class="list-container resource-details">
-        <h3>Details</h3>
-        <p><strong>Type:</strong> {{ resource.resource_type }}</p>
-        {% if resource.email %}
-            <p><strong>Email:</strong> {{ resource.email }}</p>
-        {% endif %}
-        <p><strong>Time Off Balance:</strong> {{ resource.time_off_balance }} hours</p>
+{% extends "base.html" %} {% block title %}Resource: {{ resource.name }} - {{
+super() }}{% endblock title %} {% block content %}
+<div class="space-y-8">
+    <!-- Page Header -->
+    <div>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">
+            {{ resource.name }}
+        </h2>
+        <p class="mt-1 text-lg text-slate-600">{{ resource.resource_type }}</p>
     </div>
 
-    <div class="list-container vacations-list">
-        <h3>Absences & Vacations</h3>
-        {% if resource.vacations and resource.vacations | length > 0 %}
-            <ul>
-                {% for period in resource.vacations %}
-                    <li>
-                        <strong>{{ period.period_type }}</strong>:
-                        <span>
-                            {{ period.start_date | date(format="%Y-%m-%d") }} -
-                            {{ period.end_date | date(format="%Y-%m-%d") }}
-                        </span>
-                        {% if period.approved %}
-                            <span class="status-approved">(Approved)</span>
-                        {% else %}
-                            <span class="status-pending">(Pending)</span>
-                        {% endif %}
+    <!-- Main Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Details Card -->
+        <div class="lg:col-span-1">
+            <div
+                class="bg-white p-6 rounded-lg shadow-md border border-slate-200"
+            >
+                <h3
+                    class="text-xl font-semibold text-slate-800 border-b border-slate-200 pb-3"
+                >
+                    Details
+                </h3>
+                <dl class="mt-4 space-y-4">
+                    {% if resource.email %}
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">
+                            Email
+                        </dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            {{ resource.email }}
+                        </dd>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">
+                            Status
+                        </dt>
+                        <dd class="mt-1 text-sm">
+                            {% if resource.state == "Available" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                >Available</span
+                            >
+                            {% elif resource.state == "Assigned" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                                >Assigned</span
+                            >
+                            {% elif resource.state == "Inactive" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                                >Inactive</span
+                            >
+                            {% else %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800"
+                                >Unknown</span
+                            >
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">
+                            Time Off Balance
+                        </dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            {{ resource.time_off_balance }} hours
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Right Column: Activities -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Project Assignments Card -->
+            {% if resource.state == "Assigned" %}
+            <div
+                class="bg-white p-6 rounded-lg shadow-md border border-slate-200"
+            >
+                <h3 class="text-xl font-semibold text-slate-800 mb-4">
+                    Project Assignments
+                </h3>
+                <ul class="divide-y divide-slate-200">
+                    {% for assignment in resource.state.project_assignments %}
+                    <li class="py-4">
+                        <p class="font-semibold text-slate-900">
+                            Project ID: {{ assignment.project_id }}
+                        </p>
+                        <p class="text-sm text-slate-600">
+                            {{ assignment.start_date | date(format="%Y-%m-%d")
+                            }} - {{ assignment.end_date |
+                            date(format="%Y-%m-%d") }}
+                        </p>
+                        <p class="text-sm text-slate-600">
+                            Allocation: {{ assignment.allocation_percentage }}%
+                        </p>
                     </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>This resource has no scheduled absences or vacations.</p>
-        {% endif %}
-    </div>
-</section>
-{% endblock content %}
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
 
-{% block scripts %}
-<style>
-    .resource-details p {
-        margin-bottom: 10px;
-        font-size: 1.1rem;
-    }
-    .vacations-list li {
-        padding: 8px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    .vacations-list li:last-child {
-        border-bottom: none;
-    }
-    .status-approved {
-        color: #27ae60;
-        font-weight: bold;
-    }
-    .status-pending {
-        color: #f39c12;
-        font-weight: bold;
-    }
-</style>
-{% endblock scripts %}
+            <!-- Vacations & Absences Card -->
+            <div
+                class="bg-white p-6 rounded-lg shadow-md border border-slate-200"
+            >
+                <h3 class="text-xl font-semibold text-slate-800 mb-4">
+                    Absences & Vacations
+                </h3>
+                {% if resource.vacations and resource.vacations | length > 0 %}
+                <ul class="divide-y divide-slate-200">
+                    {% for period in resource.vacations %}
+                    <li class="py-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="font-semibold text-slate-900">
+                                    {{ period.period_type }}
+                                </p>
+                                <p class="text-sm text-slate-600">
+                                    {{ period.start_date |
+                                    date(format="%Y-%m-%d") }} - {{
+                                    period.end_date | date(format="%Y-%m-%d") }}
+                                </p>
+                            </div>
+                            <div>
+                                {% if period.approved %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                                    >Approved</span
+                                >
+                                {% else %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+                                    >Pending</span
+                                >
+                                {% endif %}
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-slate-500 mt-4">
+                    This resource has no scheduled absences or vacations.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
