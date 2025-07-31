@@ -1,4 +1,5 @@
 use crate::domain::project_management::{project::Project, state::Planned, vacation_rules::VacationRules};
+use uuid7::uuid7;
 
 /// Builder for the `Project` struct.
 ///
@@ -20,6 +21,7 @@ impl ProjectBuilder {
     /// Creates a new `ProjectBuilder` with a required name.
     pub fn new(name: String) -> Self {
         Self {
+            id: Some(uuid7().to_string()),
             name: Some(name),
             ..Default::default()
         }

@@ -2,6 +2,7 @@ use crate::domain::{
     resource_management::{repository::ResourceRepository, resource::Resource},
     shared::errors::DomainError,
 };
+use uuid7::uuid7;
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
@@ -12,7 +13,8 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         Self { repository }
     }
     pub fn execute(&self, name: String, resource_type: String) -> Result<(), DomainError> {
-        let r = Resource::new(None, name.clone(), None, resource_type, None, 0);
+        let id = uuid7().to_string();
+        let r = Resource::new(Some(id), name.clone(), None, resource_type, None, 0);
         self.repository.save(r.into())?;
         println!("Recurso {name} criado.");
         Ok(())
