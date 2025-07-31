@@ -1,70 +1,97 @@
-{% extends "base.html" %} {% block title %} Dashboard - {{ super() }} {%
-endblock title %} {% block content %}
-<section>
-    <h2>Project Dashboard</h2>
+{% extends "base.html" %}
 
-    <div class="summary-cards">
-        <div class="card">
-            <h3>Total Tasks</h3>
-            <p class="count">{{ tasks | length }}</p>
+{% block title %}Dashboard - {{ super() }}{% endblock title %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Header Section -->
+    <div>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">Project Dashboard</h2>
+        <p class="mt-2 text-lg text-slate-600">
+            A summary of your project's tasks and resources.
+        </p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-700">Total Tasks</h3>
+            <p class="mt-2 text-4xl font-bold text-slate-900">{{ tasks | length }}</p>
         </div>
-        <div class="card">
-            <h3>Total Resources</h3>
-            <p class="count">{{ resources | length }}</p>
+        <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+            <h3 class="text-lg font-semibold text-slate-700">Total Resources</h3>
+            <p class="mt-2 text-4xl font-bold text-slate-900">{{ resources | length }}</p>
         </div>
     </div>
 
-    <div class="dashboard-lists">
-        <div class="list-container">
-            <h3>Recent Tasks</h3>
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Recent Tasks List -->
+        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border border-slate-200">
+            <h3 class="text-xl font-semibold text-slate-800 mb-4">Recent Tasks</h3>
             {% if tasks %}
-            <ul>
+            <ul class="space-y-4">
                 {% for task in tasks | slice(end=10) %}
-                <li>
-                    <strong>{{ task.name }} ({{ task.code }})</strong>
-                    <div class="details">
-                        Status: {% if task.status.InProgress is defined %}In Progress ({{ task.status.InProgress.progress }}%)
-                        {% elif task.status.Blocked is defined %}Blocked: {{ task.status.Blocked.reason }}
-                        {% elif task.status == "Planned" %}Planned
-                        {% elif task.status == "Completed" %}Completed
-                        {% elif task.status == "Cancelled" %}Cancelled
-                        {% else %}Unknown{% endif %}
+                <li class="border-b border-slate-200 pb-4 last:border-b-0">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="font-bold text-slate-900">{{ task.name }}</p>
+                            <p class="text-sm text-slate-500">{{ task.code }}</p>
+                        </div>
+                        <div class="text-sm font-medium">
+                            {% if task.status == "InProgress" %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                                In Progress ({{ task.progress }}%)
+                            </span>
+                            {% elif task.status == "Blocked" %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-800" title="{{ task.reason }}">
+                                Blocked
+                            </span>
+                            {% elif task.status == "Planned" %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-800">
+                                Planned
+                            </span>
+                            {% elif task.status == "Completed" %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">
+                                Completed
+                            </span>
+                            {% elif task.status == "Cancelled" %}
+                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                                Cancelled
+                            </span>
+                            {% else %}
+                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800">
+                                Unknown
+                            </span>
+                            {% endif %}
+                        </div>
                     </div>
                 </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p>No tasks have been created yet.</p>
+            <p class="text-slate-500 mt-4">No tasks have been created yet.</p>
             {% endif %}
         </div>
-        <div class="list-container">
-            <h3>Resources</h3>
+
+        <!-- Resources List -->
+        <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+            <h3 class="text-xl font-semibold text-slate-800 mb-4">Resources</h3>
             {% if resources %}
-            <ul>
+            <ul class="divide-y divide-slate-200">
                 {% for resource in resources %}
-                <li>
-                    <strong><a href="resources/{{ resource.name | replace(from=" ", to="_") | lower }}.html">{{ resource.name }}</a></strong> - {{
-                    resource.resource_type }}
+                <li class="py-3">
+                     <a href="resources/{{ resource.name | replace(from=" ", to="_") | lower }}.html" class="block hover:bg-slate-50 p-2 rounded-md">
+                        <p class="font-bold text-blue-600 hover:underline">{{ resource.name }}</p>
+                        <p class="text-sm text-slate-500">{{ resource.resource_type }}</p>
+                    </a>
                 </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p>No resources have been created yet.</p>
+            <p class="text-slate-500 mt-4">No resources have been created yet.</p>
             {% endif %}
         </div>
     </div>
-</section>
-{% endblock content %} {% block scripts %}
-<style>
-    .dashboard-lists {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 30px;
-    }
-    .details {
-        font-size: 0.9em;
-        color: #555;
-        padding-left: 10px;
-    }
-</style>
-{% endblock scripts %}
+</div>
+{% endblock content %}
