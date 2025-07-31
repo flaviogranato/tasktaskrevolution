@@ -1,5 +1,6 @@
 use crate::{
     application::{
+        assign_resource_to_task_use_case::AssignResourceToTaskUseCase,
         build_use_case::BuildUseCase,
         create_project_use_case::CreateProjectUseCase,
         create_resource_use_case::CreateResourceUseCase,
@@ -56,6 +57,10 @@ enum Commands {
     Report {
         #[clap(subcommand)]
         report_command: ReportCommands,
+    },
+    Task {
+        #[clap(subcommand)]
+        task_command: TaskCommands,
     },
 }
 
@@ -118,6 +123,19 @@ enum ValidateCommands {
 enum ReportCommands {
     Vacation,
     Task,
+}
+
+#[derive(Subcommand, Debug)]
+enum TaskCommands {
+    /// Assign one or more resources to a task
+    Assign {
+        /// The code of the task to assign resources to
+        #[arg(long, short)]
+        task: String,
+        /// A comma-separated list of resource codes to assign
+        #[arg(long, short, value_delimiter = ',')]
+        resources: Vec<String>,
+    },
 }
 
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -335,6 +353,25 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         }
                         Err(e) => {
                             println!("❌ Erro ao criar arquivo de relatório de tarefas: {e}");
+                        }
+                    }
+                }
+            }
+            Ok(())
+        }
+        Commands::Task { task_command } => {
+            match task_command {
+                TaskCommands::Assign { task, resources } => {
+                    let task_repo = FileTaskRepository::new(".");
+                    let resource_repo = FileResourceRepository::new(".");
+                    let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+                    match use_case.execute(task, resources) {
+                        Ok(updated_task) => {
+                            println!("✅ Successfully assigned resources to task '{}'.", updated_task.code());
+                            println!("   New assignees: {}", updated_task.assigned_resources().join(", "));
+                        }
+                        Err(e) => {
+                            println!("❌ Error assigning resources: {}", e);
                         }
                     }
                 }
