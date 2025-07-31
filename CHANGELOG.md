@@ -2,13 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.4.0] - 2025-04-11
+## [unreleased]
+
+### 🚀 Features
+
+- *(ui)* Refactor HTML templates with Tailwind CSS
+
+### 🐛 Bug Fixes
+
+- *(build)* Handle multiple projects correctly in BuildUseCase
+
+### 🚜 Refactor
+
+- *(task)* Implement typestate pattern for Task
+- *(resource)* Implement typestate pattern for Resource
+- *(resource)* Implement typestate pattern and fix subsequent issues
+- *(project)* Implement typestate pattern for Project
+- *(domain)* Move Any* enums to dedicated modules
+
+### 🧪 Testing
+
+- *(manifests)* Restore and expand test coverage
+
+## [0.4] - 2025-07-29
 
 ### 🚀 Features
 
 - *(cargo)* Added release profile
 - Adiciona validação de datas para férias
 - Implementa sistema de tarefas e correção de erros de compilação
+- *(refactor)* [**breaking**] Reorganize project structure for better modularity and DDD alignment
+- *(task)* Added task management
+- Refatora templates de tarefas e atualiza manifesto
+- *(project)* Implementa herança de timezone da configuração global
+- Busca dinâmica de projeto e exibição de férias
+- Refatora UI para HTML puro e implementa páginas de detalhes
+- Adicionar arquivos de template do site
 
 ### 🐛 Bug Fixes
 
@@ -19,6 +48,12 @@ All notable changes to this project will be documented in this file.
 - Removed unnecessary code
 - Cargo-audit
 - Binary name
+- *(task-builder)* Propagate assigned_resources, fix Option<NaiveDate> handling, and update tests
+- *(build)* Correct HTML generation and navigation links
+- Corrige inconsistências e redundâncias nos manifestos
+- *(task)* Garante a persistência correta do project_code
+- *(manifests)* Evita valores nulos em campos opcionais
+- *(templates)* Remove '$' extra em interpolações Vue.js
 
 ### 🚜 Refactor
 
@@ -27,6 +62,9 @@ All notable changes to this project will be documented in this file.
 - Remove TaskService da camada de aplicação
 - *(ci)* Remove sccache and optimize GitLab CI pipeline for free runners
 - Migrated the structure do respect Rust Edition 2024
+- *(core)* Overhaul test suite and apply code quality improvements
+- *(manifests)* Padroniza apiVersion com constante
+- Corrigir avisos do clippy e refatorar a criação de projetos e tasks
 
 ### 📚 Documentation
 
@@ -41,6 +79,8 @@ All notable changes to this project will be documented in this file.
 
 - *(all)* Format all files
 - Reformating code
+- Reformating
+- *(all)* Formatting code
 
 ### ⚙️ Miscellaneous Tasks
 
@@ -56,6 +96,13 @@ All notable changes to this project will be documented in this file.
 - Removed unnecessary files
 - Integrate git-cliff for automatic CHANGELOG.md generation
 - Removed unnecessary configuration
+- Bump version
+- Removed unnecessary text
+- Updated dependencies
+- Ignora o diretório 'example' no .gitignore
+- Adiciona workflow do GitHub Actions para Integração Contínua
+- Configurar workflow para criar release em tags
+- Adicionar permissão para criar releases
 
 ### 🛡️ Security
 
