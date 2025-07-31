@@ -115,6 +115,7 @@ mod tests {
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::path::Path;
+    use uuid7::uuid7;
 
     // --- Mock ---
     struct MockTaskRepository {
@@ -146,6 +147,10 @@ mod tests {
         fn find_by_date_range(&self, _start: NaiveDate, _end: NaiveDate) -> Result<Vec<AnyTask>, DomainError> {
             unimplemented!()
         }
+
+        fn get_next_code(&self) -> Result<String, DomainError> {
+            Ok("task-1".to_string())
+        }
     }
 
     // --- Teste Principal ---
@@ -153,7 +158,7 @@ mod tests {
     fn test_task_report_generation() {
         // 1. Setup: Criar dados de teste
         let task1: Task<InProgress> = Task {
-            id: "TASK-001".to_string(),
+            id: uuid7(),
             project_code: "PROJ".to_string(),
             code: "TSK-001".to_string(),
             name: "Implement Login".to_string(),
@@ -165,7 +170,7 @@ mod tests {
             assigned_resources: vec!["Alice".to_string()],
         };
         let task2: Task<Completed> = Task {
-            id: "TASK-002".to_string(),
+            id: uuid7(),
             project_code: "PROJ".to_string(),
             code: "TSK-002".to_string(),
             name: "Setup Database".to_string(),

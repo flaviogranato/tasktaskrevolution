@@ -3,6 +3,7 @@ use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::Display;
+use uuid7::{Uuid, uuid7};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimeOffEntry {
@@ -57,7 +58,8 @@ pub struct ProjectAssignment {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Resource<S: ResourceState> {
-    pub id: Option<String>,
+    pub id: Uuid,
+    pub code: String,
     pub name: String,
     pub email: Option<String>,
     pub resource_type: String,
@@ -69,7 +71,7 @@ pub struct Resource<S: ResourceState> {
 
 impl Resource<Available> {
     pub fn new(
-        id: Option<String>,
+        code: String,
         name: String,
         email: Option<String>,
         resource_type: String,
@@ -77,7 +79,8 @@ impl Resource<Available> {
         time_off_balance: u32,
     ) -> Self {
         Self {
-            id,
+            id: uuid7(),
+            code,
             name,
             email,
             resource_type,
@@ -92,6 +95,7 @@ impl Resource<Available> {
     pub fn assign_to_project(self, assignment: ProjectAssignment) -> Resource<Assigned> {
         Resource {
             id: self.id,
+            code: self.code,
             name: self.name,
             email: self.email,
             resource_type: self.resource_type,
@@ -117,8 +121,15 @@ impl<S: ResourceState> Display for Resource<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Resource {{ id: {:?}, name: {}, email: {:?}, resource_type: {}, vacations: {:?}, time_off_balance: {}, state: {:?} }}",
-            self.id, self.name, self.email, self.resource_type, self.vacations, self.time_off_balance, self.state
+            "Resource {{ id: {:?}, code: {}, name: {}, email: {:?}, resource_type: {}, vacations: {:?}, time_off_balance: {}, state: {:?} }}",
+            self.id,
+            self.code,
+            self.name,
+            self.email,
+            self.resource_type,
+            self.vacations,
+            self.time_off_balance,
+            self.state
         )
     }
 }
@@ -153,6 +164,7 @@ impl Display for ProjectAssignment {
 mod tests {
     use super::*;
     use chrono::{DateTime, Local, TimeZone};
+    use uuid7::uuid7;
 
     // Helper to create a DateTime<Local> for tests
     fn dt(year: i32, month: u32, day: u32) -> DateTime<Local> {
@@ -207,8 +219,10 @@ mod tests {
 
     #[test]
     fn test_resource_display() {
+        let id = uuid7();
         let resource = Resource {
-            id: Some("res-007".to_string()),
+            id,
+            code: "dev-7".to_string(),
             name: "James".to_string(),
             email: Some("james@test.com".to_string()),
             resource_type: "Developer".to_string(),
@@ -217,14 +231,17 @@ mod tests {
             time_off_history: None,
             state: Available,
         };
-        let expected = "Resource { id: Some(\"res-007\"), name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, time_off_balance: 40, state: Available }";
+        let expected = format!(
+            "Resource {{ id: {:?}, code: dev-7, name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, time_off_balance: 40, state: Available }}",
+            id
+        );
         assert_eq!(resource.to_string(), expected);
     }
 
     #[test]
     fn test_resource_state_transition_to_assigned() {
         let resource = Resource::new(
-            Some("res-001".to_string()),
+            "qa-1".to_string(),
             "Tester".to_string(),
             None,
             "QA".to_string(),

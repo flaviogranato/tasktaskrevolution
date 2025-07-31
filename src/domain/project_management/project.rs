@@ -2,10 +2,12 @@ use super::state::{Cancelled, Completed, InProgress, Planned, ProjectState};
 use crate::domain::project_management::vacation_rules::VacationRules;
 use serde::Serialize;
 use std::fmt::{Debug, Display};
+use uuid7::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Project<S: ProjectState> {
-    pub id: Option<String>,
+    pub id: Uuid,
+    pub code: String,
     pub name: String,
     pub description: Option<String>,
     pub start_date: Option<String>,
@@ -19,8 +21,8 @@ impl<S: ProjectState> Display for Project<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Project {{ id: {:?}, name: {}, status: {:?} }}",
-            self.id, self.name, self.state
+            "Project {{ id: {:?}, code: {}, name: {}, status: {:?} }}",
+            self.id, self.code, self.name, self.state
         )
     }
 }
@@ -30,6 +32,7 @@ impl Project<Planned> {
     pub fn start(self) -> Project<InProgress> {
         Project {
             id: self.id,
+            code: self.code,
             name: self.name,
             description: self.description,
             start_date: self.start_date,
@@ -44,6 +47,7 @@ impl Project<Planned> {
     pub fn cancel(self) -> Project<Cancelled> {
         Project {
             id: self.id,
+            code: self.code,
             name: self.name,
             description: self.description,
             start_date: self.start_date,
@@ -60,6 +64,7 @@ impl Project<InProgress> {
     pub fn complete(self) -> Project<Completed> {
         Project {
             id: self.id,
+            code: self.code,
             name: self.name,
             description: self.description,
             start_date: self.start_date,
@@ -74,6 +79,7 @@ impl Project<InProgress> {
     pub fn cancel(self) -> Project<Cancelled> {
         Project {
             id: self.id,
+            code: self.code,
             name: self.name,
             description: self.description,
             start_date: self.start_date,
@@ -88,11 +94,14 @@ impl Project<InProgress> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uuid7::uuid7;
 
     #[test]
     fn test_project_display() {
+        let id = uuid7();
         let project_with_id = Project {
-            id: Some("ID-123".to_string()),
+            id,
+            code: "proj-a".to_string(),
             name: "Project A".to_string(),
             description: None,
             start_date: None,
@@ -103,22 +112,10 @@ mod tests {
         };
         assert_eq!(
             project_with_id.to_string(),
-            "Project { id: Some(\"ID-123\"), name: Project A, status: Planned }"
-        );
-
-        let project_without_id = Project {
-            id: None,
-            name: "Project B".to_string(),
-            description: None,
-            start_date: None,
-            end_date: None,
-            vacation_rules: None,
-            timezone: None,
-            state: Completed,
-        };
-        assert_eq!(
-            project_without_id.to_string(),
-            "Project { id: None, name: Project B, status: Completed }"
+            format!(
+                "Project {{ id: {:?}, code: proj-a, name: Project A, status: Planned }}",
+                id
+            )
         );
     }
 }

@@ -13,7 +13,11 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
     }
 
     pub fn execute(&self, name: String, description: Option<String>) -> Result<(), DomainError> {
-        let project = ProjectBuilder::new(name.clone()).description(description).build();
+        let code = self.repository.get_next_code()?;
+        let project = ProjectBuilder::new(name.clone())
+            .code(code)
+            .description(description)
+            .build();
 
         self.repository.save(project.into())?;
         println!("Projeto {name} criado");
@@ -46,6 +50,7 @@ mod test {
                 should_fail,
                 saved_config: RefCell::new(None),
                 project: ProjectBuilder::new("John".to_string())
+                    .code("proj-1".to_string())
                     .description(Some("a simple test project".to_string()))
                     .build()
                     .into(),
@@ -64,6 +69,10 @@ mod test {
 
         fn load(&self) -> Result<AnyProject, DomainError> {
             Ok(self.project.clone())
+        }
+
+        fn get_next_code(&self) -> Result<String, DomainError> {
+            Ok("proj-1".to_string()) // Always return a fixed code for tests
         }
     }
 

@@ -7,16 +7,8 @@ use crate::domain::project_management::{
 };
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-
-struct ProjectCore {
-    id: Option<String>,
-    name: String,
-    description: Option<String>,
-    start_date: Option<String>,
-    end_date: Option<String>,
-    vacation_rules: Option<VacationRules>,
-    timezone: Option<String>,
-}
+use std::str::FromStr;
+use uuid7::{Uuid, uuid7};
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
 
@@ -32,6 +24,8 @@ pub struct ProjectManifest {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     pub name: String,
@@ -82,71 +76,69 @@ pub enum ProjectStatusManifest {
 
 impl From<AnyProject> for ProjectManifest {
     fn from(source: AnyProject) -> Self {
-        let (project_core, status_manifest) = match source {
-            AnyProject::Planned(p) => (
-                ProjectCore {
-                    id: p.id,
-                    name: p.name,
-                    description: p.description,
-                    start_date: p.start_date,
-                    end_date: p.end_date,
-                    vacation_rules: p.vacation_rules,
-                    timezone: p.timezone,
-                },
-                ProjectStatusManifest::Planned,
-            ),
-            AnyProject::InProgress(p) => (
-                ProjectCore {
-                    id: p.id,
-                    name: p.name,
-                    description: p.description,
-                    start_date: p.start_date,
-                    end_date: p.end_date,
-                    vacation_rules: p.vacation_rules,
-                    timezone: p.timezone,
-                },
-                ProjectStatusManifest::InProgress,
-            ),
-            AnyProject::Completed(p) => (
-                ProjectCore {
-                    id: p.id,
-                    name: p.name,
-                    description: p.description,
-                    start_date: p.start_date,
-                    end_date: p.end_date,
-                    vacation_rules: p.vacation_rules,
-                    timezone: p.timezone,
-                },
-                ProjectStatusManifest::Completed,
-            ),
-            AnyProject::Cancelled(p) => (
-                ProjectCore {
-                    id: p.id,
-                    name: p.name,
-                    description: p.description,
-                    start_date: p.start_date,
-                    end_date: p.end_date,
-                    vacation_rules: p.vacation_rules,
-                    timezone: p.timezone,
-                },
-                ProjectStatusManifest::Cancelled,
-            ),
-        };
+        let (id, code, name, description, start_date, end_date, vacation_rules, timezone, status_manifest) =
+            match source {
+                AnyProject::Planned(p) => (
+                    p.id,
+                    p.code,
+                    p.name,
+                    p.description,
+                    p.start_date,
+                    p.end_date,
+                    p.vacation_rules,
+                    p.timezone,
+                    ProjectStatusManifest::Planned,
+                ),
+                AnyProject::InProgress(p) => (
+                    p.id,
+                    p.code,
+                    p.name,
+                    p.description,
+                    p.start_date,
+                    p.end_date,
+                    p.vacation_rules,
+                    p.timezone,
+                    ProjectStatusManifest::InProgress,
+                ),
+                AnyProject::Completed(p) => (
+                    p.id,
+                    p.code,
+                    p.name,
+                    p.description,
+                    p.start_date,
+                    p.end_date,
+                    p.vacation_rules,
+                    p.timezone,
+                    ProjectStatusManifest::Completed,
+                ),
+                AnyProject::Cancelled(p) => (
+                    p.id,
+                    p.code,
+                    p.name,
+                    p.description,
+                    p.start_date,
+                    p.end_date,
+                    p.vacation_rules,
+                    p.timezone,
+                    ProjectStatusManifest::Cancelled,
+                ),
+            };
 
         ProjectManifest {
             api_version: API_VERSION.to_string(),
             kind: "Project".to_string(),
             metadata: ProjectMetadata {
-                code: project_core.id.clone(),
-                name: project_core.name.clone(),
-                description: project_core.description.clone().unwrap_or_default(),
+                id: Some(id.to_string()),
+                code: Some(code),
+                name,
+                description: description.unwrap_or_default(),
             },
             spec: ProjectSpec {
-                timezone: project_core.timezone,
-                start_date: project_core.start_date,
-                end_date: project_core.end_date,
+                timezone,
+                start_date,
+                end_date,
                 status: status_manifest,
-                vacation_rules: project_core.vacation_rules.map(VacationRulesManifest::from),
+                vacation_rules: vacation_rules.map(VacationRulesManifest::from),
             },
         }
     }
@@ -156,8 +148,16 @@ impl TryFrom<ProjectManifest> for AnyProject {
     type Error = String;
 
     fn try_from(manifest: ProjectManifest) -> Result<Self, Self::Error> {
+        let id = manifest
+            .metadata
+            .id
+            .map(|id_str| Uuid::from_str(&id_str))
+            .transpose()
+            .map_err(|e| e.to_string())?
+            .unwrap_or_else(uuid7);
+
+        let code = manifest.metadata.code.ok_or("Project code is missing in manifest")?;
         let name = manifest.metadata.name;
-        let id = manifest.metadata.code;
         let description = if manifest.metadata.description.is_empty() {
             None
         } else {
@@ -171,6 +171,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
         match manifest.spec.status {
             ProjectStatusManifest::Planned => Ok(AnyProject::Planned(Project {
                 id,
+                code,
                 name,
                 description,
                 start_date,
@@ -181,6 +182,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
             })),
             ProjectStatusManifest::InProgress => Ok(AnyProject::InProgress(Project {
                 id,
+                code,
                 name,
                 description,
                 start_date,
@@ -191,6 +193,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
             })),
             ProjectStatusManifest::Completed => Ok(AnyProject::Completed(Project {
                 id,
+                code,
                 name,
                 description,
                 start_date,
@@ -201,6 +204,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
             })),
             ProjectStatusManifest::Cancelled => Ok(AnyProject::Cancelled(Project {
                 id,
+                code,
                 name,
                 description,
                 start_date,
@@ -266,7 +270,9 @@ mod tests {
     #[test]
     fn test_bidirectional_conversion() {
         // Create a Planned project
-        let original_project = ProjectBuilder::new("Test Project".to_string()).build();
+        let original_project = ProjectBuilder::new("Test Project".to_string())
+            .code("proj-1".to_string())
+            .build();
         let original_any = AnyProject::from(original_project.clone());
 
         // Convert to Manifest
@@ -280,6 +286,7 @@ mod tests {
 
         if let AnyProject::Planned(converted) = converted_any {
             assert_eq!(original_project.name, converted.name);
+            assert_eq!(original_project.id, converted.id);
         }
     }
 }

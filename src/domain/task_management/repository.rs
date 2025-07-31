@@ -36,4 +36,6 @@ pub trait TaskRepository {
         start_date: chrono::NaiveDate,
         end_date: chrono::NaiveDate,
     ) -> Result<Vec<AnyTask>, DomainError>;
+
+    fn get_next_code(&self) -> Result<String, DomainError>;
 }

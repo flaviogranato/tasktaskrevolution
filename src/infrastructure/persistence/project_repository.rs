@@ -78,6 +78,30 @@ impl ProjectRepository for FileProjectRepository {
             ))
         }
     }
+
+    fn get_next_code(&self) -> Result<String, DomainError> {
+        let pattern = self.base_path.join("**/project.yaml");
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
+
+        let mut max_code = 0;
+
+        for entry in walker.flatten() {
+            let manifest_path = entry.path();
+            if let Ok(manifest) = self.load_manifest(manifest_path) {
+                if let Some(code) = manifest.metadata.code {
+                    if let Some(num_str) = code.strip_prefix("proj-") {
+                        if let Ok(num) = num_str.parse::<u32>() {
+                            if num > max_code {
+                                max_code = num;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(format!("proj-{}", max_code + 1))
+    }
 }
 
 // ===================================
@@ -91,9 +115,9 @@ mod tests {
     use tempfile::tempdir;
 
     /// Creates a simple test project.
-    fn create_test_project(name: &str) -> AnyProject {
+    fn create_test_project(name: &str, code: &str) -> AnyProject {
         let project = ProjectBuilder::new(name.to_string())
-            .id(format!("id-{name}"))
+            .code(code.to_string())
             .description(Some(format!("Description for {name}")))
             .start_date("2025-01-01".to_string())
             .end_date("2025-12-31".to_string())
@@ -106,7 +130,7 @@ mod tests {
         // 1. Setup
         let temp_dir = tempdir().expect("Could not create temporary directory");
         let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
-        let original_project = create_test_project("MyTestProject");
+        let original_project = create_test_project("MyTestProject", "proj-1");
         let project_name = original_project.name().to_string();
 
         // 2. Save the project
@@ -152,5 +176,25 @@ mod tests {
         } else {
             panic!("Expected a DomainError::NotFound");
         }
+    }
+
+    #[test]
+    fn test_get_next_code() {
+        // 1. Setup
+        let temp_dir = tempdir().expect("Could not create temporary directory");
+        let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
+
+        // 2. Test with no projects
+        let next_code = repo.get_next_code().unwrap();
+        assert_eq!(next_code, "proj-1");
+
+        // 3. Save some projects
+        repo.save(create_test_project("Project Alpha", "proj-1")).unwrap();
+        repo.save(create_test_project("Project Beta", "proj-2")).unwrap();
+        repo.save(create_test_project("Project Gamma", "proj-5")).unwrap(); // Test with a gap
+
+        // 4. Test again
+        let next_code_after_saves = repo.get_next_code().unwrap();
+        assert_eq!(next_code_after_saves, "proj-6");
     }
 }

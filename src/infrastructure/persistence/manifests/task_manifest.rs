@@ -1,11 +1,13 @@
 use crate::domain::task_management::{AnyTask, Task, state::*};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use uuid7::{Uuid, uuid7};
 
 // This is a private helper struct to unify the data from different Task<State> types.
 #[allow(dead_code)]
 struct TaskCore {
-    id: String,
+    id: Uuid,
     project_code: String,
     code: String,
     name: String,
@@ -27,7 +29,10 @@ pub struct TaskManifest {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct Metadata {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub code: String,
     pub name: String,
     pub description: Option<String>,
@@ -184,6 +189,7 @@ impl From<AnyTask> for TaskManifest {
             api_version: API_VERSION.to_string(),
             kind: "Task".to_string(),
             metadata: Metadata {
+                id: Some(task_core.id.to_string()),
                 code: task_core.code,
                 name: task_core.name,
                 description: task_core.description,
@@ -227,6 +233,14 @@ impl TryFrom<TaskManifest> for AnyTask {
             assigned_resources.insert(0, manifest.spec.assignee.clone());
         }
 
+        let id = manifest
+            .metadata
+            .id
+            .map(|id_str| Uuid::from_str(&id_str))
+            .transpose()
+            .map_err(|e| e.to_string())?
+            .unwrap_or_else(uuid7);
+
         let start_date = manifest
             .spec
             .estimated_start_date
@@ -240,7 +254,7 @@ impl TryFrom<TaskManifest> for AnyTask {
 
         let task = match manifest.spec.status {
             Status::Planned | Status::ToDo => AnyTask::Planned(Task {
-                id: format!("TASK-{}", manifest.metadata.code),
+                id,
                 project_code: manifest.spec.project_code,
                 code: manifest.metadata.code,
                 name: manifest.metadata.name,
@@ -265,7 +279,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     })
                     .unwrap_or(0);
                 AnyTask::InProgress(Task {
-                    id: format!("TASK-{}", manifest.metadata.code),
+                    id,
                     project_code: manifest.spec.project_code,
                     code: manifest.metadata.code,
                     name: manifest.metadata.name,
@@ -278,7 +292,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 })
             }
             Status::Done => AnyTask::Completed(Task {
-                id: format!("TASK-{}", manifest.metadata.code),
+                id,
                 project_code: manifest.spec.project_code,
                 code: manifest.metadata.code,
                 name: manifest.metadata.name,
@@ -299,7 +313,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     .map(|s| s.to_string())
                     .unwrap_or_else(|| "Motivo não especificado".to_string());
                 AnyTask::Blocked(Task {
-                    id: format!("TASK-{}", manifest.metadata.code),
+                    id,
                     project_code: manifest.spec.project_code,
                     code: manifest.metadata.code,
                     name: manifest.metadata.name,
@@ -312,7 +326,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 })
             }
             Status::Cancelled => AnyTask::Cancelled(Task {
-                id: format!("TASK-{}", manifest.metadata.code),
+                id,
                 project_code: manifest.spec.project_code,
                 code: manifest.metadata.code,
                 name: manifest.metadata.name,
@@ -342,7 +356,7 @@ mod convertable_tests {
     // Helper to create a basic task for tests
     fn create_basic_task() -> Task<Planned> {
         Task {
-            id: "task-123".to_string(),
+            id: uuid7(),
             project_code: "PROJ-1".to_string(),
             code: "TSK-001".to_string(),
             name: "Test Task".to_string(),
@@ -361,9 +375,10 @@ mod convertable_tests {
             api_version: API_VERSION.to_string(),
             kind: "Task".to_string(),
             metadata: Metadata {
-                code: "TSK-001".to_string(),
-                name: "Test Task".to_string(),
-                description: Some("A description".to_string()),
+                id: Some(Uuid::from(1).to_string()),
+                code: "TASK-1".to_string(),
+                name: "Basic Task".to_string(),
+                description: Some("A simple task for testing".to_string()),
             },
             spec: Spec {
                 project_code: "PROJ-1".to_string(),
