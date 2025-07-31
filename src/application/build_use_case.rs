@@ -1,6 +1,8 @@
 use crate::domain::{
-    company_settings::repository::ConfigRepository, project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository, task_management::repository::TaskRepository,
+    company_settings::repository::ConfigRepository,
+    project_management::repository::ProjectRepository,
+    resource_management::{AnyResource, repository::ResourceRepository},
+    task_management::repository::TaskRepository,
 };
 use crate::infrastructure::persistence::{
     config_repository::FileConfigRepository, project_repository::FileProjectRepository,
@@ -20,7 +22,7 @@ use tera::{Context, Tera};
 struct SiteContext {
     project: crate::domain::project_management::project::Project,
     tasks: Vec<crate::domain::task_management::AnyTask>,
-    resources: Vec<crate::domain::resource_management::resource::Resource>,
+    resources: Vec<AnyResource>,
 }
 
 /// `BuildUseCase` is responsible for orchestrating the static site generation.
@@ -62,11 +64,11 @@ impl BuildUseCase {
         }
 
         // 3. Find root path and instantiate repositories.
-        let config_repo = FileConfigRepository::new();
+        let config_repo = FileConfigRepository::with_base_path(self.base_path.clone());
         let (config, root_path) = config_repo.load()?;
 
-        let project_repo = FileProjectRepository::new();
-        let resource_repo = FileResourceRepository::new();
+        let project_repo = FileProjectRepository::with_base_path(root_path.clone());
+        let resource_repo = FileResourceRepository::new(root_path.clone());
         let task_repo = FileTaskRepository::new(root_path);
 
         // 4. Load all necessary data from the repositories.
@@ -111,14 +113,14 @@ impl BuildUseCase {
         fs::create_dir_all(&resource_dir)?;
 
         for resource in &site_data.resources {
-            println!("[DEBUG] Generating page for resource: {}", resource.name);
+            println!("[DEBUG] Generating page for resource: {}", resource.name());
             let mut detail_context = Context::new();
             detail_context.insert("project", &site_data.project);
             detail_context.insert("resource", resource);
             detail_context.insert("relative_path_prefix", "../");
 
             let rendered_page = self.tera.render("resource_detail.html", &detail_context)?;
-            let safe_name = resource.name.replace(' ', "_").to_lowercase();
+            let safe_name = resource.name().replace(' ', "_").to_lowercase();
             let file_path = resource_dir.join(format!("{safe_name}.html"));
             fs::write(file_path, rendered_page)?;
         }

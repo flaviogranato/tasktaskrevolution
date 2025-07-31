@@ -193,7 +193,7 @@ mod tests {
 
     fn create_planned_task(code: &str) -> Task<Planned> {
         Task {
-            id: format!("id-{code}"),
+            id: format!("TASK-{code}"),
             project_code: "PROJ-1".to_string(),
             code: code.to_string(),
             name: "Test Task".to_string(),

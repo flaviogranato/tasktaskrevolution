@@ -1,4 +1,4 @@
-use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::resource_management::{AnyResource, repository::ResourceRepository};
 use chrono::NaiveDate;
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
@@ -51,7 +51,7 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
         ) {
             Ok(resource) => Ok(CreateVacationResult {
                 success: true,
-                message: format!("Período de férias adicionado com sucesso para {}", resource.name),
+                message: format!("Período de férias adicionado com sucesso para {}", resource.name()),
             }),
             Err(e) => Ok(CreateVacationResult {
                 success: false,
@@ -65,7 +65,11 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
 mod tests {
     use super::*;
     use crate::domain::{
-        resource_management::resource::{Period, PeriodType, Resource},
+        resource_management::{
+            AnyResource,
+            resource::{Period, PeriodType, Resource},
+            state::Available,
+        },
         shared::errors::DomainError,
     };
     use chrono::{DateTime, Local, NaiveDateTime};
@@ -75,7 +79,7 @@ mod tests {
 
     // A mock repository that uses Rc<RefCell<...>> to share state between clones.
     struct MockResourceRepository {
-        resources: Rc<RefCell<HashMap<String, Resource>>>,
+        resources: Rc<RefCell<HashMap<String, AnyResource>>>,
         should_fail: bool,
     }
 
@@ -96,17 +100,19 @@ mod tests {
             }
         }
 
-        fn add_resource(&self, resource: Resource) {
-            self.resources.borrow_mut().insert(resource.name.clone(), resource);
+        fn add_resource(&self, resource: AnyResource) {
+            self.resources
+                .borrow_mut()
+                .insert(resource.name().to_string(), resource);
         }
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, _resource: Resource) -> Result<Resource, DomainError> {
+        fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
 
-        fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
             unimplemented!()
         }
 
@@ -116,7 +122,7 @@ mod tests {
             _hours: u32,
             _date: String,
             _description: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
 
@@ -127,13 +133,13 @@ mod tests {
             end_date: String,
             is_time_off_compensation: bool,
             compensated_hours: Option<u32>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             if self.should_fail {
                 return Err(DomainError::Generic("Simulated repository error".to_string()));
             }
 
             let mut resources = self.resources.borrow_mut();
-            if let Some(resource) = resources.get_mut(&resource_name) {
+            if let Some(any_resource) = resources.get_mut(&resource_name) {
                 let new_period = Period {
                     start_date: NaiveDateTime::parse_from_str(&format!("{start_date} 00:00:00"), "%Y-%m-%d %H:%M:%S")
                         .unwrap()
@@ -150,12 +156,18 @@ mod tests {
                     is_layoff: false,
                 };
 
-                if let Some(vacations) = &mut resource.vacations {
-                    vacations.push(new_period);
-                } else {
-                    resource.vacations = Some(vec![new_period]);
+                let add_vacation = |vacations: Option<Vec<Period>>| -> Option<Vec<Period>> {
+                    let mut v = vacations.unwrap_or_default();
+                    v.push(new_period);
+                    Some(v)
+                };
+
+                match any_resource {
+                    AnyResource::Available(r) => r.vacations = add_vacation(r.vacations.clone()),
+                    AnyResource::Assigned(r) => r.vacations = add_vacation(r.vacations.clone()),
+                    AnyResource::Inactive(_) => return Err(DomainError::InvalidState("Inactive".to_string())),
                 }
-                Ok(resource.clone())
+                Ok(any_resource.clone())
             } else {
                 Err(DomainError::Generic(format!("Resource '{resource_name}' not found")))
             }
@@ -166,7 +178,7 @@ mod tests {
         }
     }
 
-    fn setup_test() -> (MockResourceRepository, Resource) {
+    fn setup_test() -> (MockResourceRepository, AnyResource) {
         let mock_repo = MockResourceRepository::new(false);
         let resource = Resource::new(
             Some("res-01".to_string()),
@@ -174,11 +186,11 @@ mod tests {
             None,
             "Developer".to_string(),
             None,
-            None,
             40,
         );
-        mock_repo.add_resource(resource.clone());
-        (mock_repo, resource)
+        let any_resource = AnyResource::Available(resource);
+        mock_repo.add_resource(any_resource.clone());
+        (mock_repo, any_resource)
     }
 
     #[test]
@@ -188,7 +200,7 @@ mod tests {
 
         let result = use_case
             .execute(
-                resource.name.clone(),
+                resource.name().to_string(),
                 "2025-07-01".to_string(),
                 "2025-07-10".to_string(),
                 false,
@@ -207,7 +219,7 @@ mod tests {
 
         let result = use_case
             .execute(
-                resource.name.clone(),
+                resource.name().to_string(),
                 "2025-07-10".to_string(), // End date
                 "2025-07-01".to_string(), // Start date
                 false,
@@ -230,7 +242,7 @@ mod tests {
 
         let result = use_case
             .execute(
-                resource.name.clone(),
+                resource.name().to_string(),
                 "2025-08-01".to_string(),
                 "2025-08-10".to_string(),
                 false,
@@ -250,7 +262,7 @@ mod tests {
 
         let _ = use_case
             .execute(
-                resource.name.clone(),
+                resource.name().to_string(),
                 "2025-09-01".to_string(),
                 "2025-09-02".to_string(),
                 true,
@@ -259,8 +271,8 @@ mod tests {
             .unwrap();
 
         // Verify the data was saved correctly in the shared state via the original mock
-        let stored_resource = mock_repo.resources.borrow().get(&resource.name).unwrap().clone();
-        let vacations = stored_resource.vacations.unwrap();
+        let stored_resource = mock_repo.resources.borrow().get(resource.name()).unwrap().clone();
+        let vacations = stored_resource.vacations().unwrap();
         let last_vacation = vacations.last().unwrap();
 
         assert_eq!(vacations.len(), 1);

@@ -1,3 +1,4 @@
+use super::state::{Assigned, Available, ResourceState};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -55,25 +56,24 @@ pub struct ProjectAssignment {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Resource {
+pub struct Resource<S: ResourceState> {
     pub id: Option<String>,
     pub name: String,
     pub email: Option<String>,
     pub resource_type: String,
     pub vacations: Option<Vec<Period>>,
-    pub project_assignments: Option<Vec<ProjectAssignment>>,
     pub time_off_balance: u32,
     pub time_off_history: Option<Vec<TimeOffEntry>>,
+    pub state: S,
 }
 
-impl Resource {
+impl Resource<Available> {
     pub fn new(
         id: Option<String>,
         name: String,
         email: Option<String>,
         resource_type: String,
         vacations: Option<Vec<Period>>,
-        project_assignments: Option<Vec<ProjectAssignment>>,
         time_off_balance: u32,
     ) -> Self {
         Self {
@@ -82,25 +82,41 @@ impl Resource {
             email,
             resource_type,
             vacations,
-            project_assignments,
             time_off_balance,
             time_off_history: Some(Vec::new()),
+            state: Available,
+        }
+    }
+
+    pub fn assign_to_project(self, assignment: ProjectAssignment) -> Resource<Assigned> {
+        Resource {
+            id: self.id,
+            name: self.name,
+            email: self.email,
+            resource_type: self.resource_type,
+            vacations: self.vacations,
+            time_off_balance: self.time_off_balance,
+            time_off_history: self.time_off_history,
+            state: Assigned {
+                project_assignments: vec![assignment],
+            },
         }
     }
 }
 
-impl Display for Resource {
+impl Resource<Assigned> {
+    pub fn assign_to_another_project(mut self, assignment: ProjectAssignment) -> Self {
+        self.state.project_assignments.push(assignment);
+        self
+    }
+}
+
+impl<S: ResourceState> Display for Resource<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Resource {{ id: {:?}, name: {}, email: {:?}, resource_type: {}, vacations: {:?}, project_assignments: {:?}, time_off_balance: {} }}",
-            self.id,
-            self.name,
-            self.email,
-            self.resource_type,
-            self.vacations,
-            self.project_assignments,
-            self.time_off_balance
+            "Resource {{ id: {:?}, name: {}, email: {:?}, resource_type: {}, vacations: {:?}, time_off_balance: {}, state: {:?} }}",
+            self.id, self.name, self.email, self.resource_type, self.vacations, self.time_off_balance, self.state
         )
     }
 }
@@ -195,11 +211,45 @@ mod tests {
             email: Some("james@test.com".to_string()),
             resource_type: "Developer".to_string(),
             vacations: None,
-            project_assignments: None,
             time_off_balance: 40,
             time_off_history: None,
+            state: Available,
         };
-        let expected = "Resource { id: Some(\"res-007\"), name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, project_assignments: None, time_off_balance: 40 }";
+        let expected = "Resource { id: Some(\"res-007\"), name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, time_off_balance: 40, state: Available }";
         assert_eq!(resource.to_string(), expected);
+    }
+
+    #[test]
+    fn test_resource_state_transition_to_assigned() {
+        let resource = Resource::new(
+            Some("res-001".to_string()),
+            "Tester".to_string(),
+            None,
+            "QA".to_string(),
+            None,
+            40,
+        );
+
+        let assignment = ProjectAssignment {
+            project_id: "PROJ-1".to_string(),
+            start_date: dt(2025, 1, 1),
+            end_date: dt(2025, 6, 1),
+            allocation_percentage: 100,
+        };
+
+        let assigned_resource = resource.assign_to_project(assignment.clone());
+
+        assert_eq!(assigned_resource.state.project_assignments.len(), 1);
+        assert_eq!(assigned_resource.state.project_assignments[0], assignment);
+
+        let another_assignment = ProjectAssignment {
+            project_id: "PROJ-2".to_string(),
+            start_date: dt(2025, 7, 1),
+            end_date: dt(2025, 12, 1),
+            allocation_percentage: 50,
+        };
+
+        let multi_assigned_resource = assigned_resource.assign_to_another_project(another_assignment.clone());
+        assert_eq!(multi_assigned_resource.state.project_assignments.len(), 2);
     }
 }
