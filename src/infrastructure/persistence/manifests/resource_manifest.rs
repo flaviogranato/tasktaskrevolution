@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::domain::resource_management::{
     AnyResource, Resource, TimeOffEntry,
     resource::{Period, PeriodType, ProjectAssignment},
-    state::{Assigned, Available, Inactive},
+    state::{Assigned, Available},
 };
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";

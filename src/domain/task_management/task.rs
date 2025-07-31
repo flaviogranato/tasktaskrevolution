@@ -20,6 +20,7 @@ pub struct Task<S: TaskState> {
 // Transitions for a Planned task
 impl Task<Planned> {
     /// Starts a planned task, moving it to the InProgress state.
+    #[allow(dead_code)]
     pub fn start(self) -> Task<InProgress> {
         Task {
             id: self.id,
@@ -36,6 +37,7 @@ impl Task<Planned> {
     }
 
     /// Cancels a planned task.
+    #[allow(dead_code)]
     pub fn cancel(self) -> Task<Cancelled> {
         Task {
             id: self.id,
@@ -55,12 +57,14 @@ impl Task<Planned> {
 // Actions and transitions for an InProgress task
 impl Task<InProgress> {
     /// Updates the progress of the task.
+    #[allow(dead_code)]
     pub fn update_progress(mut self, progress: u8) -> Self {
         self.state.progress = progress;
         self
     }
 
     /// Blocks the task for a given reason.
+    #[allow(dead_code)]
     pub fn block(self, reason: String) -> Task<Blocked> {
         Task {
             id: self.id,
@@ -77,6 +81,7 @@ impl Task<InProgress> {
     }
 
     /// Completes the task.
+    #[allow(dead_code)]
     pub fn complete(self) -> Task<Completed> {
         Task {
             id: self.id,
@@ -93,6 +98,7 @@ impl Task<InProgress> {
     }
 
     /// Cancels the task.
+    #[allow(dead_code)]
     pub fn cancel(self) -> Task<Cancelled> {
         Task {
             id: self.id,
@@ -112,6 +118,7 @@ impl Task<InProgress> {
 // Transitions for a Blocked task
 impl Task<Blocked> {
     /// Unblocks the task, returning it to the InProgress state.
+    #[allow(dead_code)]
     pub fn unblock(self) -> Task<InProgress> {
         Task {
             id: self.id,
@@ -128,6 +135,7 @@ impl Task<Blocked> {
     }
 
     /// Cancels the blocked task.
+    #[allow(dead_code)]
     pub fn cancel(self) -> Task<Cancelled> {
         Task {
             id: self.id,

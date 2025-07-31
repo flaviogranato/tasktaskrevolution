@@ -5,7 +5,7 @@ pub mod state;
 use self::state::{Assigned, Available, Inactive};
 use serde::Serialize;
 
-pub use resource::{Period, PeriodType, ProjectAssignment, Resource, TimeOffEntry};
+pub use resource::{Period, PeriodType, Resource, TimeOffEntry};
 
 /// An enum to represent a Resource in any of its possible states.
 #[derive(Debug, Clone, Serialize)]
@@ -17,6 +17,7 @@ pub enum AnyResource {
 }
 
 impl AnyResource {
+    #[allow(dead_code)]
     pub fn id(&self) -> Option<&str> {
         match self {
             AnyResource::Available(r) => r.id.as_deref(),

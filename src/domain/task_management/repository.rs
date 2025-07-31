@@ -26,9 +26,11 @@ pub trait TaskRepository {
     fn delete(&self, id: &str) -> Result<(), DomainError>;
 
     /// Finds all tasks assigned to a specific resource.
+    #[allow(dead_code)]
     fn find_by_assignee(&self, assignee: &str) -> Result<Vec<AnyTask>, DomainError>;
 
     /// Finds all tasks that are active within a given date range.
+    #[allow(dead_code)]
     fn find_by_date_range(
         &self,
         start_date: chrono::NaiveDate,

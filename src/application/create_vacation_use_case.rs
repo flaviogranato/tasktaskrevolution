@@ -1,4 +1,4 @@
-use crate::domain::resource_management::{AnyResource, repository::ResourceRepository};
+use crate::domain::resource_management::repository::ResourceRepository;
 use chrono::NaiveDate;
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
@@ -68,7 +68,6 @@ mod tests {
         resource_management::{
             AnyResource,
             resource::{Period, PeriodType, Resource},
-            state::Available,
         },
         shared::errors::DomainError,
     };

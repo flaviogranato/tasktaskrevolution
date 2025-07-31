@@ -1,6 +1,5 @@
 use crate::domain::{
     project_management::{repository::ProjectRepository, vacation_rules::VacationRules},
-    resource_management::AnyResource,
     resource_management::repository::ResourceRepository,
     resource_management::resource::Period,
     shared::errors::DomainError,

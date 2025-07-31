@@ -1,6 +1,6 @@
 use crate::domain::{
     project_management::repository::ProjectRepository,
-    resource_management::{AnyResource, repository::ResourceRepository},
+    resource_management::repository::ResourceRepository,
 };
 use csv::Writer;
 use std::error::Error;

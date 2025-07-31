@@ -1,5 +1,5 @@
 use crate::domain::shared::errors::DomainError;
-use crate::domain::task_management::{AnyTask, Task, repository::TaskRepository, state::Planned};
+use crate::domain::task_management::{Task, repository::TaskRepository, state::Planned};
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {

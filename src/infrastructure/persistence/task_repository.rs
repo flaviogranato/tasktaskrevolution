@@ -1,9 +1,5 @@
 use crate::domain::shared::errors::DomainError;
-use crate::domain::task_management::{
-    AnyTask, Task,
-    repository::TaskRepository,
-    state::{Completed, InProgress},
-};
+use crate::domain::task_management::{AnyTask, Task, repository::TaskRepository, state::Completed};
 use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
 use chrono::NaiveDate;
 use glob::glob;
@@ -65,6 +61,7 @@ impl FileTaskRepository {
 
     // --- Public, non-trait methods for specific operations ---
 
+    #[allow(dead_code)]
     pub fn update_progress(&self, code: &str, progress: u8) -> Result<AnyTask, DomainError> {
         let task = self
             .find_by_code(code)?
@@ -83,6 +80,7 @@ impl FileTaskRepository {
         }
     }
 
+    #[allow(dead_code)]
     pub fn complete_task(&self, code: &str) -> Result<Task<Completed>, DomainError> {
         let task = self
             .find_by_code(code)?
