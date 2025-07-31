@@ -10,6 +10,7 @@ use crate::infrastructure::persistence::{
 };
 use crate::interface::assets::{StaticAssets, TemplateAssets};
 
+use glob::glob;
 use serde::Serialize;
 use std::error::Error;
 use std::fs;
@@ -63,88 +64,95 @@ impl BuildUseCase {
             fs::write(dest_path, asset.data)?;
         }
 
-        // 3. Find root path and instantiate repositories.
+        // 3. Load global configuration.
         let config_repo = FileConfigRepository::with_base_path(self.base_path.clone());
-        let (config, root_path) = config_repo.load()?;
+        let (config, _) = config_repo.load()?;
 
-        let project_repo = FileProjectRepository::with_base_path(root_path.clone());
-        let resource_repo = FileResourceRepository::new(root_path.clone());
-        let task_repo = FileTaskRepository::new(root_path);
+        // 4. Find all project directories by looking for `project.yaml` files.
+        let project_manifest_pattern = self.base_path.join("**/project.yaml");
+        for entry in glob(project_manifest_pattern.to_str().unwrap())? {
+            let manifest_path = entry?;
+            let project_path = manifest_path.parent().unwrap().to_path_buf();
+            println!("[INFO] Found project at: {}", project_path.display());
 
-        // 4. Load all necessary data from the repositories.
-        let project = project_repo.load()?;
-        let tasks = task_repo.find_all()?;
-        let resources = resource_repo.find_all()?;
-        println!("[DEBUG] Found {} resources.", resources.len());
+            // 5. Instantiate repositories scoped to the current project path.
+            let project_repo = FileProjectRepository::with_base_path(project_path.clone());
+            let resource_repo = FileResourceRepository::new(project_path.clone());
+            let task_repo = FileTaskRepository::new(project_path.clone());
 
-        // 5. Inherit timezone from config if not set in project.
-        let project = if project.timezone().is_none() {
-            match project {
-                AnyProject::Planned(mut p) => {
-                    p.timezone = Some(config.default_timezone);
-                    AnyProject::Planned(p)
+            // 6. Load all data for this specific project.
+            let project = project_repo.load()?;
+            let tasks = task_repo.find_all()?;
+            let resources = resource_repo.find_all()?;
+            let project_name = project.name().to_string();
+
+            // Inherit timezone from config if not set in project.
+            let project = if project.timezone().is_none() {
+                match project {
+                    AnyProject::Planned(mut p) => {
+                        p.timezone = Some(config.default_timezone.clone());
+                        AnyProject::Planned(p)
+                    }
+                    AnyProject::InProgress(mut p) => {
+                        p.timezone = Some(config.default_timezone.clone());
+                        AnyProject::InProgress(p)
+                    }
+                    AnyProject::Completed(mut p) => {
+                        p.timezone = Some(config.default_timezone.clone());
+                        AnyProject::Completed(p)
+                    }
+                    AnyProject::Cancelled(mut p) => {
+                        p.timezone = Some(config.default_timezone.clone());
+                        AnyProject::Cancelled(p)
+                    }
                 }
-                AnyProject::InProgress(mut p) => {
-                    p.timezone = Some(config.default_timezone);
-                    AnyProject::InProgress(p)
-                }
-                AnyProject::Completed(mut p) => {
-                    p.timezone = Some(config.default_timezone);
-                    AnyProject::Completed(p)
-                }
-                AnyProject::Cancelled(mut p) => {
-                    p.timezone = Some(config.default_timezone);
-                    AnyProject::Cancelled(p)
-                }
+            } else {
+                project
+            };
+
+            // 7. Create a specific output directory for this project.
+            let project_output_dir = self.output_dir.join(&project_name);
+            fs::create_dir_all(&project_output_dir)?;
+
+            // 8. Create the context for Tera.
+            let site_data = SiteContext {
+                project,
+                tasks,
+                resources,
+            };
+            let mut context = Context::from_serialize(&site_data)?;
+            context.insert("relative_path_prefix", "");
+
+            // 9. Render main pages for the project.
+            let main_templates: Vec<_> = self
+                .tera
+                .get_template_names()
+                .filter(|t| !t.starts_with('_') && *t != "base.html" && *t != "resource_detail.html")
+                .collect();
+
+            for tmpl_name in &main_templates {
+                let rendered_page = self.tera.render(tmpl_name, &context)?;
+                fs::write(project_output_dir.join(tmpl_name), rendered_page)?;
             }
-        } else {
-            project
-        };
 
-        // 6. Create the context for Tera.
-        let site_data = SiteContext {
-            project,
-            tasks,
-            resources,
-        };
-        let mut context = Context::from_serialize(&site_data)?;
-        context.insert("relative_path_prefix", "");
+            // 10. Render detail pages for each resource in this project.
+            let resource_dir = project_output_dir.join("resources");
+            fs::create_dir_all(&resource_dir)?;
 
-        println!(
-            "[DEBUG] Available templates: {:?}",
-            self.tera.get_template_names().collect::<Vec<_>>()
-        );
+            for resource in &site_data.resources {
+                println!("[DEBUG] Generating page for resource: {}", resource.name());
+                let mut detail_context = Context::new();
+                detail_context.insert("project", &site_data.project);
+                detail_context.insert("resource", resource);
+                detail_context.insert("relative_path_prefix", "../");
 
-        // 7. Render main pages.
-        let main_templates: Vec<_> = self
-            .tera
-            .get_template_names()
-            .filter(|t| !t.starts_with('_') && *t != "base.html" && *t != "resource_detail.html")
-            .collect();
-
-        for tmpl_name in &main_templates {
-            let rendered_page = self.tera.render(tmpl_name, &context)?;
-            fs::write(self.output_dir.join(tmpl_name), rendered_page)?;
+                let rendered_page = self.tera.render("resource_detail.html", &detail_context)?;
+                let safe_name = resource.name().replace(' ', "_").to_lowercase();
+                let file_path = resource_dir.join(format!("{safe_name}.html"));
+                fs::write(file_path, rendered_page)?;
+            }
+            println!("✅ Project '{}' generated successfully.", project_name);
         }
-
-        // 8. Render detail pages for each resource.
-        let resource_dir = self.output_dir.join("resources");
-        fs::create_dir_all(&resource_dir)?;
-
-        for resource in &site_data.resources {
-            println!("[DEBUG] Generating page for resource: {}", resource.name());
-            let mut detail_context = Context::new();
-            detail_context.insert("project", &site_data.project);
-            detail_context.insert("resource", resource);
-            detail_context.insert("relative_path_prefix", "../");
-
-            let rendered_page = self.tera.render("resource_detail.html", &detail_context)?;
-            let safe_name = resource.name().replace(' ', "_").to_lowercase();
-            let file_path = resource_dir.join(format!("{safe_name}.html"));
-            fs::write(file_path, rendered_page)?;
-        }
-
-        println!("✅ Site generated successfully in '{}'", self.output_dir.display());
 
         Ok(())
     }
@@ -207,14 +215,15 @@ spec:
         let temp_root = setup_test_environment();
         let output_dir = temp_root.join("public");
 
-        // 2. Create and execute the use case, starting from the project subdir.
-        let use_case = BuildUseCase::new(temp_root.join("my-project"), output_dir.to_str().unwrap()).unwrap();
+        // 2. Create and execute the use case, starting from the root containing the projects.
+        let use_case = BuildUseCase::new(temp_root, output_dir.to_str().unwrap()).unwrap();
 
         let result = use_case.execute();
         assert!(result.is_ok());
 
-        // 3. Assert that output files were created correctly.
-        let index_path = output_dir.join("index.html");
+        // 3. Assert that project-specific output files were created correctly.
+        let project_output_dir = output_dir.join("My Test Project");
+        let index_path = project_output_dir.join("index.html");
         assert!(index_path.exists());
         let index_content = fs::read_to_string(index_path).unwrap();
         assert!(index_content.contains("My Test Project"));
