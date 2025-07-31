@@ -1,5 +1,6 @@
 use crate::domain::{
     project_management::{repository::ProjectRepository, vacation_rules::VacationRules},
+    resource_management::AnyResource,
     resource_management::repository::ResourceRepository,
     resource_management::resource::Period,
     shared::errors::DomainError,
@@ -69,17 +70,17 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 
         // Verificar sobreposição entre todos os recursos
         for (i, resource1) in resources.iter().enumerate() {
-            if let Some(vacations1) = &resource1.vacations {
+            if let Some(vacations1) = resource1.vacations() {
                 // Verificar sobreposição com outros recursos
                 for resource2 in resources.iter().skip(i + 1) {
-                    if let Some(vacations2) = &resource2.vacations {
+                    if let Some(vacations2) = resource2.vacations() {
                         for period1 in vacations1 {
                             for period2 in vacations2 {
                                 if self.check_vacation_overlap(period1, period2) {
                                     mensagens.push(format!(
                                         "⚠️ Sobreposição detectada: {} e {} têm férias sobrepostas entre {} e {}",
-                                        resource1.name,
-                                        resource2.name,
+                                        resource1.name(),
+                                        resource2.name(),
                                         period1.start_date.format("%d/%m/%Y"),
                                         period1.end_date.format("%d/%m/%Y")
                                     ));
@@ -94,7 +95,7 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
                     if !self.has_valid_layoff_vacation(vacations1, vacation_rules) {
                         mensagens.push(format!(
                             "⚠️ {} não possui férias durante nenhum período de layoff",
-                            resource1.name
+                            resource1.name()
                         ));
                     }
                 }
@@ -114,7 +115,11 @@ mod tests {
     use super::*;
     use crate::domain::{
         project_management::{builder::ProjectBuilder, vacation_rules::VacationRules},
-        resource_management::resource::{PeriodType, Resource},
+        resource_management::{
+            AnyResource,
+            resource::{PeriodType, Resource},
+            state::Available,
+        },
     };
     use chrono::{Duration, Local};
 
@@ -123,7 +128,7 @@ mod tests {
     }
 
     struct MockResourceRepository {
-        resources: Vec<Resource>,
+        resources: Vec<AnyResource>,
     }
 
     impl ProjectRepository for MockProjectRepository {
@@ -144,11 +149,11 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: Resource) -> Result<Resource, DomainError> {
+        fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
             Ok(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
             Ok(self.resources.clone())
         }
 
@@ -158,7 +163,7 @@ mod tests {
             _hours: u32,
             _date: String,
             _description: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -169,7 +174,7 @@ mod tests {
             _end_date: String,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -181,7 +186,7 @@ mod tests {
     #[test]
     fn test_detect_vacation_overlap() {
         let now = Local::now();
-        let resource1 = Resource::new(
+        let resource1 = Resource::<Available>::new(
             None,
             "João".to_string(),
             None,
@@ -195,11 +200,10 @@ mod tests {
                 compensated_hours: None,
                 is_layoff: false,
             }]),
-            None,
             0,
         );
 
-        let resource2 = Resource::new(
+        let resource2 = Resource::<Available>::new(
             None,
             "Maria".to_string(),
             None,
@@ -213,13 +217,12 @@ mod tests {
                 compensated_hours: None,
                 is_layoff: false,
             }]),
-            None,
             0,
         );
 
         let mock_project_repo = MockProjectRepository { vacation_rules: None };
         let mock_resource_repo = MockResourceRepository {
-            resources: vec![resource1, resource2],
+            resources: vec![resource1.into(), resource2.into()],
         };
 
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);

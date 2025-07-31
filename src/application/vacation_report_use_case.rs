@@ -1,5 +1,6 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, resource_management::repository::ResourceRepository,
+    project_management::repository::ProjectRepository,
+    resource_management::{AnyResource, repository::ResourceRepository},
 };
 use csv::Writer;
 use std::error::Error;
@@ -42,10 +43,10 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
 
         // Iterar sobre os recursos e seus períodos de férias
         for resource in resources {
-            if let Some(periods) = &resource.vacations {
+            if let Some(periods) = resource.vacations() {
                 for period in periods {
                     writer.write_record([
-                        &resource.name,
+                        resource.name(),
                         &project.name,
                         &period.start_date.to_rfc3339(),
                         &period.end_date.to_rfc3339(),
@@ -74,7 +75,11 @@ mod tests {
             builder::ProjectBuilder,
             project::{Project, ProjectStatus},
         },
-        resource_management::resource::{Period, PeriodType, Resource},
+        resource_management::{
+            AnyResource,
+            resource::{Period, PeriodType, Resource},
+            state::Available,
+        },
         shared::errors::DomainError,
     };
     use chrono::{Local, TimeZone};
@@ -94,13 +99,13 @@ mod tests {
     }
 
     struct MockResourceRepository {
-        resources: Vec<Resource>,
+        resources: Vec<AnyResource>,
     }
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, _resource: Resource) -> Result<Resource, DomainError> {
+        fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
             Ok(self.resources.clone())
         }
         fn save_time_off(
@@ -109,7 +114,7 @@ mod tests {
             _h: u32,
             _d: String,
             _desc: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
         fn save_vacation(
@@ -119,7 +124,7 @@ mod tests {
             _e: String,
             _i: bool,
             _c: Option<u32>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
         fn check_if_layoff_period(&self, _s: &chrono::DateTime<Local>, _e: &chrono::DateTime<Local>) -> bool {
@@ -136,7 +141,7 @@ mod tests {
             .status(ProjectStatus::InProgress)
             .build();
 
-        let mut resource1 = Resource::new(None, "Alice".to_string(), None, "Dev".to_string(), None, None, 0);
+        let mut resource1 = Resource::<Available>::new(None, "Alice".to_string(), None, "Dev".to_string(), None, 0);
         resource1.vacations = Some(vec![Period {
             start_date: Local.with_ymd_and_hms(2025, 7, 1, 9, 0, 0).unwrap(),
             end_date: Local.with_ymd_and_hms(2025, 7, 10, 18, 0, 0).unwrap(),
@@ -147,9 +152,9 @@ mod tests {
             is_layoff: false,
         }]);
 
-        let resource2 = Resource::new(None, "Bob".to_string(), None, "QA".to_string(), None, None, 0); // Sem férias
+        let resource2 = Resource::<Available>::new(None, "Bob".to_string(), None, "QA".to_string(), None, 0); // Sem férias
 
-        let mut resource3 = Resource::new(None, "Charlie".to_string(), None, "Dev".to_string(), None, None, 0);
+        let mut resource3 = Resource::<Available>::new(None, "Charlie".to_string(), None, "Dev".to_string(), None, 0);
         resource3.vacations = Some(vec![
             Period {
                 // Férias normais
@@ -176,7 +181,7 @@ mod tests {
         // 2. Setup: Criar mocks e o caso de uso
         let mock_project_repo = MockProjectRepository { project };
         let mock_resource_repo = MockResourceRepository {
-            resources: vec![resource1, resource2, resource3],
+            resources: vec![resource1.into(), resource2.into(), resource3.into()],
         };
         let use_case = VacationReportUseCase::new(mock_project_repo, mock_resource_repo);
 

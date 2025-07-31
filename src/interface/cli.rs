@@ -159,7 +159,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 Ok(())
             }
             CreateCommands::Resource { name, resource_type } => {
-                let repository = FileResourceRepository::new();
+                let repository = FileResourceRepository::new(".");
                 let use_case = CreateResourceUseCase::new(repository);
 
                 let _ = use_case.execute(name.clone(), resource_type.clone());
@@ -172,7 +172,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 is_time_off_compensation,
                 compensated_hours,
             } => {
-                let repository = FileResourceRepository::new();
+                let repository = FileResourceRepository::new(".");
                 let use_case = CreateVacationUseCase::new(repository);
 
                 match use_case.execute(
@@ -199,7 +199,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 date,
                 description,
             } => {
-                let repository = FileResourceRepository::new();
+                let repository = FileResourceRepository::new(".");
                 let use_case = CreateTimeOffUseCase::new(repository);
 
                 match use_case.execute(resource.clone(), *hours, date.clone(), description.clone()) {
@@ -282,7 +282,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             match validate_command {
                 ValidateCommands::Vacations => {
                     let project_repository = FileProjectRepository::new();
-                    let resource_repository = FileResourceRepository::new();
+                    let resource_repository = FileResourceRepository::new(".");
                     let use_case = ValidateVacationsUseCase::new(project_repository, resource_repository);
 
                     match use_case.execute() {
@@ -303,7 +303,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             match report_command {
                 ReportCommands::Vacation => {
                     let project_repository = FileProjectRepository::new();
-                    let resource_repository = FileResourceRepository::new();
+                    let resource_repository = FileResourceRepository::new(".");
                     let use_case = VacationReportUseCase::new(project_repository, resource_repository);
 
                     let file_path = "vacation_report.csv";

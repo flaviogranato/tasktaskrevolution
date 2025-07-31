@@ -1,5 +1,7 @@
-use crate::domain::resource_management::{repository::ResourceRepository, resource::Resource};
-use crate::domain::shared::errors::DomainError;
+use crate::domain::{
+    resource_management::{AnyResource, repository::ResourceRepository, resource::Resource},
+    shared::errors::DomainError,
+};
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
@@ -10,8 +12,8 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         Self { repository }
     }
     pub fn execute(&self, name: String, resource_type: String) -> Result<(), DomainError> {
-        let r = Resource::new(None, name.clone(), None, resource_type, None, None, 0);
-        self.repository.save(r)?;
+        let r = Resource::new(None, name.clone(), None, resource_type, None, 0);
+        self.repository.save(r.into())?;
         println!("Recurso {name} criado.");
         Ok(())
     }
@@ -26,7 +28,7 @@ mod test {
 
     struct MockResourceRepository {
         should_fail: bool,
-        saved_config: RefCell<Option<Resource>>,
+        saved_config: RefCell<Option<AnyResource>>,
     }
 
     impl MockResourceRepository {
@@ -39,7 +41,7 @@ mod test {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: Resource) -> Result<Resource, DomainError> {
+        fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
             if self.should_fail {
                 return Err(DomainError::Generic("Erro mockado ao salvar".to_string()));
             }
@@ -48,7 +50,7 @@ mod test {
             Ok(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<Resource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
             Ok(vec![])
         }
 
@@ -58,7 +60,7 @@ mod test {
             _hours: u32,
             _date: String,
             _description: Option<String>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -69,7 +71,7 @@ mod test {
             _end_date: String,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<Resource, DomainError> {
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -110,7 +112,12 @@ mod test {
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
-        assert_eq!(saved_config.as_ref().unwrap().name, name);
-        assert_eq!(saved_config.as_ref().unwrap().resource_type, resource_type);
+        let any_resource = saved_config.as_ref().unwrap();
+        assert_eq!(any_resource.name(), name);
+        if let AnyResource::Available(r) = any_resource {
+            assert_eq!(r.resource_type, resource_type);
+        } else {
+            panic!("Expected Available resource");
+        }
     }
 }

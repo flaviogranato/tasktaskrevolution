@@ -188,7 +188,7 @@ mod test {
     #[test]
     fn test_verify_task_saved() {
         let mock_repo = MockTaskRepository::new(false);
-        let use_case = CreateTaskUseCase::new(&mock_repo);
+        let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
         let code = "TSK001".to_string();
         let name = "Implementar autenticação".to_string();
@@ -207,7 +207,7 @@ mod test {
         };
         let _ = use_case.execute(args);
 
-        let saved_task = mock_repo.saved_task.borrow();
+        let saved_task = use_case.repository.saved_task.borrow();
         assert!(saved_task.is_some());
 
         if let Some(AnyTask::Planned(task)) = saved_task.as_ref() {
