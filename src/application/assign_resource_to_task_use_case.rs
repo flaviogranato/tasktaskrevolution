@@ -39,14 +39,13 @@ where
 
     pub fn execute(&self, task_code: &str, resource_codes: &[String]) -> Result<AnyTask, AssignResourceError> {
         // 1. Validate that all resources exist.
-        // We assume the resource code is stored in the `id` field.
+        // 1. Validate that all resources exist by their codes.
         let all_resources = self.resource_repository.find_all()?;
-        // We validate against the resource name for now, as the `code` field is not yet implemented.
-        let existing_resource_names: HashSet<String> = all_resources.iter().map(|r| r.name().to_string()).collect();
+        let existing_resource_codes: HashSet<String> = all_resources.iter().map(|r| r.code().to_string()).collect();
 
         let not_found_resources: Vec<String> = resource_codes
             .iter()
-            .filter(|rc| !existing_resource_names.contains(*rc))
+            .filter(|rc| !existing_resource_codes.contains(*rc))
             .cloned()
             .collect();
 
@@ -233,34 +232,34 @@ mod tests {
 
     #[test]
     fn test_assign_new_resources_success() {
-        let task_repo = MockTaskRepository::new(vec![create_test_task("TSK-1", vec!["res-1"])]);
+        let task_repo = MockTaskRepository::new(vec![create_test_task("TSK-1", vec!["dev-res-1"])]);
         let resource_repo = MockResourceRepository {
             resources: vec![create_test_resource("res-1"), create_test_resource("res-2")],
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["res-2".to_string()]);
+        let result = use_case.execute("TSK-1", &["dev-res-2".to_string()]);
 
         assert!(result.is_ok());
         let updated_task = result.unwrap();
         let mut assignees = updated_task.assigned_resources().to_vec();
         assignees.sort();
-        assert_eq!(assignees, vec!["res-1", "res-2"]);
+        assert_eq!(assignees, vec!["dev-res-1", "dev-res-2"]);
     }
 
     #[test]
     fn test_assign_existing_resource_is_idempotent() {
-        let task_repo = MockTaskRepository::new(vec![create_test_task("TSK-1", vec!["res-1"])]);
+        let task_repo = MockTaskRepository::new(vec![create_test_task("TSK-1", vec!["dev-res-1"])]);
         let resource_repo = MockResourceRepository {
             resources: vec![create_test_resource("res-1")],
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["res-1".to_string()]);
+        let result = use_case.execute("TSK-1", &["dev-res-1".to_string()]);
 
         assert!(result.is_ok());
         let updated_task = result.unwrap();
-        assert_eq!(updated_task.assigned_resources(), &["res-1"]);
+        assert_eq!(updated_task.assigned_resources(), &["dev-res-1"]);
     }
 
     #[test]
@@ -271,7 +270,7 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
-        let result = use_case.execute("TSK-NONEXISTENT", &["res-1".to_string()]);
+        let result = use_case.execute("TSK-NONEXISTENT", &["dev-res-1".to_string()]);
 
         assert!(matches!(result, Err(AssignResourceError::TaskNotFound(_))));
     }

@@ -8,10 +8,14 @@ use crate::{
         create_time_off_use_case::CreateTimeOffUseCase,
         create_vacation_use_case::CreateVacationUseCase,
         initialize_repository_use_case::InitializeRepositoryUseCase,
+        list_projects_use_case::ListProjectsUseCase,
+        list_resources_use_case::ListResourcesUseCase,
+        list_tasks_use_case::ListTasksUseCase,
         task_report_use_case::TaskReportUseCase,
         vacation_report_use_case::VacationReportUseCase,
         validate_vacations_use_case::ValidateVacationsUseCase,
     },
+    domain::task_management::repository::TaskRepository,
     infrastructure::persistence::{
         config_repository::FileConfigRepository, project_repository::FileProjectRepository,
         resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
@@ -19,6 +23,7 @@ use crate::{
 };
 use clap::{Parser, Subcommand};
 use csv::Writer;
+use serde::Deserialize;
 use std::{env, path::PathBuf};
 
 #[derive(Parser)]
@@ -49,6 +54,10 @@ enum Commands {
     Create {
         #[clap(subcommand)]
         create_command: CreateCommands,
+    },
+    List {
+        #[clap(subcommand)]
+        list_command: ListCommands,
     },
     Validate {
         #[clap(subcommand)]
@@ -98,9 +107,9 @@ pub enum CreateCommands {
     },
     Task {
         #[arg(long, short)]
-        project_code: String,
+        project_code: Option<String>,
         #[arg(long, short)]
-        code: String,
+        code: Option<String>,
         #[arg(long, short)]
         name: String,
         #[arg(long, short)]
@@ -112,6 +121,13 @@ pub enum CreateCommands {
         #[arg(long, short, value_delimiter = ',')]
         assignees: Vec<String>,
     },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum ListCommands {
+    Projects,
+    Resources,
+    Tasks,
 }
 
 #[derive(Subcommand)]
@@ -248,6 +264,50 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             } => {
                 use chrono::NaiveDate;
 
+                #[derive(Deserialize)]
+                struct ProjMetadata {
+                    code: String,
+                }
+
+                #[derive(Deserialize)]
+                struct ProjManifest {
+                    metadata: ProjMetadata,
+                }
+
+                let final_project_code = match project_code.as_ref() {
+                    Some(code) => code.clone(),
+                    None => {
+                        let manifest_path = PathBuf::from("project.yaml");
+                        if !manifest_path.exists() {
+                            println!(
+                                "❌ Erro: Comando executado fora de um diretório de projeto. Especifique --project-code."
+                            );
+                            return Ok(());
+                        }
+                        let content = match std::fs::read_to_string(manifest_path) {
+                            Ok(c) => c,
+                            Err(e) => {
+                                println!("❌ Erro ao ler 'project.yaml': {e}");
+                                return Ok(());
+                            }
+                        };
+                        let manifest: ProjManifest = match serde_yaml::from_str(&content) {
+                            Ok(m) => m,
+                            Err(e) => {
+                                println!("❌ Erro ao analisar 'project.yaml': {e}");
+                                return Ok(());
+                            }
+                        };
+                        manifest.metadata.code
+                    }
+                };
+
+                let repository = FileTaskRepository::new(".");
+                let final_code = match code.as_ref() {
+                    Some(c) => c.clone(),
+                    None => repository.get_next_code()?,
+                };
+
                 let start = match NaiveDate::parse_from_str(start_date, "%Y-%m-%d") {
                     Ok(date) => date,
                     Err(_) => {
@@ -264,14 +324,11 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                 };
 
-                let repository = FileTaskRepository::new(".");
                 let use_case = CreateTaskUseCase::new(repository);
 
                 let args = CreateTaskArgs {
-                    project_code: project_code.clone(),
-
+                    project_code: final_project_code,
                     name: name.clone(),
-
                     start_date: start,
                     due_date: due,
                     assigned_resources: assignees.clone(),
@@ -280,7 +337,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute(args) {
                     Ok(_) => {
                         println!("✅ Task '{name}' criada com sucesso!");
-                        println!("📋 Código: {code}");
+                        println!("📋 Código: {final_code}");
                         if let Some(desc) = description {
                             println!("📝 Descrição: {desc}");
                         }
@@ -293,6 +350,80 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         println!("❌ Erro ao criar task: {e}");
                     }
                 };
+                Ok(())
+            }
+        },
+        Commands::List { list_command } => match list_command {
+            ListCommands::Projects => {
+                let repository = FileProjectRepository::new();
+                let use_case = ListProjectsUseCase::new(repository);
+                match use_case.execute() {
+                    Ok(projects) => {
+                        if projects.is_empty() {
+                            println!("Nenhum projeto encontrado.");
+                        } else {
+                            println!("{:<15} {:<30}", "CÓDIGO", "NOME");
+                            println!("{:-<15} {:-<30}", "", "");
+                            for project in projects {
+                                println!("{:<15} {:<30}", project.code(), project.name());
+                            }
+                        }
+                    }
+                    Err(e) => println!("❌ Erro ao listar projetos: {e}"),
+                }
+                Ok(())
+            }
+            ListCommands::Resources => {
+                let repository = FileResourceRepository::new(".");
+                let use_case = ListResourcesUseCase::new(repository);
+                match use_case.execute() {
+                    Ok(resources) => {
+                        if resources.is_empty() {
+                            println!("Nenhum recurso encontrado.");
+                        } else {
+                            println!("{:<15} {:<25} {:<20}", "CÓDIGO", "NOME", "TIPO");
+                            println!("{:-<15} {:-<25} {:-<20}", "", "", "");
+                            for resource in resources {
+                                println!(
+                                    "{:<15} {:<25} {:<20}",
+                                    resource.code(),
+                                    resource.name(),
+                                    resource.resource_type()
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => println!("❌ Erro ao listar recursos: {e}"),
+                }
+                Ok(())
+            }
+            ListCommands::Tasks => {
+                let repository = FileTaskRepository::new(".");
+                let use_case = ListTasksUseCase::new(repository);
+                match use_case.execute() {
+                    Ok(tasks) => {
+                        if tasks.is_empty() {
+                            println!("Nenhuma tarefa encontrada.");
+                        } else {
+                            println!(
+                                "{:<15} {:<40} {:<15} {:<20}",
+                                "CÓDIGO", "NOME", "STATUS", "RESPONSÁVEIS"
+                            );
+                            println!("{:-<15} {:-<40} {:-<15} {:-<20}", "", "", "", "");
+                            for task in tasks {
+                                let assignees = task.assigned_resources().join(", ");
+                                println!(
+                                    "{:<15} {:<40} {:<15} {:<20}",
+                                    task.code(),
+                                    task.name(),
+                                    task.status().to_string(),
+                                    assignees
+                                );
+                            }
+                        }
+                    }
+                    Err(e) => println!("❌ Erro ao listar tarefas: {e}"),
+                }
                 Ok(())
             }
         },

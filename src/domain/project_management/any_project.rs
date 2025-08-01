@@ -25,6 +25,15 @@ impl AnyProject {
         }
     }
 
+    pub fn code(&self) -> &str {
+        match self {
+            AnyProject::Planned(p) => &p.code,
+            AnyProject::InProgress(p) => &p.code,
+            AnyProject::Completed(p) => &p.code,
+            AnyProject::Cancelled(p) => &p.code,
+        }
+    }
+
     pub fn timezone(&self) -> Option<&String> {
         match self {
             AnyProject::Planned(p) => p.timezone.as_ref(),

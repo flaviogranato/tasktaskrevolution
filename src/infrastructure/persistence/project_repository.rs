@@ -79,6 +79,40 @@ impl ProjectRepository for FileProjectRepository {
         }
     }
 
+    fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        let mut projects = Vec::new();
+        let mut processed_paths = std::collections::HashSet::new();
+
+        // Padrão para buscar em subdiretórios
+        let pattern = self.base_path.join("**/project.yaml");
+        if let Ok(walker) = glob(pattern.to_str().unwrap()) {
+            for entry in walker.flatten() {
+                let manifest_path = entry.path();
+                if processed_paths.contains(manifest_path) {
+                    continue;
+                }
+                if let Ok(manifest) = self.load_manifest(manifest_path) {
+                    if let Ok(project) = AnyProject::try_from(manifest) {
+                        projects.push(project);
+                        processed_paths.insert(manifest_path.to_path_buf());
+                    }
+                }
+            }
+        }
+
+        // Verifica também o diretório atual
+        let current_dir_manifest = self.base_path.join("project.yaml");
+        if current_dir_manifest.exists() && !processed_paths.contains(&current_dir_manifest) {
+            if let Ok(manifest) = self.load_manifest(&current_dir_manifest) {
+                if let Ok(project) = AnyProject::try_from(manifest) {
+                    projects.push(project);
+                }
+            }
+        }
+
+        Ok(projects)
+    }
+
     fn get_next_code(&self) -> Result<String, DomainError> {
         let pattern = self.base_path.join("**/project.yaml");
         let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
@@ -196,5 +230,36 @@ mod tests {
         // 4. Test again
         let next_code_after_saves = repo.get_next_code().unwrap();
         assert_eq!(next_code_after_saves, "proj-6");
+    }
+
+    #[test]
+    fn test_find_all_projects() {
+        // 1. Setup
+        let temp_dir = tempdir().expect("Could not create temporary directory");
+        let repo = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
+
+        // 2. Test with no projects
+        let projects = repo.find_all().unwrap();
+        assert!(projects.is_empty());
+
+        // 3. Save some projects in root and subdirectories
+        repo.save(create_test_project("Project Root", "proj-1")).unwrap(); // Saved in ./Project Root/
+
+        let sub_dir = temp_dir.path().join("subdir");
+        fs::create_dir(&sub_dir).unwrap();
+        let repo_sub = FileProjectRepository::with_base_path(sub_dir);
+        repo_sub.save(create_test_project("Project Sub", "proj-2")).unwrap(); // Saved in ./subdir/Project Sub/
+
+        // 4. Test find_all from root
+        let all_projects = repo.find_all().unwrap();
+        assert_eq!(all_projects.len(), 2);
+        assert!(all_projects.iter().any(|p| p.name() == "Project Root"));
+        assert!(all_projects.iter().any(|p| p.name() == "Project Sub"));
+
+        // 5. Test find_all from inside a project directory (should find only itself)
+        let project_dir_repo = FileProjectRepository::with_base_path(temp_dir.path().join("Project Root"));
+        let single_project = project_dir_repo.find_all().unwrap();
+        assert_eq!(single_project.len(), 1);
+        assert_eq!(single_project[0].name(), "Project Root");
     }
 }

@@ -1,7 +1,7 @@
 apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Config
 metadata:
-  createdAt: 2025-07-29T15:03:04.660449271Z
+  createdAt: 2025-08-01T12:24:29.939447525Z
 spec:
   managerName: Flavio Granato
   managerEmail: flavio.granato@protonmail.com
