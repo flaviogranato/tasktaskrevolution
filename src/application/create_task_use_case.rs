@@ -39,13 +39,6 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
             ));
         }
 
-        // According to the builder's design, a task must have at least one resource.
-        if assigned_resources.is_empty() {
-            return Err(DomainError::Generic(
-                "A task requires at least one assigned resource.".to_string(),
-            ));
-        }
-
         // Use the builder to create the task, ensuring consistent ID generation
         // and validation logic.
         let code = self.repository.get_next_code()?;
@@ -56,19 +49,26 @@ impl<T: TaskRepository> CreateTaskUseCase<T> {
             .dates(start_date, due_date)
             .map_err(|e| DomainError::Generic(e.to_string()))?;
 
-        let mut iter = assigned_resources.into_iter();
-        // The first resource moves the builder to the `WithResources` state.
-        // We've already checked that `assigned_resources` is not empty.
-        let builder_with_res = builder.assign_resource(iter.next().unwrap());
+        let task = if assigned_resources.is_empty() {
+            builder
+                .validate_vacations(&[]) // Now we can validate and build.
+                .unwrap() // This unwrap is safe if the vacations list is empty
+                .build()
+                .map_err(|e| DomainError::Generic(e.to_string()))
+        } else {
+            let mut iter = assigned_resources.into_iter();
+            // The first resource moves the builder to the `WithResources` state.
+            let builder_with_res = builder.assign_resource(iter.next().unwrap());
 
-        // Subsequent resources are added, keeping the state as `WithResources`.
-        let final_builder = iter.fold(builder_with_res, |b, r| b.assign_resource(r));
+            // Subsequent resources are added, keeping the state as `WithResources`.
+            let final_builder = iter.fold(builder_with_res, |b, r| b.assign_resource(r));
 
-        let task = final_builder
-            .validate_vacations(&[]) // Now we can validate and build.
-            .unwrap() // This unwrap is safe if the vacations list is empty
-            .build()
-            .map_err(|e| DomainError::Generic(e.to_string()))?;
+            final_builder
+                .validate_vacations(&[]) // Now we can validate and build.
+                .unwrap() // This unwrap is safe if the vacations list is empty
+                .build()
+                .map_err(|e| DomainError::Generic(e.to_string()))
+        }?;
 
         // Save the task. The conversion to AnyTask allows the repository to store it.
         self.repository.save(task.into())?;
@@ -255,7 +255,7 @@ mod test {
     }
 
     #[test]
-    fn test_create_task_with_no_resources_fails() {
+    fn test_create_task_with_no_resources_succeeds() {
         let mock_repo = MockTaskRepository::new(false);
         let use_case = CreateTaskUseCase::new(mock_repo);
         let (start_date, due_date) = create_test_dates();
@@ -270,12 +270,6 @@ mod test {
         };
         let result = use_case.execute(args);
 
-        assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .to_string()
-                .contains("requires at least one assigned resource")
-        );
+        assert!(result.is_ok());
     }
 }

@@ -24,11 +24,27 @@ impl AnyResource {
         }
     }
 
+    pub fn code(&self) -> &str {
+        match self {
+            AnyResource::Available(r) => &r.code,
+            AnyResource::Assigned(r) => &r.code,
+            AnyResource::Inactive(r) => &r.code,
+        }
+    }
+
     pub fn name(&self) -> &str {
         match self {
             AnyResource::Available(r) => &r.name,
             AnyResource::Assigned(r) => &r.name,
             AnyResource::Inactive(r) => &r.name,
+        }
+    }
+
+    pub fn resource_type(&self) -> &str {
+        match self {
+            AnyResource::Available(r) => &r.resource_type,
+            AnyResource::Assigned(r) => &r.resource_type,
+            AnyResource::Inactive(r) => &r.resource_type,
         }
     }
 

@@ -1,7 +1,0 @@
-apiVersion: tasktaskrevolution.io/v1alpha1
-kind: Project
-metadata:
-  name: microservico-java
-spec:
-  timezone: null
-  status: Planned

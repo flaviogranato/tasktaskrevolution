@@ -42,6 +42,26 @@ impl AnyTask {
         }
     }
 
+    pub fn name(&self) -> &str {
+        match self {
+            AnyTask::Planned(task) => &task.name,
+            AnyTask::InProgress(task) => &task.name,
+            AnyTask::Blocked(task) => &task.name,
+            AnyTask::Completed(task) => &task.name,
+            AnyTask::Cancelled(task) => &task.name,
+        }
+    }
+
+    pub fn status(&self) -> &str {
+        match self {
+            AnyTask::Planned(_) => "Planned",
+            AnyTask::InProgress(_) => "InProgress",
+            AnyTask::Blocked(_) => "Blocked",
+            AnyTask::Completed(_) => "Completed",
+            AnyTask::Cancelled(_) => "Cancelled",
+        }
+    }
+
     pub fn assigned_resources(&self) -> &[String] {
         match self {
             AnyTask::Planned(task) => &task.assigned_resources,

@@ -74,6 +74,10 @@ mod test {
         fn get_next_code(&self) -> Result<String, DomainError> {
             Ok("proj-1".to_string()) // Always return a fixed code for tests
         }
+
+        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+            Ok(vec![self.project.clone()])
+        }
     }
 
     #[test]
