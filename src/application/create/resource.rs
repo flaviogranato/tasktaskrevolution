@@ -58,9 +58,9 @@ mod test {
 
         fn save_time_off(
             &self,
-            _resource_name: String,
+            _resource_name: &str,
             _hours: u32,
-            _date: String,
+            _date: &str,
             _description: Option<String>,
         ) -> Result<AnyResource, DomainError> {
             unimplemented!("Not needed for these tests")
@@ -68,9 +68,9 @@ mod test {
 
         fn save_vacation(
             &self,
-            _resource_name: String,
-            _start_date: String,
-            _end_date: String,
+            _resource_name: &str,
+            _start_date: &str,
+            _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
         ) -> Result<AnyResource, DomainError> {
