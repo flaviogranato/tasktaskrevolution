@@ -232,8 +232,7 @@ mod tests {
             state: Available,
         };
         let expected = format!(
-            "Resource {{ id: {:?}, code: dev-7, name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, time_off_balance: 40, state: Available }}",
-            id
+            "Resource {{ id: {id:?}, code: dev-7, name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, time_off_balance: 40, state: Available }}"
         );
         assert_eq!(resource.to_string(), expected);
     }

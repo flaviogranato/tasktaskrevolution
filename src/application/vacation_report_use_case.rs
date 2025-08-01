@@ -7,18 +7,15 @@ use std::io;
 
 /// `VacationReportUseCase` gera um relatório em formato CSV com os períodos de férias
 /// de todos os recursos, associados ao projeto atual.
-pub struct VacationReportUseCase<P: ProjectRepository, R: ResourceRepository> {
-    project_repository: P,
+/// `VacationReportUseCase` gera um relatório de férias em formato CSV.
+pub struct VacationReportUseCase<R: ResourceRepository> {
     resource_repository: R,
 }
 
-impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
+impl<R: ResourceRepository> VacationReportUseCase<R> {
     /// Cria uma nova instância do caso de uso com os repositórios necessários.
-    pub fn new(project_repository: P, resource_repository: R) -> Self {
-        Self {
-            project_repository,
-            resource_repository,
-        }
+    pub fn new(resource_repository: R) -> Self {
+        Self { resource_repository }
     }
 
     /// Executa a geração do relatório, escrevendo o resultado em um `Writer` fornecido.
@@ -66,7 +63,6 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
 mod tests {
     use super::*;
     use crate::domain::{
-        project_management::{AnyProject, builder::ProjectBuilder},
         resource_management::{
             AnyResource,
             resource::{Period, PeriodType, Resource},
@@ -77,21 +73,6 @@ mod tests {
     use chrono::{Local, TimeZone};
 
     // --- Mocks ---
-
-    struct MockProjectRepository {
-        project: AnyProject,
-    }
-    impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
-            unimplemented!()
-        }
-        fn load(&self) -> Result<AnyProject, DomainError> {
-            Ok(self.project.clone())
-        }
-        fn get_next_code(&self) -> Result<String, DomainError> {
-            Ok("proj-1".to_string())
-        }
-    }
 
     struct MockResourceRepository {
         resources: Vec<AnyResource>,
@@ -136,12 +117,6 @@ mod tests {
     #[test]
     fn test_vacation_report_generation() {
         // 1. Setup: Create test data
-        let project: AnyProject = ProjectBuilder::new("ProjetoTTR".to_string())
-            .code("proj-1".to_string())
-            .build()
-            .start()
-            .into();
-
         let mut resource1 = Resource::<Available>::new(
             "dev-1".to_string(),
             "Alice".to_string(),
@@ -163,12 +138,11 @@ mod tests {
         let resource2 =
             Resource::<Available>::new("qa-1".to_string(), "Bob".to_string(), None, "QA".to_string(), None, 0); // No vacation
 
-        let mock_project_repo = MockProjectRepository { project };
         let mock_resource_repo = MockResourceRepository {
             resources: vec![resource1.into(), resource2.into()],
         };
 
-        let use_case = VacationReportUseCase::new(mock_project_repo, mock_resource_repo);
+        let use_case = VacationReportUseCase::new(mock_resource_repo);
 
         // 2. Act: Execute and write to a buffer
         let mut writer = csv::Writer::from_writer(vec![]);

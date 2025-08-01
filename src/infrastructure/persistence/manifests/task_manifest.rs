@@ -441,7 +441,7 @@ mod convertable_tests {
         assert_eq!(manifest.spec.comments.len(), 1);
         assert_eq!(
             manifest.spec.comments[0].message,
-            format!("Tarefa bloqueada: {}", reason)
+            format!("Tarefa bloqueada: {reason}")
         );
     }
 
@@ -512,7 +512,7 @@ mod convertable_tests {
         let reason = "Waiting for review".to_string();
         manifest.spec.comments.push(Comment {
             author: "system".to_string(),
-            message: format!("Tarefa bloqueada: {}", reason),
+            message: format!("Tarefa bloqueada: {reason}"),
             timestamp: test_date(2024, 1, 5),
         });
         let any_task = AnyTask::try_from(manifest).unwrap();
