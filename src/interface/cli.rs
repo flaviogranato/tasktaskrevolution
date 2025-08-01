@@ -2,16 +2,25 @@ use crate::{
     application::{
         build_use_case::BuildUseCase,
         create::{
-            project::CreateProjectUseCase,
-            resource::CreateResourceUseCase,
-            task::{CreateTaskArgs, CreateTaskUseCase},
-            time_off::CreateTimeOffUseCase,
-            vacation::CreateVacationUseCase,
+            project::CreateProjectUseCase, resource::CreateResourceUseCase, task::CreateTaskArgs,
+            task::CreateTaskUseCase, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase,
         },
         initialize_repository_use_case::InitializeRepositoryUseCase,
         list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
+        project::{
+            cancel_project::CancelProjectUseCase,
+            update_project::{UpdateProjectArgs, UpdateProjectUseCase},
+        },
         report::{task::TaskReportUseCase, vacation::VacationReportUseCase},
-        task::assign_resource::AssignResourceToTaskUseCase,
+        resource::{
+            deactivate_resource::DeactivateResourceUseCase,
+            update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
+        },
+        task::{
+            assign_resource::AssignResourceToTaskUseCase,
+            delete_task::CancelTaskUseCase,
+            update_task::{UpdateTaskArgs, UpdateTaskUseCase},
+        },
         validate::vacations::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
@@ -65,6 +74,17 @@ enum Commands {
         #[clap(subcommand)]
         report_command: ReportCommands,
     },
+    /// Update an existing entity (project, resource, task).
+    Update {
+        #[clap(subcommand)]
+        update_command: UpdateCommands,
+    },
+    /// Delete an entity (soft delete).
+    Delete {
+        #[clap(subcommand)]
+        delete_command: DeleteCommands,
+    },
+    /// Manage tasks within a project
     Task {
         #[clap(subcommand)]
         task_command: TaskCommands,
@@ -126,6 +146,68 @@ pub enum ListCommands {
     Projects,
     Resources,
     Tasks,
+}
+
+#[derive(Debug, Subcommand)]
+pub enum UpdateCommands {
+    /// Update an existing project's details.
+    Project {
+        /// The new name of the project.
+        #[clap(long)]
+        name: Option<String>,
+        /// The new description of the project.
+        #[clap(long)]
+        description: Option<String>,
+    },
+    /// Update an existing resource's details.
+    Resource {
+        /// The code of the resource to update.
+        code: String,
+        /// The new name for the resource.
+        #[clap(long)]
+        name: Option<String>,
+        /// The new email for the resource.
+        #[clap(long)]
+        email: Option<String>,
+        /// The new type for the resource (e.g., Developer, QA).
+        #[clap(long)]
+        resource_type: Option<String>,
+    },
+    /// Update an existing task's details.
+    Task {
+        /// The code of the task to update.
+        code: String,
+        /// The new name for the task.
+        #[clap(long)]
+        name: Option<String>,
+        /// The new description for the task.
+        #[clap(long)]
+        description: Option<String>,
+        /// The new start date for the task (YYYY-MM-DD).
+        #[clap(long)]
+        start_date: Option<String>,
+        /// The new due date for the task (YYYY-MM-DD).
+        #[clap(long)]
+        due_date: Option<String>,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DeleteCommands {
+    /// Deletes (cancels) the current project.
+    #[clap(alias = "proj")]
+    Project {},
+    /// Deletes (deactivates) a resource.
+    #[clap(alias = "res")]
+    Resource {
+        /// The code of the resource to delete.
+        code: String,
+    },
+    /// Deletes (cancels) a task.
+    Task {
+        /// The code of the task to delete.
+        code: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -418,6 +500,262 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         }
                     }
                     Err(e) => println!("❌ Erro ao listar tarefas: {e}"),
+                }
+                Ok(())
+            }
+        },
+        Commands::Update { update_command } => match update_command {
+            UpdateCommands::Task {
+                code,
+                name,
+                description,
+                start_date,
+                due_date,
+            } => {
+                use chrono::NaiveDate;
+                use serde::Deserialize;
+
+                #[derive(Deserialize)]
+                struct ProjMetadata {
+                    code: String,
+                }
+
+                #[derive(Deserialize)]
+                struct ProjManifest {
+                    metadata: ProjMetadata,
+                }
+
+                let project_manifest_path = PathBuf::from("project.yaml");
+                let project_code = if project_manifest_path.exists() {
+                    let content = std::fs::read_to_string(project_manifest_path)?;
+                    let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                    manifest.metadata.code
+                } else {
+                    println!("❌ Error: This command must be run from within a project directory.");
+                    return Ok(());
+                };
+
+                let parsed_start_date = match start_date
+                    .as_ref()
+                    .map(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d"))
+                    .transpose()
+                {
+                    Ok(date) => date,
+                    Err(_) => {
+                        println!("❌ Error: Invalid start date format. Use YYYY-MM-DD.");
+                        return Ok(());
+                    }
+                };
+
+                let parsed_due_date = match due_date
+                    .as_ref()
+                    .map(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d"))
+                    .transpose()
+                {
+                    Ok(date) => date,
+                    Err(_) => {
+                        println!("❌ Error: Invalid due date format. Use YYYY-MM-DD.");
+                        return Ok(());
+                    }
+                };
+
+                let project_repo = FileProjectRepository::new();
+                let use_case = UpdateTaskUseCase::new(project_repo);
+
+                let args = UpdateTaskArgs {
+                    name: name.clone(),
+                    description: description.clone(),
+                    start_date: parsed_start_date,
+                    due_date: parsed_due_date,
+                };
+
+                match use_case.execute(&project_code, code, args) {
+                    Ok(updated_task) => {
+                        println!("✅ Successfully updated task '{}'.", updated_task.code());
+                        println!("   Name: {}", updated_task.name());
+                        println!(
+                            "   Description: {}",
+                            updated_task.description().as_deref().map_or("N/A", |d| d)
+                        );
+                        println!("   Start Date: {}", updated_task.start_date());
+                        println!("   Due Date: {}", updated_task.due_date());
+                    }
+                    Err(e) => {
+                        println!("❌ Error updating task: {e}");
+                    }
+                }
+                Ok(())
+            }
+            UpdateCommands::Resource {
+                code,
+                name,
+                email,
+                resource_type,
+            } => {
+                let resource_repo = FileResourceRepository::new(".");
+                let use_case = UpdateResourceUseCase::new(resource_repo);
+
+                let args = UpdateResourceArgs {
+                    name: name.clone(),
+                    email: email.clone(),
+                    resource_type: resource_type.clone(),
+                };
+
+                match use_case.execute(code, args) {
+                    Ok(updated_resource) => {
+                        println!("✅ Successfully updated resource '{}'.", updated_resource.code());
+                        println!("   Name: {}", updated_resource.name());
+                        println!("   Email: {}", updated_resource.email().as_deref().map_or("N/A", |e| e));
+                        println!("   Type: {}", updated_resource.resource_type());
+                    }
+                    Err(e) => {
+                        println!("❌ Error updating resource: {e}");
+                    }
+                }
+                Ok(())
+            }
+            UpdateCommands::Project { name, description } => {
+                use serde::Deserialize;
+
+                #[derive(Deserialize)]
+                struct ProjMetadata {
+                    code: String,
+                }
+
+                #[derive(Deserialize)]
+                struct ProjManifest {
+                    metadata: ProjMetadata,
+                }
+
+                let project_manifest_path = PathBuf::from("project.yaml");
+                let project_code = if project_manifest_path.exists() {
+                    let content = std::fs::read_to_string(project_manifest_path)?;
+                    let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                    manifest.metadata.code
+                } else {
+                    println!("❌ Error: This command must be run from within a project directory.");
+                    return Ok(());
+                };
+
+                let project_repo = FileProjectRepository::new();
+                let use_case = UpdateProjectUseCase::new(project_repo);
+
+                let args = UpdateProjectArgs {
+                    name: name.clone(),
+                    description: description.clone(),
+                };
+
+                match use_case.execute(&project_code, args) {
+                    Ok(updated_project) => {
+                        println!("✅ Successfully updated project '{}'.", updated_project.code());
+                        println!("   Name: {}", updated_project.name());
+                        println!(
+                            "   Description: {}",
+                            updated_project.description().as_deref().map_or("N/A", |d| d)
+                        );
+                    }
+                    Err(e) => {
+                        println!("❌ Error updating project: {e}");
+                    }
+                }
+                Ok(())
+            }
+        },
+        Commands::Delete { delete_command } => match delete_command {
+            DeleteCommands::Task { code } => {
+                use serde::Deserialize;
+
+                #[derive(Deserialize)]
+                struct ProjMetadata {
+                    code: String,
+                }
+
+                #[derive(Deserialize)]
+                struct ProjManifest {
+                    metadata: ProjMetadata,
+                }
+
+                let project_manifest_path = PathBuf::from("project.yaml");
+                let project_code = if project_manifest_path.exists() {
+                    let content = std::fs::read_to_string(project_manifest_path)?;
+                    let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                    manifest.metadata.code
+                } else {
+                    println!("❌ Error: This command must be run from within a project directory.");
+                    return Ok(());
+                };
+
+                let project_repo = FileProjectRepository::new();
+                let use_case = CancelTaskUseCase::new(project_repo);
+
+                match use_case.execute(&project_code, code) {
+                    Ok(cancelled_task) => {
+                        println!(
+                            "✅ Successfully cancelled task '{}' (status is now '{}').",
+                            cancelled_task.code(),
+                            cancelled_task.status()
+                        );
+                    }
+                    Err(e) => {
+                        println!("❌ Error deleting task: {e}");
+                    }
+                }
+                Ok(())
+            }
+            DeleteCommands::Project {} => {
+                use serde::Deserialize;
+
+                #[derive(Deserialize)]
+                struct ProjMetadata {
+                    code: String,
+                }
+
+                #[derive(Deserialize)]
+                struct ProjManifest {
+                    metadata: ProjMetadata,
+                }
+
+                let project_manifest_path = PathBuf::from("project.yaml");
+                let project_code = if project_manifest_path.exists() {
+                    let content = std::fs::read_to_string(project_manifest_path)?;
+                    let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                    manifest.metadata.code
+                } else {
+                    println!("❌ Error: This command must be run from within a project directory.");
+                    return Ok(());
+                };
+
+                let project_repo = FileProjectRepository::new();
+                let use_case = CancelProjectUseCase::new(project_repo);
+
+                match use_case.execute(&project_code) {
+                    Ok(cancelled_project) => {
+                        println!(
+                            "✅ Successfully cancelled project '{}'. Its status is now '{}'.",
+                            cancelled_project.code(),
+                            cancelled_project.status()
+                        );
+                    }
+                    Err(e) => {
+                        println!("❌ Error deleting project: {e}");
+                    }
+                }
+                Ok(())
+            }
+            DeleteCommands::Resource { code } => {
+                let resource_repo = FileResourceRepository::new(".");
+                let use_case = DeactivateResourceUseCase::new(resource_repo);
+
+                match use_case.execute(code) {
+                    Ok(deactivated_resource) => {
+                        println!(
+                            "✅ Successfully deactivated resource '{}'. Status is now Inactive.",
+                            deactivated_resource.code(),
+                        );
+                    }
+                    Err(e) => {
+                        println!("❌ Error deleting resource: {e}");
+                    }
                 }
                 Ok(())
             }

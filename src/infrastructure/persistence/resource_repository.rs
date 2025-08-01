@@ -45,6 +45,20 @@ impl FileResourceRepository {
         let resource = AnyResource::try_from(manifest).map_err(DomainError::Serialization)?;
         Ok(Some(resource))
     }
+
+    fn read_resource_from_dir(&self, dir: &Path) -> Result<Option<AnyResource>, DomainError> {
+        let manifest_path = dir.join("resource.yaml");
+        if !manifest_path.exists() {
+            return Ok(None);
+        }
+
+        let yaml = fs::read_to_string(&manifest_path)
+            .map_err(|e| DomainError::Io(format!("Error reading resource manifest: {e}")))?;
+        let manifest: ResourceManifest = serde_yaml::from_str(&yaml)
+            .map_err(|e| DomainError::Serialization(format!("Error deserializing resource: {e}")))?;
+        let resource = AnyResource::try_from(manifest).map_err(DomainError::Serialization)?;
+        Ok(Some(resource))
+    }
 }
 
 impl ResourceRepository for FileResourceRepository {
@@ -82,12 +96,23 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resources)
     }
 
+    fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, DomainError> {
+        let base_path = PathBuf::from(&self.base_path);
+        let resource_dir = base_path.join("resources").join(code);
+
+        if !resource_dir.exists() || !resource_dir.is_dir() {
+            return Ok(None);
+        }
+
+        self.read_resource_from_dir(&resource_dir)
+    }
+
     fn save_time_off(
         &self,
         resource_name: &str,
         hours: u32,
-        _date: &str,
-        _description: Option<String>,
+        date: &str,
+        description: Option<String>,
     ) -> Result<AnyResource, DomainError> {
         let resource = self
             .find_by_name(resource_name)?

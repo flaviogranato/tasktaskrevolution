@@ -91,6 +91,10 @@ mod tests {
             Ok(self.resources.borrow().clone())
         }
 
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
+            Ok(None)
+        }
+
         fn save_time_off(
             &self,
             resource_name: &str,

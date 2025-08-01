@@ -28,6 +28,9 @@ mod tests {
         fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
             Ok(self.resources.clone())
         }
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
+            Ok(None)
+        }
         fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }

@@ -4,6 +4,7 @@ use super::{
     state::{Cancelled, Completed, InProgress, Planned},
     vacation_rules::VacationRules,
 };
+use chrono::NaiveDate;
 use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 
@@ -33,6 +34,15 @@ impl AnyProject {
             AnyProject::InProgress(p) => &p.code,
             AnyProject::Completed(p) => &p.code,
             AnyProject::Cancelled(p) => &p.code,
+        }
+    }
+
+    pub fn description(&self) -> Option<&String> {
+        match self {
+            AnyProject::Planned(p) => p.description.as_ref(),
+            AnyProject::InProgress(p) => p.description.as_ref(),
+            AnyProject::Completed(p) => p.description.as_ref(),
+            AnyProject::Cancelled(p) => p.description.as_ref(),
         }
     }
 
@@ -109,6 +119,139 @@ impl AnyProject {
         }
 
         Ok(())
+    }
+
+    pub fn update_task(
+        &mut self,
+        task_code: &str,
+        name: Option<String>,
+        description: Option<String>,
+        start_date: Option<NaiveDate>,
+        due_date: Option<NaiveDate>,
+    ) -> Result<(), String> {
+        let tasks_map = match self {
+            AnyProject::Planned(p) => &mut p.tasks,
+            AnyProject::InProgress(p) => &mut p.tasks,
+            AnyProject::Completed(_) => return Err("Cannot modify tasks in a completed project.".to_string()),
+            AnyProject::Cancelled(_) => return Err("Cannot modify tasks in a cancelled project.".to_string()),
+        };
+
+        let task = tasks_map
+            .get_mut(task_code)
+            .ok_or_else(|| format!("Task '{task_code}' not found in project."))?;
+
+        macro_rules! update_field {
+            ($task_struct:expr, $field:ident, $value:expr) => {
+                if let Some(val) = $value {
+                    $task_struct.$field = val;
+                }
+            };
+        }
+
+        macro_rules! update_optional_field {
+            ($task_struct:expr, $field:ident, $value:expr) => {
+                if let Some(val) = $value {
+                    $task_struct.$field = Some(val);
+                }
+            };
+        }
+
+        match task {
+            AnyTask::Planned(t) => {
+                update_field!(t, name, name);
+                update_optional_field!(t, description, description);
+                update_field!(t, start_date, start_date);
+                update_field!(t, due_date, due_date);
+            }
+            AnyTask::InProgress(t) => {
+                update_field!(t, name, name);
+                update_optional_field!(t, description, description);
+                update_field!(t, start_date, start_date);
+                update_field!(t, due_date, due_date);
+            }
+            AnyTask::Blocked(t) => {
+                update_field!(t, name, name);
+                update_optional_field!(t, description, description);
+                update_field!(t, start_date, start_date);
+                update_field!(t, due_date, due_date);
+            }
+            AnyTask::Completed(_) => return Err("Cannot modify a completed task.".to_string()),
+            AnyTask::Cancelled(_) => return Err("Cannot modify a cancelled task.".to_string()),
+        }
+
+        Ok(())
+    }
+
+    pub fn cancel_task(&mut self, task_code: &str) -> Result<(), String> {
+        let tasks_map = match self {
+            AnyProject::Planned(p) => &mut p.tasks,
+            AnyProject::InProgress(p) => &mut p.tasks,
+            AnyProject::Completed(_) => return Err("Cannot cancel tasks in a completed project.".to_string()),
+            AnyProject::Cancelled(_) => return Err("Cannot cancel tasks in a cancelled project.".to_string()),
+        };
+
+        // Take the task out of the map to be able to consume it in the state transition
+        let task = tasks_map
+            .remove(task_code)
+            .ok_or_else(|| format!("Task '{task_code}' not found in project."))?;
+
+        let cancelled_task: AnyTask = match task {
+            AnyTask::Planned(t) => t.cancel().into(),
+            AnyTask::InProgress(t) => t.cancel().into(),
+            AnyTask::Blocked(t) => t.cancel().into(),
+            AnyTask::Completed(t) => {
+                // Cannot cancel a completed task, so we put it back and return an error.
+                let original_task = t.into();
+                tasks_map.insert(task_code.to_string(), original_task);
+                return Err("Cannot cancel a completed task.".to_string());
+            }
+            AnyTask::Cancelled(t) => {
+                // Task is already cancelled, no action needed. Just put it back.
+                let original_task = t.into();
+                tasks_map.insert(task_code.to_string(), original_task);
+                return Ok(());
+            }
+        };
+
+        tasks_map.insert(task_code.to_string(), cancelled_task);
+
+        Ok(())
+    }
+    pub fn set_name(&mut self, name: String) {
+        match self {
+            AnyProject::Planned(p) => p.name = name,
+            AnyProject::InProgress(p) => p.name = name,
+            AnyProject::Completed(p) => p.name = name,
+            AnyProject::Cancelled(p) => p.name = name,
+        }
+    }
+
+    pub fn set_description(&mut self, description: Option<String>) {
+        match self {
+            AnyProject::Planned(p) => p.description = description,
+            AnyProject::InProgress(p) => p.description = description,
+            AnyProject::Completed(p) => p.description = description,
+            AnyProject::Cancelled(p) => p.description = description,
+        }
+    }
+
+    pub fn status(&self) -> &'static str {
+        match self {
+            AnyProject::Planned(_) => "Planned",
+            AnyProject::InProgress(_) => "InProgress",
+            AnyProject::Completed(_) => "Completed",
+            AnyProject::Cancelled(_) => "Cancelled",
+        }
+    }
+
+    pub fn cancel(self) -> Result<AnyProject, String> {
+        let cancelled_project = match self {
+            AnyProject::Planned(p) => p.cancel().into(),
+            AnyProject::InProgress(p) => p.cancel().into(),
+            AnyProject::Completed(_) => return Err("Cannot cancel a completed project.".to_string()),
+            AnyProject::Cancelled(_) => return Err("Project is already cancelled.".to_string()),
+        };
+        Ok(cancelled_project)
     }
 }
 
