@@ -72,6 +72,7 @@ impl AnyResource {
         }
     }
 
+    #[allow(dead_code)]
     pub fn status(&self) -> &'static str {
         match self {
             AnyResource::Available(_) => "Available",

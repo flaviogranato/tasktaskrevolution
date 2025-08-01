@@ -8,8 +8,7 @@ use thiserror::Error;
 pub enum UpdateResourceError {
     #[error("Resource with code '{0}' not found.")]
     ResourceNotFound(String),
-    #[error("An unexpected domain rule was violated: {0}")]
-    DomainError(String),
+
     #[error("A repository error occurred: {0}")]
     RepositoryError(#[from] DomainError),
 }

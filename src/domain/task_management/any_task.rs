@@ -52,7 +52,17 @@ impl AnyTask {
         }
     }
 
-    pub fn assigned_resources(&self) -> &[String] {
+    pub fn project_code(&self) -> &str {
+        match self {
+            AnyTask::Planned(task) => &task.project_code,
+            AnyTask::InProgress(task) => &task.project_code,
+            AnyTask::Blocked(task) => &task.project_code,
+            AnyTask::Completed(task) => &task.project_code,
+            AnyTask::Cancelled(task) => &task.project_code,
+        }
+    }
+
+    pub fn assigned_resources(&self) -> &Vec<String> {
         match self {
             AnyTask::Planned(task) => &task.assigned_resources,
             AnyTask::InProgress(task) => &task.assigned_resources,

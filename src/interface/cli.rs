@@ -1,3 +1,4 @@
+use crate::domain::company_settings::repository::ConfigRepository;
 use crate::{
     application::{
         build_use_case::BuildUseCase,
@@ -9,16 +10,19 @@ use crate::{
         list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
         project::{
             cancel_project::CancelProjectUseCase,
+            describe_project::DescribeProjectUseCase,
             update_project::{UpdateProjectArgs, UpdateProjectUseCase},
         },
         report::{task::TaskReportUseCase, vacation::VacationReportUseCase},
         resource::{
             deactivate_resource::DeactivateResourceUseCase,
+            describe_resource::DescribeResourceUseCase,
             update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
         },
         task::{
             assign_resource::AssignResourceToTaskUseCase,
             delete_task::CancelTaskUseCase,
+            describe_task::DescribeTaskUseCase,
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
         validate::vacations::ValidateVacationsUseCase,
@@ -83,6 +87,11 @@ enum Commands {
     Delete {
         #[clap(subcommand)]
         delete_command: DeleteCommands,
+    },
+    /// Describe a resource to see its details.
+    Describe {
+        #[clap(subcommand)]
+        describe_command: DescribeCommands,
     },
     /// Manage tasks within a project
     Task {
@@ -208,6 +217,26 @@ pub enum DeleteCommands {
         /// The code of the task to delete.
         code: String,
     },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum DescribeCommands {
+    /// Describe the current project's details.
+    #[clap(alias = "proj")]
+    Project {},
+    /// Describe a resource to see its details.
+    #[clap(alias = "res")]
+    Resource {
+        /// The code of the resource to describe.
+        code: String,
+    },
+    /// Describe a task to see its details.
+    Task {
+        /// The code of the task to describe.
+        code: String,
+    },
+    /// Describe the global configuration.
+    Config {},
 }
 
 #[derive(Subcommand)]
@@ -573,10 +602,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Ok(updated_task) => {
                         println!("✅ Successfully updated task '{}'.", updated_task.code());
                         println!("   Name: {}", updated_task.name());
-                        println!(
-                            "   Description: {}",
-                            updated_task.description().as_deref().map_or("N/A", |d| d)
-                        );
+                        println!("   Description: {}", updated_task.description().map_or("N/A", |d| d));
                         println!("   Start Date: {}", updated_task.start_date());
                         println!("   Due Date: {}", updated_task.due_date());
                     }
@@ -605,7 +631,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Ok(updated_resource) => {
                         println!("✅ Successfully updated resource '{}'.", updated_resource.code());
                         println!("   Name: {}", updated_resource.name());
-                        println!("   Email: {}", updated_resource.email().as_deref().map_or("N/A", |e| e));
+                        println!("   Email: {}", updated_resource.email().map_or("N/A", |e| e));
                         println!("   Type: {}", updated_resource.resource_type());
                     }
                     Err(e) => {
@@ -649,10 +675,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Ok(updated_project) => {
                         println!("✅ Successfully updated project '{}'.", updated_project.code());
                         println!("   Name: {}", updated_project.name());
-                        println!(
-                            "   Description: {}",
-                            updated_project.description().as_deref().map_or("N/A", |d| d)
-                        );
+                        println!("   Description: {}", updated_project.description().map_or("N/A", |d| d));
                     }
                     Err(e) => {
                         println!("❌ Error updating project: {e}");
@@ -755,6 +778,161 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                     Err(e) => {
                         println!("❌ Error deleting resource: {e}");
+                    }
+                }
+                Ok(())
+            }
+        },
+        Commands::Describe { describe_command } => match describe_command {
+            DescribeCommands::Resource { code } => {
+                let repo = FileResourceRepository::new(".");
+                let use_case = DescribeResourceUseCase::new(repo);
+
+                match use_case.execute(code) {
+                    Ok(resource) => {
+                        println!("{:<20} {}", "Name:", resource.name());
+                        println!("{:<20} {}", "Code:", resource.code());
+                        println!("{:<20} {}", "Type:", resource.resource_type());
+                        println!("{:<20} {}", "Status:", resource.status());
+                        println!("{:<20} {}", "Email:", resource.email().map_or("N/A", |e| e));
+                        println!("{:<20} {} hours", "TimeOff Balance:", resource.time_off_balance());
+
+                        println!("{:<20}", "\nVacations:");
+                        if let Some(vacations) = resource.vacations() {
+                            if vacations.is_empty() {
+                                println!("  No vacations scheduled.");
+                            } else {
+                                for v in vacations {
+                                    println!(
+                                        "  - From {} to {} ({})",
+                                        v.start_date.format("%Y-%m-%d"),
+                                        v.end_date.format("%Y-%m-%d"),
+                                        v.period_type
+                                    );
+                                }
+                            }
+                        } else {
+                            println!("  No vacations scheduled.");
+                        }
+                    }
+                    Err(e) => {
+                        println!("❌ Error describing resource: {e}");
+                    }
+                }
+                Ok(())
+            }
+            DescribeCommands::Project {} => {
+                use serde::Deserialize;
+
+                #[derive(Deserialize)]
+                struct ProjMetadata {
+                    code: String,
+                }
+
+                #[derive(Deserialize)]
+                struct ProjManifest {
+                    metadata: ProjMetadata,
+                }
+
+                let project_manifest_path = PathBuf::from("project.yaml");
+                let project_code = if project_manifest_path.exists() {
+                    let content = std::fs::read_to_string(project_manifest_path)?;
+                    let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                    manifest.metadata.code
+                } else {
+                    println!("❌ Error: This command must be run from within a project directory.");
+                    return Ok(());
+                };
+
+                let repo = FileProjectRepository::new();
+                let use_case = DescribeProjectUseCase::new(repo);
+
+                match use_case.execute(&project_code) {
+                    Ok(project) => {
+                        println!("{:<20} {}", "Name:", project.name());
+                        println!("{:<20} {}", "Code:", project.code());
+                        println!("{:<20} {}", "Status:", project.status());
+                        println!("{:<20} {}", "Description:", project.description().map_or("N/A", |d| d));
+
+                        println!("{:<20}", "\nTasks:");
+                        let tasks = project.tasks();
+                        if tasks.is_empty() {
+                            println!("  No tasks in this project.");
+                        } else {
+                            println!("  {:<15} {:<40} {:<15}", "CODE", "NAME", "STATUS");
+                            println!("  {:-<15} {:-<40} {:-<15}", "", "", "");
+                            for task in tasks.values() {
+                                println!("  {:<15} {:<40} {:<15}", task.code(), task.name(), task.status());
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("❌ Error describing project: {e}");
+                    }
+                }
+                Ok(())
+            }
+            DescribeCommands::Task { code } => {
+                use serde::Deserialize;
+
+                #[derive(Deserialize)]
+                struct ProjMetadata {
+                    code: String,
+                }
+
+                #[derive(Deserialize)]
+                struct ProjManifest {
+                    metadata: ProjMetadata,
+                }
+
+                let project_manifest_path = PathBuf::from("project.yaml");
+                let project_code = if project_manifest_path.exists() {
+                    let content = std::fs::read_to_string(project_manifest_path)?;
+                    let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                    manifest.metadata.code
+                } else {
+                    println!("❌ Error: This command must be run from within a project directory.");
+                    return Ok(());
+                };
+
+                let repo = FileProjectRepository::new();
+                let use_case = DescribeTaskUseCase::new(repo);
+
+                match use_case.execute(&project_code, code) {
+                    Ok(task) => {
+                        println!("{:<20} {}", "Name:", task.name());
+                        println!("{:<20} {}", "Code:", task.code());
+                        println!("{:<20} {}", "Project Code:", task.project_code());
+                        println!("{:<20} {}", "Status:", task.status());
+                        println!("{:<20} {}", "Description:", task.description().map_or("N/A", |d| d));
+                        println!("{:<20} {}", "Start Date:", task.start_date());
+                        println!("{:<20} {}", "Due Date:", task.due_date());
+
+                        println!("{:<20}", "\nAssigned Resources:");
+                        let assignees = task.assigned_resources();
+                        if assignees.is_empty() {
+                            println!("  No resources assigned.");
+                        } else {
+                            for res_code in assignees {
+                                println!("  - {res_code}");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("❌ Error describing task: {e}");
+                    }
+                }
+                Ok(())
+            }
+            DescribeCommands::Config {} => {
+                let repo = FileConfigRepository::new();
+                match repo.load() {
+                    Ok((config, _)) => {
+                        println!("{:<20} {}", "Manager Name:", config.manager_name);
+                        println!("{:<20} {}", "Manager Email:", config.manager_email);
+                    }
+                    Err(e) => {
+                        println!("❌ Error describing configuration: {e}");
                     }
                 }
                 Ok(())
