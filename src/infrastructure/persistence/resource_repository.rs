@@ -207,7 +207,7 @@ impl ResourceRepository for FileResourceRepository {
     fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
         let all_resources = self.find_all()?;
         let prefix = resource_type.to_lowercase();
-        let prefix_with_dash = format!("{}-", prefix);
+        let prefix_with_dash = format!("{prefix}-");
 
         let max_num = all_resources
             .iter()
