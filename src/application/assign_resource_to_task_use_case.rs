@@ -37,7 +37,7 @@ where
         }
     }
 
-    pub fn execute(&self, task_code: &str, resource_codes: &[String]) -> Result<AnyTask, AssignResourceError> {
+    pub fn execute(&self, task_code: &str, resource_codes: &[&str]) -> Result<AnyTask, AssignResourceError> {
         // 1. Validate that all resources exist.
         // 1. Validate that all resources exist by their codes.
         let all_resources = self.resource_repository.find_all()?;
@@ -45,8 +45,8 @@ where
 
         let not_found_resources: Vec<String> = resource_codes
             .iter()
-            .filter(|rc| !existing_resource_codes.contains(*rc))
-            .cloned()
+            .filter(|rc| !existing_resource_codes.contains(**rc))
+            .map(|s| s.to_string())
             .collect();
 
         if !not_found_resources.is_empty() {
@@ -60,11 +60,11 @@ where
             .ok_or_else(|| AssignResourceError::TaskNotFound(task_code.to_string()))?;
 
         // 3. Update the task's assigned resources, avoiding duplicates.
-        let mut current_assignees: HashSet<String> = task.assigned_resources().iter().cloned().collect();
+        let mut current_assignees: HashSet<&str> = task.assigned_resources().iter().map(|s| s.as_str()).collect();
         for new_resource in resource_codes {
-            current_assignees.insert(new_resource.clone());
+            current_assignees.insert(new_resource);
         }
-        let new_assignees: Vec<String> = current_assignees.into_iter().collect();
+        let new_assignees: Vec<String> = current_assignees.into_iter().map(|s| s.to_string()).collect();
 
         // Match on the task to update its state immutably.
         let final_task = match task {
@@ -170,18 +170,18 @@ mod tests {
         }
         fn save_time_off(
             &self,
-            _name: String,
+            _name: &str,
             _hours: u32,
-            _date: String,
+            _date: &str,
             _desc: Option<String>,
         ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
         fn save_vacation(
             &self,
-            _name: String,
-            _start: String,
-            _end: String,
+            _name: &str,
+            _start: &str,
+            _end: &str,
             _comp: bool,
             _hours: Option<u32>,
         ) -> Result<AnyResource, DomainError> {
@@ -238,7 +238,7 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["dev-res-2".to_string()]);
+        let result = use_case.execute("TSK-1", &["dev-res-2"]);
 
         assert!(result.is_ok());
         let updated_task = result.unwrap();
@@ -255,7 +255,7 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["dev-res-1".to_string()]);
+        let result = use_case.execute("TSK-1", &["dev-res-1"]);
 
         assert!(result.is_ok());
         let updated_task = result.unwrap();
@@ -270,7 +270,7 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
-        let result = use_case.execute("TSK-NONEXISTENT", &["dev-res-1".to_string()]);
+        let result = use_case.execute("TSK-NONEXISTENT", &["dev-res-1"]);
 
         assert!(matches!(result, Err(AssignResourceError::TaskNotFound(_))));
     }
@@ -283,7 +283,7 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["res-NONEXISTENT".to_string()]);
+        let result = use_case.execute("TSK-1", &["res-NONEXISTENT"]);
 
         assert!(matches!(result, Err(AssignResourceError::ResourcesNotFound(_))));
         if let Err(AssignResourceError::ResourcesNotFound(codes)) = result {

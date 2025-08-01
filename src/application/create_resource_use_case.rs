@@ -11,11 +11,11 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
-    pub fn execute(&self, name: String, resource_type: String) -> Result<(), DomainError> {
-        let code = self.repository.get_next_code(&resource_type)?;
-        let r = Resource::new(code, name.clone(), None, resource_type, None, 0);
+    pub fn execute(&self, name: &str, resource_type: &str) -> Result<(), DomainError> {
+        let code = self.repository.get_next_code(resource_type)?;
+        let r = Resource::new(code, name.to_string(), None, resource_type.to_string(), None, 0);
         self.repository.save(r.into())?;
-        println!("Recurso {name} criado.");
+        println!("Recurso {} criado.", name);
         Ok(())
     }
 }
@@ -90,8 +90,8 @@ mod test {
     fn test_create_project_success() {
         let mock_repo = MockResourceRepository::new(false);
         let use_case = CreateResourceUseCase::new(mock_repo);
-        let name = "John".to_string();
-        let resource_type = "Developer".to_string();
+        let name = "John";
+        let resource_type = "Developer";
 
         let result = use_case.execute(name, resource_type);
         assert!(result.is_ok());
@@ -101,8 +101,8 @@ mod test {
     fn test_create_project_failure() {
         let mock_repo = MockResourceRepository::new(true);
         let use_case = CreateResourceUseCase::new(mock_repo);
-        let name = "John".to_string();
-        let resource_type = "Developer".to_string();
+        let name = "John";
+        let resource_type = "Developer";
 
         let result = use_case.execute(name, resource_type);
         assert!(result.is_err());
@@ -112,9 +112,9 @@ mod test {
     fn test_verify_config_saved() {
         let mock_repo = MockResourceRepository::new(false);
         let use_case = CreateResourceUseCase::new(mock_repo);
-        let name = "John".to_string();
-        let resource_type = "Developer".to_string();
-        let _ = use_case.execute(name.clone(), resource_type.clone());
+        let name = "John";
+        let resource_type = "Developer";
+        let _ = use_case.execute(name, resource_type);
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
