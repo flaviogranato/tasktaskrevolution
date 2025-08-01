@@ -101,10 +101,6 @@ mod test {
                 tasks: RefCell::new(HashMap::new()),
             }
         }
-
-        fn add_existing_task(&self, task: AnyTask) {
-            self.tasks.borrow_mut().insert(task.code().to_string(), task);
-        }
     }
 
     impl TaskRepository for MockTaskRepository {

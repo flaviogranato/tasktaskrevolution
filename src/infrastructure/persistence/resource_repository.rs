@@ -211,10 +211,10 @@ impl ResourceRepository for FileResourceRepository {
 
         let max_num = all_resources
             .iter()
-            .filter_map(|r| match r {
-                AnyResource::Available(res) => Some((&res.code, &res.resource_type)),
-                AnyResource::Assigned(res) => Some((&res.code, &res.resource_type)),
-                AnyResource::Inactive(res) => Some((&res.code, &res.resource_type)),
+            .map(|r| match r {
+                AnyResource::Available(res) => (&res.code, &res.resource_type),
+                AnyResource::Assigned(res) => (&res.code, &res.resource_type),
+                AnyResource::Inactive(res) => (&res.code, &res.resource_type),
             })
             .filter(|(_, r_type)| r_type.to_lowercase() == prefix)
             .filter_map(|(code, _)| code.strip_prefix(&prefix_with_dash))

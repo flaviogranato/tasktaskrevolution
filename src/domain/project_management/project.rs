@@ -113,8 +113,7 @@ mod tests {
         assert_eq!(
             project_with_id.to_string(),
             format!(
-                "Project {{ id: {:?}, code: proj-a, name: Project A, status: Planned }}",
-                id
+                "Project {{ id: {id:?}, code: proj-a, name: Project A, status: Planned }}"
             )
         );
     }

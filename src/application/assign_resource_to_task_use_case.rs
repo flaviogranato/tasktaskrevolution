@@ -221,7 +221,7 @@ mod tests {
     // Helper to create a test resource
     fn create_test_resource(name: &str) -> AnyResource {
         Resource::new(
-            format!("dev-{}", name), // dummy code
+            format!("dev-{name}"), // dummy code
             name.to_string(),
             None,
             "Developer".to_string(),
