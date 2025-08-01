@@ -12,15 +12,15 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self, name: String, description: Option<String>) -> Result<(), DomainError> {
+    pub fn execute(&self, name: &str, description: Option<&str>) -> Result<(), DomainError> {
         let code = self.repository.get_next_code()?;
-        let project = ProjectBuilder::new(name.clone())
+        let project = ProjectBuilder::new(name.to_string())
             .code(code)
-            .description(description)
+            .description(description.map(|d| d.to_string()))
             .build();
 
         self.repository.save(project.into())?;
-        println!("Projeto {name} criado");
+        println!("Projeto {} criado", name);
         Ok(())
     }
 
@@ -84,8 +84,8 @@ mod test {
     fn test_create_project_success() {
         let mock_repo = MockProjectRepository::new(false);
         let use_case = CreateProjectUseCase::new(mock_repo);
-        let name = "John".to_string();
-        let description = Some("a simple test project".to_string());
+        let name = "John";
+        let description = Some("a simple test project");
 
         let result = use_case.execute(name, description);
         assert!(result.is_ok());
@@ -95,8 +95,8 @@ mod test {
     fn test_create_project_failure() {
         let mock_repo = MockProjectRepository::new(true);
         let use_case = CreateProjectUseCase::new(mock_repo);
-        let name = "John".to_string();
-        let description = Some("a simple test project".to_string());
+        let name = "John";
+        let description = Some("a simple test project");
 
         let result = use_case.execute(name, description);
         assert!(result.is_err());
@@ -106,16 +106,16 @@ mod test {
     fn test_verify_config_saved() {
         let mock_repo = MockProjectRepository::new(false);
         let use_case = CreateProjectUseCase::new(mock_repo);
-        let name = "John".to_string();
-        let description = Some("a simple test project".to_string());
-        let _ = use_case.execute(name.clone(), description.clone());
+        let name = "John";
+        let description = Some("a simple test project");
+        let _ = use_case.execute(name, description);
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
         let any_project = saved_config.as_ref().unwrap();
         assert_eq!(any_project.name(), name);
         if let AnyProject::Planned(p) = any_project {
-            assert_eq!(p.description, description);
+            assert_eq!(p.description.as_deref(), description);
         } else {
             panic!("Expected Planned project");
         }

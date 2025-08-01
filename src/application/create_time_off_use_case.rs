@@ -34,21 +34,21 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 
     pub fn execute(
         &self,
-        resource: String,
+        resource: &str,
         hours: u32,
-        date: String,
-        description: Option<String>,
+        date: &str,
+        description: Option<&str>,
     ) -> Result<CreateTimeOffResult, Box<dyn std::error::Error>> {
         match self
             .repository
-            .save_time_off(resource.clone(), hours, date.clone(), description.clone())
+            .save_time_off(resource, hours, date, description.map(|d| d.to_string()))
         {
             Ok(resource) => Ok(CreateTimeOffResult {
                 success: true,
                 message: format!("{} horas adicionadas com sucesso para {}", hours, resource.name()),
                 time_off_balance: resource.time_off_balance(),
-                description,
-                date,
+                description: description.map(|d| d.to_string()),
+                date: date.to_string(),
             }),
             Err(e) => Err(Box::new(e)),
         }
@@ -93,9 +93,9 @@ mod tests {
 
         fn save_time_off(
             &self,
-            resource_name: String,
+            resource_name: &str,
             hours: u32,
-            _date: String,
+            _date: &str,
             _description: Option<String>,
         ) -> Result<AnyResource, DomainError> {
             let mut resources = self.resources.borrow_mut();
@@ -123,9 +123,9 @@ mod tests {
 
         fn save_vacation(
             &self,
-            _resource_name: String,
-            _start_date: String,
-            _end_date: String,
+            _resource_name: &str,
+            _start_date: &str,
+            _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
         ) -> Result<AnyResource, DomainError> {
@@ -158,12 +158,7 @@ mod tests {
         let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
         let use_case = CreateTimeOffUseCase::new(repository);
 
-        let result = use_case.execute(
-            "John Doe".to_string(),
-            10,
-            "2024-01-01".to_string(),
-            Some("Test time off".to_string()),
-        );
+        let result = use_case.execute("John Doe", 10, "2024-01-01", Some("Test time off"));
 
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
@@ -175,12 +170,7 @@ mod tests {
         let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
         let use_case = CreateTimeOffUseCase::new(repository);
 
-        let result = use_case.execute(
-            "nonexistent".to_string(),
-            10,
-            "2024-01-01".to_string(),
-            Some("Test time off".to_string()),
-        );
+        let result = use_case.execute("nonexistent", 10, "2024-01-01", Some("Test time off"));
 
         assert!(result.is_err());
     }
@@ -191,22 +181,12 @@ mod tests {
         let use_case = CreateTimeOffUseCase::new(repository);
 
         // First entry
-        let result1 = use_case.execute(
-            "John Doe".to_string(),
-            4,
-            "2024-01-01".to_string(),
-            Some("Manhã".to_string()),
-        );
+        let result1 = use_case.execute("John Doe", 4, "2024-01-01", Some("Manhã"));
         assert!(result1.is_ok());
         assert_eq!(result1.unwrap().time_off_balance, 4);
 
         // Second entry
-        let result2 = use_case.execute(
-            "John Doe".to_string(),
-            4,
-            "2024-01-02".to_string(),
-            Some("Tarde".to_string()),
-        );
+        let result2 = use_case.execute("John Doe", 4, "2024-01-02", Some("Tarde"));
         assert!(result2.is_ok());
 
         let final_resource = result2.unwrap();

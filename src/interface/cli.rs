@@ -189,14 +189,14 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileProjectRepository::new();
                 let use_case = CreateProjectUseCase::new(repository);
 
-                use_case.execute(name.clone(), description.clone())?;
+                use_case.execute(name, description.as_deref())?;
                 Ok(())
             }
             CreateCommands::Resource { name, resource_type } => {
                 let repository = FileResourceRepository::new(".");
                 let use_case = CreateResourceUseCase::new(repository);
 
-                let _ = use_case.execute(name.clone(), resource_type.clone());
+                let _ = use_case.execute(name, resource_type);
                 Ok(())
             }
             CreateCommands::Vacation {
@@ -210,9 +210,9 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let use_case = CreateVacationUseCase::new(repository);
 
                 match use_case.execute(
-                    resource.clone(),
-                    start_date.clone(),
-                    end_date.clone(),
+                    resource,
+                    start_date,
+                    end_date,
                     *is_time_off_compensation,
                     *compensated_hours,
                 ) {
@@ -236,7 +236,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileResourceRepository::new(".");
                 let use_case = CreateTimeOffUseCase::new(repository);
 
-                match use_case.execute(resource.clone(), *hours, date.clone(), description.clone()) {
+                match use_case.execute(resource, *hours, date, description.as_deref()) {
                     Ok(result) => {
                         if result.success {
                             println!("✅ {}", result.message);
@@ -496,7 +496,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let task_repo = FileTaskRepository::new(".");
                     let resource_repo = FileResourceRepository::new(".");
                     let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
-                    match use_case.execute(task, resources) {
+                    let resource_refs: Vec<&str> = resources.iter().map(|s| s.as_str()).collect();
+                    match use_case.execute(task, &resource_refs) {
                         Ok(updated_task) => {
                             println!("✅ Successfully assigned resources to task '{}'.", updated_task.code());
                             println!("   New assignees: {}", updated_task.assigned_resources().join(", "));

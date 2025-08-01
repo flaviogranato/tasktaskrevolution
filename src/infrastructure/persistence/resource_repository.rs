@@ -84,13 +84,13 @@ impl ResourceRepository for FileResourceRepository {
 
     fn save_time_off(
         &self,
-        resource_name: String,
+        resource_name: &str,
         hours: u32,
-        _date: String,
+        _date: &str,
         _description: Option<String>,
     ) -> Result<AnyResource, DomainError> {
         let resource = self
-            .find_by_name(&resource_name)?
+            .find_by_name(resource_name)?
             .ok_or_else(|| DomainError::NotFound("Resource not found".to_string()))?;
 
         let updated_resource = match resource {
@@ -112,22 +112,22 @@ impl ResourceRepository for FileResourceRepository {
 
     fn save_vacation(
         &self,
-        resource_name: String,
-        start_date: String,
-        end_date: String,
+        resource_name: &str,
+        start_date: &str,
+        end_date: &str,
         is_time_off_compensation: bool,
         compensated_hours: Option<u32>,
     ) -> Result<AnyResource, DomainError> {
         let resource = self
-            .find_by_name(&resource_name)?
+            .find_by_name(resource_name)?
             .ok_or_else(|| DomainError::NotFound("Resource not found".to_string()))?;
 
-        let start_date = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+        let start_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
             .map_err(|e| DomainError::Generic(format!("Invalid start date: {e}")))?
             .and_hms_opt(0, 0, 0)
             .unwrap();
 
-        let end_date = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+        let end_date = NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
             .map_err(|e| DomainError::Generic(format!("Invalid end date: {e}")))?
             .and_hms_opt(0, 0, 0)
             .unwrap();
@@ -275,13 +275,7 @@ mod tests {
         let resource = create_test_resource("test", "dev-1", "dev");
         repo.save(resource.into()).unwrap();
 
-        let result = repo.save_vacation(
-            "test".to_string(),
-            "2024-01-01".to_string(),
-            "2024-01-31".to_string(),
-            false,
-            None,
-        );
+        let result = repo.save_vacation("test", "2024-01-01", "2024-01-31", false, None);
 
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
@@ -302,12 +296,7 @@ mod tests {
         let resource = create_test_resource("test", "dev-1", "dev");
         repo.save(resource.into()).unwrap();
 
-        let result = repo.save_time_off(
-            "test".to_string(),
-            10,
-            "2024-01-01".to_string(),
-            Some("Test time off".to_string()),
-        );
+        let result = repo.save_time_off("test", 10, "2024-01-01", Some("Test time off".to_string()));
 
         assert!(result.is_ok());
         let updated_resource = result.unwrap();

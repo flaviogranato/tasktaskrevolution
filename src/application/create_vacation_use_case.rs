@@ -29,13 +29,13 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
 
     pub fn execute(
         &self,
-        resource_name: String,
-        start_date: String,
-        end_date: String,
+        resource_name: &str,
+        start_date: &str,
+        end_date: &str,
         is_time_off_compensation: bool,
         compensated_hours: Option<u32>,
     ) -> Result<CreateVacationResult, Box<dyn std::error::Error>> {
-        if !Self::validate_dates(&start_date, &end_date) {
+        if !Self::validate_dates(start_date, end_date) {
             return Ok(CreateVacationResult {
                 success: false,
                 message: "Data de início deve ser anterior ou igual à data de fim".to_string(),
@@ -117,9 +117,9 @@ mod tests {
 
         fn save_time_off(
             &self,
-            _resource_name: String,
+            _resource_name: &str,
             _hours: u32,
-            _date: String,
+            _date: &str,
             _description: Option<String>,
         ) -> Result<AnyResource, DomainError> {
             unimplemented!()
@@ -127,9 +127,9 @@ mod tests {
 
         fn save_vacation(
             &self,
-            resource_name: String,
-            start_date: String,
-            end_date: String,
+            resource_name: &str,
+            start_date: &str,
+            end_date: &str,
             is_time_off_compensation: bool,
             compensated_hours: Option<u32>,
         ) -> Result<AnyResource, DomainError> {
@@ -138,7 +138,7 @@ mod tests {
             }
 
             let mut resources = self.resources.borrow_mut();
-            if let Some(any_resource) = resources.get_mut(&resource_name) {
+            if let Some(any_resource) = resources.get_mut(resource_name) {
                 let new_period = Period {
                     start_date: NaiveDateTime::parse_from_str(&format!("{start_date} 00:00:00"), "%Y-%m-%d %H:%M:%S")
                         .unwrap()
@@ -168,7 +168,7 @@ mod tests {
                 }
                 Ok(any_resource.clone())
             } else {
-                Err(DomainError::Generic(format!("Resource '{resource_name}' not found")))
+                Err(DomainError::Generic(format!("Resource '{}' not found", resource_name)))
             }
         }
 
@@ -202,13 +202,7 @@ mod tests {
         let use_case = CreateVacationUseCase::new(mock_repo);
 
         let result = use_case
-            .execute(
-                resource.name().to_string(),
-                "2025-07-01".to_string(),
-                "2025-07-10".to_string(),
-                false,
-                None,
-            )
+            .execute(resource.name(), "2025-07-01", "2025-07-10", false, None)
             .unwrap();
 
         assert!(result.success);
@@ -222,9 +216,9 @@ mod tests {
 
         let result = use_case
             .execute(
-                resource.name().to_string(),
-                "2025-07-10".to_string(), // End date
-                "2025-07-01".to_string(), // Start date
+                resource.name(),
+                "2025-07-10", // End date
+                "2025-07-01", // Start date
                 false,
                 None,
             )
@@ -244,13 +238,7 @@ mod tests {
         let use_case = CreateVacationUseCase::new(mock_repo);
 
         let result = use_case
-            .execute(
-                resource.name().to_string(),
-                "2025-08-01".to_string(),
-                "2025-08-10".to_string(),
-                false,
-                None,
-            )
+            .execute(resource.name(), "2025-08-01", "2025-08-10", false, None)
             .unwrap();
 
         assert!(!result.success);
@@ -264,13 +252,7 @@ mod tests {
         let use_case = CreateVacationUseCase::new(mock_repo.clone());
 
         let _ = use_case
-            .execute(
-                resource.name().to_string(),
-                "2025-09-01".to_string(),
-                "2025-09-02".to_string(),
-                true,
-                Some(16),
-            )
+            .execute(resource.name(), "2025-09-01", "2025-09-02", true, Some(16))
             .unwrap();
 
         // Verify the data was saved correctly in the shared state via the original mock

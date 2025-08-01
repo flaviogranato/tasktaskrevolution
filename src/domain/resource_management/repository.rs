@@ -7,16 +7,16 @@ pub trait ResourceRepository {
     fn find_all(&self) -> Result<Vec<AnyResource>, DomainError>;
     fn save_time_off(
         &self,
-        resource_name: String,
+        resource_name: &str,
         hours: u32,
-        date: String,
+        date: &str,
         description: Option<String>,
     ) -> Result<AnyResource, DomainError>;
     fn save_vacation(
         &self,
-        resource_name: String,
-        start_date: String,
-        end_date: String,
+        resource_name: &str,
+        start_date: &str,
+        end_date: &str,
         is_time_off_compensation: bool,
         compensated_hours: Option<u32>,
     ) -> Result<AnyResource, DomainError>;
