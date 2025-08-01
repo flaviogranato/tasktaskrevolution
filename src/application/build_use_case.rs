@@ -79,13 +79,11 @@ impl BuildUseCase {
             // 5. Instantiate repositories scoped to the current project path.
             let project_repo = FileProjectRepository::with_base_path(project_path.clone());
             let resource_repo = FileResourceRepository::new(project_path.clone());
-            // let task_repo = FileTaskRepository::new(project_path.clone());
 
-            // 6. Load all data for this specific project.
+            // 6. Load all data for this specific project. `load` now also loads tasks.
             let project = project_repo.load()?;
-            // let tasks = task_repo.find_all()?;
-            let tasks = vec![]; // FIXME: Re-implement task loading
             let resources = resource_repo.find_all()?;
+            let tasks: Vec<_> = project.tasks().values().cloned().collect();
             let project_name = project.name().to_string();
 
             // Inherit timezone from config if not set in project.
