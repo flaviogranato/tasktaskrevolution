@@ -47,6 +47,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::project_management::any_project::AnyProject;
     use crate::domain::{
         project_management::builder::ProjectBuilder,
         task_management::{state::Planned, task::Task},
