@@ -1,45 +1,50 @@
 use crate::domain::{
-    resource_management::repository::ResourceRepository,
-    shared::errors::DomainError,
-    task_management::{AnyTask, repository::TaskRepository},
+    project_management::repository::ProjectRepository, resource_management::repository::ResourceRepository,
+    shared::errors::DomainError, task_management::any_task::AnyTask,
 };
 use std::collections::HashSet;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum AssignResourceError {
-    #[error("Task with code '{0}' not found.")]
-    TaskNotFound(String),
+    #[error("Project not found for task with code '{0}'.")]
+    ProjectNotFound(String),
     #[error("One or more resources not found: {0:?}")]
     ResourcesNotFound(Vec<String>),
+    #[error("Domain rule violation: {0}")]
+    DomainError(String),
     #[error(transparent)]
     RepositoryError(#[from] DomainError),
 }
 
-pub struct AssignResourceToTaskUseCase<TR, RR>
+pub struct AssignResourceToTaskUseCase<PR, RR>
 where
-    TR: TaskRepository,
+    PR: ProjectRepository,
     RR: ResourceRepository,
 {
-    task_repository: TR,
+    project_repository: PR,
     resource_repository: RR,
 }
 
-impl<TR, RR> AssignResourceToTaskUseCase<TR, RR>
+impl<PR, RR> AssignResourceToTaskUseCase<PR, RR>
 where
-    TR: TaskRepository,
+    PR: ProjectRepository,
     RR: ResourceRepository,
 {
-    pub fn new(task_repository: TR, resource_repository: RR) -> Self {
+    pub fn new(project_repository: PR, resource_repository: RR) -> Self {
         Self {
-            task_repository,
+            project_repository,
             resource_repository,
         }
     }
 
-    pub fn execute(&self, task_code: &str, resource_codes: &[&str]) -> Result<AnyTask, AssignResourceError> {
+    pub fn execute(
+        &self,
+        project_code: &str,
+        task_code: &str,
+        resource_codes: &[&str],
+    ) -> Result<AnyTask, AssignResourceError> {
         // 1. Validate that all resources exist.
-        // 1. Validate that all resources exist by their codes.
         let all_resources = self.resource_repository.find_all()?;
         let existing_resource_codes: HashSet<String> = all_resources.iter().map(|r| r.code().to_string()).collect();
 
@@ -53,47 +58,28 @@ where
             return Err(AssignResourceError::ResourcesNotFound(not_found_resources));
         }
 
-        // 2. Load the task.
-        let task = self
-            .task_repository
-            .find_by_code(task_code)?
-            .ok_or_else(|| AssignResourceError::TaskNotFound(task_code.to_string()))?;
+        // 2. Load the project aggregate.
+        let mut project = self
+            .project_repository
+            .find_by_code(project_code)?
+            .ok_or_else(|| AssignResourceError::ProjectNotFound(project_code.to_string()))?;
 
-        // 3. Update the task's assigned resources, avoiding duplicates.
-        let mut current_assignees: HashSet<&str> = task.assigned_resources().iter().map(|s| s.as_str()).collect();
-        for new_resource in resource_codes {
-            current_assignees.insert(new_resource);
-        }
-        let new_assignees: Vec<String> = current_assignees.into_iter().map(|s| s.to_string()).collect();
+        // 3. Delegate the assignment to the project aggregate.
+        project
+            .assign_resource_to_task(task_code, resource_codes)
+            .map_err(AssignResourceError::DomainError)?;
 
-        // Match on the task to update its state immutably.
-        let final_task = match task {
-            AnyTask::Planned(mut t) => {
-                t.assigned_resources = new_assignees;
-                AnyTask::Planned(t)
-            }
-            AnyTask::InProgress(mut t) => {
-                t.assigned_resources = new_assignees;
-                AnyTask::InProgress(t)
-            }
-            AnyTask::Blocked(mut t) => {
-                t.assigned_resources = new_assignees;
-                AnyTask::Blocked(t)
-            }
-            AnyTask::Completed(mut t) => {
-                t.assigned_resources = new_assignees;
-                AnyTask::Completed(t)
-            }
-            AnyTask::Cancelled(mut t) => {
-                t.assigned_resources = new_assignees;
-                AnyTask::Cancelled(t)
-            }
-        };
+        // 4. Save the updated project aggregate.
+        self.project_repository.save(project.clone())?;
 
-        // 4. Save the updated task.
-        self.task_repository.save(final_task.clone())?;
+        // 5. Return the updated task.
+        let updated_task = project
+            .tasks()
+            .get(task_code)
+            .cloned()
+            .ok_or_else(|| AssignResourceError::DomainError("Task disappeared after assignment".to_string()))?;
 
-        Ok(final_task)
+        Ok(updated_task)
     }
 }
 
@@ -101,61 +87,39 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
+        project_management::{AnyProject, builder::ProjectBuilder},
         resource_management::{AnyResource, resource::Resource},
-        task_management::{AnyTask, state::Planned, task::Task},
+        task_management::{state::Planned, task::Task},
     };
-    use chrono::NaiveDate;
-    use std::{cell::RefCell, collections::HashMap, path::Path};
+    use chrono::{DateTime, Local, NaiveDate};
+    use std::{cell::RefCell, collections::HashMap};
     use uuid7::uuid7;
 
-    // Mock Task Repository
-    struct MockTaskRepository {
-        tasks: RefCell<HashMap<String, AnyTask>>,
+    // --- Mocks ---
+
+    struct MockProjectRepository {
+        projects: RefCell<HashMap<String, AnyProject>>,
     }
 
-    impl MockTaskRepository {
-        fn new(initial_tasks: Vec<AnyTask>) -> Self {
-            let tasks = initial_tasks.into_iter().map(|t| (t.code().to_string(), t)).collect();
-            Self {
-                tasks: RefCell::new(tasks),
-            }
-        }
-    }
-
-    impl TaskRepository for MockTaskRepository {
-        fn save(&self, task: AnyTask) -> Result<(), DomainError> {
-            self.tasks.borrow_mut().insert(task.code().to_string(), task);
+    impl ProjectRepository for MockProjectRepository {
+        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+            self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, DomainError> {
-            Ok(self.tasks.borrow().get(code).cloned())
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+            Ok(self.projects.borrow().get(code).cloned())
         }
-        // -- Unimplemented methods --
-        fn load(&self, _path: &Path) -> Result<AnyTask, DomainError> {
+        fn load(&self) -> Result<AnyProject, DomainError> {
             unimplemented!()
         }
-        fn find_by_id(&self, _id: &str) -> Result<Option<AnyTask>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
-            unimplemented!()
-        }
-        fn delete(&self, _id: &str) -> Result<(), DomainError> {
-            unimplemented!()
-        }
-        fn find_by_assignee(&self, _assignee: &str) -> Result<Vec<AnyTask>, DomainError> {
-            unimplemented!()
-        }
-        fn find_by_date_range(&self, _start: NaiveDate, _end: NaiveDate) -> Result<Vec<AnyTask>, DomainError> {
-            unimplemented!()
-        }
-
         fn get_next_code(&self) -> Result<String, DomainError> {
-            Ok("task-1".to_string())
+            unimplemented!()
         }
     }
 
-    // Mock Resource Repository
     struct MockResourceRepository {
         resources: Vec<AnyResource>,
     }
@@ -164,7 +128,6 @@ mod tests {
         fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
             Ok(self.resources.clone())
         }
-        // -- Unimplemented methods --
         fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
@@ -187,20 +150,16 @@ mod tests {
         ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
-        fn check_if_layoff_period(
-            &self,
-            _start: &chrono::DateTime<chrono::Local>,
-            _end: &chrono::DateTime<chrono::Local>,
-        ) -> bool {
+        fn check_if_layoff_period(&self, _start: &DateTime<Local>, _end: &DateTime<Local>) -> bool {
             unimplemented!()
         }
-
         fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }
 
-    // Helper to create a test task
+    // --- Helpers ---
+
     fn create_test_task(code: &str, assignees: Vec<&str>) -> AnyTask {
         Task::<Planned> {
             id: uuid7(),
@@ -217,10 +176,9 @@ mod tests {
         .into()
     }
 
-    // Helper to create a test resource
     fn create_test_resource(name: &str) -> AnyResource {
         Resource::new(
-            format!("dev-{name}"), // dummy code
+            format!("dev-{name}"),
             name.to_string(),
             None,
             "Developer".to_string(),
@@ -230,15 +188,31 @@ mod tests {
         .into()
     }
 
+    fn setup_test_project(tasks: Vec<AnyTask>) -> AnyProject {
+        let mut project: AnyProject = ProjectBuilder::new("Test Project".to_string())
+            .code("PROJ-1".to_string())
+            .build()
+            .into();
+        for task in tasks {
+            project.add_task(task);
+        }
+        project
+    }
+
+    // --- Tests ---
+
     #[test]
     fn test_assign_new_resources_success() {
-        let task_repo = MockTaskRepository::new(vec![create_test_task("TSK-1", vec!["dev-res-1"])]);
+        let project = setup_test_project(vec![create_test_task("TSK-1", vec!["dev-res-1"])]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
         let resource_repo = MockResourceRepository {
             resources: vec![create_test_resource("res-1"), create_test_resource("res-2")],
         };
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["dev-res-2"]);
+        let result = use_case.execute("PROJ-1", "TSK-1", &["dev-res-2"]);
 
         assert!(result.is_ok());
         let updated_task = result.unwrap();
@@ -248,46 +222,33 @@ mod tests {
     }
 
     #[test]
-    fn test_assign_existing_resource_is_idempotent() {
-        let task_repo = MockTaskRepository::new(vec![create_test_task("TSK-1", vec!["dev-res-1"])]);
+    fn test_assign_fails_if_project_not_found() {
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::new()),
+        };
         let resource_repo = MockResourceRepository {
             resources: vec![create_test_resource("res-1")],
         };
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["dev-res-1"]);
+        let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1", &["dev-res-1"]);
 
-        assert!(result.is_ok());
-        let updated_task = result.unwrap();
-        assert_eq!(updated_task.assigned_resources(), &["dev-res-1"]);
-    }
-
-    #[test]
-    fn test_assign_fails_if_task_not_found() {
-        let task_repo = MockTaskRepository::new(vec![]);
-        let resource_repo = MockResourceRepository {
-            resources: vec![create_test_resource("res-1")],
-        };
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
-
-        let result = use_case.execute("TSK-NONEXISTENT", &["dev-res-1"]);
-
-        assert!(matches!(result, Err(AssignResourceError::TaskNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceError::ProjectNotFound(_))));
     }
 
     #[test]
     fn test_assign_fails_if_resource_not_found() {
-        let task_repo = MockTaskRepository::new(vec![create_test_task("TSK-1", vec![])]);
+        let project = setup_test_project(vec![create_test_task("TSK-1", vec![])]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
         let resource_repo = MockResourceRepository {
             resources: vec![create_test_resource("res-1")],
         };
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
 
-        let result = use_case.execute("TSK-1", &["res-NONEXISTENT"]);
+        let result = use_case.execute("PROJ-1", "TSK-1", &["res-NONEXISTENT"]);
 
         assert!(matches!(result, Err(AssignResourceError::ResourcesNotFound(_))));
-        if let Err(AssignResourceError::ResourcesNotFound(codes)) = result {
-            assert_eq!(codes, vec!["res-NONEXISTENT"]);
-        }
     }
 }

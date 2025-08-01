@@ -156,6 +156,21 @@ mod tests {
             }
             Ok(vec![builder.build().start().into()])
         }
+
+        fn find_by_code(
+            &self,
+            code: &str,
+        ) -> Result<Option<crate::domain::project_management::AnyProject>, DomainError> {
+            if code == "proj-1" {
+                let mut builder = ProjectBuilder::new("Test Project".to_string()).code("proj-1".to_string());
+                if let Some(rules) = self.vacation_rules.clone() {
+                    builder = builder.vacation_rules(rules);
+                }
+                Ok(Some(builder.build().start().into()))
+            } else {
+                Ok(None)
+            }
+        }
     }
 
     impl ResourceRepository for MockResourceRepository {

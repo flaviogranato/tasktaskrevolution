@@ -47,6 +47,9 @@ mod tests {
         fn get_next_code(&self) -> Result<String, DomainError> {
             unimplemented!()
         }
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+            Ok(self.projects.borrow().iter().find(|p| p.code() == code).cloned())
+        }
     }
 
     #[test]

@@ -1,9 +1,11 @@
 use super::{
+    super::task_management::any_task::AnyTask,
     project::Project,
     state::{Cancelled, Completed, InProgress, Planned},
     vacation_rules::VacationRules,
 };
 use serde::Serialize;
+use std::collections::{HashMap, HashSet};
 
 /// An enum to represent a Project in any of its possible states.
 #[derive(Debug, Clone, Serialize)]
@@ -50,6 +52,63 @@ impl AnyProject {
             AnyProject::Completed(p) => p.vacation_rules.as_ref(),
             AnyProject::Cancelled(p) => p.vacation_rules.as_ref(),
         }
+    }
+
+    pub fn tasks(&self) -> &HashMap<String, AnyTask> {
+        match self {
+            AnyProject::Planned(p) => &p.tasks,
+            AnyProject::InProgress(p) => &p.tasks,
+            AnyProject::Completed(p) => &p.tasks,
+            AnyProject::Cancelled(p) => &p.tasks,
+        }
+    }
+
+    pub fn add_task(&mut self, task: AnyTask) {
+        let tasks = match self {
+            AnyProject::Planned(p) => &mut p.tasks,
+            AnyProject::InProgress(p) => &mut p.tasks,
+            AnyProject::Completed(p) => &mut p.tasks,
+            AnyProject::Cancelled(p) => &mut p.tasks,
+        };
+        tasks.insert(task.code().to_string(), task);
+    }
+
+    pub fn assign_resource_to_task(&mut self, task_code: &str, resource_codes: &[&str]) -> Result<(), String> {
+        let tasks_map = match self {
+            AnyProject::Planned(p) => &mut p.tasks,
+            AnyProject::InProgress(p) => &mut p.tasks,
+            AnyProject::Completed(_) => return Err("Cannot modify tasks in a completed project.".to_string()),
+            AnyProject::Cancelled(_) => return Err("Cannot modify tasks in a cancelled project.".to_string()),
+        };
+
+        let task = tasks_map
+            .get_mut(task_code)
+            .ok_or_else(|| format!("Task '{task_code}' not found in project."))?;
+
+        // Logic to update assignees, handling duplicates
+        let mut current_assignees: HashSet<String> = match task {
+            AnyTask::Planned(t) => t.assigned_resources.iter().cloned().collect(),
+            AnyTask::InProgress(t) => t.assigned_resources.iter().cloned().collect(),
+            AnyTask::Blocked(t) => t.assigned_resources.iter().cloned().collect(),
+            AnyTask::Completed(_) => return Err("Cannot assign resources to a completed task.".to_string()),
+            AnyTask::Cancelled(_) => return Err("Cannot assign resources to a cancelled task.".to_string()),
+        };
+
+        for code in resource_codes {
+            current_assignees.insert(code.to_string());
+        }
+
+        let new_assignees: Vec<String> = current_assignees.into_iter().collect();
+
+        // Re-assign the updated list
+        match task {
+            AnyTask::Planned(t) => t.assigned_resources = new_assignees,
+            AnyTask::InProgress(t) => t.assigned_resources = new_assignees,
+            AnyTask::Blocked(t) => t.assigned_resources = new_assignees,
+            _ => {} // Other states already returned an error
+        }
+
+        Ok(())
     }
 }
 

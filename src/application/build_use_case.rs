@@ -2,11 +2,12 @@ use crate::domain::{
     company_settings::repository::ConfigRepository,
     project_management::{AnyProject, repository::ProjectRepository},
     resource_management::{AnyResource, repository::ResourceRepository},
-    task_management::repository::TaskRepository,
+    // task_management::repository::TaskRepository,
 };
 use crate::infrastructure::persistence::{
-    config_repository::FileConfigRepository, project_repository::FileProjectRepository,
-    resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
+    config_repository::FileConfigRepository,
+    project_repository::FileProjectRepository,
+    resource_repository::FileResourceRepository, // task_repository::FileTaskRepository,
 };
 use crate::interface::assets::{StaticAssets, TemplateAssets};
 
@@ -78,11 +79,12 @@ impl BuildUseCase {
             // 5. Instantiate repositories scoped to the current project path.
             let project_repo = FileProjectRepository::with_base_path(project_path.clone());
             let resource_repo = FileResourceRepository::new(project_path.clone());
-            let task_repo = FileTaskRepository::new(project_path.clone());
+            // let task_repo = FileTaskRepository::new(project_path.clone());
 
             // 6. Load all data for this specific project.
             let project = project_repo.load()?;
-            let tasks = task_repo.find_all()?;
+            // let tasks = task_repo.find_all()?;
+            let tasks = vec![]; // FIXME: Re-implement task loading
             let resources = resource_repo.find_all()?;
             let project_name = project.name().to_string();
 

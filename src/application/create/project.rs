@@ -20,7 +20,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
             .build();
 
         self.repository.save(project.into())?;
-        println!("Projeto {} criado", name);
+        println!("Projeto {name} criado");
         Ok(())
     }
 
@@ -77,6 +77,14 @@ mod test {
 
         fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
             Ok(vec![self.project.clone()])
+        }
+
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+            if self.project.code() == code {
+                Ok(Some(self.project.clone()))
+            } else {
+                Ok(None)
+            }
         }
     }
 

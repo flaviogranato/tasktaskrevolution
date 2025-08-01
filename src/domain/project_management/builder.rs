@@ -1,4 +1,8 @@
-use crate::domain::project_management::{project::Project, state::Planned, vacation_rules::VacationRules};
+use crate::domain::{
+    project_management::{project::Project, state::Planned, vacation_rules::VacationRules},
+    task_management::any_task::AnyTask,
+};
+use std::collections::HashMap;
 use uuid7::{Uuid, uuid7};
 
 /// Builder for the `Project` struct.
@@ -16,6 +20,7 @@ pub struct ProjectBuilder {
     end_date: Option<String>,
     vacation_rules: Option<VacationRules>,
     timezone: Option<String>,
+    tasks: HashMap<String, AnyTask>,
 }
 
 impl ProjectBuilder {
@@ -76,6 +81,7 @@ impl ProjectBuilder {
             end_date: self.end_date,
             vacation_rules: self.vacation_rules,
             timezone: self.timezone,
+            tasks: self.tasks,
             state: Planned,
         }
     }
