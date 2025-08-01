@@ -2,15 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.5.0] - 2025-08-01
 
 ### 🚀 Features
 
 - *(ui)* Refactor HTML templates with Tailwind CSS
+- *(cli)* Add 'task assign' command
+- *(domain)* Standardize on UUIDv7 for all entity IDs
+- Implement universal UUIDs and sequential codes
+- *(cli)* Add list commands for projects, resources, and tasks
+- Implement full CRUD for projects, resources, and tasks
+- Add `describe` command for project, resource, task, and config
 
 ### 🐛 Bug Fixes
 
 - *(build)* Handle multiple projects correctly in BuildUseCase
+- Correctly load tasks when describing a project
 
 ### 🚜 Refactor
 
@@ -19,10 +26,27 @@ All notable changes to this project will be documented in this file.
 - *(resource)* Implement typestate pattern and fix subsequent issues
 - *(project)* Implement typestate pattern for Project
 - *(domain)* Move Any* enums to dedicated modules
+- *(performance)* Reduce clones by using string slices
+- *(application)* Organize use cases into functional submodules
+- Integrate task management into project aggregate
+
+### 📚 Documentation
+
+- *(readme)* Update to reflect current project functionality
+- *(contributing)* Simplify and translate contribution guidelines
+
+### 🎨 Styling
+
+- Apply automatic formatting
+- Apply clippy fixes and remove warnings
 
 ### 🧪 Testing
 
 - *(manifests)* Restore and expand test coverage
+
+### ⚙️ Miscellaneous Tasks
+
+- *(changelog)* Generate changelog with git-cliff
 
 ## [0.4] - 2025-07-29
 
