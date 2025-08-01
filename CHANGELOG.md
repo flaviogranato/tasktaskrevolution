@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2025-08-01
+
+### 🐛 Bug Fixes
+
+- *(build)* Restore project discovery logic to correctly find and build projects
+
 ## [0.5.0] - 2025-08-01
 
 ### 🚀 Features
@@ -47,6 +53,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - *(changelog)* Generate changelog with git-cliff
+- *(release)* Prepare for version 0.5.0
 
 ## [0.4] - 2025-07-29
 
