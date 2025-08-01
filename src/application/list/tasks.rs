@@ -1,17 +1,20 @@
+use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::shared::errors::DomainError;
-use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
+use crate::domain::task_management::any_task::AnyTask;
 
-pub struct ListTasksUseCase<R: TaskRepository> {
+pub struct ListTasksUseCase<R: ProjectRepository> {
     repository: R,
 }
 
-impl<R: TaskRepository> ListTasksUseCase<R> {
+impl<R: ProjectRepository> ListTasksUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
 
     pub fn execute(&self) -> Result<Vec<AnyTask>, DomainError> {
-        self.repository.find_all()
+        let project = self.repository.load()?;
+        let tasks = project.tasks().values().cloned().collect();
+        Ok(tasks)
     }
 }
 
@@ -19,40 +22,30 @@ impl<R: TaskRepository> ListTasksUseCase<R> {
 mod tests {
     use super::*;
     use crate::domain::{
+        project_management::{AnyProject, builder::ProjectBuilder},
         shared::errors::DomainError,
-        task_management::{any_task::AnyTask, state::Planned, task::Task},
+        task_management::{state::Planned, task::Task},
     };
     use chrono::NaiveDate;
-    use std::{cell::RefCell, collections::HashMap, path::Path};
+
     use uuid7::uuid7;
 
-    struct MockTaskRepository {
-        tasks: RefCell<HashMap<String, AnyTask>>,
+    struct MockProjectRepository {
+        project: AnyProject,
     }
 
-    impl TaskRepository for MockTaskRepository {
-        fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
-            Ok(self.tasks.borrow().values().cloned().collect())
+    impl ProjectRepository for MockProjectRepository {
+        fn load(&self) -> Result<AnyProject, DomainError> {
+            Ok(self.project.clone())
         }
-        fn save(&self, _task: AnyTask) -> Result<(), DomainError> {
+        // Unimplemented methods
+        fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
             unimplemented!()
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyTask>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
             unimplemented!()
         }
-        fn load(&self, _path: &Path) -> Result<AnyTask, DomainError> {
-            unimplemented!()
-        }
-        fn find_by_id(&self, _id: &str) -> Result<Option<AnyTask>, DomainError> {
-            unimplemented!()
-        }
-        fn delete(&self, _id: &str) -> Result<(), DomainError> {
-            unimplemented!()
-        }
-        fn find_by_assignee(&self, _assignee: &str) -> Result<Vec<AnyTask>, DomainError> {
-            unimplemented!()
-        }
-        fn find_by_date_range(&self, _start: NaiveDate, _end: NaiveDate) -> Result<Vec<AnyTask>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
             unimplemented!()
         }
         fn get_next_code(&self) -> Result<String, DomainError> {
@@ -76,20 +69,25 @@ mod tests {
         .into()
     }
 
+    fn create_project_with_tasks(tasks: Vec<AnyTask>) -> AnyProject {
+        let mut project: AnyProject = ProjectBuilder::new("Test Project".to_string())
+            .code("PROJ-1".to_string())
+            .build()
+            .into();
+        for task in tasks {
+            project.add_task(task);
+        }
+        project
+    }
+
     #[test]
     fn test_list_tasks_success() {
         let tasks = vec![
             create_test_task("TSK-1", "First task"),
             create_test_task("TSK-2", "Second task"),
         ];
-        let mut task_map = HashMap::new();
-        for task in tasks {
-            task_map.insert(task.code().to_string(), task);
-        }
-
-        let mock_repo = MockTaskRepository {
-            tasks: RefCell::new(task_map),
-        };
+        let project = create_project_with_tasks(tasks);
+        let mock_repo = MockProjectRepository { project };
         let use_case = ListTasksUseCase::new(mock_repo);
 
         let result = use_case.execute().unwrap();
@@ -100,9 +98,8 @@ mod tests {
 
     #[test]
     fn test_list_tasks_empty() {
-        let mock_repo = MockTaskRepository {
-            tasks: RefCell::new(HashMap::new()),
-        };
+        let project = create_project_with_tasks(vec![]);
+        let mock_repo = MockProjectRepository { project };
         let use_case = ListTasksUseCase::new(mock_repo);
 
         let result = use_case.execute().unwrap();

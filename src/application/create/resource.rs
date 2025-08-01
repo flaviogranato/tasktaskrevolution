@@ -15,7 +15,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         let code = self.repository.get_next_code(resource_type)?;
         let r = Resource::new(code, name.to_string(), None, resource_type.to_string(), None, 0);
         self.repository.save(r.into())?;
-        println!("Recurso {} criado.", name);
+        println!("Recurso {name} criado.");
         Ok(())
     }
 }

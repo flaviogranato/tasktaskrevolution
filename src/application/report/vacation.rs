@@ -97,6 +97,13 @@ mod tests {
         fn get_next_code(&self) -> Result<String, DomainError> {
             Ok("proj-1".to_string())
         }
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+            if self.project.code() == code {
+                Ok(Some(self.project.clone()))
+            } else {
+                Ok(None)
+            }
+        }
         fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
             Ok(vec![self.project.clone()])
         }

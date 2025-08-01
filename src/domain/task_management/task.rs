@@ -3,7 +3,7 @@ use chrono::{NaiveDate, Utc};
 use serde::Serialize;
 use uuid7::Uuid;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct Task<S: TaskState> {
     pub id: Uuid,
     pub project_code: String,

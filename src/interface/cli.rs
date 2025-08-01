@@ -14,10 +14,9 @@ use crate::{
         task::assign_resource::AssignResourceToTaskUseCase,
         validate::vacations::ValidateVacationsUseCase,
     },
-    domain::task_management::repository::TaskRepository,
     infrastructure::persistence::{
         config_repository::FileConfigRepository, project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
+        resource_repository::FileResourceRepository,
     },
 };
 use clap::{Parser, Subcommand};
@@ -254,7 +253,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             }
             CreateCommands::Task {
                 project_code,
-                code,
+                code: _,
                 name,
                 description,
                 start_date,
@@ -301,11 +300,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                 };
 
-                let repository = FileTaskRepository::new(".");
-                let final_code = match code.as_ref() {
-                    Some(c) => c.clone(),
-                    None => repository.get_next_code()?,
-                };
+                let repository = FileProjectRepository::new();
 
                 let start = match NaiveDate::parse_from_str(start_date, "%Y-%m-%d") {
                     Ok(date) => date,
@@ -336,7 +331,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute(args) {
                     Ok(_) => {
                         println!("✅ Task '{name}' criada com sucesso!");
-                        println!("📋 Código: {final_code}");
+                        // The generated task code is now an internal detail of the project aggregate,
+                        // and the main success message is printed by the use case.
                         if let Some(desc) = description {
                             println!("📝 Descrição: {desc}");
                         }
@@ -397,7 +393,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 Ok(())
             }
             ListCommands::Tasks => {
-                let repository = FileTaskRepository::new(".");
+                let repository = FileProjectRepository::new();
                 let use_case = ListTasksUseCase::new(repository);
                 match use_case.execute() {
                     Ok(tasks) => {
@@ -469,8 +465,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                 }
                 ReportCommands::Task => {
-                    let task_repo = FileTaskRepository::new(".");
-                    let use_case = TaskReportUseCase::new(task_repo);
+                    let project_repo = FileProjectRepository::new();
+                    let use_case = TaskReportUseCase::new(project_repo);
 
                     let file_path = "tasks_report.csv";
                     match Writer::from_path(file_path) {
@@ -492,11 +488,31 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         Commands::Task { task_command } => {
             match task_command {
                 TaskCommands::Assign { task, resources } => {
-                    let task_repo = FileTaskRepository::new(".");
+                    // Since a task is part of a project, we need to find the project first.
+                    // We infer the project code from the current directory's `project.yaml`.
+                    let project_manifest_path = PathBuf::from("project.yaml");
+                    let project_code = if project_manifest_path.exists() {
+                        let content = std::fs::read_to_string(project_manifest_path)?;
+                        #[derive(Deserialize)]
+                        struct ProjMetadata {
+                            code: String,
+                        }
+                        #[derive(Deserialize)]
+                        struct ProjManifest {
+                            metadata: ProjMetadata,
+                        }
+                        let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                        manifest.metadata.code
+                    } else {
+                        println!("❌ Error: This command must be run from within a project directory.");
+                        return Ok(());
+                    };
+
+                    let project_repo = FileProjectRepository::new();
                     let resource_repo = FileResourceRepository::new(".");
-                    let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+                    let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
                     let resource_refs: Vec<&str> = resources.iter().map(|s| s.as_str()).collect();
-                    match use_case.execute(task, &resource_refs) {
+                    match use_case.execute(&project_code, task, &resource_refs) {
                         Ok(updated_task) => {
                             println!("✅ Successfully assigned resources to task '{}'.", updated_task.code());
                             println!("   New assignees: {}", updated_task.assigned_resources().join(", "));

@@ -178,6 +178,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
                 end_date,
                 vacation_rules,
                 timezone,
+                tasks: std::collections::HashMap::new(),
                 state: Planned,
             })),
             ProjectStatusManifest::InProgress => Ok(AnyProject::InProgress(Project {
@@ -189,6 +190,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
                 end_date,
                 vacation_rules,
                 timezone,
+                tasks: std::collections::HashMap::new(),
                 state: InProgress,
             })),
             ProjectStatusManifest::Completed => Ok(AnyProject::Completed(Project {
@@ -200,6 +202,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
                 end_date,
                 vacation_rules,
                 timezone,
+                tasks: std::collections::HashMap::new(),
                 state: Completed,
             })),
             ProjectStatusManifest::Cancelled => Ok(AnyProject::Cancelled(Project {
@@ -211,6 +214,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
                 end_date,
                 vacation_rules,
                 timezone,
+                tasks: std::collections::HashMap::new(),
                 state: Cancelled,
             })),
         }

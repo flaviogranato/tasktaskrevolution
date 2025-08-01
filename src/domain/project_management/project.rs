@@ -1,6 +1,8 @@
+use super::super::task_management::any_task::AnyTask;
 use super::state::{Cancelled, Completed, InProgress, Planned, ProjectState};
 use crate::domain::project_management::vacation_rules::VacationRules;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use uuid7::Uuid;
 
@@ -14,6 +16,7 @@ pub struct Project<S: ProjectState> {
     pub end_date: Option<String>,
     pub vacation_rules: Option<VacationRules>,
     pub timezone: Option<String>,
+    pub tasks: HashMap<String, AnyTask>,
     pub state: S,
 }
 
@@ -39,6 +42,7 @@ impl Project<Planned> {
             end_date: self.end_date,
             vacation_rules: self.vacation_rules,
             timezone: self.timezone,
+            tasks: self.tasks,
             state: InProgress,
         }
     }
@@ -54,6 +58,7 @@ impl Project<Planned> {
             end_date: self.end_date,
             vacation_rules: self.vacation_rules,
             timezone: self.timezone,
+            tasks: self.tasks,
             state: Cancelled,
         }
     }
@@ -71,6 +76,7 @@ impl Project<InProgress> {
             end_date: self.end_date,
             vacation_rules: self.vacation_rules,
             timezone: self.timezone,
+            tasks: self.tasks,
             state: Completed,
         }
     }
@@ -86,6 +92,7 @@ impl Project<InProgress> {
             end_date: self.end_date,
             vacation_rules: self.vacation_rules,
             timezone: self.timezone,
+            tasks: self.tasks,
             state: Cancelled,
         }
     }
@@ -108,13 +115,12 @@ mod tests {
             end_date: None,
             vacation_rules: None,
             timezone: None,
+            tasks: HashMap::new(),
             state: Planned,
         };
         assert_eq!(
             project_with_id.to_string(),
-            format!(
-                "Project {{ id: {id:?}, code: proj-a, name: Project A, status: Planned }}"
-            )
+            format!("Project {{ id: {id:?}, code: proj-a, name: Project A, status: Planned }}")
         );
     }
 }
