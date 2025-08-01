@@ -63,6 +63,59 @@ impl AnyResource {
             AnyResource::Inactive(r) => r.time_off_balance,
         }
     }
+
+    pub fn email(&self) -> Option<&String> {
+        match self {
+            AnyResource::Available(r) => r.email.as_ref(),
+            AnyResource::Assigned(r) => r.email.as_ref(),
+            AnyResource::Inactive(r) => r.email.as_ref(),
+        }
+    }
+
+    pub fn status(&self) -> &'static str {
+        match self {
+            AnyResource::Available(_) => "Available",
+            AnyResource::Assigned(_) => "Assigned",
+            AnyResource::Inactive(_) => "Inactive",
+        }
+    }
+
+    // --- State Transitions ---
+
+    pub fn deactivate(self) -> Result<AnyResource, String> {
+        let inactive_resource = match self {
+            AnyResource::Available(r) => r.deactivate().into(),
+            AnyResource::Assigned(r) => r.deactivate().into(),
+            AnyResource::Inactive(_) => return Err("Resource is already inactive.".to_string()),
+        };
+        Ok(inactive_resource)
+    }
+
+    // --- Setters for updating fields ---
+
+    pub fn set_name(&mut self, name: String) {
+        match self {
+            AnyResource::Available(r) => r.name = name,
+            AnyResource::Assigned(r) => r.name = name,
+            AnyResource::Inactive(r) => r.name = name,
+        }
+    }
+
+    pub fn set_email(&mut self, email: Option<String>) {
+        match self {
+            AnyResource::Available(r) => r.email = email,
+            AnyResource::Assigned(r) => r.email = email,
+            AnyResource::Inactive(r) => r.email = email,
+        }
+    }
+
+    pub fn set_resource_type(&mut self, resource_type: String) {
+        match self {
+            AnyResource::Available(r) => r.resource_type = resource_type,
+            AnyResource::Assigned(r) => r.resource_type = resource_type,
+            AnyResource::Inactive(r) => r.resource_type = resource_type,
+        }
+    }
 }
 
 impl From<Resource<Available>> for AnyResource {

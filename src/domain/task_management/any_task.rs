@@ -61,6 +61,35 @@ impl AnyTask {
             AnyTask::Cancelled(task) => &task.assigned_resources,
         }
     }
+    pub fn description(&self) -> Option<&String> {
+        match self {
+            AnyTask::Planned(t) => t.description.as_ref(),
+            AnyTask::InProgress(t) => t.description.as_ref(),
+            AnyTask::Blocked(t) => t.description.as_ref(),
+            AnyTask::Completed(t) => t.description.as_ref(),
+            AnyTask::Cancelled(t) => t.description.as_ref(),
+        }
+    }
+
+    pub fn start_date(&self) -> &NaiveDate {
+        match self {
+            AnyTask::Planned(t) => &t.start_date,
+            AnyTask::InProgress(t) => &t.start_date,
+            AnyTask::Blocked(t) => &t.start_date,
+            AnyTask::Completed(t) => &t.start_date,
+            AnyTask::Cancelled(t) => &t.start_date,
+        }
+    }
+
+    pub fn due_date(&self) -> &NaiveDate {
+        match self {
+            AnyTask::Planned(t) => &t.due_date,
+            AnyTask::InProgress(t) => &t.due_date,
+            AnyTask::Blocked(t) => &t.due_date,
+            AnyTask::Completed(t) => &t.due_date,
+            AnyTask::Cancelled(t) => &t.due_date,
+        }
+    }
 }
 
 // Provide From implementations to easily convert a specific Task<State> into an AnyTask.

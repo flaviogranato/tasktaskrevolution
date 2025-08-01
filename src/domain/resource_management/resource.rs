@@ -1,4 +1,4 @@
-use super::state::{Assigned, Available, ResourceState};
+use super::state::{Assigned, Available, Inactive, ResourceState};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -107,6 +107,21 @@ impl Resource<Available> {
             },
         }
     }
+
+    #[allow(dead_code)]
+    pub fn deactivate(self) -> Resource<Inactive> {
+        Resource {
+            id: self.id,
+            code: self.code,
+            name: self.name,
+            email: self.email,
+            resource_type: self.resource_type,
+            vacations: self.vacations,
+            time_off_balance: self.time_off_balance,
+            time_off_history: self.time_off_history,
+            state: Inactive,
+        }
+    }
 }
 
 impl Resource<Assigned> {
@@ -114,6 +129,21 @@ impl Resource<Assigned> {
     pub fn assign_to_another_project(mut self, assignment: ProjectAssignment) -> Self {
         self.state.project_assignments.push(assignment);
         self
+    }
+
+    #[allow(dead_code)]
+    pub fn deactivate(self) -> Resource<Inactive> {
+        Resource {
+            id: self.id,
+            code: self.code,
+            name: self.name,
+            email: self.email,
+            resource_type: self.resource_type,
+            vacations: self.vacations,
+            time_off_balance: self.time_off_balance,
+            time_off_history: self.time_off_history,
+            state: Inactive,
+        }
     }
 }
 

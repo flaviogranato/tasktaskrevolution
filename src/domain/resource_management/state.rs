@@ -1,5 +1,5 @@
 use super::resource::ProjectAssignment;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// A marker trait for all resource states.
 pub trait ResourceState: Sized + std::fmt::Debug {}
@@ -16,7 +16,7 @@ pub struct Assigned {
 }
 impl ResourceState for Assigned {}
 
-/// State for a resource that is no longer active.
-#[derive(Debug, Clone, Serialize)]
+/// State for a resource that is no longer active in the system.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Inactive;
 impl ResourceState for Inactive {}
