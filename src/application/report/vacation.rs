@@ -114,18 +114,18 @@ mod tests {
         }
         fn save_time_off(
             &self,
-            _r: String,
+            _r: &str,
             _h: u32,
-            _d: String,
+            _d: &str,
             _desc: Option<String>,
         ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
         fn save_vacation(
             &self,
-            _r: String,
-            _s: String,
-            _e: String,
+            _r: &str,
+            _s: &str,
+            _e: &str,
             _i: bool,
             _c: Option<u32>,
         ) -> Result<AnyResource, DomainError> {
