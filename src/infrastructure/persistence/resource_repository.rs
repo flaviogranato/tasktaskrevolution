@@ -111,8 +111,8 @@ impl ResourceRepository for FileResourceRepository {
         &self,
         resource_name: &str,
         hours: u32,
-        date: &str,
-        description: Option<String>,
+        _date: &str,
+        _description: Option<String>,
     ) -> Result<AnyResource, DomainError> {
         let resource = self
             .find_by_name(resource_name)?
