@@ -118,19 +118,33 @@ impl ProjectRepository for FileProjectRepository {
 
     fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
         let mut projects = Vec::new();
+        let mut processed_paths = std::collections::HashSet::new();
 
-        // The glob pattern `**/project.yaml` includes the current directory,
-        // so we don't need a separate check.
+        // Padrão para buscar em subdiretórios
         let pattern = self.base_path.join("**/project.yaml");
         if let Ok(walker) = glob(pattern.to_str().unwrap()) {
             for entry in walker.flatten() {
                 let manifest_path = entry.path();
-
+                if processed_paths.contains(manifest_path) {
+                    continue;
+                }
                 if let Ok(manifest) = self.load_manifest(manifest_path) {
                     if let Ok(mut project) = AnyProject::try_from(manifest) {
-                        // Attempt to load tasks, but don't fail if it doesn't work.
-                        // The core project data is still valuable.
-                        let _ = self.load_tasks_for_project(&mut project, manifest_path);
+                        if self.load_tasks_for_project(&mut project, manifest_path).is_ok() {
+                            projects.push(project);
+                            processed_paths.insert(manifest_path.to_path_buf());
+                        }
+                    }
+                }
+            }
+        }
+
+        // Verifica também o diretório atual
+        let current_dir_manifest = self.base_path.join("project.yaml");
+        if current_dir_manifest.exists() && !processed_paths.contains(&current_dir_manifest) {
+            if let Ok(manifest) = self.load_manifest(&current_dir_manifest) {
+                if let Ok(mut project) = AnyProject::try_from(manifest) {
+                    if self.load_tasks_for_project(&mut project, &current_dir_manifest).is_ok() {
                         projects.push(project);
                     }
                 }
