@@ -1,6 +1,6 @@
 use crate::domain::{
     company_settings::repository::ConfigRepository,
-    project_management::{AnyProject, repository::ProjectRepository},
+    project_management::AnyProject,
     resource_management::repository::ResourceRepository,
     // task_management::repository::TaskRepository,
 };

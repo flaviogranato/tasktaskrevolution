@@ -20,7 +20,7 @@ use crate::{
             update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
         },
         task::{
-            assign_resource::{self, AssignResourceToTaskUseCase},
+            assign_resource::AssignResourceToTaskUseCase,
             delete_task::CancelTaskUseCase,
             describe_task::DescribeTaskUseCase,
             link_task::LinkTaskUseCase,
@@ -1075,7 +1075,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                     match use_case.execute(&project_code, task, dependency) {
                         Ok(_) => {
-                            println!("✅ Successfully linked task '{}' to wait for '{}'.", task, dependency);
+                            println!("✅ Successfully linked task '{task}' to wait for '{dependency}'.");
                         }
                         Err(e) => {
                             println!("❌ Error linking task: {e}");

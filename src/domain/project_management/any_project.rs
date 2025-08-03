@@ -293,10 +293,7 @@ impl AnyProject {
             let count = processed_count.entry(current_code.clone()).or_insert(0);
             *count += 1;
             if *count > tasks_map.len() {
-                return Err(format!(
-                    "Circular dependency detected involving task '{}'",
-                    current_code
-                ));
+                return Err(format!("Circular dependency detected involving task '{current_code}'"));
             }
 
             let new_start_date_for_dependents = if let Some(current_task) = tasks_map.get(&current_code) {
