@@ -115,7 +115,7 @@ mod tests {
         assert!(result.is_ok());
         let updated_project = result.unwrap();
         assert_eq!(updated_project.name(), "New Name");
-        assert_eq!(updated_project.description().as_deref().unwrap(), "New Description");
+        assert_eq!(updated_project.description().unwrap(), "New Description");
     }
 
     #[test]

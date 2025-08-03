@@ -172,7 +172,7 @@ mod tests {
                 }
                 Ok(any_resource.clone())
             } else {
-                Err(DomainError::Generic(format!("Resource '{}' not found", resource_name)))
+                Err(DomainError::Generic(format!("Resource '{resource_name}' not found")))
             }
         }
 
