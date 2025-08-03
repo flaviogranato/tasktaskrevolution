@@ -167,7 +167,7 @@ mod tests {
         assert!(result.is_ok());
         let updated_task = result.unwrap();
         assert_eq!(updated_task.name(), "New Name");
-        assert_eq!(updated_task.description().as_deref().unwrap(), "Initial Description");
+        assert_eq!(updated_task.description().unwrap(), "Initial Description");
     }
 
     #[test]
@@ -191,7 +191,7 @@ mod tests {
             id: uuid7(),
             project_code: "PROJ-1".to_string(),
             code: code.to_string(),
-            name: format!("Task {}", code),
+            name: format!("Task {code}"),
             description: None,
             state: Planned,
             start_date,

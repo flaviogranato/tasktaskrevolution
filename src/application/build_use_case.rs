@@ -285,7 +285,7 @@ spec:
         let result = use_case.execute();
         if let Err(e) = &result {
             // Provide more context on failure.
-            eprintln!("BuildUseCase::execute failed: {}", e);
+            eprintln!("BuildUseCase::execute failed: {e}");
         }
         assert!(result.is_ok());
 
@@ -303,8 +303,7 @@ spec:
             .trim();
         assert!(
             title_content.contains("Projects Dashboard"),
-            "The rendered title content ('{}') did not contain 'Projects Dashboard'.",
-            title_content
+            "The rendered title content ('{title_content}') did not contain 'Projects Dashboard'."
         );
         assert!(
             global_index_content.contains("My Test Project"),

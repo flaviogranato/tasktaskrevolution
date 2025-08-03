@@ -147,7 +147,7 @@ mod tests {
             id: uuid7(),
             project_code: "PROJ-1".to_string(),
             code: code.to_string(),
-            name: format!("Task {}", code),
+            name: format!("Task {code}"),
             description: None,
             state: Planned,
             start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),

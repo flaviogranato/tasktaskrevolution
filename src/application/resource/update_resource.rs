@@ -158,7 +158,7 @@ mod tests {
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
         assert_eq!(updated_resource.name(), "New Name");
-        assert_eq!(updated_resource.email().as_deref().unwrap(), "new@test.com");
+        assert_eq!(updated_resource.email().unwrap(), "new@test.com");
         assert_eq!(updated_resource.resource_type(), "Developer"); // Should not change
     }
 
