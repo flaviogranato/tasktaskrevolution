@@ -15,6 +15,7 @@ pub struct Task<S: TaskState> {
     pub start_date: NaiveDate,
     pub due_date: NaiveDate,
     pub actual_end_date: Option<NaiveDate>,
+    pub dependencies: Vec<String>,
     pub assigned_resources: Vec<String>,
 }
 
@@ -33,6 +34,7 @@ impl Task<Planned> {
             start_date: self.start_date,
             due_date: self.due_date,
             actual_end_date: None,
+            dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
         }
     }
@@ -50,6 +52,7 @@ impl Task<Planned> {
             start_date: self.start_date,
             due_date: self.due_date,
             actual_end_date: None,
+            dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
         }
     }
@@ -77,6 +80,7 @@ impl Task<InProgress> {
             start_date: self.start_date,
             due_date: self.due_date,
             actual_end_date: None,
+            dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
         }
     }
@@ -94,6 +98,7 @@ impl Task<InProgress> {
             start_date: self.start_date,
             due_date: self.due_date,
             actual_end_date: Some(Utc::now().date_naive()),
+            dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
         }
     }
@@ -111,6 +116,7 @@ impl Task<InProgress> {
             start_date: self.start_date,
             due_date: self.due_date,
             actual_end_date: None,
+            dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
         }
     }
@@ -131,6 +137,7 @@ impl Task<Blocked> {
             start_date: self.start_date,
             due_date: self.due_date,
             actual_end_date: None,
+            dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
         }
     }
@@ -148,6 +155,7 @@ impl Task<Blocked> {
             start_date: self.start_date,
             due_date: self.due_date,
             actual_end_date: None,
+            dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
         }
     }
@@ -211,6 +219,7 @@ mod tests {
             start_date: d(2024, 7, 1),
             due_date: d(2024, 7, 31),
             actual_end_date: None,
+            dependencies: vec![],
             assigned_resources: vec![],
         }
     }

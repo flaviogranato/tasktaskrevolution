@@ -155,6 +155,7 @@ mod tests {
             start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(),
             actual_end_date: None,
+            dependencies: vec![],
             assigned_resources: vec!["Alice".to_string()],
         };
         let task2: Task<Completed> = Task {
@@ -167,6 +168,7 @@ mod tests {
             start_date: NaiveDate::from_ymd_opt(2025, 1, 2).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(),
             actual_end_date: None,
+            dependencies: vec![],
             assigned_resources: vec!["Bob".to_string(), "Charlie".to_string()],
         };
 

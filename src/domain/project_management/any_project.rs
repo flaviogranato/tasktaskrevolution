@@ -6,7 +6,7 @@ use super::{
 };
 use chrono::NaiveDate;
 use serde::Serialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 /// An enum to represent a Project in any of its possible states.
 #[derive(Debug, Clone, Serialize)]
@@ -119,6 +119,37 @@ impl AnyProject {
         }
 
         Ok(())
+    }
+
+    pub fn add_dependency_to_task(&mut self, task_code: &str, dependency_code: &str) -> Result<AnyTask, String> {
+        let tasks_map = match self {
+            AnyProject::Planned(p) => &mut p.tasks,
+            AnyProject::InProgress(p) => &mut p.tasks,
+            AnyProject::Completed(_) => return Err("Cannot modify tasks in a completed project.".to_string()),
+            AnyProject::Cancelled(_) => return Err("Cannot modify tasks in a cancelled project.".to_string()),
+        };
+
+        if !tasks_map.contains_key(dependency_code) {
+            return Err(format!("Dependency task '{dependency_code}' not found in project."));
+        }
+
+        let task = tasks_map
+            .get_mut(task_code)
+            .ok_or_else(|| format!("Task '{task_code}' not found in project."))?;
+
+        let dependencies = match task {
+            AnyTask::Planned(t) => &mut t.dependencies,
+            AnyTask::InProgress(t) => &mut t.dependencies,
+            AnyTask::Blocked(t) => &mut t.dependencies,
+            AnyTask::Completed(_) => return Err("Cannot add dependency to a completed task.".to_string()),
+            AnyTask::Cancelled(_) => return Err("Cannot add dependency to a cancelled task.".to_string()),
+        };
+
+        if !dependencies.contains(&dependency_code.to_string()) {
+            dependencies.push(dependency_code.to_string());
+        }
+
+        Ok(task.clone())
     }
 
     pub fn update_task(
@@ -244,6 +275,74 @@ impl AnyProject {
         }
     }
 
+    pub fn reschedule_dependents_of(&mut self, updated_task_code: &str) -> Result<(), String> {
+        let tasks_map = match self {
+            AnyProject::Planned(p) => &mut p.tasks,
+            AnyProject::InProgress(p) => &mut p.tasks,
+            _ => return Ok(()), // No-op for projects that can't be modified.
+        };
+
+        let mut queue = VecDeque::new();
+        queue.push_back(updated_task_code.to_string());
+
+        // A basic cycle detection; if we see the same task too many times, something is wrong.
+        // A better implementation would be in LinkTaskUseCase.
+        let mut processed_count = HashMap::new();
+
+        while let Some(current_code) = queue.pop_front() {
+            let count = processed_count.entry(current_code.clone()).or_insert(0);
+            *count += 1;
+            if *count > tasks_map.len() {
+                return Err(format!(
+                    "Circular dependency detected involving task '{}'",
+                    current_code
+                ));
+            }
+
+            let new_start_date_for_dependents = if let Some(current_task) = tasks_map.get(&current_code) {
+                *current_task.due_date() + chrono::Duration::days(1)
+            } else {
+                continue; // Task might not exist, skip.
+            };
+
+            // Collect codes to avoid borrowing issues.
+            let dependent_codes: Vec<String> = tasks_map
+                .values()
+                .filter(|task| {
+                    let deps = match *task {
+                        AnyTask::Planned(t) => &t.dependencies,
+                        AnyTask::InProgress(t) => &t.dependencies,
+                        AnyTask::Blocked(t) => &t.dependencies,
+                        AnyTask::Completed(t) => &t.dependencies,
+                        AnyTask::Cancelled(t) => &t.dependencies,
+                    };
+                    deps.contains(&current_code)
+                })
+                .map(|task| task.code().to_string())
+                .collect();
+
+            for code in &dependent_codes {
+                if let Some(dependent_task) = tasks_map.get_mut(code) {
+                    // Get mutable references to start_date and due_date
+                    let (start_date, due_date) = match dependent_task {
+                        AnyTask::Planned(t) => (&mut t.start_date, &mut t.due_date),
+                        AnyTask::InProgress(t) => (&mut t.start_date, &mut t.due_date),
+                        AnyTask::Blocked(t) => (&mut t.start_date, &mut t.due_date),
+                        // Cannot reschedule tasks in a final state.
+                        _ => continue,
+                    };
+
+                    let duration = *due_date - *start_date;
+                    *start_date = new_start_date_for_dependents;
+                    *due_date = *start_date + duration;
+                }
+
+                queue.push_back(code.clone());
+            }
+        }
+
+        Ok(())
+    }
     pub fn cancel(self) -> Result<AnyProject, String> {
         let cancelled_project = match self {
             AnyProject::Planned(p) => p.cancel().into(),

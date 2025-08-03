@@ -15,6 +15,7 @@ struct TaskCore {
     start_date: NaiveDate,
     due_date: NaiveDate,
     actual_end_date: Option<NaiveDate>,
+    dependencies: Vec<String>,
     assigned_resources: Vec<String>,
 }
 
@@ -101,6 +102,7 @@ impl From<AnyTask> for TaskManifest {
                     start_date: task.start_date,
                     due_date: task.due_date,
                     actual_end_date: task.actual_end_date,
+                    dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
                 },
                 Status::Planned,
@@ -125,6 +127,7 @@ impl From<AnyTask> for TaskManifest {
                         start_date: task.start_date,
                         due_date: task.due_date,
                         actual_end_date: task.actual_end_date,
+                        dependencies: task.dependencies,
                         assigned_resources: task.assigned_resources,
                     },
                     Status::InProgress,
@@ -141,6 +144,7 @@ impl From<AnyTask> for TaskManifest {
                     start_date: task.start_date,
                     due_date: task.due_date,
                     actual_end_date: task.actual_end_date,
+                    dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
                 },
                 Status::Done,
@@ -162,6 +166,7 @@ impl From<AnyTask> for TaskManifest {
                         start_date: task.start_date,
                         due_date: task.due_date,
                         actual_end_date: task.actual_end_date,
+                        dependencies: task.dependencies,
                         assigned_resources: task.assigned_resources,
                     },
                     Status::Blocked,
@@ -178,6 +183,7 @@ impl From<AnyTask> for TaskManifest {
                     start_date: task.start_date,
                     due_date: task.due_date,
                     actual_end_date: task.actual_end_date,
+                    dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
                 },
                 Status::Cancelled,
@@ -207,7 +213,7 @@ impl From<AnyTask> for TaskManifest {
                 estimated_end_date: Some(task_core.due_date),
                 actual_start_date: Some(task_core.start_date),
                 actual_end_date: task_core.actual_end_date,
-                dependencies: Vec::new(),
+                dependencies: task_core.dependencies,
                 tags: task_core.assigned_resources.clone(),
                 effort: Effort {
                     estimated_hours: 8.0,
@@ -263,6 +269,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 start_date,
                 due_date,
                 actual_end_date: manifest.spec.actual_end_date,
+                dependencies: manifest.spec.dependencies,
                 assigned_resources,
             }),
             Status::InProgress => {
@@ -288,6 +295,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     start_date,
                     due_date,
                     actual_end_date: manifest.spec.actual_end_date,
+                    dependencies: manifest.spec.dependencies,
                     assigned_resources,
                 })
             }
@@ -301,6 +309,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 start_date,
                 due_date,
                 actual_end_date: manifest.spec.actual_end_date,
+                dependencies: manifest.spec.dependencies,
                 assigned_resources,
             }),
             Status::Blocked => {
@@ -322,6 +331,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     start_date,
                     due_date,
                     actual_end_date: manifest.spec.actual_end_date,
+                    dependencies: manifest.spec.dependencies,
                     assigned_resources,
                 })
             }
@@ -335,6 +345,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 start_date,
                 due_date,
                 actual_end_date: manifest.spec.actual_end_date,
+                dependencies: manifest.spec.dependencies,
                 assigned_resources,
             }),
         };
@@ -365,6 +376,7 @@ mod convertable_tests {
             start_date: test_date(2024, 1, 1),
             due_date: test_date(2024, 1, 10),
             actual_end_date: None,
+            dependencies: vec![],
             assigned_resources: vec!["res-1".to_string()],
         }
     }
@@ -439,10 +451,7 @@ mod convertable_tests {
 
         assert_eq!(manifest.spec.status, Status::Blocked);
         assert_eq!(manifest.spec.comments.len(), 1);
-        assert_eq!(
-            manifest.spec.comments[0].message,
-            format!("Tarefa bloqueada: {reason}")
-        );
+        assert_eq!(manifest.spec.comments[0].message, format!("Tarefa bloqueada: {reason}"));
     }
 
     #[test]
