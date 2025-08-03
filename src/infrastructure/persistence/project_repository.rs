@@ -245,6 +245,7 @@ mod tests {
             start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(),
             actual_end_date: None,
+            dependencies: vec![],
             assigned_resources: vec![],
         }
         .into()

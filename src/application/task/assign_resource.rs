@@ -163,7 +163,7 @@ mod tests {
 
     // --- Helpers ---
 
-    fn create_test_task(code: &str, assignees: Vec<&str>) -> AnyTask {
+    fn create_test_task(code: &str, assignees: &[&str]) -> AnyTask {
         Task::<Planned> {
             id: uuid7(),
             project_code: "PROJ-1".to_string(),
@@ -174,7 +174,8 @@ mod tests {
             start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(),
             actual_end_date: None,
-            assigned_resources: assignees.into_iter().map(String::from).collect(),
+            dependencies: vec![],
+            assigned_resources: assignees.iter().map(|&s| s.to_string()).collect(),
         }
         .into()
     }
@@ -206,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_assign_new_resources_success() {
-        let project = setup_test_project(vec![create_test_task("TSK-1", vec!["dev-res-1"])]);
+        let project = setup_test_project(vec![create_test_task("TSK-1", &["dev-res-1"])]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
@@ -241,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_assign_fails_if_resource_not_found() {
-        let project = setup_test_project(vec![create_test_task("TSK-1", vec![])]);
+        let project = setup_test_project(vec![create_test_task("TSK-1", &[])]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };

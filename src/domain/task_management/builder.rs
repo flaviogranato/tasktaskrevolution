@@ -164,6 +164,7 @@ impl TaskBuilder<Ready> {
             start_date: self.start_date.unwrap(),
             due_date: self.due_date.unwrap(),
             actual_end_date: None,
+            dependencies: vec![],
             assigned_resources: self.assigned_resources,
         })
     }

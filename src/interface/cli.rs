@@ -20,9 +20,10 @@ use crate::{
             update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
         },
         task::{
-            assign_resource::AssignResourceToTaskUseCase,
+            assign_resource::{self, AssignResourceToTaskUseCase},
             delete_task::CancelTaskUseCase,
             describe_task::DescribeTaskUseCase,
+            link_task::LinkTaskUseCase,
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
         validate::vacations::ValidateVacationsUseCase,
@@ -260,6 +261,15 @@ enum TaskCommands {
         /// A comma-separated list of resource codes to assign
         #[arg(long, short, value_delimiter = ',')]
         resources: Vec<String>,
+    },
+    /// Link one task as a dependency of another
+    Link {
+        /// The task that will have a new dependency
+        #[arg(value_name = "TASK_CODE")]
+        task: String,
+        /// The task that must be completed first
+        #[arg(long = "waits-for", value_name = "DEPENDENCY_CODE")]
+        dependency: String,
     },
 }
 
@@ -1035,6 +1045,40 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         }
                         Err(e) => {
                             println!("❌ Error assigning resources: {e}");
+                        }
+                    }
+                }
+                TaskCommands::Link { task, dependency } => {
+                    use serde::Deserialize;
+                    use std::path::PathBuf;
+
+                    let project_manifest_path = PathBuf::from("project.yaml");
+                    let project_code = if project_manifest_path.exists() {
+                        let content = std::fs::read_to_string(project_manifest_path)?;
+                        #[derive(Deserialize)]
+                        struct ProjMetadata {
+                            code: String,
+                        }
+                        #[derive(Deserialize)]
+                        struct ProjManifest {
+                            metadata: ProjMetadata,
+                        }
+                        let manifest: ProjManifest = serde_yaml::from_str(&content)?;
+                        manifest.metadata.code
+                    } else {
+                        println!("❌ Error: This command must be run from within a project directory.");
+                        return Ok(());
+                    };
+
+                    let project_repo = FileProjectRepository::new();
+                    let use_case = LinkTaskUseCase::new(project_repo);
+
+                    match use_case.execute(&project_code, task, dependency) {
+                        Ok(_) => {
+                            println!("✅ Successfully linked task '{}' to wait for '{}'.", task, dependency);
+                        }
+                        Err(e) => {
+                            println!("❌ Error linking task: {e}");
                         }
                     }
                 }
