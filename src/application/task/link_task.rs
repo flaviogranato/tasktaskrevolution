@@ -67,13 +67,39 @@ where
             return Err(LinkTaskError::DependencyNotFound(dependency_code.to_string()));
         }
 
-        // TODO: Add circular dependency check logic here.
+        // 3. Check for circular dependencies.
+        // We perform a DFS traversal starting from the dependency to see if it eventually leads back to the original task.
+        let mut stack = vec![dependency_code.to_string()];
+        let mut visited = std::collections::HashSet::new();
 
-        // 3. Add the dependency to the task.
-        // This requires a new method on the Project aggregate.
+        while let Some(current_code) = stack.pop() {
+            if current_code == task_code {
+                return Err(LinkTaskError::CircularDependencyError);
+            }
+
+            // To avoid infinite loops on existing cycles, we only process each node once.
+            if !visited.insert(current_code.clone()) {
+                continue;
+            }
+
+            if let Some(task) = project.tasks().get(&current_code) {
+                let dependencies = match task {
+                    AnyTask::Planned(t) => &t.dependencies,
+                    AnyTask::InProgress(t) => &t.dependencies,
+                    AnyTask::Blocked(t) => &t.dependencies,
+                    AnyTask::Completed(t) => &t.dependencies,
+                    AnyTask::Cancelled(t) => &t.dependencies,
+                };
+                for dep in dependencies {
+                    stack.push(dep.clone());
+                }
+            }
+        }
+
+        // 4. Add the dependency to the task.
         let updated_task = project.add_dependency_to_task(task_code, dependency_code)?;
 
-        // 4. Save the entire project aggregate with the modified task.
+        // 5. Save the entire project aggregate with the modified task.
         self.project_repository.save(project)?;
 
         Ok(updated_task)
@@ -82,5 +108,143 @@ where
 
 #[cfg(test)]
 mod tests {
-    // Tests will be added once the domain logic is in place.
+    use super::*;
+    use crate::domain::{
+        project_management::{any_project::AnyProject, builder::ProjectBuilder},
+        task_management::{any_task::AnyTask, state::Planned, task::Task},
+    };
+    use chrono::NaiveDate;
+    use std::{cell::RefCell, collections::HashMap};
+    use uuid7::uuid7;
+
+    // --- Mocks ---
+    struct MockProjectRepository {
+        projects: RefCell<HashMap<String, AnyProject>>,
+    }
+
+    impl ProjectRepository for MockProjectRepository {
+        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+            self.projects.borrow_mut().insert(project.code().to_string(), project);
+            Ok(())
+        }
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+            Ok(self.projects.borrow().get(code).cloned())
+        }
+        fn load(&self) -> Result<AnyProject, DomainError> {
+            unimplemented!()
+        }
+        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+            unimplemented!()
+        }
+        fn get_next_code(&self) -> Result<String, DomainError> {
+            unimplemented!()
+        }
+    }
+
+    // --- Helpers ---
+    fn create_test_task(code: &str) -> AnyTask {
+        Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-1".to_string(),
+            code: code.to_string(),
+            name: format!("Task {}", code),
+            description: None,
+            state: Planned,
+            start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+            due_date: NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(),
+            actual_end_date: None,
+            dependencies: vec![],
+            assigned_resources: vec![],
+        }
+        .into()
+    }
+
+    fn setup_test_project(tasks: Vec<AnyTask>) -> AnyProject {
+        let mut project: AnyProject = ProjectBuilder::new("Test Project".to_string())
+            .code("PROJ-1".to_string())
+            .build()
+            .into();
+        for task in tasks {
+            project.add_task(task);
+        }
+        project
+    }
+
+    // --- Tests ---
+    #[test]
+    fn test_link_task_success() {
+        let project = setup_test_project(vec![create_test_task("A"), create_test_task("B")]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+        let use_case = LinkTaskUseCase::new(project_repo);
+
+        let result = use_case.execute("PROJ-1", "B", "A");
+
+        assert!(result.is_ok());
+        let updated_task = result.unwrap();
+
+        let deps = match updated_task {
+            AnyTask::Planned(t) => t.dependencies,
+            _ => panic!("Expected a planned task"),
+        };
+        assert_eq!(deps, vec!["A".to_string()]);
+    }
+
+    #[test]
+    fn test_link_task_fails_if_task_not_found() {
+        let project = setup_test_project(vec![create_test_task("A")]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+        let use_case = LinkTaskUseCase::new(project_repo);
+
+        let result = use_case.execute("PROJ-1", "B_NONEXISTENT", "A");
+        assert!(matches!(result, Err(LinkTaskError::TaskNotFound(_))));
+    }
+
+    #[test]
+    fn test_link_task_fails_if_dependency_not_found() {
+        let project = setup_test_project(vec![create_test_task("A")]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+        let use_case = LinkTaskUseCase::new(project_repo);
+
+        let result = use_case.execute("PROJ-1", "A", "B_NONEXISTENT");
+        assert!(matches!(result, Err(LinkTaskError::DependencyNotFound(_))));
+    }
+
+    #[test]
+    fn test_link_task_fails_on_self_dependency() {
+        let project = setup_test_project(vec![create_test_task("A")]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+        let use_case = LinkTaskUseCase::new(project_repo);
+
+        let result = use_case.execute("PROJ-1", "A", "A");
+        assert!(matches!(result, Err(LinkTaskError::SelfDependencyError)));
+    }
+
+    #[test]
+    fn test_link_task_fails_on_circular_dependency() {
+        // B depends on A (B -> A)
+        let task_a = create_test_task("A");
+        let mut task_b = create_test_task("B");
+        if let AnyTask::Planned(t) = &mut task_b {
+            t.dependencies.push("A".to_string());
+        }
+
+        let project = setup_test_project(vec![task_a, task_b]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+        let use_case = LinkTaskUseCase::new(project_repo);
+
+        // Try to create dependency A -> B, which would create a cycle (A -> B -> A)
+        let result = use_case.execute("PROJ-1", "A", "B");
+
+        assert!(matches!(result, Err(LinkTaskError::CircularDependencyError)));
+    }
 }
