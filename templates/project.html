@@ -1,0 +1,158 @@
+{% extends "base.html" %} {% block title %}{{ project.name }} - {{ super() }}{%
+endblock title %} {% block content %}
+<div class="space-y-8">
+    <!-- Project Header -->
+    <div>
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">
+            {{ project.name }}
+        </h2>
+        <p class="mt-2 text-lg text-slate-600">
+            {{ project.description | default(value="No description provided.")
+            }}
+        </p>
+        <div class="mt-4 flex space-x-4 text-sm text-slate-500">
+            <span
+                ><strong>Start Date:</strong> {% if project.start_date %}{{
+                project.start_date | date(format="%Y-%m-%d") }}{% else %}N/A{%
+                endif %}</span
+            >
+            <span
+                ><strong>End Date:</strong> {% if project.end_date %}{{
+                project.end_date | date(format="%Y-%m-%d") }}{% else %}N/A{%
+                endif %}</span
+            >
+        </div>
+    </div>
+
+    <!-- Tasks Section -->
+    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+        <h3 class="text-xl font-semibold text-slate-800 mb-4">Tasks</h3>
+        {% if tasks %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                        >
+                            Task Name
+                        </th>
+                        <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                        >
+                            Status
+                        </th>
+                        <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                        >
+                            Progress
+                        </th>
+                        <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                        >
+                            Start Date
+                        </th>
+                        <th
+                            scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                        >
+                            End Date
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                    {% for task in tasks %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-slate-900">
+                                {{ task.name }}
+                            </div>
+                            <div class="text-sm text-slate-500">
+                                {{ task.code }}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if task.status == "InProgress" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800"
+                                >In Progress</span
+                            >
+                            {% elif task.status == "Blocked" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-800"
+                                >Blocked</span
+                            >
+                            {% elif task.status == "Planned" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-800"
+                                >Planned</span
+                            >
+                            {% elif task.status == "Completed" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-green-100 text-green-800"
+                                >Completed</span
+                            >
+                            {% elif task.status == "Cancelled" %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800"
+                                >Cancelled</span
+                            >
+                            {% else %}
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800"
+                                >Unknown</span
+                            >
+                            {% endif %}
+                        </td>
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"
+                        >
+                            {% if task.status == "InProgress" %}{{ task.progress
+                            }}%{% else %}N/A{% endif %}
+                        </td>
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"
+                        >
+                            {{ task.start_date | date(format="%Y-%m-%d") }}
+                        </td>
+                        <td
+                            class="px-6 py-4 whitespace-nowrap text-sm text-slate-500"
+                        >
+                            {{ task.due_date | date(format="%Y-%m-%d") }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-slate-500 mt-4">This project has no tasks yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Resources Section -->
+    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+        <h3 class="text-xl font-semibold text-slate-800 mb-4">Resources</h3>
+        {% if resources %}
+        <ul class="divide-y divide-slate-200">
+            {% for resource in resources %}
+            <li class="py-3">
+                <p class="font-bold text-slate-900">{{ resource.name }}</p>
+                <p class="text-sm text-slate-500">
+                    {{ resource.code }} - {{ resource.resource_type }}
+                </p>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-slate-500 mt-4">
+            No resources are assigned to this project.
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}

@@ -58,7 +58,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::project_management::{builder::ProjectBuilder, state::Planned};
+    use crate::domain::project_management::builder::ProjectBuilder;
     use std::{cell::RefCell, collections::HashMap};
 
     // --- Mocks ---

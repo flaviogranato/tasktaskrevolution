@@ -1,7 +1,7 @@
 use crate::domain::{
     company_settings::repository::ConfigRepository,
     project_management::{AnyProject, repository::ProjectRepository},
-    resource_management::{AnyResource, repository::ResourceRepository},
+    resource_management::repository::ResourceRepository,
     // task_management::repository::TaskRepository,
 };
 use crate::infrastructure::persistence::{
@@ -12,20 +12,11 @@ use crate::infrastructure::persistence::{
 use crate::interface::assets::{StaticAssets, TemplateAssets};
 
 use glob::glob;
-use serde::Serialize;
+
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use tera::{Context, Tera};
-
-/// `SiteContext` holds all the data that will be passed to the Tera templates.
-/// It needs to derive `Serialize` for Tera to be able to use it.
-#[derive(Serialize)]
-struct SiteContext {
-    project: crate::domain::project_management::AnyProject,
-    tasks: Vec<crate::domain::task_management::AnyTask>,
-    resources: Vec<AnyResource>,
-}
 
 /// `BuildUseCase` is responsible for orchestrating the static site generation.
 pub struct BuildUseCase {
@@ -69,24 +60,21 @@ impl BuildUseCase {
         let config_repo = FileConfigRepository::with_base_path(self.base_path.clone());
         let (config, _) = config_repo.load()?;
 
-        // 4. Find all project directories by looking for `project.yaml` files.
+        // 4. Find all projects and load their data.
+        let mut all_projects_data = Vec::new();
         let project_manifest_pattern = self.base_path.join("**/project.yaml");
         for entry in glob(project_manifest_pattern.to_str().unwrap())? {
             let manifest_path = entry?;
             let project_path = manifest_path.parent().unwrap().to_path_buf();
-            println!("[INFO] Found project at: {}", project_path.display());
+            println!("[INFO] Loading project from: {}", project_path.display());
 
-            // 5. Instantiate repositories scoped to the current project path.
             let project_repo = FileProjectRepository::with_base_path(project_path.clone());
             let resource_repo = FileResourceRepository::new(project_path.clone());
 
-            // 6. Load all data for this specific project. `load` now also loads tasks.
-            let project = project_repo.load()?;
+            let project = project_repo.load_from_path(&project_path)?;
             let resources = resource_repo.find_all()?;
             let tasks: Vec<_> = project.tasks().values().cloned().collect();
-            let project_name = project.name().to_string();
 
-            // Inherit timezone from config if not set in project.
             let project = if project.timezone().is_none() {
                 match project {
                     AnyProject::Planned(mut p) => {
@@ -110,48 +98,63 @@ impl BuildUseCase {
                 project
             };
 
-            // 7. Create a specific output directory for this project.
-            let project_output_dir = self.output_dir.join(&project_name);
+            all_projects_data.push((project, tasks, resources));
+        }
+
+        // 5. Render the global index page with all projects.
+        println!("[INFO] Generating global index page...");
+        let mut context = Context::new();
+
+        let project_values: Vec<_> = all_projects_data
+            .iter()
+            .map(|(project, tasks, resources)| {
+                let mut map = tera::Map::new();
+                map.insert("project".to_string(), tera::to_value(project).unwrap());
+                map.insert("tasks".to_string(), tera::to_value(tasks).unwrap());
+                map.insert("resources".to_string(), tera::to_value(resources).unwrap());
+                tera::Value::Object(map)
+            })
+            .collect();
+
+        context.insert("projects", &project_values);
+        context.insert("relative_path_prefix", "");
+
+        // Create a dummy project for the base template header, which expects a `project` object.
+        let dummy_project: AnyProject =
+            crate::domain::project_management::builder::ProjectBuilder::new("Projects Dashboard".to_string())
+                .code("TTR_DASHBOARD".to_string())
+                .build()
+                .into();
+        context.insert("project", &dummy_project);
+
+        let index_html = self.tera.render("index.html", &context)?;
+        fs::write(self.output_dir.join("index.html"), index_html)?;
+        println!("✅ Global index page generated successfully.");
+
+        // 6. Render a detail page for each project.
+        let projects_base_dir = self.output_dir.join("projects");
+        fs::create_dir_all(&projects_base_dir)?;
+
+        for (project, tasks, resources) in &all_projects_data {
+            let project_code = project.code();
+            let project_name = project.name();
+            println!("[INFO] Generating page for project: {project_name} ({project_code})");
+
+            let project_output_dir = projects_base_dir.join(project_code);
             fs::create_dir_all(&project_output_dir)?;
 
-            // 8. Create the context for Tera.
-            let site_data = SiteContext {
-                project,
-                tasks,
-                resources,
-            };
-            let mut context = Context::from_serialize(&site_data)?;
-            context.insert("relative_path_prefix", "");
+            let mut context = Context::new();
+            context.insert("project", project);
+            context.insert("tasks", tasks);
+            context.insert("resources", resources);
+            context.insert("relative_path_prefix", "../../");
 
-            // 9. Render main pages for the project.
-            let main_templates: Vec<_> = self
-                .tera
-                .get_template_names()
-                .filter(|t| !t.starts_with('_') && *t != "base.html" && *t != "resource_detail.html")
-                .collect();
+            // Render project detail page (e.g., project.html)
+            let project_html = self.tera.render("project.html", &context)?;
+            let project_page_path = project_output_dir.join("index.html");
+            fs::write(project_page_path, project_html)?;
 
-            for tmpl_name in &main_templates {
-                let rendered_page = self.tera.render(tmpl_name, &context)?;
-                fs::write(project_output_dir.join(tmpl_name), rendered_page)?;
-            }
-
-            // 10. Render detail pages for each resource in this project.
-            let resource_dir = project_output_dir.join("resources");
-            fs::create_dir_all(&resource_dir)?;
-
-            for resource in &site_data.resources {
-                println!("[DEBUG] Generating page for resource: {}", resource.name());
-                let mut detail_context = Context::new();
-                detail_context.insert("project", &site_data.project);
-                detail_context.insert("resource", resource);
-                detail_context.insert("relative_path_prefix", "../");
-
-                let rendered_page = self.tera.render("resource_detail.html", &detail_context)?;
-                let safe_name = resource.name().replace(' ', "_").to_lowercase();
-                let file_path = resource_dir.join(format!("{safe_name}.html"));
-                fs::write(file_path, rendered_page)?;
-            }
-            println!("✅ Project '{project_name}' generated successfully.");
+            println!("✅ Project '{project_name}' page generated successfully.");
         }
 
         Ok(())
@@ -195,15 +198,76 @@ metadata:
   description: "A description for the test project."
 spec:
   status: "InProgress"
+  startDate: "2024-08-01"
+  endDate: "2024-09-30"
 "#;
         let mut project_file = File::create(project_dir.join("project.yaml")).unwrap();
         writeln!(project_file, "{project_content}").unwrap();
 
         // Create tasks subdirectory
-        fs::create_dir(project_dir.join("tasks")).unwrap();
+        let tasks_dir = project_dir.join("tasks");
+        fs::create_dir(&tasks_dir).unwrap();
+
+        // Create a test task file
+        let task_content = r#"
+api_version: v1
+kind: Task
+metadata:
+  id: "01901dea-3e4b-7698-b323-95232d306587"
+  code: "TSK-01"
+  name: "Design the API"
+  description: "A test task for the build process."
+spec:
+  projectCode: "proj-1"
+  assignee: "dev-01"
+  status: "Planned"
+  priority: "Medium"
+  estimatedStartDate: "2024-08-05"
+  estimatedEndDate: "2024-08-10"
+  dependencies: []
+  tags: []
+  effort:
+    estimatedHours: 8.0
+  acceptanceCriteria: []
+  comments: []
+"#;
+        let mut task_file = File::create(tasks_dir.join("task1.yaml")).unwrap();
+        writeln!(task_file, "{task_content}").unwrap();
 
         // Create resources subdirectory
         fs::create_dir(project_dir.join("resources")).unwrap();
+
+        // Create a test resource file
+        let resource_content = r#"
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Resource
+metadata:
+  code: "dev-01"
+  name: "Developer One"
+  resourceType: "Human"
+spec:
+  email: "dev1@example.com"
+  timeOffBalance: 0
+"#;
+        let mut resource_file = File::create(project_dir.join("resources").join("dev1.yaml")).unwrap();
+        writeln!(resource_file, "{resource_content}").unwrap();
+
+        // Create a second project, this one WITHOUT dates, to replicate the bug.
+        let project_dir_2 = root.join("project-no-dates");
+        fs::create_dir(&project_dir_2).unwrap();
+        let project_content_2 = r#"
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Project
+metadata:
+  code: "proj-2"
+  name: "Project Without Dates"
+spec:
+  status: "Planned"
+"#;
+        let mut project_file_2 = File::create(project_dir_2.join("project.yaml")).unwrap();
+        writeln!(project_file_2, "{project_content_2}").unwrap();
+        fs::create_dir(project_dir_2.join("tasks")).unwrap();
+        fs::create_dir(project_dir_2.join("resources")).unwrap();
 
         // Persist the temporary directory for inspection after the test.
         let _ = temp_dir.keep();
@@ -216,21 +280,56 @@ spec:
         let temp_root = setup_test_environment();
         let output_dir = temp_root.join("public");
 
-        // 2. Create and execute the use case, starting from the root containing the projects.
+        // 2. Create and execute the use case.
         let use_case = BuildUseCase::new(temp_root, output_dir.to_str().unwrap()).unwrap();
-
         let result = use_case.execute();
+        if let Err(e) = &result {
+            // Provide more context on failure.
+            eprintln!("BuildUseCase::execute failed: {}", e);
+        }
         assert!(result.is_ok());
 
-        // 3. Assert that project-specific output files were created correctly.
-        let project_output_dir = output_dir.join("My Test Project");
-        let index_path = project_output_dir.join("index.html");
-        assert!(index_path.exists());
-        let index_content = fs::read_to_string(index_path).unwrap();
-        assert!(index_content.contains("My Test Project"));
+        // 3. Assert that the global index.html was created correctly.
+        let global_index_path = output_dir.join("index.html");
+        assert!(global_index_path.exists(), "Global index.html was not created");
+        let global_index_content = fs::read_to_string(global_index_path).unwrap();
+        // Check the title of the global index page, which is composed by the base template.
+        // This ensures the dummy project context is correctly passed and rendered.
+        let title_content = global_index_content
+            .split_once("<title>")
+            .and_then(|(_, after_title_tag)| after_title_tag.split_once("</title>"))
+            .map(|(content, _)| content)
+            .unwrap_or("")
+            .trim();
+        assert!(
+            title_content.contains("Projects Dashboard"),
+            "The rendered title content ('{}') did not contain 'Projects Dashboard'.",
+            title_content
+        );
+        assert!(
+            global_index_content.contains("My Test Project"),
+            "Global index.html should list the test project"
+        );
 
-        // 4. Assert that timezone was inherited.
-        // This is harder to test directly without inspecting the `SiteContext`
-        // but we can check if the build succeeded, which implies the logic ran.
+        // 4. Assert that the project-specific detail page was created correctly.
+        let project_page_path = output_dir.join("projects").join("proj-1").join("index.html");
+        assert!(project_page_path.exists(), "Project detail page was not created");
+        let project_page_content = fs::read_to_string(project_page_path).unwrap();
+        assert!(
+            project_page_content.contains("My Test Project"),
+            "Project page should contain project name"
+        );
+        assert!(
+            project_page_content.contains("A description for the test project."),
+            "Project page should contain project description"
+        );
+        assert!(
+            project_page_content.contains("Developer One"),
+            "Project page should list the test resource"
+        );
+        assert!(
+            project_page_content.contains("Design the API"),
+            "Project page should list the test task"
+        );
     }
 }
