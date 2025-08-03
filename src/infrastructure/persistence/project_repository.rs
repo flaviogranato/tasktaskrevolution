@@ -35,6 +35,23 @@ impl FileProjectRepository {
         Self { base_path }
     }
 
+    /// Loads a single project from a specific project directory path.
+    pub fn load_from_path(&self, project_dir: &Path) -> Result<AnyProject, DomainError> {
+        let manifest_path = project_dir.join("project.yaml");
+        if !manifest_path.exists() {
+            return Err(DomainError::NotFound(format!(
+                "No 'project.yaml' found in {}",
+                project_dir.display()
+            )));
+        }
+        let manifest = self
+            .load_manifest(&manifest_path)
+            .map_err(|e| DomainError::Generic(format!("Failed to load project manifest: {e}")))?;
+        let mut project = AnyProject::try_from(manifest).map_err(DomainError::Serialization)?;
+        self.load_tasks_for_project(&mut project, &manifest_path)?;
+        Ok(project)
+    }
+
     /// Carrega e deserializa o manifesto de um projeto de um arquivo YAML.
     fn load_manifest(&self, path: &Path) -> Result<ProjectManifest, Box<dyn Error>> {
         let yaml = fs::read_to_string(path)?;
