@@ -3,10 +3,10 @@
 // Module declarations
 pub mod any_task;
 pub mod builder;
-
 pub mod resource_assignment;
 pub mod state;
 pub mod task;
+pub mod errors;
 
 // Re-export public items from sub-modules
 pub use any_task::AnyTask;

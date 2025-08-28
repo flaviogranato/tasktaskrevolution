@@ -5,5 +5,6 @@ pub mod project;
 pub mod repository;
 pub mod state;
 pub mod vacation_rules;
+pub mod errors;
 
 pub use any_project::AnyProject;
