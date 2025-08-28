@@ -1,7 +1,7 @@
 use crate::{
     domain::{
         project_management::{AnyProject, repository::ProjectRepository},
-        shared::errors::DomainError,
+        shared::errors::{DomainError, DomainErrorKind},
         task_management::any_task::AnyTask,
     },
     infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest},
@@ -39,15 +39,15 @@ impl FileProjectRepository {
     pub fn load_from_path(&self, project_dir: &Path) -> Result<AnyProject, DomainError> {
         let manifest_path = project_dir.join("project.yaml");
         if !manifest_path.exists() {
-            return Err(DomainError::NotFound(format!(
+            return Err(DomainError::new(DomainErrorKind::ResourceNotFound { code: "unknown".to_string() }).with_context(format!(
                 "No 'project.yaml' found in {}",
                 project_dir.display()
             )));
         }
         let manifest = self
             .load_manifest(&manifest_path)
-            .map_err(|e| DomainError::Generic(format!("Failed to load project manifest: {e}")))?;
-        let mut project = AnyProject::try_from(manifest).map_err(DomainError::Serialization)?;
+            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: format!("Failed to load project manifest: {e}") }))?;
+        let mut project = AnyProject::try_from(manifest).map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error converting project manifest: {e}") }))?;
         self.load_tasks_for_project(&mut project, &manifest_path)?;
         Ok(project)
     }
@@ -66,15 +66,15 @@ impl FileProjectRepository {
         }
 
         let pattern = tasks_dir.join("*.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
 
         for entry in walker.flatten() {
             let task_path = entry.path();
             let yaml =
-                fs::read_to_string(task_path).map_err(|e| DomainError::Io(format!("Error reading task file: {e}")))?;
+                fs::read_to_string(task_path).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "reading task file".to_string(), path: Some(task_path.to_string_lossy().to_string()) }).with_context(format!("Error reading task file: {e}")))?;
             let task_manifest: TaskManifest = serde_yaml::from_str(&yaml)
-                .map_err(|e| DomainError::Serialization(format!("Error deserializing task: {e}")))?;
-            let task = AnyTask::try_from(task_manifest).map_err(DomainError::Serialization)?;
+                .map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error deserializing task: {e}") }))?;
+            let task = AnyTask::try_from(task_manifest).map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error converting task manifest: {e}") }))?;
             project.add_task(task);
         }
 
@@ -90,23 +90,23 @@ impl ProjectRepository for FileProjectRepository {
 
         // Save project manifest
         fs::create_dir_all(&project_dir)
-            .map_err(|e| DomainError::Io(format!("Error creating project directory: {e}")))?;
+            .map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "creating project directory".to_string(), path: Some(project_dir.to_string_lossy().to_string()) }).with_context(format!("Error creating project directory: {e}")))?;
         let manifest_path = project_dir.join("project.yaml");
         let project_manifest = ProjectManifest::from(project.clone());
         let yaml = serde_yaml::to_string(&project_manifest)
-            .map_err(|e| DomainError::Serialization(format!("Error serializing project: {e}")))?;
-        fs::write(&manifest_path, yaml).map_err(|e| DomainError::Io(format!("Error saving project file: {e}")))?;
+            .map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error serializing project: {e}") }))?;
+        fs::write(&manifest_path, yaml).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "saving project file".to_string(), path: Some(manifest_path.to_string_lossy().to_string()) }).with_context(format!("Error saving project file: {e}")))?;
 
         // Save tasks
         let tasks_dir = project_dir.join("tasks");
-        fs::create_dir_all(&tasks_dir).map_err(|e| DomainError::Io(format!("Error creating tasks directory: {e}")))?;
+        fs::create_dir_all(&tasks_dir).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "creating tasks directory".to_string(), path: Some(tasks_dir.to_string_lossy().to_string()) }).with_context(format!("Error creating tasks directory: {e}")))?;
 
         for task in project.tasks().values() {
             let task_manifest = TaskManifest::from(task.clone());
             let task_yaml = serde_yaml::to_string(&task_manifest)
-                .map_err(|e| DomainError::Serialization(format!("Error serializing task: {e}")))?;
+                .map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error serializing task: {e}") }))?;
             let task_path = tasks_dir.join(format!("{}.yaml", task.code()));
-            fs::write(task_path, task_yaml).map_err(|e| DomainError::Io(format!("Error saving task file: {e}")))?;
+            fs::write(&task_path, task_yaml).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "saving task file".to_string(), path: Some(task_path.to_string_lossy().to_string()) }).with_context(format!("Error saving task file: {e}")))?;
         }
 
         Ok(())
@@ -116,20 +116,18 @@ impl ProjectRepository for FileProjectRepository {
     /// `path` deve ser o caminho para o diretório do projeto.
     fn load(&self) -> Result<AnyProject, DomainError> {
         let pattern = self.base_path.join("**/project.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
 
         if let Some(Ok(entry)) = walker.into_iter().next() {
             let manifest_path = entry.path();
             let manifest = self
                 .load_manifest(manifest_path)
-                .map_err(|e| DomainError::Generic(format!("Failed to load project manifest: {e}")))?;
-            let mut project = AnyProject::try_from(manifest).map_err(DomainError::Serialization)?;
+                .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: format!("Failed to load project manifest: {e}") }))?;
+            let mut project = AnyProject::try_from(manifest).map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error converting project manifest: {e}") }))?;
             self.load_tasks_for_project(&mut project, manifest_path)?;
             Ok(project)
         } else {
-            Err(DomainError::NotFound(
-                "No 'project.yaml' file found in subdirectories.".to_string(),
-            ))
+            Err(DomainError::new(DomainErrorKind::ProjectNotFound { code: "unknown".to_string() }).with_context("No 'project.yaml' file found in subdirectories."))
         }
     }
 
@@ -185,7 +183,7 @@ impl ProjectRepository for FileProjectRepository {
 
     fn get_next_code(&self) -> Result<String, DomainError> {
         let pattern = self.base_path.join("**/project.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::Generic(e.to_string()))?;
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
 
         let mut max_code = 0;
 
@@ -290,8 +288,13 @@ mod tests {
 
         // 3. Verify
         assert!(result.is_err());
-        if let Err(DomainError::NotFound(msg)) = result {
-            assert!(msg.contains("No 'project.yaml' file found"));
+        if let Err(err) = result {
+            let msg = err.to_string();
+            if msg.contains("No 'project.yaml' file found") {
+                // Expected error
+            } else {
+                panic!("Unexpected error: {}", msg);
+            }
         } else {
             panic!("Expected a DomainError::NotFound");
         }
