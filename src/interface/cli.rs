@@ -20,12 +20,12 @@ use crate::{
             update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
         },
         task::{
-            assign_resource::AssignResourceToTaskUseCase,
             delete_task::CancelTaskUseCase,
             describe_task::DescribeTaskUseCase,
             link_task::LinkTaskUseCase,
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
+        project::assign_resource_to_task::AssignResourceToTaskUseCase,
         validate::vacations::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
@@ -1039,9 +1039,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
                     let resource_refs: Vec<&str> = resources.iter().map(|s| s.as_str()).collect();
                     match use_case.execute(&project_code, task, &resource_refs) {
-                        Ok(updated_task) => {
-                            println!("✅ Successfully assigned resources to task '{}'.", updated_task.code());
-                            println!("   New assignees: {}", updated_task.assigned_resources().join(", "));
+                        Ok(updated_project) => {
+                            if let Some(updated_task) = updated_project.tasks().get(task) {
+                                println!("✅ Successfully assigned resources to task '{}'.", updated_task.code());
+                                println!("   New assignees: {}", updated_task.assigned_resources().join(", "));
+                            } else {
+                                println!("❌ Error: Task '{}' not found in updated project", task);
+                            }
                         }
                         Err(e) => {
                             println!("❌ Error assigning resources: {e}");
