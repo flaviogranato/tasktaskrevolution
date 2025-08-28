@@ -16,10 +16,16 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         let code = self.repository.get_next_code()?;
         
         // Use the typestate builder for type safety
-        let project = ProjectBuilder::new(name.to_string())
+        let mut project = ProjectBuilder::new(name.to_string())
             .code(code)
-            .end_date("2024-12-31".to_string()) // Required for WithDates state
-            .build(); // This returns Project<Planned> (legacy method)
+            .end_date("2024-12-31".to_string()); // Required for WithDates state
+        
+        // Add description if provided
+        if let Some(desc) = description {
+            project = project.description(Some(desc.to_string()));
+        }
+        
+        let project = project.build(); // This returns Project<Planned> (legacy method)
 
         self.repository.save(project.into())?;
         println!("Projeto {name} criado");
@@ -56,7 +62,6 @@ mod test {
                     .code("proj-1".to_string())
                     .end_date("2024-12-31".to_string())
                     .build()
-                    .expect("Failed to build project")
                     .into(),
             }
         }
@@ -124,7 +129,7 @@ mod test {
         let description = Some("a simple test project");
         let _ = use_case.execute(name, description);
 
-        let saved_config = use_case.repository.saved_config.borrow();
+        let saved_config = use_case.get_repository().saved_config.borrow();
         assert!(saved_config.is_some());
         let any_project = saved_config.as_ref().unwrap();
         assert_eq!(any_project.name(), name);
