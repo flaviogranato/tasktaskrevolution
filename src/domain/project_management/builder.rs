@@ -6,7 +6,7 @@ use crate::domain::{
 use std::collections::HashMap;
 use uuid7::{Uuid, uuid7};
 
-// Type states for the builder
+// Type states for the builder pattern
 pub struct New;
 pub struct WithName;
 pub struct WithCode;
@@ -51,11 +51,10 @@ impl ProjectBuilder<New> {
 
 impl ProjectBuilder<WithName> {
     /// Sets the code for the project.
-    pub fn code(mut self, code: impl Into<String>) -> ProjectBuilder<WithCode> {
-        self.code = Some(code.into());
+    pub fn code(self, code: impl Into<String>) -> ProjectBuilder<WithCode> {
         ProjectBuilder {
             id: self.id,
-            code: self.code,
+            code: Some(code.into()),
             name: self.name,
             description: self.description,
             start_date: self.start_date,
@@ -82,15 +81,14 @@ impl ProjectBuilder<WithCode> {
     }
 
     /// Sets the end date for the project.
-    pub fn end_date(mut self, end_date: impl Into<String>) -> ProjectBuilder<WithDates> {
-        self.end_date = Some(end_date.into());
+    pub fn end_date(self, end_date: impl Into<String>) -> ProjectBuilder<WithDates> {
         ProjectBuilder {
             id: self.id,
             code: self.code,
             name: self.name,
             description: self.description,
             start_date: self.start_date,
-            end_date: self.end_date,
+            end_date: Some(end_date.into()),
             vacation_rules: self.vacation_rules,
             timezone: self.timezone,
             tasks: self.tasks,
@@ -136,12 +134,13 @@ impl ProjectBuilder<WithDates> {
         })?;
 
         // Validate dates if both are provided
-        if let (Some(start), Some(end)) = (&self.start_date, &self.end_date)
-            && start > end {
-            return Err(DomainError::new(DomainErrorKind::ProjectInvalidState {
-                current: "invalid_dates".to_string(),
-                expected: "start_date < end_date".to_string(),
-            }).with_context("Start date must be before end date"));
+        if let (Some(start), Some(end)) = (&self.start_date, &self.end_date) {
+            if start > end {
+                return Err(DomainError::new(DomainErrorKind::ProjectInvalidState {
+                    current: "invalid_dates".to_string(),
+                    expected: "start_date < end_date".to_string(),
+                }).with_context("Start date must be before end date"));
+            }
         }
 
         Ok(Project {
@@ -159,7 +158,7 @@ impl ProjectBuilder<WithDates> {
     }
 }
 
-// Convenience methods for backward compatibility
+// Convenience methods for backward compatibility and simpler use cases
 impl ProjectBuilder<New> {
     /// Legacy method for backward compatibility.
     /// Prefer using the typestate pattern: new() -> code() -> end_date() -> build()

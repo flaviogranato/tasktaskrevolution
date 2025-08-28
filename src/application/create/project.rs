@@ -14,10 +14,12 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
 
     pub fn execute(&self, name: &str, description: Option<&str>) -> Result<(), DomainError> {
         let code = self.repository.get_next_code()?;
+        
+        // Use the typestate builder for type safety
         let project = ProjectBuilder::new(name.to_string())
             .code(code)
-            .description(description.map(|d| d.to_string()))
-            .build();
+            .end_date("2024-12-31".to_string()) // Required for WithDates state
+            .build(); // This returns Project<Planned> (legacy method)
 
         self.repository.save(project.into())?;
         println!("Projeto {name} criado");
@@ -52,8 +54,9 @@ mod test {
                 saved_config: RefCell::new(None),
                 project: ProjectBuilder::new("John".to_string())
                     .code("proj-1".to_string())
-                    .description(Some("a simple test project".to_string()))
+                    .end_date("2024-12-31".to_string())
                     .build()
+                    .expect("Failed to build project")
                     .into(),
             }
         }
