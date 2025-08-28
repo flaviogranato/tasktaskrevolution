@@ -152,6 +152,32 @@ impl AnyProject {
         Ok(task.clone())
     }
 
+    pub fn remove_dependency_from_task(&mut self, task_code: &str, dependency_code: &str) -> Result<AnyTask, String> {
+        let tasks_map = match self {
+            AnyProject::Planned(p) => &mut p.tasks,
+            AnyProject::InProgress(p) => &mut p.tasks,
+            AnyProject::Completed(_) => return Err("Cannot modify tasks in a completed project.".to_string()),
+            AnyProject::Cancelled(_) => return Err("Cannot modify tasks in a cancelled project.".to_string()),
+        };
+
+        let task = tasks_map
+            .get_mut(task_code)
+            .ok_or_else(|| format!("Task '{task_code}' not found in project."))?;
+
+        let dependencies = match task {
+            AnyTask::Planned(t) => &mut t.dependencies,
+            AnyTask::InProgress(t) => &mut t.dependencies,
+            AnyTask::Blocked(t) => &mut t.dependencies,
+            AnyTask::Completed(_) => return Err("Cannot modify dependencies of a completed task.".to_string()),
+            AnyTask::Cancelled(_) => return Err("Cannot modify dependencies of a cancelled task.".to_string()),
+        };
+
+        // Remove the dependency if it exists
+        dependencies.retain(|dep| dep != dependency_code);
+
+        Ok(task.clone())
+    }
+
     pub fn update_task(
         &mut self,
         task_code: &str,
