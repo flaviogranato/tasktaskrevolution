@@ -205,21 +205,20 @@ impl ResourceRepository for FileResourceRepository {
     fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool {
         let project_repo = FileProjectRepository::new();
 
-        if let Ok(project) = project_repo.load() {
-            if let Some(vacation_rules) = project.vacation_rules() {
-                if let Some(layoff_periods) = &vacation_rules.layoff_periods {
-                    for layoff_period in layoff_periods {
-                        if let (Ok(layoff_start), Ok(layoff_end)) = (
-                            chrono::NaiveDate::parse_from_str(&layoff_period.start_date, "%Y-%m-%d")
-                                .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
-                                .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *start_date.offset())),
-                            chrono::NaiveDate::parse_from_str(&layoff_period.end_date, "%Y-%m-%d")
-                                .map(|d| d.and_hms_opt(23, 59, 59).unwrap())
-                                .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *end_date.offset())),
-                        ) {
-                            if start_date <= &layoff_end && end_date >= &layoff_start {
-                                return true;
-                            }
+        if let Ok(project) = project_repo.load()
+            && let Some(vacation_rules) = project.vacation_rules() {
+            if let Some(layoff_periods) = &vacation_rules.layoff_periods {
+                for layoff_period in layoff_periods {
+                    if let (Ok(layoff_start), Ok(layoff_end)) = (
+                        chrono::NaiveDate::parse_from_str(&layoff_period.start_date, "%Y-%m-%d")
+                            .map(|d| d.and_hms_opt(0, 0, 0).unwrap())
+                            .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *start_date.offset())),
+                        chrono::NaiveDate::parse_from_str(&layoff_period.end_date, "%Y-%m-%d")
+                            .map(|d| d.and_hms_opt(23, 59, 59).unwrap())
+                            .map(|dt| DateTime::<Local>::from_naive_utc_and_offset(dt, *end_date.offset())),
+                    ) {
+                        if start_date <= &layoff_end && end_date >= &layoff_start {
+                            return true;
                         }
                     }
                 }

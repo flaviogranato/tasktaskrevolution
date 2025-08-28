@@ -25,6 +25,7 @@ mod test {
     use super::*;
     use crate::domain::resource_management::AnyResource;
     use crate::domain::shared::errors::DomainError;
+    use crate::domain::shared::errors::DomainErrorKind;
     use chrono::{DateTime, Local};
     use std::cell::RefCell;
 
@@ -45,7 +46,9 @@ mod test {
     impl ResourceRepository for MockResourceRepository {
         fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
             if self.should_fail {
-                return Err(DomainError::Generic("Erro mockado ao salvar".to_string()));
+                return Err(DomainError::new(DomainErrorKind::Generic { 
+                    message: "Erro mockado ao salvar".to_string() 
+                }));
             }
             *self.saved_config.borrow_mut() = Some(resource.clone());
 
