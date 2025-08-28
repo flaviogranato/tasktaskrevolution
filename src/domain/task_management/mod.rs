@@ -4,6 +4,7 @@
 pub mod any_task;
 pub mod builder;
 pub mod resource_assignment;
+pub mod repository;
 pub mod state;
 pub mod task;
 pub mod errors;
