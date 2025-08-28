@@ -1,0 +1,276 @@
+use crate::domain::{
+    project_management::repository::ProjectRepository,
+    shared::errors::DomainError,
+    task_management::any_task::AnyTask,
+};
+
+#[derive(Debug, thiserror::Error)]
+pub enum RemoveDependencyError {
+    #[error("Project with code '{0}' not found")]
+    ProjectNotFound(String),
+    #[error("Task with code '{0}' not found in the project")]
+    TaskNotFound(String),
+    #[error("Dependency '{0}' not found in task '{1}'")]
+    DependencyNotFound(String, String),
+    #[error("Cannot remove dependency: task '{0}' is currently blocked by '{1}'")]
+    TaskBlockedByDependency(String, String),
+    #[error("Domain rule violation: {0}")]
+    DomainError(String),
+    #[error("Repository error: {0}")]
+    RepositoryError(#[from] DomainError),
+}
+
+impl From<String> for RemoveDependencyError {
+    fn from(err: String) -> Self {
+        RemoveDependencyError::DomainError(err)
+    }
+}
+
+/// `RemoveTaskDependencyUseCase` is responsible for removing a dependency between two tasks.
+pub struct RemoveTaskDependencyUseCase<PR>
+where
+    PR: ProjectRepository,
+{
+    project_repository: PR,
+}
+
+impl<PR> RemoveTaskDependencyUseCase<PR>
+where
+    PR: ProjectRepository,
+{
+    pub fn new(project_repository: PR) -> Self {
+        Self { project_repository }
+    }
+
+    pub fn execute(
+        &self,
+        project_code: &str,
+        task_code: &str,
+        dependency_code: &str,
+    ) -> Result<AnyTask, RemoveDependencyError> {
+        // 1. Load the project aggregate
+        let mut project = self
+            .project_repository
+            .find_by_code(project_code)?
+            .ok_or_else(|| RemoveDependencyError::ProjectNotFound(project_code.to_string()))?;
+
+        // 2. Ensure both tasks exist within the project
+        if !project.tasks().contains_key(task_code) {
+            return Err(RemoveDependencyError::TaskNotFound(task_code.to_string()));
+        }
+        if !project.tasks().contains_key(dependency_code) {
+            return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string(), task_code.to_string()));
+        }
+
+        // 3. Check if the dependency actually exists
+        let task = project.tasks().get(task_code).unwrap();
+        let dependencies = match task {
+            AnyTask::Planned(t) => &t.dependencies,
+            AnyTask::InProgress(t) => &t.dependencies,
+            AnyTask::Blocked(t) => &t.dependencies,
+            AnyTask::Completed(t) => &t.dependencies,
+            AnyTask::Cancelled(t) => &t.dependencies,
+        };
+
+        if !dependencies.contains(&dependency_code.to_string()) {
+            return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string(), task_code.to_string()));
+        }
+
+        // 4. Validate that removing the dependency won't break critical constraints
+        if self.is_task_blocked_by_dependency(&project, task_code, dependency_code)? {
+            return Err(RemoveDependencyError::TaskBlockedByDependency(task_code.to_string(), dependency_code.to_string()));
+        }
+
+        // 5. Remove the dependency from the task
+        let updated_task = project.remove_dependency_from_task(task_code, dependency_code)?;
+
+        // 6. Save the updated project
+        self.project_repository.save(project.clone())?;
+
+        Ok(updated_task)
+    }
+
+    fn is_task_blocked_by_dependency(
+        &self,
+        project: &crate::domain::project_management::AnyProject,
+        task_code: &str,
+        dependency_code: &str,
+    ) -> Result<bool, RemoveDependencyError> {
+        // This is a simplified check - in a real system, you might want more sophisticated validation
+        // For now, we'll just check if the task is currently blocked and the dependency is the only blocker
+        
+        let task = project.tasks().get(task_code).unwrap();
+        let dependencies = match task {
+            AnyTask::Planned(t) => &t.dependencies,
+            AnyTask::InProgress(t) => &t.dependencies,
+            AnyTask::Blocked(t) => &t.dependencies,
+            AnyTask::Completed(t) => &t.dependencies,
+            AnyTask::Cancelled(t) => &t.dependencies,
+        };
+
+        // If task has only one dependency and it's the one we're trying to remove,
+        // and the task is currently blocked, we should prevent removal
+        if dependencies.len() == 1 && dependencies.contains(&dependency_code.to_string()) {
+            // Check if task is in blocked state
+            match task {
+                AnyTask::Blocked(_) => return Ok(true),
+                _ => return Ok(false),
+            }
+        }
+
+        Ok(false)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::{
+        project_management::{AnyProject, builder::ProjectBuilder},
+        task_management::{state::Planned, task::Task},
+    };
+    use chrono::NaiveDate;
+    use std::{cell::RefCell, collections::HashMap};
+    use uuid7::uuid7;
+
+    // --- Mocks ---
+    struct MockProjectRepository {
+        projects: RefCell<HashMap<String, AnyProject>>,
+    }
+
+    impl ProjectRepository for MockProjectRepository {
+        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+            self.projects.borrow_mut().insert(project.code().to_string(), project);
+            Ok(())
+        }
+
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+            Ok(self.projects.borrow().get(code).cloned())
+        }
+
+        fn load(&self) -> Result<AnyProject, DomainError> {
+            unimplemented!()
+        }
+
+        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+            unimplemented!()
+        }
+
+        fn get_next_code(&self) -> Result<String, DomainError> {
+            unimplemented!()
+        }
+    }
+
+    // --- Helpers ---
+    fn create_test_task(code: &str, dependencies: Vec<String>) -> Task<Planned> {
+        Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-1".to_string(),
+            code: code.to_string(),
+            name: format!("Test Task {}", code),
+            description: None,
+            state: Planned,
+            start_date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+            due_date: NaiveDate::from_ymd_opt(2025, 1, 10).unwrap(),
+            actual_end_date: None,
+            dependencies,
+            assigned_resources: vec![],
+        }
+    }
+
+    fn setup_test_project(tasks: Vec<AnyTask>) -> AnyProject {
+        let mut project: AnyProject = ProjectBuilder::new("Test Project".to_string())
+            .code("PROJ-1".to_string())
+            .build()
+            .into();
+        for task in tasks {
+            project.add_task(task);
+        }
+        project
+    }
+
+    // --- Tests ---
+    #[test]
+    fn test_remove_dependency_success() {
+        // Arrange
+        let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
+        let task_b = create_test_task("TASK-B", vec![]);
+        
+        let project = setup_test_project(vec![task_a.into(), task_b.into()]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
+        };
+        
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
+
+        // Assert
+        assert!(result.is_ok());
+        let updated_task = result.unwrap();
+        assert_eq!(updated_task.code(), "TASK-A");
+        
+        // Verify dependency was removed by checking the returned task
+        let dependencies = match updated_task {
+            AnyTask::Planned(t) => t.dependencies.clone(),
+            _ => panic!("Expected Planned task"),
+        };
+        assert!(!dependencies.contains(&"TASK-B".to_string()));
+    }
+
+    #[test]
+    fn test_remove_dependency_project_not_found() {
+        // Arrange
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::new()),
+        };
+        
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("NONEXISTENT-PROJ", "TASK-A", "TASK-B");
+
+        // Assert
+        assert!(matches!(result, Err(RemoveDependencyError::ProjectNotFound(_))));
+    }
+
+    #[test]
+    fn test_remove_dependency_task_not_found() {
+        // Arrange
+        let task_b = create_test_task("TASK-B", vec![]);
+        let project = setup_test_project(vec![task_b.into()]);
+        
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+        
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "NONEXISTENT-TASK", "TASK-B");
+
+        // Assert
+        assert!(matches!(result, Err(RemoveDependencyError::TaskNotFound(_))));
+    }
+
+    #[test]
+    fn test_remove_dependency_not_found() {
+        // Arrange
+        let task_a = create_test_task("TASK-A", vec![]);
+        let task_b = create_test_task("TASK-B", vec![]);
+        
+        let project = setup_test_project(vec![task_a.into(), task_b.into()]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+        
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
+
+        // Assert
+        assert!(matches!(result, Err(RemoveDependencyError::DependencyNotFound(_, _))));
+    }
+}
