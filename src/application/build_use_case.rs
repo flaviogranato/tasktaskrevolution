@@ -123,6 +123,7 @@ impl BuildUseCase {
         let dummy_project: AnyProject =
             crate::domain::project_management::builder::ProjectBuilder::new("Projects Dashboard".to_string())
                 .code("TTR_DASHBOARD".to_string())
+                .end_date("2024-12-31".to_string())
                 .build()
                 .into();
         context.insert("project", &dummy_project);
