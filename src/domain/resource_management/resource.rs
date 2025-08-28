@@ -164,6 +164,100 @@ impl<S: ResourceState> Display for Resource<S> {
     }
 }
 
+// Common methods for all Resource states
+impl<S: ResourceState> Resource<S> {
+    // Getters
+    pub fn code(&self) -> &str {
+        &self.code
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn email(&self) -> Option<&str> {
+        self.email.as_deref()
+    }
+
+    // Validation methods
+    pub fn is_code_valid(&self) -> bool {
+        !self.code.trim().is_empty()
+    }
+
+    pub fn is_name_valid(&self) -> bool {
+        !self.name.trim().is_empty()
+    }
+
+    pub fn is_email_valid(&self) -> bool {
+        if let Some(email) = &self.email {
+            // Simple email validation - check for @ and basic format
+            email.contains('@') && email.contains('.') && email.len() > 5
+        } else {
+            true // No email is valid
+        }
+    }
+
+    pub fn validate(&self) -> Result<Vec<String>, String> {
+        let mut errors = Vec::new();
+
+        if !self.is_code_valid() {
+            errors.push("Resource code cannot be empty".to_string());
+        }
+
+        if !self.is_name_valid() {
+            errors.push("Resource name cannot be empty".to_string());
+        }
+
+        if !self.is_email_valid() {
+            errors.push("Resource email format is invalid".to_string());
+        }
+
+        Ok(errors)
+    }
+}
+
+// Transition trait for state changes
+pub trait Transition {
+    type NextState: ResourceState;
+    fn transition(self) -> Resource<Self::NextState>;
+}
+
+impl Transition for Resource<Available> {
+    type NextState = Inactive;
+    
+    fn transition(self) -> Resource<Inactive> {
+        Resource {
+            id: self.id,
+            code: self.code,
+            name: self.name,
+            email: self.email,
+            resource_type: self.resource_type,
+            vacations: self.vacations,
+            time_off_balance: self.time_off_balance,
+            time_off_history: self.time_off_history,
+            state: Inactive,
+        }
+    }
+}
+
+impl Transition for Resource<Inactive> {
+    type NextState = Available;
+    
+    fn transition(self) -> Resource<Available> {
+        Resource {
+            id: self.id,
+            code: self.code,
+            name: self.name,
+            email: self.email,
+            resource_type: self.resource_type,
+            vacations: self.vacations,
+            time_off_balance: self.time_off_balance,
+            time_off_history: self.time_off_history,
+            state: Available,
+        }
+    }
+}
+
 impl Display for Period {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -299,5 +393,202 @@ mod tests {
 
         let multi_assigned_resource = assigned_resource.assign_to_another_project(another_assignment.clone());
         assert_eq!(multi_assigned_resource.state.project_assignments.len(), 2);
+    }
+
+    #[test]
+    fn test_resource_creation_with_valid_data() {
+        let resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "John Doe".to_string(),
+            email: Some("john.doe@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert_eq!(resource.code(), "RES-001");
+        assert_eq!(resource.name(), "John Doe");
+        assert_eq!(resource.email(), Some("john.doe@example.com"));
+        assert!(resource.is_code_valid());
+        assert!(resource.is_name_valid());
+        assert!(resource.is_email_valid());
+    }
+
+    #[test]
+    fn test_resource_code_validation() {
+        // Valid code
+        let valid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "Test Resource".to_string(),
+            email: Some("test@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert!(valid_resource.is_code_valid());
+
+        // Invalid code (empty)
+        let invalid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "".to_string(),
+            name: "Test Resource".to_string(),
+            email: Some("test@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert!(!invalid_resource.is_code_valid());
+    }
+
+    #[test]
+    fn test_resource_name_validation() {
+        // Valid name
+        let valid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "John Doe".to_string(),
+            email: Some("john@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert!(valid_resource.is_name_valid());
+
+        // Invalid name (empty)
+        let invalid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "".to_string(),
+            email: Some("john@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert!(!invalid_resource.is_name_valid());
+    }
+
+    #[test]
+    fn test_resource_email_validation() {
+        // Valid email
+        let valid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "John Doe".to_string(),
+            email: Some("john.doe@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert!(valid_resource.is_email_valid());
+
+        // Invalid email format
+        let invalid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "John Doe".to_string(),
+            email: Some("invalid-email".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert!(!invalid_resource.is_email_valid());
+
+        // No email (should be valid)
+        let no_email_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "John Doe".to_string(),
+            email: None,
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        assert!(no_email_resource.is_email_valid());
+    }
+
+    #[test]
+    fn test_resource_comprehensive_validation() {
+        let valid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "John Doe".to_string(),
+            email: Some("john.doe@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        let validation_result = valid_resource.validate();
+        assert!(validation_result.is_ok());
+        assert_eq!(validation_result.unwrap().len(), 0); // No validation errors
+
+        let invalid_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "".to_string(),
+            name: "".to_string(),
+            email: Some("invalid-email".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        let validation_result = invalid_resource.validate();
+        assert!(validation_result.is_ok());
+        let errors = validation_result.unwrap();
+        assert!(errors.len() > 0); // Should have validation errors
+        assert!(errors.iter().any(|e| e.contains("code")));
+        assert!(errors.iter().any(|e| e.contains("name")));
+        assert!(errors.iter().any(|e| e.contains("email")));
+    }
+
+    #[test]
+    fn test_resource_state_transitions() {
+        let available_resource = Resource::<Available> {
+            id: uuid7(),
+            code: "RES-001".to_string(),
+            name: "John Doe".to_string(),
+            email: Some("john@example.com".to_string()),
+            resource_type: "Developer".to_string(),
+            vacations: Some(Vec::new()),
+            time_off_balance: 160,
+            time_off_history: Some(Vec::new()),
+            state: Available,
+        };
+
+        // Transition from Available to Inactive
+        let inactive_resource: Resource<Inactive> = available_resource.deactivate();
+        assert!(matches!(inactive_resource.state, Inactive));
+
+        // Note: We don't have a direct transition from Inactive to Available
+        // This would need to be implemented if needed
     }
 }

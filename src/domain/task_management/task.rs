@@ -198,6 +198,107 @@ impl std::fmt::Display for TaskError {
 
 impl std::error::Error for TaskError {}
 
+// Common methods for all Task states
+impl<S: TaskState> Task<S> {
+    // Getters
+    pub fn code(&self) -> &str {
+        &self.code
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    pub fn start_date(&self) -> String {
+        self.start_date.format("%Y-%m-%d").to_string()
+    }
+
+    pub fn end_date(&self) -> String {
+        self.due_date.format("%Y-%m-%d").to_string()
+    }
+
+    // Validation methods
+    pub fn is_code_valid(&self) -> bool {
+        !self.code.trim().is_empty()
+    }
+
+    pub fn is_name_valid(&self) -> bool {
+        !self.name.trim().is_empty()
+    }
+
+    pub fn is_date_range_valid(&self) -> bool {
+        self.start_date <= self.due_date
+    }
+
+    pub fn validate(&self) -> Result<Vec<String>, String> {
+        let mut errors = Vec::new();
+
+        if !self.is_code_valid() {
+            errors.push("Task code cannot be empty".to_string());
+        }
+
+        if !self.is_name_valid() {
+            errors.push("Task name cannot be empty".to_string());
+        }
+
+        if !self.is_date_range_valid() {
+            errors.push("Task due date must be after start date".to_string());
+        }
+
+        Ok(errors)
+    }
+}
+
+// Transition trait for state changes
+pub trait Transition {
+    type NextState: TaskState;
+    fn transition(self) -> Task<Self::NextState>;
+}
+
+impl Transition for Task<Planned> {
+    type NextState = InProgress;
+    
+    fn transition(self) -> Task<InProgress> {
+        Task {
+            id: self.id,
+            project_code: self.project_code,
+            code: self.code,
+            name: self.name,
+            description: self.description,
+            state: InProgress { progress: 0 },
+            start_date: self.start_date,
+            due_date: self.due_date,
+            actual_end_date: self.actual_end_date,
+            dependencies: self.dependencies,
+            assigned_resources: self.assigned_resources,
+        }
+    }
+}
+
+impl Transition for Task<InProgress> {
+    type NextState = Completed;
+    
+    fn transition(self) -> Task<Completed> {
+        Task {
+            id: self.id,
+            project_code: self.project_code,
+            code: self.code,
+            name: self.name,
+            description: self.description,
+            state: Completed,
+            start_date: self.start_date,
+            due_date: self.due_date,
+            actual_end_date: Some(chrono::Utc::now().date_naive()),
+            dependencies: self.dependencies,
+            assigned_resources: self.assigned_resources,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -304,5 +405,226 @@ mod tests {
         // This is a compile-time check, but we can assert on the type if we had a way to get a string from it.
         // For now, just creating it is enough to test the transition exists.
         assert_eq!(cancelled_task.id, task_id);
+    }
+
+    #[test]
+    fn test_task_creation_with_valid_data() {
+        let task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Implement Login Feature".to_string(),
+            description: Some("Create user authentication system".to_string()),
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        assert_eq!(task.code(), "TASK-001");
+        assert_eq!(task.name(), "Implement Login Feature");
+        assert_eq!(task.description(), Some("Create user authentication system"));
+        assert_eq!(task.start_date(), "2024-01-01");
+        assert_eq!(task.end_date(), "2024-01-15");
+        assert!(task.is_code_valid());
+        assert!(task.is_name_valid());
+        assert!(task.is_date_range_valid());
+    }
+
+    #[test]
+    fn test_task_code_validation() {
+        // Valid code
+        let valid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Test Task".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        assert!(valid_task.is_code_valid());
+
+        // Invalid code (empty)
+        let invalid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "".to_string(),
+            name: "Test Task".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        assert!(!invalid_task.is_code_valid());
+    }
+
+    #[test]
+    fn test_task_name_validation() {
+        // Valid name
+        let valid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Implement Feature".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        assert!(valid_task.is_name_valid());
+
+        // Invalid name (empty)
+        let invalid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        assert!(!invalid_task.is_name_valid());
+    }
+
+    #[test]
+    fn test_task_date_validation() {
+        // Valid date range
+        let valid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Test Task".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        assert!(valid_task.is_date_range_valid());
+
+        // Invalid date range (end before start)
+        let invalid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Test Task".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        assert!(!invalid_task.is_date_range_valid());
+    }
+
+
+
+    #[test]
+    fn test_task_comprehensive_validation() {
+        let valid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Implement Feature".to_string(),
+            description: Some("A comprehensive test task".to_string()),
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        let validation_result = valid_task.validate();
+        assert!(validation_result.is_ok());
+        assert_eq!(validation_result.unwrap().len(), 0); // No validation errors
+
+        let invalid_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "".to_string(),
+            name: "".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        let validation_result = invalid_task.validate();
+        assert!(validation_result.is_ok());
+        let errors = validation_result.unwrap();
+        assert!(errors.len() > 0); // Should have validation errors
+        assert!(errors.iter().any(|e| e.contains("code")));
+        assert!(errors.iter().any(|e| e.contains("name")));
+        assert!(errors.iter().any(|e| e.contains("date")));
+    }
+
+    #[test]
+    fn test_task_state_transitions() {
+        let planned_task = Task::<Planned> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Test Task".to_string(),
+            description: None,
+            state: Planned,
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        // Transition from Planned to InProgress
+        let in_progress_task: Task<InProgress> = planned_task.transition();
+        assert!(matches!(in_progress_task.state, InProgress));
+
+        // Transition from InProgress to Completed
+        let in_progress_task = Task::<InProgress> {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Test Task".to_string(),
+            description: None,
+            state: InProgress { progress: 50 },
+            start_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(),
+            actual_end_date: None,
+            dependencies: Vec::new(),
+            assigned_resources: Vec::new(),
+        };
+
+        let completed_task: Task<Completed> = in_progress_task.transition();
+        assert!(matches!(completed_task.state, Completed));
     }
 }
