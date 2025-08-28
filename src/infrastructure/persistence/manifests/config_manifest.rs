@@ -1,5 +1,5 @@
 use crate::domain::company_settings::Config;
-use crate::domain::shared::convertable::Convertable;
+use crate::domain::shared::convertable::Convertible;
 use crate::infrastructure::persistence::manifests::project_manifest::VacationRulesManifest;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -76,7 +76,7 @@ impl Default for ConfigManifest {
     }
 }
 
-impl Convertable<Config> for ConfigManifest {
+impl Convertible<Config> for ConfigManifest {
     fn from(source: Config) -> Self {
         ConfigManifest {
             api_version: API_VERSION.to_string(),
