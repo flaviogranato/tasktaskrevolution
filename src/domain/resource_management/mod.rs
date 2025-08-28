@@ -5,4 +5,4 @@ pub mod state;
 pub mod errors;
 
 pub use any_resource::AnyResource;
-pub use resource::{Period, PeriodType, Resource, TimeOffEntry};
+pub use resource::{Period, PeriodType};

@@ -1,7 +1,7 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use uuid7::{Uuid, uuid7};
+use uuid7::Uuid;
 
 use crate::domain::{
     resource_management::{
@@ -9,7 +9,7 @@ use crate::domain::{
         state::{Assigned, Available},
         AnyResource,
     },
-    shared::errors::{DomainError, DomainErrorKind},
+
 };
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";

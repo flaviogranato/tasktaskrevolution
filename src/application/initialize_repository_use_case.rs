@@ -1,6 +1,6 @@
 use crate::domain::{
     company_settings::{config::Config, repository::ConfigRepository},
-    shared::errors::{DomainError, DomainErrorKind},
+    shared::errors::DomainError,
 };
 use crate::domain::shared::convertable::Convertible;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
