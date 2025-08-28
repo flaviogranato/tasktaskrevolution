@@ -1,6 +1,6 @@
 use crate::domain::company_settings::config::Config;
 use crate::domain::company_settings::repository::ConfigRepository;
-use crate::domain::shared::convertable::Convertable;
+use crate::domain::shared::convertable::Convertible;
 use crate::domain::shared::errors::DomainError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
@@ -15,7 +15,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
     }
     pub fn execute(&self, path: PathBuf, manager_name: String, manager_email: String) -> Result<(), DomainError> {
         let config = Config::new(manager_name.clone(), manager_email.clone(), "UTC".to_string());
-        let config_manifest = <ConfigManifest as Convertable<Config>>::from(config);
+        let config_manifest = <ConfigManifest as Convertible<Config>>::from(config);
         self.repository.create_repository_dir(path.clone())?;
         self.repository.save(config_manifest, path.clone())?;
         println!("Configuração iniciada em: {}", path.display());
