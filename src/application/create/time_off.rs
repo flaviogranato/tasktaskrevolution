@@ -1,4 +1,4 @@
-use crate::domain::{resource_management::repository::ResourceRepository, shared::errors::DomainError};
+use crate::domain::{resource_management::repository::ResourceRepository, shared::errors::{DomainError, DomainErrorKind}};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -22,14 +22,14 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
     #[allow(dead_code)]
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
         let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-            .map_err(|_| DomainError::Generic("Formato de data inválido. Use YYYY-MM-DD".to_string()))?
+            .map_err(|_| DomainError::new(DomainErrorKind::Generic { message: "Formato de data inválido. Use YYYY-MM-DD".to_string() }))?
             .and_hms_opt(0, 0, 0)
-            .ok_or_else(|| DomainError::Generic("Erro ao converter hora".to_string()))?;
+            .ok_or_else(|| DomainError::new(DomainErrorKind::Generic { message: "Erro ao converter hora".to_string() }))?;
 
         Local
             .from_local_datetime(&naive)
             .earliest()
-            .ok_or_else(|| DomainError::Generic("Erro ao converter data local".to_string()))
+            .ok_or_else(|| DomainError::new(DomainErrorKind::Generic { message: "Erro ao converter data local".to_string() }))
     }
 
     pub fn execute(
