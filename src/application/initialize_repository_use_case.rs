@@ -1,7 +1,8 @@
-use crate::domain::company_settings::config::Config;
-use crate::domain::company_settings::repository::ConfigRepository;
+use crate::domain::{
+    company_settings::{config::Config, repository::ConfigRepository},
+    shared::errors::{DomainError, DomainErrorKind},
+};
 use crate::domain::shared::convertable::Convertible;
-use crate::domain::shared::errors::DomainError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
 
@@ -50,7 +51,9 @@ mod test {
     impl ConfigRepository for MockConfigRepository {
         fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
             if self.should_fail {
-                return Err(DomainError::Generic("Erro mockado ao salvar".to_string()));
+                return Err(DomainError::new(DomainErrorKind::Generic { 
+                    message: "Erro mockado ao salvar".to_string() 
+                }));
             }
             *self.saved_config.borrow_mut() = Some(config.clone());
             *self.created_path.borrow_mut() = Some(path.clone());
@@ -65,7 +68,9 @@ mod test {
 
         fn load(&self) -> Result<(Config, PathBuf), DomainError> {
             if self.should_fail {
-                return Err(DomainError::Generic("Erro mockado ao carregar".to_string()));
+                return Err(DomainError::new(DomainErrorKind::Generic { 
+                    message: "Erro mockado ao carregar".to_string() 
+                }));
             }
             let config = Config::new("mock".to_string(), "mock@email.com".to_string(), "UTC".to_string());
             let path = PathBuf::from("/mock/path");

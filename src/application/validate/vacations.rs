@@ -41,23 +41,21 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
     }
 
     fn has_valid_layoff_vacation(&self, vacations: &[Period], vacation_rules: &VacationRules) -> bool {
-        if let Some(layoff_periods) = &vacation_rules.layoff_periods {
-            if let Some(require_layoff) = vacation_rules.require_layoff_vacation_period {
-                if require_layoff {
-                    // Verifica se pelo menos uma férias coincide com algum período de layoff
-                    for vacation in vacations {
-                        for layoff_period in layoff_periods {
-                            if self.check_layoff_overlap(
-                                vacation,
-                                &(layoff_period.start_date.clone(), layoff_period.end_date.clone()),
-                            ) {
-                                return true;
-                            }
-                        }
+        if let Some(layoff_periods) = &vacation_rules.layoff_periods
+            && let Some(require_layoff) = vacation_rules.require_layoff_vacation_period
+            && require_layoff {
+            // Verifica se pelo menos uma férias coincide com algum período de layoff
+            for vacation in vacations {
+                for layoff_period in layoff_periods {
+                    if self.check_layoff_overlap(
+                        vacation,
+                        &(layoff_period.start_date.clone(), layoff_period.end_date.clone()),
+                    ) {
+                        return true;
                     }
-                    return false;
                 }
             }
+            return false;
         }
         true
     }
@@ -90,13 +88,12 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
                 }
 
                 // Verificar se há férias durante o período de layoff quando necessário
-                if let Some(vacation_rules) = project.vacation_rules() {
-                    if !self.has_valid_layoff_vacation(vacations1, vacation_rules) {
-                        mensagens.push(format!(
-                            "⚠️ {} não possui férias durante nenhum período de layoff",
-                            resource1.name()
-                        ));
-                    }
+                if let Some(vacation_rules) = project.vacation_rules()
+                    && !self.has_valid_layoff_vacation(vacations1, vacation_rules) {
+                    mensagens.push(format!(
+                        "⚠️ {} não possui férias durante nenhum período de layoff",
+                        resource1.name()
+                    ));
                 }
             }
         }

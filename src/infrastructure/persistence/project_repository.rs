@@ -143,12 +143,11 @@ impl ProjectRepository for FileProjectRepository {
                 if processed_paths.contains(manifest_path) {
                     continue;
                 }
-                if let Ok(manifest) = self.load_manifest(manifest_path) {
-                    if let Ok(mut project) = AnyProject::try_from(manifest) {
-                        if self.load_tasks_for_project(&mut project, manifest_path).is_ok() {
-                            projects.push(project);
-                            processed_paths.insert(manifest_path.to_path_buf());
-                        }
+                if let Ok(manifest) = self.load_manifest(manifest_path)
+                    && let Ok(mut project) = AnyProject::try_from(manifest) {
+                    if self.load_tasks_for_project(&mut project, manifest_path).is_ok() {
+                        projects.push(project);
+                        processed_paths.insert(manifest_path.to_path_buf());
                     }
                 }
             }
@@ -156,12 +155,11 @@ impl ProjectRepository for FileProjectRepository {
 
         // Verifica também o diretório atual
         let current_dir_manifest = self.base_path.join("project.yaml");
-        if current_dir_manifest.exists() && !processed_paths.contains(&current_dir_manifest) {
-            if let Ok(manifest) = self.load_manifest(&current_dir_manifest) {
-                if let Ok(mut project) = AnyProject::try_from(manifest) {
-                    if self.load_tasks_for_project(&mut project, &current_dir_manifest).is_ok() {
-                        projects.push(project);
-                    }
+        if current_dir_manifest.exists() && !processed_paths.contains(&current_dir_manifest)
+            && let Ok(manifest) = self.load_manifest(&current_dir_manifest) {
+            if let Ok(mut project) = AnyProject::try_from(manifest) {
+                if self.load_tasks_for_project(&mut project, &current_dir_manifest).is_ok() {
+                    projects.push(project);
                 }
             }
         }
@@ -189,13 +187,12 @@ impl ProjectRepository for FileProjectRepository {
 
         for entry in walker.flatten() {
             let manifest_path = entry.path();
-            if let Ok(manifest) = self.load_manifest(manifest_path) {
-                if let Some(code) = manifest.metadata.code {
-                    if let Some(num_str) = code.strip_prefix("proj-") {
-                        if let Ok(num) = num_str.parse::<u32>() {
-                            if num > max_code {
-                                max_code = num;
-                            }
+            if let Ok(manifest) = self.load_manifest(manifest_path)
+                && let Some(code) = manifest.metadata.code {
+                if let Some(num_str) = code.strip_prefix("proj-") {
+                    if let Ok(num) = num_str.parse::<u32>() {
+                        if num > max_code {
+                            max_code = num;
                         }
                     }
                 }

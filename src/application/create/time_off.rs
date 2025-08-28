@@ -106,7 +106,9 @@ mod tests {
             let resource_any = resources
                 .iter_mut()
                 .find(|r| r.name() == resource_name)
-                .ok_or_else(|| DomainError::NotFound("Resource not found".to_string()))?;
+                .ok_or_else(|| DomainError::new(DomainErrorKind::ResourceNotFound { 
+                    code: "Resource not found".to_string() 
+                }))?;
 
             let updated = match resource_any {
                 AnyResource::Available(r) => {
@@ -119,7 +121,10 @@ mod tests {
                     updated_r.time_off_balance += hours;
                     AnyResource::Assigned(updated_r)
                 }
-                AnyResource::Inactive(_) => return Err(DomainError::InvalidState("Inactive".to_string())),
+                AnyResource::Inactive(_) => return Err(DomainError::new(DomainErrorKind::ResourceInvalidState { 
+                    current: "Inactive".to_string(),
+                    expected: "Active".to_string(),
+                })),
             };
             *resource_any = updated.clone();
             Ok(updated)

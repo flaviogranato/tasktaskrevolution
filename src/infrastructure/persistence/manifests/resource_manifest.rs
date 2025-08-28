@@ -3,10 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use uuid7::{Uuid, uuid7};
 
-use crate::domain::resource_management::{
-    AnyResource, Resource, TimeOffEntry,
-    resource::{Period, PeriodType, ProjectAssignment},
-    state::{Assigned, Available},
+use crate::domain::{
+    resource_management::{
+        resource::{Period, Resource, TimeOffEntry, ProjectAssignment, PeriodType},
+        state::{Assigned, Available},
+        AnyResource,
+    },
+    shared::errors::{DomainError, DomainErrorKind},
 };
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
@@ -223,37 +226,35 @@ impl TryFrom<ResourceManifest> for AnyResource {
         let id = manifest
             .metadata
             .id
-            .map(|id_str| Uuid::from_str(&id_str))
-            .transpose()
-            .map_err(|e| e.to_string())?
-            .unwrap_or_else(uuid7);
-        let code = manifest.metadata.code;
-        let name = manifest.metadata.name;
+            .and_then(|id_str| Uuid::from_str(&id_str).ok())
+            .unwrap_or_else(|| uuid7::uuid7());
+
+        let code = manifest.metadata.code.clone();
+        let name = manifest.metadata.name.clone();
         let email = if manifest.metadata.email.is_empty() {
             None
         } else {
-            Some(manifest.metadata.email)
+            Some(manifest.metadata.email.clone())
         };
-        let resource_type = manifest.metadata.resource_type;
-        let vacations = manifest.spec.vacations.map(|v| v.into_iter().map(|p| p.to()).collect());
+        let resource_type = manifest.metadata.resource_type.clone();
+        let vacations = manifest.spec.vacations.as_ref().map(|v| v.iter().map(|p| p.to()).collect());
         let time_off_balance = manifest.spec.time_off_balance;
-        let time_off_history = manifest.spec.time_off_history;
+        let time_off_history = manifest.spec.time_off_history.clone();
 
-        if let Some(assignments_manifest) = manifest.spec.project_assignments {
-            if !assignments_manifest.is_empty() {
-                let project_assignments = assignments_manifest.into_iter().map(|a| a.to()).collect();
-                return Ok(AnyResource::Assigned(Resource {
-                    id,
-                    code,
-                    name,
-                    email,
-                    resource_type,
-                    vacations,
-                    time_off_balance,
-                    time_off_history,
-                    state: Assigned { project_assignments },
-                }));
-            }
+        if let Some(assignments_manifest) = manifest.spec.project_assignments
+            && !assignments_manifest.is_empty() {
+            let project_assignments = assignments_manifest.into_iter().map(|a| a.to()).collect();
+            return Ok(AnyResource::Assigned(Resource {
+                id,
+                code,
+                name,
+                email: None, // Email não está disponível no spec
+                resource_type: "Unknown".to_string(), // Tipo padrão
+                vacations,
+                time_off_balance: 0, // Valor padrão
+                time_off_history,
+                state: Assigned { project_assignments },
+            }));
         }
 
         // Default to Available
