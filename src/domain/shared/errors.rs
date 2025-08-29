@@ -74,6 +74,11 @@ impl DomainError {
         &self.kind
     }
 
+    /// Get the context of this error
+    pub fn context(&self) -> Option<&String> {
+        self.context.as_ref()
+    }
+
     /// Check if this is a specific type of error
     pub fn is_project_not_found(&self) -> bool {
         matches!(self.kind, DomainErrorKind::ProjectNotFound { .. })
@@ -259,5 +264,287 @@ where
         C: Into<String>,
     {
         self.map_err(|e| e.into().with_context(context))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io;
+
+    #[test]
+    fn test_domain_error_creation() {
+        let error = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        });
+        
+        assert!(matches!(error.kind(), DomainErrorKind::ProjectNotFound { code } if code == "PROJ-001"));
+        assert!(error.source().is_none());
+        assert!(error.context().is_none());
+    }
+
+    #[test]
+    fn test_domain_error_with_context() {
+        let error = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        })
+        .with_context("Failed to load project from repository");
+        
+        assert!(matches!(error.kind(), DomainErrorKind::ProjectNotFound { code } if code == "PROJ-001"));
+        assert_eq!(error.context(), Some(&"Failed to load project from repository".to_string()));
+    }
+
+    #[test]
+    fn test_domain_error_with_source() {
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "File not found");
+        let domain_error = DomainError::new(DomainErrorKind::Io {
+            operation: "read".to_string(),
+            path: Some("/path/to/file".to_string()),
+        })
+        .with_source(io_error);
+        
+        assert!(matches!(domain_error.kind(), DomainErrorKind::Io { operation, path } 
+            if operation == "read" && path.as_deref() == Some("/path/to/file")));
+        assert!(domain_error.source().is_some());
+    }
+
+    #[test]
+    fn test_domain_error_display_formatting() {
+        let error = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        })
+        .with_context("Repository operation failed");
+        
+        let display = format!("{}", error);
+        assert!(display.contains("Project with code 'PROJ-001' not found"));
+        assert!(display.contains("(Context: Repository operation failed)"));
+    }
+
+    #[test]
+    fn test_domain_error_display_without_context() {
+        let error = DomainError::new(DomainErrorKind::ResourceNotFound {
+            code: "RES-001".to_string(),
+        });
+        
+        let display = format!("{}", error);
+        assert!(display.contains("Resource with code 'RES-001' not found"));
+        assert!(!display.contains("(Context:"));
+    }
+
+    #[test]
+    fn test_domain_error_display_io_with_path() {
+        let error = DomainError::new(DomainErrorKind::Io {
+            operation: "write".to_string(),
+            path: Some("/tmp/file.yaml".to_string()),
+        });
+        
+        let display = format!("{}", error);
+        assert!(display.contains("I/O error during write on path '/tmp/file.yaml'"));
+    }
+
+    #[test]
+    fn test_domain_error_display_io_without_path() {
+        let error = DomainError::new(DomainErrorKind::Io {
+            operation: "read".to_string(),
+            path: None,
+        });
+        
+        let display = format!("{}", error);
+        assert!(display.contains("I/O error during read"));
+        assert!(!display.contains("on path"));
+    }
+
+    #[test]
+    fn test_domain_error_display_validation_error() {
+        let error = DomainError::new(DomainErrorKind::ValidationError {
+            field: "email".to_string(),
+            message: "Invalid email format".to_string(),
+        });
+        
+        let display = format!("{}", error);
+        assert!(display.contains("Validation error for field 'email': Invalid email format"));
+    }
+
+    #[test]
+    fn test_domain_error_display_serialization_error() {
+        let error = DomainError::new(DomainErrorKind::Serialization {
+            format: "JSON".to_string(),
+            details: "Invalid UTF-8 sequence".to_string(),
+        });
+        
+        let display = format!("{}", error);
+        assert!(display.contains("Serialization error for format 'JSON': Invalid UTF-8 sequence"));
+    }
+
+    #[test]
+    fn test_domain_error_is_project_not_found() {
+        let error = DomainError::project_not_found("PROJ-001");
+        assert!(error.is_project_not_found());
+        assert!(!error.is_resource_not_found());
+        assert!(!error.is_task_not_found());
+        assert!(!error.is_validation_error());
+    }
+
+    #[test]
+    fn test_domain_error_is_resource_not_found() {
+        let error = DomainError::resource_not_found("RES-001");
+        assert!(!error.is_project_not_found());
+        assert!(error.is_resource_not_found());
+        assert!(!error.is_task_not_found());
+        assert!(!error.is_validation_error());
+    }
+
+    #[test]
+    fn test_domain_error_is_task_not_found() {
+        let error = DomainError::task_not_found("TASK-001");
+        assert!(!error.is_project_not_found());
+        assert!(!error.is_resource_not_found());
+        assert!(error.is_task_not_found());
+        assert!(!error.is_validation_error());
+    }
+
+    #[test]
+    fn test_domain_error_is_validation_error() {
+        let error = DomainError::validation_error("email", "Invalid format");
+        assert!(!error.is_project_not_found());
+        assert!(!error.is_resource_not_found());
+        assert!(!error.is_task_not_found());
+        assert!(error.is_validation_error());
+    }
+
+    #[test]
+    fn test_domain_error_from_string() {
+        let error: DomainError = "Custom error message".to_string().into();
+        
+        assert!(matches!(error.kind(), DomainErrorKind::Generic { message } 
+            if message == "Custom error message"));
+    }
+
+    #[test]
+    fn test_domain_error_from_str() {
+        let error: DomainError = "Static error message".into();
+        
+        assert!(matches!(error.kind(), DomainErrorKind::Generic { message } 
+            if message == "Static error message"));
+    }
+
+    #[test]
+    fn test_domain_error_from_io_error() {
+        let io_error = io::Error::new(io::ErrorKind::PermissionDenied, "Access denied");
+        let domain_error: DomainError = io_error.into();
+        
+        assert!(matches!(domain_error.kind(), DomainErrorKind::Io { operation, path } 
+            if operation == "file operation" && path.is_none()));
+    }
+
+    #[test]
+    fn test_domain_error_from_serde_yaml_error() {
+        // Simular um erro de YAML inválido
+        let yaml_content = "invalid: yaml: content: [";
+        let yaml_error = serde_yaml::from_str::<serde_yaml::Value>(yaml_content).unwrap_err();
+        let domain_error: DomainError = yaml_error.into();
+        
+        if let DomainErrorKind::Serialization { format, details } = domain_error.kind() {
+            assert_eq!(format, "YAML");
+            assert!(!details.is_empty());
+        } else {
+            panic!("Expected Serialization error");
+        }
+    }
+
+    #[test]
+    fn test_result_ext_with_context() {
+        let result: Result<&str, &str> = Err("Database connection failed");
+        let domain_result: DomainResult<&str> = result.with_context("Failed to load user data");
+        
+        assert!(domain_result.is_err());
+        let error = domain_result.unwrap_err();
+        assert!(matches!(error.kind(), DomainErrorKind::Generic { message } 
+            if message == "Database connection failed"));
+        assert_eq!(error.context(), Some(&"Failed to load user data".to_string()));
+    }
+
+    #[test]
+    fn test_result_ext_with_context_success() {
+        let result: Result<&str, &str> = Ok("Success");
+        let domain_result: DomainResult<&str> = result.with_context("Operation completed");
+        
+        assert!(domain_result.is_ok());
+        assert_eq!(domain_result.unwrap(), "Success");
+    }
+
+    #[test]
+    fn test_domain_error_error_trait_source() {
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "File not found");
+        let domain_error = DomainError::new(DomainErrorKind::Io {
+            operation: "read".to_string(),
+            path: None,
+        })
+        .with_source(io_error);
+        
+        let source = domain_error.source();
+        assert!(source.is_some());
+        
+        let source_error = source.unwrap();
+        assert!(source_error.to_string().contains("File not found"));
+    }
+
+    #[test]
+    fn test_domain_error_error_trait_no_source() {
+        let domain_error = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        });
+        
+        let source = domain_error.source();
+        assert!(source.is_none());
+    }
+
+    #[test]
+    fn test_domain_error_debug_formatting() {
+        let error = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        });
+        
+        let debug = format!("{:?}", error);
+        assert!(debug.contains("ProjectNotFound"));
+        assert!(debug.contains("PROJ-001"));
+    }
+
+    #[test]
+    fn test_domain_error_kind_debug_formatting() {
+        let kind = DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        };
+        
+        let debug = format!("{:?}", kind);
+        assert!(debug.contains("ProjectNotFound"));
+        assert!(debug.contains("PROJ-001"));
+    }
+
+    #[test]
+    fn test_domain_error_complex_scenario() {
+        // Simular um cenário complexo de erro
+        let io_error = io::Error::new(io::ErrorKind::PermissionDenied, "Access denied");
+        let domain_error = DomainError::new(DomainErrorKind::RepositoryError {
+            operation: "save".to_string(),
+            details: "Failed to persist project data".to_string(),
+        })
+        .with_context("Project creation workflow failed")
+        .with_source(io_error);
+        
+        // Verificar o tipo de erro
+        assert!(matches!(domain_error.kind(), DomainErrorKind::RepositoryError { operation, details } 
+            if operation == "save" && details == "Failed to persist project data"));
+        
+        // Verificar o contexto
+        assert_eq!(domain_error.context(), Some(&"Project creation workflow failed".to_string()));
+        
+        // Verificar a fonte
+        assert!(domain_error.source().is_some());
+        
+        // Verificar a formatação
+        let display = format!("{}", domain_error);
+        assert!(display.contains("Repository error during save: Failed to persist project data"));
+        assert!(display.contains("(Context: Project creation workflow failed)"));
     }
 }
