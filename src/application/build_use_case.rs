@@ -332,4 +332,132 @@ spec:
             "Project page should list the test task"
         );
     }
+
+    #[test]
+    fn test_build_use_case_with_existing_output_directory() {
+        // Test that the use case can handle existing output directory
+        let temp_root = setup_test_environment();
+        let output_dir = temp_root.join("public");
+        
+        // Create the output directory beforehand
+        fs::create_dir_all(&output_dir).unwrap();
+        
+        let use_case = BuildUseCase::new(temp_root, output_dir.to_str().unwrap()).unwrap();
+        let result = use_case.execute();
+        assert!(result.is_ok());
+        
+        // Verify files were still created
+        let global_index_path = output_dir.join("index.html");
+        assert!(global_index_path.exists());
+    }
+
+    #[test]
+    fn test_build_use_case_with_different_project_states() {
+        // Test projects with different states to cover Completed, Cancelled, and InProgress
+        let temp_root = setup_test_environment();
+        let output_dir = temp_root.join("public");
+
+        // Create additional projects with different states
+        let project_dir_completed = temp_root.join("project-completed");
+        fs::create_dir(&project_dir_completed).unwrap();
+        let project_content_completed = r#"
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Project
+metadata:
+  code: "proj-completed"
+  name: "Completed Project"
+spec:
+  status: "Completed"
+  startDate: "2024-01-01"
+  endDate: "2024-02-01"
+"#;
+        let mut project_file = File::create(project_dir_completed.join("project.yaml")).unwrap();
+        writeln!(project_file, "{project_content_completed}").unwrap();
+        fs::create_dir(project_dir_completed.join("tasks")).unwrap();
+        fs::create_dir(project_dir_completed.join("resources")).unwrap();
+
+        let project_dir_cancelled = temp_root.join("project-cancelled");
+        fs::create_dir(&project_dir_cancelled).unwrap();
+        let project_content_cancelled = r#"
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Project
+metadata:
+  code: "proj-cancelled"
+  name: "Cancelled Project"
+spec:
+  status: "Cancelled"
+  startDate: "2024-01-01"
+  endDate: "2024-02-01"
+"#;
+        let mut project_file = File::create(project_dir_cancelled.join("project.yaml")).unwrap();
+        writeln!(project_file, "{project_content_cancelled}").unwrap();
+        fs::create_dir(project_dir_cancelled.join("tasks")).unwrap();
+        fs::create_dir(project_dir_cancelled.join("resources")).unwrap();
+
+        let project_dir_in_progress = temp_root.join("project-in-progress");
+        fs::create_dir(&project_dir_in_progress).unwrap();
+        let project_content_in_progress = r#"
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Project
+metadata:
+  code: "proj-in-progress"
+  name: "In Progress Project"
+spec:
+  status: "InProgress"
+  startDate: "2024-01-01"
+  endDate: "2024-12-31"
+"#;
+        let mut project_file = File::create(project_dir_in_progress.join("project.yaml")).unwrap();
+        writeln!(project_file, "{project_content_in_progress}").unwrap();
+        fs::create_dir(project_dir_in_progress.join("tasks")).unwrap();
+        fs::create_dir(project_dir_in_progress.join("resources")).unwrap();
+
+        let use_case = BuildUseCase::new(temp_root, output_dir.to_str().unwrap()).unwrap();
+        let result = use_case.execute();
+        assert!(result.is_ok());
+
+        // Verify all project pages were created
+        let completed_page = output_dir.join("projects").join("proj-completed").join("index.html");
+        let cancelled_page = output_dir.join("projects").join("proj-cancelled").join("index.html");
+        let in_progress_page = output_dir.join("projects").join("proj-in-progress").join("index.html");
+
+        assert!(completed_page.exists());
+        assert!(cancelled_page.exists());
+        assert!(in_progress_page.exists());
+    }
+
+    #[test]
+    fn test_build_use_case_with_projects_having_timezone() {
+        // Test projects that already have timezone defined
+        let temp_root = setup_test_environment();
+        let output_dir = temp_root.join("public");
+
+        // Create a project with timezone already defined
+        let project_dir_with_tz = temp_root.join("project-with-timezone");
+        fs::create_dir(&project_dir_with_tz).unwrap();
+        let project_content_with_tz = r#"
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Project
+metadata:
+  code: "proj-with-tz"
+  name: "Project With Timezone"
+spec:
+  status: "Planned"
+  startDate: "2024-01-01"
+  endDate: "2024-12-31"
+  timezone: "Europe/London"
+"#;
+        let mut project_file = File::create(project_dir_with_tz.join("project.yaml")).unwrap();
+        writeln!(project_file, "{project_content_with_tz}").unwrap();
+        fs::create_dir(project_dir_with_tz.join("tasks")).unwrap();
+        fs::create_dir(project_dir_with_tz.join("resources")).unwrap();
+
+        let use_case = BuildUseCase::new(temp_root, output_dir.to_str().unwrap()).unwrap();
+        let result = use_case.execute();
+        assert!(result.is_ok());
+
+        // Verify the project page was created
+        let project_page = output_dir.join("projects").join("proj-with-tz").join("index.html");
+        assert!(project_page.exists());
+    }
 }
