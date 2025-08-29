@@ -4,18 +4,18 @@ use crate::domain::shared::errors::DomainError;
 pub trait Command {
     /// Execute the command
     fn execute(&self) -> Result<CommandResult, DomainError>;
-    
+
     /// Get the command name
     fn name(&self) -> &str;
-    
+
     /// Get the command description
     fn description(&self) -> &str;
-    
+
     /// Check if the command can be executed
     fn can_execute(&self) -> bool {
         true
     }
-    
+
     /// Validate the command before execution
     fn validate(&self) -> Result<(), DomainError> {
         Ok(())
@@ -39,7 +39,7 @@ impl CommandResult {
             data: None,
         }
     }
-    
+
     /// Create a successful command result with data
     pub fn success_with_data(message: impl Into<String>, data: serde_yaml::Value) -> Self {
         Self {
@@ -48,7 +48,7 @@ impl CommandResult {
             data: Some(data),
         }
     }
-    
+
     /// Create a failed command result
     pub fn failure(message: impl Into<String>) -> Self {
         Self {
@@ -57,7 +57,7 @@ impl CommandResult {
             data: None,
         }
     }
-    
+
     /// Create a failed command result with data
     pub fn failure_with_data(message: impl Into<String>, data: serde_yaml::Value) -> Self {
         Self {
@@ -86,12 +86,12 @@ impl CommandBus {
             handlers: std::collections::HashMap::new(),
         }
     }
-    
+
     /// Register a command handler
     pub fn register_handler<C, H>(&mut self, _handler: H)
     where
-        C: Command + 'static,  // 'static necessário para Box<dyn>
-        H: CommandHandler<C> + 'static,  // 'static necessário para Box<dyn>
+        C: Command + 'static,           // 'static necessário para Box<dyn>
+        H: CommandHandler<C> + 'static, // 'static necessário para Box<dyn>
     {
         let type_name = std::any::type_name::<C>();
         // For now, we'll store the handler as a generic CommandHandler
@@ -99,22 +99,24 @@ impl CommandBus {
         // that can properly handle the type conversion
         println!("Registered handler for command type: {}", type_name);
     }
-    
+
     /// Execute a command
     pub fn execute<C>(&self, command: &C) -> Result<CommandResult, DomainError>
     where
         C: Command,
     {
         let type_name = std::any::type_name::<C>();
-        
+
         if let Some(_handler) = self.handlers.get(type_name) {
             // This is a bit of a hack since we can't easily downcast
             // In a real implementation, you might want to use a different approach
             command.execute()
         } else {
-            Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
-                message: format!("No handler found for command: {}", type_name),
-            }))
+            Err(DomainError::new(
+                crate::domain::shared::errors::DomainErrorKind::Generic {
+                    message: format!("No handler found for command: {}", type_name),
+                },
+            ))
         }
     }
 }
@@ -129,7 +131,7 @@ impl Default for CommandBus {
 pub trait UndoableCommand: Command {
     /// Undo the command
     fn undo(&self) -> Result<CommandResult, DomainError>;
-    
+
     /// Check if the command can be undone
     fn can_undo(&self) -> bool {
         true
@@ -146,7 +148,7 @@ pub trait RedoableCommand: UndoableCommand {
 pub trait ValidatableCommand: Command {
     /// Validate the command
     fn validate(&self) -> Result<(), DomainError>;
-    
+
     /// Get validation errors
     fn validation_errors(&self) -> Vec<String>;
 }
@@ -155,7 +157,7 @@ pub trait ValidatableCommand: Command {
 pub trait AuthorizableCommand: Command {
     /// Check if the command is authorized
     fn is_authorized(&self, user: &str) -> bool;
-    
+
     /// Get required permissions
     fn required_permissions(&self) -> Vec<String>;
 }
@@ -187,7 +189,7 @@ impl CommandLogEntry {
             result: None,
         }
     }
-    
+
     /// Set the command result
     pub fn with_result(mut self, result: CommandResult) -> Self {
         self.result = Some(result);
@@ -199,7 +201,7 @@ impl CommandLogEntry {
 pub trait SchedulableCommand: Command {
     /// Get the scheduled execution time
     fn scheduled_time(&self) -> Option<chrono::DateTime<chrono::Utc>>;
-    
+
     /// Check if the command should be executed now
     fn should_execute_now(&self) -> bool {
         if let Some(scheduled_time) = self.scheduled_time() {
@@ -214,15 +216,15 @@ pub trait SchedulableCommand: Command {
 pub trait RetryableCommand: Command {
     /// Get the maximum number of retries
     fn max_retries(&self) -> u32;
-    
+
     /// Get the current retry count
     fn retry_count(&self) -> u32;
-    
+
     /// Check if the command can be retried
     fn can_retry(&self) -> bool {
         self.retry_count() < self.max_retries()
     }
-    
+
     /// Increment the retry count
     fn increment_retry_count(&mut self);
 }

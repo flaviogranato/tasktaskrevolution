@@ -2,7 +2,7 @@
 pub trait Convertible<T> {
     /// Convert self to the target type
     fn to(&self) -> T;
-    
+
     /// Create self from the source type
     fn from(source: T) -> Self;
 }
@@ -43,11 +43,7 @@ where
 pub trait BidirectionalConvertible<T>: Convertible<T> + From<T> + Into<T> {}
 
 // Implementação automática para tipos que implementam From e Into
-impl<T, U> BidirectionalConvertible<U> for T
-where
-    T: Convertible<U> + From<U> + Into<U>,
-{
-}
+impl<T, U> BidirectionalConvertible<U> for T where T: Convertible<U> + From<U> + Into<U> {}
 
 // Extension trait for easier conversion
 pub trait ConvertExt<T> {
@@ -55,7 +51,7 @@ pub trait ConvertExt<T> {
     fn convert_to(&self) -> T
     where
         Self: Convertible<T>;
-    
+
     /// Convert from the source type using the Convertible trait
     fn convert_from(source: T) -> Self
     where
@@ -69,7 +65,7 @@ where
     fn convert_to(&self) -> U {
         self.to()
     }
-    
+
     fn convert_from(source: U) -> Self {
         Self::from(source)
     }

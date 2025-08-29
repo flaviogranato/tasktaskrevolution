@@ -137,9 +137,11 @@ mod tests {
             compensated_hours: Option<u32>,
         ) -> Result<AnyResource, DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
-                    message: "Simulated repository error".to_string()
-                }));
+                return Err(DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: "Simulated repository error".to_string(),
+                    },
+                ));
             }
 
             let mut resources = self.resources.borrow_mut();
@@ -169,16 +171,22 @@ mod tests {
                 match any_resource {
                     AnyResource::Available(r) => r.vacations = add_vacation(r.vacations.clone()),
                     AnyResource::Assigned(r) => r.vacations = add_vacation(r.vacations.clone()),
-                    AnyResource::Inactive(_) => return Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::ResourceInvalidState {
-                        current: "Inactive".to_string(),
-                        expected: "Active".to_string(),
-                    })),
+                    AnyResource::Inactive(_) => {
+                        return Err(DomainError::new(
+                            crate::domain::shared::errors::DomainErrorKind::ResourceInvalidState {
+                                current: "Inactive".to_string(),
+                                expected: "Active".to_string(),
+                            },
+                        ));
+                    }
                 }
                 Ok(any_resource.clone())
             } else {
-                Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
-                    message: format!("Resource '{resource_name}' not found")
-                }))
+                Err(DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: format!("Resource '{resource_name}' not found"),
+                    },
+                ))
             }
         }
 

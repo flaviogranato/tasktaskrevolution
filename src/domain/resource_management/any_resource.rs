@@ -48,7 +48,8 @@ impl AnyResource {
         }
     }
 
-    pub fn vacations(&self) -> Option<&[Period]> {  // Otimizado: retorna slice em vez de &Vec
+    pub fn vacations(&self) -> Option<&[Period]> {
+        // Otimizado: retorna slice em vez de &Vec
         match self {
             AnyResource::Available(r) => r.vacations.as_deref(),
             AnyResource::Assigned(r) => r.vacations.as_deref(),
@@ -64,7 +65,8 @@ impl AnyResource {
         }
     }
 
-    pub fn email(&self) -> Option<&str> {  // Otimizado: retorna &str em vez de &String
+    pub fn email(&self) -> Option<&str> {
+        // Otimizado: retorna &str em vez de &String
         match self {
             AnyResource::Available(r) => r.email.as_deref(),
             AnyResource::Assigned(r) => r.email.as_deref(),
@@ -73,7 +75,8 @@ impl AnyResource {
     }
 
     #[allow(dead_code)]
-    pub fn status(&self) -> &str {  // Otimizado: removido 'static desnecessário
+    pub fn status(&self) -> &str {
+        // Otimizado: removido 'static desnecessário
         match self {
             AnyResource::Available(_) => "Available",
             AnyResource::Assigned(_) => "Assigned",

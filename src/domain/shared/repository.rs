@@ -1,27 +1,27 @@
+use crate::domain::shared::errors::DomainError;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use crate::domain::shared::errors::DomainError;
 
 /// A generic repository trait for domain entities
 pub trait Repository<T, ID> {
     /// Find an entity by ID
     fn find_by_id(&self, id: &ID) -> Result<Option<T>, DomainError>;
-    
+
     /// Find all entities
     fn find_all(&self) -> Result<Vec<T>, DomainError>;
-    
+
     /// Save an entity
     fn save(&self, entity: T) -> Result<T, DomainError>;
-    
+
     /// Update an existing entity
     fn update(&self, entity: T) -> Result<T, DomainError>;
-    
+
     /// Delete an entity by ID
     fn delete(&self, id: &ID) -> Result<bool, DomainError>;
-    
+
     /// Check if an entity exists
     fn exists(&self, id: &ID) -> Result<bool, DomainError>;
-    
+
     /// Count all entities
     fn count(&self) -> Result<usize, DomainError>;
 }
@@ -36,16 +36,21 @@ pub trait PaginatedRepository<T, ID>: Repository<T, ID> {
 pub trait SearchableRepository<T, ID>: Repository<T, ID> {
     /// Search entities by criteria
     fn search(&self, criteria: &SearchCriteria) -> Result<Vec<T>, DomainError>;
-    
+
     /// Search entities with pagination
-    fn search_with_pagination(&self, criteria: &SearchCriteria, page: usize, size: usize) -> Result<PaginatedResult<T>, DomainError>;
+    fn search_with_pagination(
+        &self,
+        criteria: &SearchCriteria,
+        page: usize,
+        size: usize,
+    ) -> Result<PaginatedResult<T>, DomainError>;
 }
 
 /// A repository that supports transactions
 pub trait TransactionalRepository<T, ID>: Repository<T, ID> {
     /// Begin a transaction
     fn begin_transaction(&self) -> Result<Box<dyn Transaction>, DomainError>;
-    
+
     /// Execute a function within a transaction
     fn with_transaction<F, R>(&self, f: F) -> Result<R, DomainError>
     where
@@ -56,7 +61,7 @@ pub trait TransactionalRepository<T, ID>: Repository<T, ID> {
 pub trait Transaction {
     /// Commit the transaction
     fn commit(self: Box<Self>) -> Result<(), DomainError>;
-    
+
     /// Rollback the transaction
     fn rollback(self: Box<Self>) -> Result<(), DomainError>;
 }
@@ -78,19 +83,19 @@ impl SearchCriteria {
             sort_order: SortOrder::Ascending,
         }
     }
-    
+
     /// Add a filter
     pub fn with_filter(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.filters.insert(key.into(), value.into());
         self
     }
-    
+
     /// Set sort field
     pub fn sort_by(mut self, field: impl Into<String>) -> Self {
         self.sort_by = Some(field.into());
         self
     }
-    
+
     /// Set sort order
     pub fn sort_order(mut self, order: SortOrder) -> Self {
         self.sort_order = order;
@@ -125,7 +130,7 @@ impl<T> PaginatedResult<T> {
     /// Create a new paginated result
     pub fn new(items: Vec<T>, page: usize, size: usize, total: usize) -> Self {
         let total_pages = if total == 0 { 0 } else { total.div_ceil(size) };
-        
+
         Self {
             items,
             page,
@@ -134,33 +139,25 @@ impl<T> PaginatedResult<T> {
             total_pages,
         }
     }
-    
+
     /// Check if there's a next page
     pub fn has_next(&self) -> bool {
         self.page < self.total_pages
     }
-    
+
     /// Check if there's a previous page
     pub fn has_previous(&self) -> bool {
         self.page > 1
     }
-    
+
     /// Get the next page number
     pub fn next_page(&self) -> Option<usize> {
-        if self.has_next() {
-            Some(self.page + 1)
-        } else {
-            None
-        }
+        if self.has_next() { Some(self.page + 1) } else { None }
     }
-    
+
     /// Get the previous page number
     pub fn previous_page(&self) -> Option<usize> {
-        if self.has_previous() {
-            Some(self.page - 1)
-        } else {
-            None
-        }
+        if self.has_previous() { Some(self.page - 1) } else { None }
     }
 }
 
@@ -168,10 +165,10 @@ impl<T> PaginatedResult<T> {
 pub trait CachedRepository<T, ID>: Repository<T, ID> {
     /// Get the cache key for an entity
     fn cache_key(&self, id: &ID) -> String;
-    
+
     /// Invalidate cache for an entity
     fn invalidate_cache(&self, id: &ID) -> Result<(), DomainError>;
-    
+
     /// Clear all cache
     fn clear_cache(&self) -> Result<(), DomainError>;
 }
@@ -192,7 +189,7 @@ where
             entities: Arc::new(Mutex::new(HashMap::new())),
         }
     }
-    
+
     /// Get a reference to the entities map
     fn entities(&self) -> std::sync::MutexGuard<'_, HashMap<ID, T>> {
         self.entities.lock().unwrap()
@@ -208,12 +205,12 @@ where
         let entities = self.entities();
         Ok(entities.get(id).cloned())
     }
-    
+
     fn find_all(&self) -> Result<Vec<T>, DomainError> {
         let entities = self.entities();
         Ok(entities.values().cloned().collect())
     }
-    
+
     fn save(&self, entity: T) -> Result<T, DomainError> {
         // This is a simplified implementation - in a real scenario,
         // you'd need to extract the ID from the entity
@@ -221,22 +218,22 @@ where
         // For now, we'll just return the entity as-is
         Ok(entity)
     }
-    
+
     fn update(&self, entity: T) -> Result<T, DomainError> {
         // Similar to save for this simple implementation
         Ok(entity)
     }
-    
+
     fn delete(&self, id: &ID) -> Result<bool, DomainError> {
         let mut entities = self.entities();
         Ok(entities.remove(id).is_some())
     }
-    
+
     fn exists(&self, id: &ID) -> Result<bool, DomainError> {
         let entities = self.entities();
         Ok(entities.contains_key(id))
     }
-    
+
     fn count(&self) -> Result<usize, DomainError> {
         let entities = self.entities();
         Ok(entities.len())
@@ -288,7 +285,7 @@ where
         }
         result
     }
-    
+
     fn find_all(&self) -> Result<Vec<T>, DomainError> {
         println!("Repository: Finding all entities");
         let result = self.repository.find_all();
@@ -298,7 +295,7 @@ where
         }
         result
     }
-    
+
     fn save(&self, entity: T) -> Result<T, DomainError> {
         println!("Repository: Saving entity");
         let result = self.repository.save(entity);
@@ -308,7 +305,7 @@ where
         }
         result
     }
-    
+
     fn update(&self, entity: T) -> Result<T, DomainError> {
         println!("Repository: Updating entity");
         let result = self.repository.update(entity);
@@ -318,7 +315,7 @@ where
         }
         result
     }
-    
+
     fn delete(&self, id: &ID) -> Result<bool, DomainError> {
         println!("Repository: Deleting entity with ID: {:?}", id);
         let result = self.repository.delete(id);
@@ -328,7 +325,7 @@ where
         }
         result
     }
-    
+
     fn exists(&self, id: &ID) -> Result<bool, DomainError> {
         println!("Repository: Checking if entity exists with ID: {:?}", id);
         let result = self.repository.exists(id);
@@ -338,7 +335,7 @@ where
         }
         result
     }
-    
+
     fn count(&self) -> Result<usize, DomainError> {
         println!("Repository: Counting entities");
         let result = self.repository.count();

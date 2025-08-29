@@ -4,12 +4,12 @@ use crate::domain::shared::errors::DomainError;
 pub trait Validatable {
     /// Validate the object and return a result
     fn validate(&self) -> Result<(), DomainError>;
-    
+
     /// Check if the object is valid without returning an error
     fn is_valid(&self) -> bool {
         self.validate().is_ok()
     }
-    
+
     /// Get validation errors as a vector of strings
     fn validation_errors(&self) -> Vec<String> {
         match self.validate() {
@@ -23,12 +23,12 @@ pub trait Validatable {
 pub trait Validator<T> {
     /// Validate the given object
     fn validate(&self, item: &T) -> Result<(), DomainError>;
-    
+
     /// Check if the given object is valid
     fn is_valid(&self, item: &T) -> bool {
         self.validate(item).is_ok()
     }
-    
+
     /// Get validation errors for the given object
     fn validation_errors(&self, item: &T) -> Vec<String> {
         match self.validate(item) {
@@ -45,16 +45,14 @@ pub struct CompositeValidator<T> {
 
 impl<T> CompositeValidator<T> {
     pub fn new() -> Self {
-        Self {
-            validators: Vec::new(),
-        }
+        Self { validators: Vec::new() }
     }
-    
+
     pub fn add(mut self, validator: Box<dyn Validator<T>>) -> Self {
         self.validators.push(validator);
         self
     }
-    
+
     pub fn add_all(mut self, validators: Vec<Box<dyn Validator<T>>>) -> Self {
         self.validators.extend(validators);
         self

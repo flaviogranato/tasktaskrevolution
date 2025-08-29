@@ -39,15 +39,22 @@ impl FileProjectRepository {
     pub fn load_from_path(&self, project_dir: &Path) -> Result<AnyProject, DomainError> {
         let manifest_path = project_dir.join("project.yaml");
         if !manifest_path.exists() {
-            return Err(DomainError::new(DomainErrorKind::ResourceNotFound { code: "unknown".to_string() }).with_context(format!(
-                "No 'project.yaml' found in {}",
-                project_dir.display()
-            )));
+            return Err(DomainError::new(DomainErrorKind::ResourceNotFound {
+                code: "unknown".to_string(),
+            })
+            .with_context(format!("No 'project.yaml' found in {}", project_dir.display())));
         }
-        let manifest = self
-            .load_manifest(&manifest_path)
-            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: format!("Failed to load project manifest: {e}") }))?;
-        let mut project = AnyProject::try_from(manifest).map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error converting project manifest: {e}") }))?;
+        let manifest = self.load_manifest(&manifest_path).map_err(|e| {
+            DomainError::new(DomainErrorKind::Generic {
+                message: format!("Failed to load project manifest: {e}"),
+            })
+        })?;
+        let mut project = AnyProject::try_from(manifest).map_err(|e| {
+            DomainError::new(DomainErrorKind::Serialization {
+                format: "YAML".to_string(),
+                details: format!("Error converting project manifest: {e}"),
+            })
+        })?;
         self.load_tasks_for_project(&mut project, &manifest_path)?;
         Ok(project)
     }
@@ -66,15 +73,30 @@ impl FileProjectRepository {
         }
 
         let pattern = tasks_dir.join("*.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+        let walker = glob(pattern.to_str().unwrap())
+            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
 
         for entry in walker.flatten() {
             let task_path = entry.path();
-            let yaml =
-                fs::read_to_string(task_path).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "reading task file".to_string(), path: Some(task_path.to_string_lossy().to_string()) }).with_context(format!("Error reading task file: {e}")))?;
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml)
-                .map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error deserializing task: {e}") }))?;
-            let task = AnyTask::try_from(task_manifest).map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error converting task manifest: {e}") }))?;
+            let yaml = fs::read_to_string(task_path).map_err(|e| {
+                DomainError::new(DomainErrorKind::Io {
+                    operation: "reading task file".to_string(),
+                    path: Some(task_path.to_string_lossy().to_string()),
+                })
+                .with_context(format!("Error reading task file: {e}"))
+            })?;
+            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| {
+                DomainError::new(DomainErrorKind::Serialization {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing task: {e}"),
+                })
+            })?;
+            let task = AnyTask::try_from(task_manifest).map_err(|e| {
+                DomainError::new(DomainErrorKind::Serialization {
+                    format: "YAML".to_string(),
+                    details: format!("Error converting task manifest: {e}"),
+                })
+            })?;
             project.add_task(task);
         }
 
@@ -89,24 +111,55 @@ impl ProjectRepository for FileProjectRepository {
         let project_dir = self.base_path.join(project.name());
 
         // Save project manifest
-        fs::create_dir_all(&project_dir)
-            .map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "creating project directory".to_string(), path: Some(project_dir.to_string_lossy().to_string()) }).with_context(format!("Error creating project directory: {e}")))?;
+        fs::create_dir_all(&project_dir).map_err(|e| {
+            DomainError::new(DomainErrorKind::Io {
+                operation: "creating project directory".to_string(),
+                path: Some(project_dir.to_string_lossy().to_string()),
+            })
+            .with_context(format!("Error creating project directory: {e}"))
+        })?;
         let manifest_path = project_dir.join("project.yaml");
         let project_manifest = ProjectManifest::from(project.clone());
-        let yaml = serde_yaml::to_string(&project_manifest)
-            .map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error serializing project: {e}") }))?;
-        fs::write(&manifest_path, yaml).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "saving project file".to_string(), path: Some(manifest_path.to_string_lossy().to_string()) }).with_context(format!("Error saving project file: {e}")))?;
+        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| {
+            DomainError::new(DomainErrorKind::Serialization {
+                format: "YAML".to_string(),
+                details: format!("Error serializing project: {e}"),
+            })
+        })?;
+        fs::write(&manifest_path, yaml).map_err(|e| {
+            DomainError::new(DomainErrorKind::Io {
+                operation: "saving project file".to_string(),
+                path: Some(manifest_path.to_string_lossy().to_string()),
+            })
+            .with_context(format!("Error saving project file: {e}"))
+        })?;
 
         // Save tasks
         let tasks_dir = project_dir.join("tasks");
-        fs::create_dir_all(&tasks_dir).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "creating tasks directory".to_string(), path: Some(tasks_dir.to_string_lossy().to_string()) }).with_context(format!("Error creating tasks directory: {e}")))?;
+        fs::create_dir_all(&tasks_dir).map_err(|e| {
+            DomainError::new(DomainErrorKind::Io {
+                operation: "creating tasks directory".to_string(),
+                path: Some(tasks_dir.to_string_lossy().to_string()),
+            })
+            .with_context(format!("Error creating tasks directory: {e}"))
+        })?;
 
         for task in project.tasks().values() {
             let task_manifest = TaskManifest::from(task.clone());
-            let task_yaml = serde_yaml::to_string(&task_manifest)
-                .map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error serializing task: {e}") }))?;
+            let task_yaml = serde_yaml::to_string(&task_manifest).map_err(|e| {
+                DomainError::new(DomainErrorKind::Serialization {
+                    format: "YAML".to_string(),
+                    details: format!("Error serializing task: {e}"),
+                })
+            })?;
             let task_path = tasks_dir.join(format!("{}.yaml", task.code()));
-            fs::write(&task_path, task_yaml).map_err(|e| DomainError::new(DomainErrorKind::Io { operation: "saving task file".to_string(), path: Some(task_path.to_string_lossy().to_string()) }).with_context(format!("Error saving task file: {e}")))?;
+            fs::write(&task_path, task_yaml).map_err(|e| {
+                DomainError::new(DomainErrorKind::Io {
+                    operation: "saving task file".to_string(),
+                    path: Some(task_path.to_string_lossy().to_string()),
+                })
+                .with_context(format!("Error saving task file: {e}"))
+            })?;
         }
 
         Ok(())
@@ -116,18 +169,29 @@ impl ProjectRepository for FileProjectRepository {
     /// `path` deve ser o caminho para o diretório do projeto.
     fn load(&self) -> Result<AnyProject, DomainError> {
         let pattern = self.base_path.join("**/project.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+        let walker = glob(pattern.to_str().unwrap())
+            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
 
         if let Some(Ok(entry)) = walker.into_iter().next() {
             let manifest_path = entry.path();
-            let manifest = self
-                .load_manifest(manifest_path)
-                .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: format!("Failed to load project manifest: {e}") }))?;
-            let mut project = AnyProject::try_from(manifest).map_err(|e| DomainError::new(DomainErrorKind::Serialization { format: "YAML".to_string(), details: format!("Error converting project manifest: {e}") }))?;
+            let manifest = self.load_manifest(manifest_path).map_err(|e| {
+                DomainError::new(DomainErrorKind::Generic {
+                    message: format!("Failed to load project manifest: {e}"),
+                })
+            })?;
+            let mut project = AnyProject::try_from(manifest).map_err(|e| {
+                DomainError::new(DomainErrorKind::Serialization {
+                    format: "YAML".to_string(),
+                    details: format!("Error converting project manifest: {e}"),
+                })
+            })?;
             self.load_tasks_for_project(&mut project, manifest_path)?;
             Ok(project)
         } else {
-            Err(DomainError::new(DomainErrorKind::ProjectNotFound { code: "unknown".to_string() }).with_context("No 'project.yaml' file found in subdirectories."))
+            Err(DomainError::new(DomainErrorKind::ProjectNotFound {
+                code: "unknown".to_string(),
+            })
+            .with_context("No 'project.yaml' file found in subdirectories."))
         }
     }
 
@@ -145,7 +209,8 @@ impl ProjectRepository for FileProjectRepository {
                 }
                 if let Ok(manifest) = self.load_manifest(manifest_path)
                     && let Ok(mut project) = AnyProject::try_from(manifest)
-                    && self.load_tasks_for_project(&mut project, manifest_path).is_ok() {
+                    && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
+                {
                     projects.push(project);
                     processed_paths.insert(manifest_path.to_path_buf());
                 }
@@ -154,10 +219,12 @@ impl ProjectRepository for FileProjectRepository {
 
         // Verifica também o diretório atual
         let current_dir_manifest = self.base_path.join("project.yaml");
-        if current_dir_manifest.exists() && !processed_paths.contains(&current_dir_manifest)
+        if current_dir_manifest.exists()
+            && !processed_paths.contains(&current_dir_manifest)
             && let Ok(manifest) = self.load_manifest(&current_dir_manifest)
             && let Ok(mut project) = AnyProject::try_from(manifest)
-            && self.load_tasks_for_project(&mut project, &current_dir_manifest).is_ok() {
+            && self.load_tasks_for_project(&mut project, &current_dir_manifest).is_ok()
+        {
             projects.push(project);
         }
 
@@ -178,7 +245,8 @@ impl ProjectRepository for FileProjectRepository {
 
     fn get_next_code(&self) -> Result<String, DomainError> {
         let pattern = self.base_path.join("**/project.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+        let walker = glob(pattern.to_str().unwrap())
+            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
 
         let mut max_code = 0;
 
@@ -188,7 +256,8 @@ impl ProjectRepository for FileProjectRepository {
                 && let Some(code) = manifest.metadata.code
                 && let Some(num_str) = code.strip_prefix("proj-")
                 && let Ok(num) = num_str.parse::<u32>()
-                && num > max_code {
+                && num > max_code
+            {
                 max_code = num;
             }
         }
@@ -207,13 +276,13 @@ mod tests {
     use crate::domain::project_management::{
         builder::ProjectBuilder,
         project::Project,
-        state::{Planned, InProgress},
+        state::{InProgress, Planned},
     };
     use crate::infrastructure::persistence::manifests::project_manifest::{
-        ProjectManifest, ProjectMetadata, ProjectSpec, ProjectStatusManifest, VacationRulesManifest
+        ProjectManifest, ProjectMetadata, ProjectSpec, ProjectStatusManifest, VacationRulesManifest,
     };
-    use tempfile::tempdir;
     use std::fs;
+    use tempfile::tempdir;
 
     use uuid7::uuid7;
 
@@ -253,10 +322,10 @@ mod tests {
     #[test]
     fn test_project_manifest_serialization() {
         let manifest = create_test_project_manifest();
-        
+
         let yaml = serde_yaml::to_string(&manifest).expect("Failed to serialize to YAML");
         let deserialized: ProjectManifest = serde_yaml::from_str(&yaml).expect("Failed to deserialize from YAML");
-        
+
         assert_eq!(manifest.metadata.code, deserialized.metadata.code);
         assert_eq!(manifest.metadata.name, deserialized.metadata.name);
         assert_eq!(manifest.metadata.description, deserialized.metadata.description);
@@ -280,14 +349,14 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let repo_path = temp_dir.path().join("projects");
         fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
-        
+
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
         let project = create_test_project();
-        
+
         // Save project
         let save_result = repository.save(project.clone().into());
         assert!(save_result.is_ok(), "Failed to save project: {:?}", save_result);
-        
+
         // Load project by code - we need to implement find_by_code or use a different approach
         // For now, let's test that the project was saved by checking the file exists
         let project_file = repo_path.join("Test Project").join("project.yaml");
@@ -299,27 +368,27 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let repo_path = temp_dir.path().join("projects");
         fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
-        
+
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
-        
+
         // Create and save multiple projects
         let project1 = ProjectBuilder::new("Project 1".to_string())
             .code("PROJ-001".to_string())
             .end_date("2024-12-31".to_string())
             .build();
-            
+
         let project2 = ProjectBuilder::new("Project 2".to_string())
             .code("PROJ-002".to_string())
             .end_date("2024-12-31".to_string())
             .build();
-        
+
         repository.save(project1.into()).expect("Failed to save project 1");
         repository.save(project2.into()).expect("Failed to save project 2");
-        
+
         // Verify both projects were saved by checking files exist
         let project1_file = repo_path.join("Project 1").join("project.yaml");
         let project2_file = repo_path.join("Project 2").join("project.yaml");
-        
+
         assert!(project1_file.exists(), "Project 1 file should exist");
         assert!(project2_file.exists(), "Project 2 file should exist");
     }
@@ -329,17 +398,19 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let repo_path = temp_dir.path().join("projects");
         fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
-        
+
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
         let project = create_test_project();
-        
+
         // Save initial project
         repository.save(project.clone().into()).expect("Failed to save project");
-        
+
         // Update project state to InProgress
         let in_progress_project: Project<InProgress> = project.start();
-        repository.save(in_progress_project.clone().into()).expect("Failed to update project");
-        
+        repository
+            .save(in_progress_project.clone().into())
+            .expect("Failed to update project");
+
         // Verify update by checking file exists
         let project_file = repo_path.join("Test Project").join("project.yaml");
         assert!(project_file.exists(), "Updated project file should exist");
@@ -350,17 +421,17 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let repo_path = temp_dir.path().join("projects");
         fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
-        
+
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
         let project = create_test_project();
-        
+
         // Save project
         repository.save(project.clone().into()).expect("Failed to save project");
-        
+
         // Verify project exists
         let project_file = repo_path.join("Test Project").join("project.yaml");
         assert!(project_file.exists(), "Project file should exist after save");
-        
+
         // Verify project directory structure
         let tasks_dir = repo_path.join("Test Project").join("tasks");
         assert!(tasks_dir.exists(), "Tasks directory should exist");
@@ -371,9 +442,9 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let repo_path = temp_dir.path().join("projects");
         fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
-        
+
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
-        
+
         // Try to find non-existent project
         let result = repository.find_by_code("NON-EXISTENT");
         assert!(result.is_ok(), "Should return Ok(None) for non-existent project");
@@ -385,17 +456,17 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let repo_path = temp_dir.path().join("projects");
         fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
-        
+
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
         let project = create_test_project();
-        
+
         // Save project
         repository.save(project.clone().into()).expect("Failed to save project");
-        
+
         // Corrupt the YAML file
         let project_file = repo_path.join("Test Project").join("project.yaml");
         fs::write(&project_file, "invalid: yaml: content: [").expect("Failed to corrupt file");
-        
+
         // Note: We can't test loading corrupted files yet since find_by_code is not fully implemented
         // This test verifies that we can save projects and corrupt files
         assert!(project_file.exists(), "Project file should exist even if corrupted");
@@ -406,10 +477,10 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp directory");
         let repo_path = temp_dir.path().join("projects");
         fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
-        
+
         // Create multiple projects concurrently
         let mut handles = vec![];
-        
+
         for i in 1..=5 {
             let repo_path = repo_path.clone();
             let handle = std::thread::spawn(move || {
@@ -422,13 +493,17 @@ mod tests {
             });
             handles.push(handle);
         }
-        
+
         // Wait for all threads to complete
         for handle in handles {
             let result = handle.join().expect("Thread failed to complete");
-            assert!(result.is_ok(), "Failed to save project in concurrent access: {:?}", result);
+            assert!(
+                result.is_ok(),
+                "Failed to save project in concurrent access: {:?}",
+                result
+            );
         }
-        
+
         // Verify all projects were saved by checking files exist
         for i in 1..=5 {
             let project_file = repo_path.join(format!("Project {}", i)).join("project.yaml");

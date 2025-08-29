@@ -99,9 +99,16 @@ impl Convertible<Config> for ConfigManifest {
 
     fn to(&self) -> Config {
         Config {
+            id: None,
             manager_name: self.spec.manager_name.clone(),
             manager_email: self.spec.manager_email.clone(),
             default_timezone: self.spec.default_timezone.clone(),
+            company_name: None,
+            work_hours_start: None,
+            work_hours_end: None,
+            work_days: vec![],
+            created_at: Some(self.metadata.created_at),
+            updated_at: Some(self.metadata.created_at),
         }
     }
 }

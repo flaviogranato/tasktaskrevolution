@@ -3,13 +3,10 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use uuid7::Uuid;
 
-use crate::domain::{
-    resource_management::{
-        resource::{Period, Resource, TimeOffEntry, ProjectAssignment, PeriodType},
-        state::{Assigned, Available},
-        AnyResource,
-    },
-
+use crate::domain::resource_management::{
+    AnyResource,
+    resource::{Period, PeriodType, ProjectAssignment, Resource, TimeOffEntry},
+    state::{Assigned, Available},
 };
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
@@ -237,18 +234,23 @@ impl TryFrom<ResourceManifest> for AnyResource {
             Some(manifest.metadata.email.clone())
         };
         let resource_type = manifest.metadata.resource_type.clone();
-        let vacations = manifest.spec.vacations.as_ref().map(|v| v.iter().map(|p| p.to()).collect());
+        let vacations = manifest
+            .spec
+            .vacations
+            .as_ref()
+            .map(|v| v.iter().map(|p| p.to()).collect());
         let time_off_balance = manifest.spec.time_off_balance;
         let time_off_history = manifest.spec.time_off_history.clone();
 
         if let Some(assignments_manifest) = manifest.spec.project_assignments
-            && !assignments_manifest.is_empty() {
+            && !assignments_manifest.is_empty()
+        {
             let project_assignments = assignments_manifest.into_iter().map(|a| a.to()).collect();
             return Ok(AnyResource::Assigned(Resource {
                 id,
                 code,
                 name,
-                email: None, // Email não está disponível no spec
+                email: None,                          // Email não está disponível no spec
                 resource_type: "Unknown".to_string(), // Tipo padrão
                 vacations,
                 time_off_balance: 0, // Valor padrão

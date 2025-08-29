@@ -1,7 +1,7 @@
 use crate::domain::{
-    task_management::{AnyTask, repository::TaskRepository},
     resource_management::{AnyResource, repository::ResourceRepository},
     shared::errors::DomainError,
+    task_management::{AnyTask, repository::TaskRepository},
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -82,12 +82,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        task_management::builder::TaskBuilder,
-        resource_management::resource::Resource,
-    };
-    use std::{cell::RefCell, collections::HashMap};
+    use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
     use chrono::NaiveDate;
+    use std::{cell::RefCell, collections::HashMap};
 
     // --- Mocks ---
     struct MockTaskRepository {
@@ -123,7 +120,9 @@ mod tests {
 
     impl ResourceRepository for MockResourceRepository {
         fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
-            self.resources.borrow_mut().insert(resource.code().to_string(), resource.clone());
+            self.resources
+                .borrow_mut()
+                .insert(resource.code().to_string(), resource.clone());
             Ok(resource)
         }
 
@@ -135,15 +134,32 @@ mod tests {
             Ok(self.resources.borrow().get(code).cloned())
         }
 
-        fn save_time_off(&self, _resource_name: &str, _hours: u32, _date: &str, _description: Option<String>) -> Result<AnyResource, DomainError> {
+        fn save_time_off(
+            &self,
+            _resource_name: &str,
+            _hours: u32,
+            _date: &str,
+            _description: Option<String>,
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
 
-        fn save_vacation(&self, _resource_name: &str, _start_date: &str, _end_date: &str, _is_time_off_compensation: bool, _compensated_hours: Option<u32>) -> Result<AnyResource, DomainError> {
+        fn save_vacation(
+            &self,
+            _resource_name: &str,
+            _start_date: &str,
+            _end_date: &str,
+            _is_time_off_compensation: bool,
+            _compensated_hours: Option<u32>,
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
 
-        fn check_if_layoff_period(&self, _start_date: &chrono::DateTime<chrono::Local>, _end_date: &chrono::DateTime<chrono::Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &chrono::DateTime<chrono::Local>,
+            _end_date: &chrono::DateTime<chrono::Local>,
+        ) -> bool {
             unimplemented!()
         }
 
@@ -189,14 +205,14 @@ mod tests {
         // Arrange
         let task = create_test_task("TASK-001", "Test Task", "PROJ-001");
         let resource = create_test_resource("RES-001", "Test Resource", "developer");
-        
+
         let task_repo = MockTaskRepository {
             tasks: RefCell::new(HashMap::from([(task.code().to_string(), task.clone())])),
         };
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::from([(resource.code().to_string(), resource.clone())])),
         };
-        
+
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
@@ -212,14 +228,14 @@ mod tests {
     fn test_assign_resource_task_not_found() {
         // Arrange
         let resource = create_test_resource("RES-001", "Test Resource", "developer");
-        
+
         let task_repo = MockTaskRepository {
             tasks: RefCell::new(HashMap::new()),
         };
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::from([(resource.code().to_string(), resource.clone())])),
         };
-        
+
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
@@ -233,14 +249,14 @@ mod tests {
     fn test_assign_resource_resource_not_found() {
         // Arrange
         let task = create_test_task("TASK-001", "Test Task", "PROJ-001");
-        
+
         let task_repo = MockTaskRepository {
             tasks: RefCell::new(HashMap::from([(task.code().to_string(), task.clone())])),
         };
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::new()),
         };
-        
+
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act

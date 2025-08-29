@@ -47,36 +47,26 @@ impl StdError for ProjectError {}
 impl From<ProjectError> for DomainError {
     fn from(err: ProjectError) -> Self {
         match err {
-            ProjectError::NotFound { code } => {
-                DomainError::new(DomainErrorKind::ProjectNotFound { code })
-            }
-            ProjectError::AlreadyExists { code } => {
-                DomainError::new(DomainErrorKind::ProjectAlreadyExists { code })
-            }
+            ProjectError::NotFound { code } => DomainError::new(DomainErrorKind::ProjectNotFound { code }),
+            ProjectError::AlreadyExists { code } => DomainError::new(DomainErrorKind::ProjectAlreadyExists { code }),
             ProjectError::InvalidState { current, expected } => {
                 DomainError::new(DomainErrorKind::ProjectInvalidState { current, expected })
             }
             ProjectError::ValidationFailed { details } => {
                 DomainError::new(DomainErrorKind::ProjectValidationFailed { details })
             }
-            ProjectError::ModificationNotAllowed { state } => {
-                DomainError::new(DomainErrorKind::ProjectInvalidState {
-                    current: state,
-                    expected: "modifiable state".to_string(),
-                })
-            }
-            ProjectError::InvalidDates { reason } => {
-                DomainError::new(DomainErrorKind::ValidationError {
-                    field: "dates".to_string(),
-                    message: reason,
-                })
-            }
-            ProjectError::InvalidCode { code, reason } => {
-                DomainError::new(DomainErrorKind::ValidationError {
-                    field: "code".to_string(),
-                    message: format!("Code '{}' is invalid: {}", code, reason),
-                })
-            }
+            ProjectError::ModificationNotAllowed { state } => DomainError::new(DomainErrorKind::ProjectInvalidState {
+                current: state,
+                expected: "modifiable state".to_string(),
+            }),
+            ProjectError::InvalidDates { reason } => DomainError::new(DomainErrorKind::ValidationError {
+                field: "dates".to_string(),
+                message: reason,
+            }),
+            ProjectError::InvalidCode { code, reason } => DomainError::new(DomainErrorKind::ValidationError {
+                field: "code".to_string(),
+                message: format!("Code '{}' is invalid: {}", code, reason),
+            }),
         }
     }
 }

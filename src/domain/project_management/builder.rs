@@ -1,7 +1,7 @@
 use crate::domain::{
     project_management::{project::Project, state::Planned, vacation_rules::VacationRules},
-    task_management::any_task::AnyTask,
     shared::errors::{DomainError, DomainErrorKind},
+    task_management::any_task::AnyTask,
 };
 use std::collections::HashMap;
 use uuid7::{Uuid, uuid7};
@@ -135,11 +135,13 @@ impl ProjectBuilder<WithDates> {
 
         // Validate dates if both are provided
         if let (Some(start), Some(end)) = (&self.start_date, &self.end_date)
-            && start > end {
+            && start > end
+        {
             return Err(DomainError::new(DomainErrorKind::ProjectInvalidState {
                 current: "invalid_dates".to_string(),
                 expected: "start_date < end_date".to_string(),
-            }).with_context("Start date must be before end date"));
+            })
+            .with_context("Start date must be before end date"));
         }
 
         Ok(Project {
@@ -191,7 +193,7 @@ impl ProjectBuilder<New> {
     }
 
     /// Legacy method for backward compatibility.
-    /// 
+    ///
     /// # Panics
     ///
     /// Panics if the name is not set, which should not happen if `new()` is used.

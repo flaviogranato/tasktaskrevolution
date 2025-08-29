@@ -33,54 +33,54 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
         // Iterar sobre as tarefas e escrever os registros
         for any_task in tasks {
             // Extrair dados comuns e específicos do estado de cada tarefa
-            let (code, name, start_date, due_date, assigned_resources, status_str, progress_str) =
-                match any_task {  // Zero-copy: sem clone!
-                    AnyTask::Planned(task) => (
-                        &task.code,                  // Referência
-                        &task.name,                  // Referência
-                        task.start_date,             // Copy é OK
-                        task.due_date,               // Copy é OK
-                        &task.assigned_resources,    // Referência
-                        "Planned",                   // &'static str
-                        "0",                         // &'static str
-                    ),
-                    AnyTask::InProgress(task) => (
-                        &task.code,                  // Referência
-                        &task.name,                  // Referência
-                        task.start_date,             // Copy é OK
-                        task.due_date,               // Copy é OK
-                        &task.assigned_resources,    // Referência
-                        "InProgress",                // &'static str
-                        "0",                         // &'static str - simplificado para consistência
-                    ),
-                    AnyTask::Completed(task) => (
-                        &task.code,                  // Referência
-                        &task.name,                  // Referência
-                        task.start_date,             // Copy é OK
-                        task.due_date,               // Copy é OK
-                        &task.assigned_resources,    // Referência
-                        "Completed",                 // &'static str
-                        "100",                       // &'static str
-                    ),
-                    AnyTask::Blocked(task) => (
-                        &task.code,                  // Referência
-                        &task.name,                  // Referência
-                        task.start_date,             // Copy é OK
-                        task.due_date,               // Copy é OK
-                        &task.assigned_resources,    // Referência
-                        "Blocked",                   // &'static str
-                        "N/A",                       // &'static str
-                    ),
-                    AnyTask::Cancelled(task) => (
-                        &task.code,                  // Referência
-                        &task.name,                  // Referência
-                        task.start_date,             // Copy é OK
-                        task.due_date,               // Copy é OK
-                        &task.assigned_resources,    // Referência
-                        "Cancelled",                 // &'static str
-                        "N/A",                       // &'static str
-                    ),
-                };
+            let (code, name, start_date, due_date, assigned_resources, status_str, progress_str) = match any_task {
+                // Zero-copy: sem clone!
+                AnyTask::Planned(task) => (
+                    &task.code,               // Referência
+                    &task.name,               // Referência
+                    task.start_date,          // Copy é OK
+                    task.due_date,            // Copy é OK
+                    &task.assigned_resources, // Referência
+                    "Planned",                // &'static str
+                    "0",                      // &'static str
+                ),
+                AnyTask::InProgress(task) => (
+                    &task.code,               // Referência
+                    &task.name,               // Referência
+                    task.start_date,          // Copy é OK
+                    task.due_date,            // Copy é OK
+                    &task.assigned_resources, // Referência
+                    "InProgress",             // &'static str
+                    "0",                      // &'static str - simplificado para consistência
+                ),
+                AnyTask::Completed(task) => (
+                    &task.code,               // Referência
+                    &task.name,               // Referência
+                    task.start_date,          // Copy é OK
+                    task.due_date,            // Copy é OK
+                    &task.assigned_resources, // Referência
+                    "Completed",              // &'static str
+                    "100",                    // &'static str
+                ),
+                AnyTask::Blocked(task) => (
+                    &task.code,               // Referência
+                    &task.name,               // Referência
+                    task.start_date,          // Copy é OK
+                    task.due_date,            // Copy é OK
+                    &task.assigned_resources, // Referência
+                    "Blocked",                // &'static str
+                    "N/A",                    // &'static str
+                ),
+                AnyTask::Cancelled(task) => (
+                    &task.code,               // Referência
+                    &task.name,               // Referência
+                    task.start_date,          // Copy é OK
+                    task.due_date,            // Copy é OK
+                    &task.assigned_resources, // Referência
+                    "Cancelled",              // &'static str
+                    "N/A",                    // &'static str
+                ),
+            };
 
             let assignees_str = assigned_resources.join(", ");
 

@@ -1,5 +1,5 @@
-use crate::domain::task_management::AnyTask;
 use crate::domain::shared::errors::DomainError;
+use crate::domain::task_management::AnyTask;
 
 pub trait TaskRepository {
     fn save(&self, task: AnyTask) -> Result<AnyTask, DomainError>;

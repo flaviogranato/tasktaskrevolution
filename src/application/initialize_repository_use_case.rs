@@ -1,8 +1,8 @@
+use crate::domain::shared::convertable::Convertible;
 use crate::domain::{
     company_settings::{config::Config, repository::ConfigRepository},
-    shared::errors::{DomainError, DomainErrorKind},
+    shared::errors::DomainError,
 };
-use crate::domain::shared::convertable::Convertible;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
 
@@ -28,7 +28,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared::errors::DomainError;
+    use crate::domain::shared::errors::{DomainError, DomainErrorKind};
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
 
@@ -51,8 +51,8 @@ mod test {
     impl ConfigRepository for MockConfigRepository {
         fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(DomainErrorKind::Generic { 
-                    message: "Erro mockado ao salvar".to_string() 
+                return Err(DomainError::new(DomainErrorKind::Generic {
+                    message: "Erro mockado ao salvar".to_string(),
                 }));
             }
             *self.saved_config.borrow_mut() = Some(config.clone());
@@ -68,8 +68,8 @@ mod test {
 
         fn load(&self) -> Result<(Config, PathBuf), DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(DomainErrorKind::Generic { 
-                    message: "Erro mockado ao carregar".to_string() 
+                return Err(DomainError::new(DomainErrorKind::Generic {
+                    message: "Erro mockado ao carregar".to_string(),
                 }));
             }
             let config = Config::new("mock".to_string(), "mock@email.com".to_string(), "UTC".to_string());

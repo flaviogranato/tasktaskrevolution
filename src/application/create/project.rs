@@ -14,17 +14,17 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
 
     pub fn execute(&self, name: &str, description: Option<&str>) -> Result<(), DomainError> {
         let code = self.repository.get_next_code()?;
-        
+
         // Use the typestate builder for type safety
         let mut project = ProjectBuilder::new(name.to_string())
             .code(code)
             .end_date("2024-12-31".to_string()); // Required for WithDates state
-        
+
         // Add description if provided
         if let Some(desc) = description {
             project = project.description(Some(desc.to_string()));
         }
-        
+
         let project = project.build(); // This returns Project<Planned> (legacy method)
 
         self.repository.save(project.into())?;
@@ -70,8 +70,8 @@ mod test {
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(DomainErrorKind::Generic { 
-                    message: "Erro mockado ao salvar".to_string() 
+                return Err(DomainError::new(DomainErrorKind::Generic {
+                    message: "Erro mockado ao salvar".to_string(),
                 }));
             }
             *self.saved_config.borrow_mut() = Some(project);

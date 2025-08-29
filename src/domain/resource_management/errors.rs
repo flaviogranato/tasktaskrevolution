@@ -55,12 +55,8 @@ impl StdError for ResourceError {}
 impl From<ResourceError> for DomainError {
     fn from(err: ResourceError) -> Self {
         match err {
-            ResourceError::NotFound { code } => {
-                DomainError::new(DomainErrorKind::ResourceNotFound { code })
-            }
-            ResourceError::AlreadyExists { code } => {
-                DomainError::new(DomainErrorKind::ResourceAlreadyExists { code })
-            }
+            ResourceError::NotFound { code } => DomainError::new(DomainErrorKind::ResourceNotFound { code }),
+            ResourceError::AlreadyExists { code } => DomainError::new(DomainErrorKind::ResourceAlreadyExists { code }),
             ResourceError::InvalidState { current, expected } => {
                 DomainError::new(DomainErrorKind::ResourceInvalidState { current, expected })
             }
@@ -73,30 +69,23 @@ impl From<ResourceError> for DomainError {
                     expected: "modifiable state".to_string(),
                 })
             }
-            ResourceError::InvalidEmail { email, reason } => {
-                DomainError::new(DomainErrorKind::ValidationError {
-                    field: "email".to_string(),
-                    message: format!("Email '{}' is invalid: {}", email, reason),
-                })
-            }
-            ResourceError::InvalidName { name, reason } => {
-                DomainError::new(DomainErrorKind::ValidationError {
-                    field: "name".to_string(),
-                    message: format!("Name '{}' is invalid: {}", name, reason),
-                })
-            }
-            ResourceError::InvalidCode { code, reason } => {
-                DomainError::new(DomainErrorKind::ValidationError {
-                    field: "code".to_string(),
-                    message: format!("Code '{}' is invalid: {}", code, reason),
-                })
-            }
-            ResourceError::DeactivationFailed { reason } => {
-                DomainError::new(DomainErrorKind::ResourceInvalidState {
-                    current: "active".to_string(),
-                    expected: "deactivated".to_string(),
-                }).with_context(reason)
-            }
+            ResourceError::InvalidEmail { email, reason } => DomainError::new(DomainErrorKind::ValidationError {
+                field: "email".to_string(),
+                message: format!("Email '{}' is invalid: {}", email, reason),
+            }),
+            ResourceError::InvalidName { name, reason } => DomainError::new(DomainErrorKind::ValidationError {
+                field: "name".to_string(),
+                message: format!("Name '{}' is invalid: {}", name, reason),
+            }),
+            ResourceError::InvalidCode { code, reason } => DomainError::new(DomainErrorKind::ValidationError {
+                field: "code".to_string(),
+                message: format!("Code '{}' is invalid: {}", code, reason),
+            }),
+            ResourceError::DeactivationFailed { reason } => DomainError::new(DomainErrorKind::ResourceInvalidState {
+                current: "active".to_string(),
+                expected: "deactivated".to_string(),
+            })
+            .with_context(reason),
         }
     }
 }
