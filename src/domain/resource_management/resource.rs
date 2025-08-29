@@ -590,7 +590,7 @@ mod tests {
         let validation_result = invalid_resource.validate();
         assert!(validation_result.is_ok());
         let errors = validation_result.unwrap();
-        assert!(errors.len() > 0); // Should have validation errors
+        assert!(!errors.is_empty()); // Should have validation errors
         assert!(errors.iter().any(|e| e.contains("code")));
         assert!(errors.iter().any(|e| e.contains("name")));
         assert!(errors.iter().any(|e| e.contains("email")));

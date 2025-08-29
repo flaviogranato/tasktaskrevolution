@@ -134,13 +134,12 @@ impl ProjectBuilder<WithDates> {
         })?;
 
         // Validate dates if both are provided
-        if let (Some(start), Some(end)) = (&self.start_date, &self.end_date) {
-            if start > end {
-                return Err(DomainError::new(DomainErrorKind::ProjectInvalidState {
-                    current: "invalid_dates".to_string(),
-                    expected: "start_date < end_date".to_string(),
-                }).with_context("Start date must be before end date"));
-            }
+        if let (Some(start), Some(end)) = (&self.start_date, &self.end_date)
+            && start > end {
+            return Err(DomainError::new(DomainErrorKind::ProjectInvalidState {
+                current: "invalid_dates".to_string(),
+                expected: "start_date < end_date".to_string(),
+            }).with_context("Start date must be before end date"));
         }
 
         Ok(Project {

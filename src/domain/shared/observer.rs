@@ -58,7 +58,7 @@ impl EventBus {
         let mut observers = self.observers.lock().unwrap();
         observers
             .entry(event_type.into())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(observer);
     }
     
@@ -77,10 +77,9 @@ impl EventBus {
         
         if let Some(observer_list) = observers.get(event_type) {
             for observer in observer_list {
-                if observer.is_interested_in(event_type) {
-                    if let Err(e) = observer.handle_event(event) {
-                        eprintln!("Observer {} failed to handle event: {}", observer.name(), e);
-                    }
+                if observer.is_interested_in(event_type)
+                    && let Err(e) = observer.handle_event(event) {
+                    eprintln!("Observer {} failed to handle event: {}", observer.name(), e);
                 }
             }
         }

@@ -153,13 +153,12 @@ impl<S: ProjectState> Project<S> {
     }
 
     pub fn is_date_range_valid(&self) -> bool {
-        if let (Some(start), Some(end)) = (&self.start_date, &self.end_date) {
-            if let (Ok(start_date), Ok(end_date)) = (
+        if let (Some(start), Some(end)) = (&self.start_date, &self.end_date)
+            && let (Ok(start_date), Ok(end_date)) = (
                 chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d"),
                 chrono::NaiveDate::parse_from_str(end, "%Y-%m-%d")
             ) {
-                return start_date <= end_date;
-            }
+            return start_date <= end_date;
         }
         false
     }
@@ -431,7 +430,7 @@ mod tests {
         let validation_result = invalid_project.validate();
         assert!(validation_result.is_ok());
         let errors = validation_result.unwrap();
-        assert!(errors.len() > 0); // Should have validation errors
+        assert!(!errors.is_empty()); // Should have validation errors
         assert!(errors.iter().any(|e| e.contains("code")));
         assert!(errors.iter().any(|e| e.contains("name")));
         assert!(errors.iter().any(|e| e.contains("date")));
