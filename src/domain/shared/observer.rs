@@ -214,7 +214,7 @@ impl SimpleEventObserver {
         handler: F,
     ) -> Self
     where
-        F: Fn(&dyn DomainEvent) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
+        F: for<'a> Fn(&'a dyn DomainEvent) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,  // 'static necessário para Box<dyn>
     {
         Self {
             name: name.into(),
@@ -229,7 +229,7 @@ impl SimpleEventObserver {
         handler: F,
     ) -> Self
     where
-        F: Fn(&dyn DomainEvent) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,
+        F: for<'a> Fn(&'a dyn DomainEvent) -> Result<(), Box<dyn std::error::Error + Send + Sync>> + Send + Sync + 'static,  // 'static necessário para Box<dyn>
     {
         Self {
             name: name.into(),

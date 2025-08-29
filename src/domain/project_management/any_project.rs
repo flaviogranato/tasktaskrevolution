@@ -73,6 +73,26 @@ impl AnyProject {
         }
     }
 
+    // Adiciona método para iterador zero-copy
+    pub fn tasks_iter(&self) -> impl Iterator<Item = (&String, &AnyTask)> {
+        match self {
+            AnyProject::Planned(p) => p.tasks.iter(),
+            AnyProject::InProgress(p) => p.tasks.iter(),
+            AnyProject::Completed(p) => p.tasks.iter(),
+            AnyProject::Cancelled(p) => p.tasks.iter(),
+        }
+    }
+
+    // Adiciona método para obter apenas os códigos das tarefas
+    pub fn task_codes(&self) -> impl Iterator<Item = &String> {
+        match self {
+            AnyProject::Planned(p) => p.tasks.keys(),
+            AnyProject::InProgress(p) => p.tasks.keys(),
+            AnyProject::Completed(p) => p.tasks.keys(),
+            AnyProject::Cancelled(p) => p.tasks.keys(),
+        }
+    }
+
     pub fn add_task(&mut self, task: AnyTask) {
         let tasks = match self {
             AnyProject::Planned(p) => &mut p.tasks,
@@ -292,7 +312,7 @@ impl AnyProject {
         }
     }
 
-    pub fn status(&self) -> &'static str {
+    pub fn status(&self) -> &str {  // Otimizado: removido 'static desnecessário
         match self {
             AnyProject::Planned(_) => "Planned",
             AnyProject::InProgress(_) => "InProgress",

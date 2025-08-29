@@ -62,22 +62,34 @@ impl AnyTask {
         }
     }
 
-    pub fn assigned_resources(&self) -> &Vec<String> {
+    pub fn assigned_resources(&self) -> &[String] {  // Zero-copy: retorna slice em vez de referência a Vec
         match self {
-            AnyTask::Planned(task) => &task.assigned_resources,
-            AnyTask::InProgress(task) => &task.assigned_resources,
-            AnyTask::Blocked(task) => &task.assigned_resources,
-            AnyTask::Completed(task) => &task.assigned_resources,
-            AnyTask::Cancelled(task) => &task.assigned_resources,
+            AnyTask::Planned(task) => task.assigned_resources.as_slice(),
+            AnyTask::InProgress(task) => task.assigned_resources.as_slice(),
+            AnyTask::Blocked(task) => task.assigned_resources.as_slice(),
+            AnyTask::Completed(task) => task.assigned_resources.as_slice(),
+            AnyTask::Cancelled(task) => task.assigned_resources.as_slice(),
         }
     }
-    pub fn description(&self) -> Option<&String> {
+
+    // Adiciona método para iterador zero-copy
+    pub fn assigned_resources_iter(&self) -> impl Iterator<Item = &String> {
         match self {
-            AnyTask::Planned(t) => t.description.as_ref(),
-            AnyTask::InProgress(t) => t.description.as_ref(),
-            AnyTask::Blocked(t) => t.description.as_ref(),
-            AnyTask::Completed(t) => t.description.as_ref(),
-            AnyTask::Cancelled(t) => t.description.as_ref(),
+            AnyTask::Planned(task) => task.assigned_resources.iter(),
+            AnyTask::InProgress(task) => task.assigned_resources.iter(),
+            AnyTask::Blocked(task) => task.assigned_resources.iter(),
+            AnyTask::Completed(task) => task.assigned_resources.iter(),
+            AnyTask::Cancelled(task) => task.assigned_resources.iter(),
+        }
+    }
+
+    pub fn description(&self) -> Option<&str> {  // Zero-copy: retorna &str em vez de &String
+        match self {
+            AnyTask::Planned(t) => t.description.as_deref(),
+            AnyTask::InProgress(t) => t.description.as_deref(),
+            AnyTask::Blocked(t) => t.description.as_deref(),
+            AnyTask::Completed(t) => t.description.as_deref(),
+            AnyTask::Cancelled(t) => t.description.as_deref(),
         }
     }
 
@@ -98,6 +110,32 @@ impl AnyTask {
             AnyTask::Blocked(t) => &t.due_date,
             AnyTask::Completed(t) => &t.due_date,
             AnyTask::Cancelled(t) => &t.due_date,
+        }
+    }
+
+    // --- Zero-copy accessors ---
+
+    // Nota: Task não tem campos estimated_hours e actual_hours
+    // Esses campos foram removidos na refatoração anterior
+    // Os métodos foram removidos para manter consistência
+
+    pub fn dependencies_iter(&self) -> impl Iterator<Item = &String> {
+        match self {
+            AnyTask::Planned(t) => t.dependencies.iter(),
+            AnyTask::InProgress(t) => t.dependencies.iter(),
+            AnyTask::Blocked(t) => t.dependencies.iter(),
+            AnyTask::Completed(t) => t.dependencies.iter(),
+            AnyTask::Cancelled(t) => t.dependencies.iter(),
+        }
+    }
+
+    pub fn dependencies(&self) -> &[String] {
+        match self {
+            AnyTask::Planned(t) => t.dependencies.as_slice(),
+            AnyTask::InProgress(t) => t.dependencies.as_slice(),
+            AnyTask::Blocked(t) => t.dependencies.as_slice(),
+            AnyTask::Completed(t) => t.dependencies.as_slice(),
+            AnyTask::Cancelled(t) => t.dependencies.as_slice(),
         }
     }
 }

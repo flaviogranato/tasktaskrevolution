@@ -1,5 +1,5 @@
 use super::{
-    resource::{Period, Resource},
+    resource::{Period, Resource, TimeOffEntry},
     state::{Assigned, Available, Inactive},
 };
 use serde::Serialize;
@@ -48,11 +48,11 @@ impl AnyResource {
         }
     }
 
-    pub fn vacations(&self) -> Option<&Vec<Period>> {
+    pub fn vacations(&self) -> Option<&[Period]> {  // Otimizado: retorna slice em vez de &Vec
         match self {
-            AnyResource::Available(r) => r.vacations.as_ref(),
-            AnyResource::Assigned(r) => r.vacations.as_ref(),
-            AnyResource::Inactive(r) => r.vacations.as_ref(),
+            AnyResource::Available(r) => r.vacations.as_deref(),
+            AnyResource::Assigned(r) => r.vacations.as_deref(),
+            AnyResource::Inactive(r) => r.vacations.as_deref(),
         }
     }
 
@@ -64,20 +64,34 @@ impl AnyResource {
         }
     }
 
-    pub fn email(&self) -> Option<&String> {
+    pub fn email(&self) -> Option<&str> {  // Otimizado: retorna &str em vez de &String
         match self {
-            AnyResource::Available(r) => r.email.as_ref(),
-            AnyResource::Assigned(r) => r.email.as_ref(),
-            AnyResource::Inactive(r) => r.email.as_ref(),
+            AnyResource::Available(r) => r.email.as_deref(),
+            AnyResource::Assigned(r) => r.email.as_deref(),
+            AnyResource::Inactive(r) => r.email.as_deref(),
         }
     }
 
     #[allow(dead_code)]
-    pub fn status(&self) -> &'static str {
+    pub fn status(&self) -> &str {  // Otimizado: removido 'static desnecessário
         match self {
             AnyResource::Available(_) => "Available",
             AnyResource::Assigned(_) => "Assigned",
             AnyResource::Inactive(_) => "Inactive",
+        }
+    }
+
+    // --- Zero-copy accessors ---
+
+    pub fn vacations_iter(&self) -> Option<impl Iterator<Item = &Period>> {
+        self.vacations().map(|v| v.iter())
+    }
+
+    pub fn time_off_history_iter(&self) -> Option<impl Iterator<Item = &TimeOffEntry>> {
+        match self {
+            AnyResource::Available(r) => r.time_off_history.as_deref().map(|h| h.iter()),
+            AnyResource::Assigned(r) => r.time_off_history.as_deref().map(|h| h.iter()),
+            AnyResource::Inactive(r) => r.time_off_history.as_deref().map(|h| h.iter()),
         }
     }
 

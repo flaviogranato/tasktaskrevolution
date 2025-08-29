@@ -179,6 +179,32 @@ impl<S: ResourceState> Resource<S> {
         self.email.as_deref()
     }
 
+    // --- Zero-copy accessors ---
+
+    pub fn resource_type(&self) -> &str {
+        &self.resource_type
+    }
+
+    pub fn vacations(&self) -> Option<&[Period]> {
+        self.vacations.as_deref()
+    }
+
+    pub fn time_off_history(&self) -> Option<&[TimeOffEntry]> {
+        self.time_off_history.as_deref()
+    }
+
+    pub fn time_off_balance(&self) -> u32 {
+        self.time_off_balance
+    }
+
+    pub fn vacations_iter(&self) -> Option<impl Iterator<Item = &Period>> {
+        self.vacations().map(|v| v.iter())
+    }
+
+    pub fn time_off_history_iter(&self) -> Option<impl Iterator<Item = &TimeOffEntry>> {
+        self.time_off_history().map(|h| h.iter())
+    }
+
     // Validation methods
     pub fn is_code_valid(&self) -> bool {
         !self.code.trim().is_empty()
