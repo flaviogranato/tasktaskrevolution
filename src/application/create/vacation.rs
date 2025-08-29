@@ -282,4 +282,120 @@ mod tests {
         assert!(last_vacation.is_time_off_compensation);
         assert_eq!(last_vacation.compensated_hours, Some(16));
     }
+
+    #[test]
+    fn test_create_vacation_validation_dates_fail() {
+        let (mock_repo, resource) = setup_test();
+        let use_case = CreateVacationUseCase::new(mock_repo);
+
+        let result = use_case
+            .execute(
+                resource.name(),
+                "2025-07-10", // End date
+                "2025-07-01", // Start date
+                false,
+                None,
+            )
+            .unwrap();
+
+        assert!(!result.success);
+        assert_eq!(
+            result.message,
+            "Data de início deve ser anterior ou igual à data de fim"
+        );
+    }
+
+    #[test]
+    fn test_create_vacation_malformed_dates() {
+        let (mock_repo, resource) = setup_test();
+        let use_case = CreateVacationUseCase::new(mock_repo);
+
+        let result = use_case
+            .execute(
+                resource.name(),
+                "invalid-date", // Malformed start date
+                "2025-07-10",
+                false,
+                None,
+            )
+            .unwrap();
+
+        assert!(!result.success);
+        assert_eq!(
+            result.message,
+            "Data de início deve ser anterior ou igual à data de fim"
+        );
+    }
+
+    #[test]
+    fn test_create_vacation_malformed_end_date() {
+        let (mock_repo, resource) = setup_test();
+        let use_case = CreateVacationUseCase::new(mock_repo);
+
+        let result = use_case
+            .execute(
+                resource.name(),
+                "2025-07-01",
+                "invalid-date", // Malformed end date
+                false,
+                None,
+            )
+            .unwrap();
+
+        assert!(!result.success);
+        assert_eq!(
+            result.message,
+            "Data de início deve ser anterior ou igual à data de fim"
+        );
+    }
+
+    #[test]
+    fn test_create_vacation_both_dates_malformed() {
+        let (mock_repo, resource) = setup_test();
+        let use_case = CreateVacationUseCase::new(mock_repo);
+
+        let result = use_case
+            .execute(
+                resource.name(),
+                "invalid-start", // Malformed start date
+                "invalid-end",   // Malformed end date
+                false,
+                None,
+            )
+            .unwrap();
+
+        assert!(!result.success);
+        assert_eq!(
+            result.message,
+            "Data de início deve ser anterior ou igual à data de fim"
+        );
+    }
+
+    #[test]
+    fn test_create_vacation_success_message_formatting() {
+        let (mock_repo, resource) = setup_test();
+        let use_case = CreateVacationUseCase::new(mock_repo);
+
+        let result = use_case
+            .execute(resource.name(), "2025-07-01", "2025-07-10", false, None)
+            .unwrap();
+
+        assert!(result.success);
+        assert_eq!(result.message, "Período de férias adicionado com sucesso para John Doe");
+    }
+
+    #[test]
+    fn test_create_vacation_repository_error_message_formatting() {
+        let (mut mock_repo, resource) = setup_test();
+        mock_repo.should_fail = true; // Configure mock to fail
+        let use_case = CreateVacationUseCase::new(mock_repo);
+
+        let result = use_case
+            .execute(resource.name(), "2025-08-01", "2025-08-10", false, None)
+            .unwrap();
+
+        assert!(!result.success);
+        assert!(result.message.contains("Erro ao adicionar período de férias:"));
+        assert!(result.message.contains("Simulated repository error"));
+    }
 }
