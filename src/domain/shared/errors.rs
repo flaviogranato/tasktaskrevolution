@@ -64,7 +64,7 @@ impl DomainError {
     }
 
     /// Add a source error to this error
-    pub fn with_source(mut self, source: impl StdError + Send + Sync + 'static) -> Self {
+    pub fn with_source(mut self, source: impl StdError + Send + Sync + 'static) -> Self {  // 'static necessário para Box<dyn>
         self.source = Some(Box::new(source));
         self
     }

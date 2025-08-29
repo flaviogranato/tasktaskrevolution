@@ -121,6 +121,28 @@ impl<S: ProjectState> Project<S> {
         self.end_date.as_deref().unwrap_or("")
     }
 
+    // --- Zero-copy accessors ---
+
+    pub fn tasks_iter(&self) -> impl Iterator<Item = (&String, &AnyTask)> {
+        self.tasks.iter()
+    }
+
+    pub fn task_codes(&self) -> impl Iterator<Item = &String> {
+        self.tasks.keys()
+    }
+
+    pub fn tasks(&self) -> &HashMap<String, AnyTask> {
+        &self.tasks
+    }
+
+    pub fn vacation_rules(&self) -> Option<&VacationRules> {
+        self.vacation_rules.as_ref()
+    }
+
+    pub fn timezone(&self) -> Option<&str> {
+        self.timezone.as_deref()
+    }
+
     // Validation methods
     pub fn is_code_valid(&self) -> bool {
         !self.code.trim().is_empty()

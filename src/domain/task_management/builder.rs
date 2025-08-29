@@ -156,9 +156,9 @@ impl TaskBuilder<Ready> {
     pub fn build(self) -> Result<Task<Planned>, TaskError> {
         Ok(Task {
             id: self.id,
-            project_code: self.project_code.ok_or(TaskError::MissingField("project_code"))?,
-            code: self.code.ok_or(TaskError::MissingField("code"))?,
-            name: self.name.ok_or(TaskError::MissingField("name"))?,
+            project_code: self.project_code.ok_or(TaskError::MissingField("project_code".to_string()))?,
+            code: self.code.ok_or(TaskError::MissingField("code".to_string()))?,
+            name: self.name.ok_or(TaskError::MissingField("name".to_string()))?,
             description: None,
             state: Planned, // The task starts in the 'Planned' state.
             start_date: self.start_date.unwrap(),

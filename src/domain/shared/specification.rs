@@ -181,11 +181,11 @@ impl<T> Specification<T> for AlwaysFalseSpecification {
 }
 
 /// Extension trait for easier specification composition
-pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {
+pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {  // 'static necessário para Box<dyn>
     /// Combine this specification with another using AND logic
     fn and<S>(self, other: S) -> AndSpecification<T>
     where
-        S: Specification<T> + 'static,
+        S: Specification<T> + 'static,  // 'static necessário para Box<dyn>
     {
         AndSpecification::new()
             .add(Box::new(self))
@@ -195,7 +195,7 @@ pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {
     /// Combine this specification with another using OR logic
     fn or<S>(self, other: S) -> OrSpecification<T>
     where
-        S: Specification<T> + 'static,
+        S: Specification<T> + 'static,  // 'static necessário para Box<dyn>
     {
         OrSpecification::new()
             .add(Box::new(self))
@@ -208,7 +208,7 @@ pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {
     }
 }
 
-impl<T, S> SpecificationExt<T> for S where S: Specification<T> + 'static {}
+impl<T, S> SpecificationExt<T> for S where S: Specification<T> + 'static {}  // 'static necessário para Box<dyn>
 
 /// A specification that checks if a value is within a range
 pub struct RangeSpecification<T> {

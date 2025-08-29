@@ -90,8 +90,8 @@ impl CommandBus {
     /// Register a command handler
     pub fn register_handler<C, H>(&mut self, _handler: H)
     where
-        C: Command + 'static,
-        H: CommandHandler<C> + 'static,
+        C: Command + 'static,  // 'static necessário para Box<dyn>
+        H: CommandHandler<C> + 'static,  // 'static necessário para Box<dyn>
     {
         let type_name = std::any::type_name::<C>();
         // For now, we'll store the handler as a generic CommandHandler

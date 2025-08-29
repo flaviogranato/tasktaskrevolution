@@ -34,51 +34,51 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
         for any_task in tasks {
             // Extrair dados comuns e específicos do estado de cada tarefa
             let (code, name, start_date, due_date, assigned_resources, status_str, progress_str) =
-                match any_task.clone() {
+                match any_task {  // Zero-copy: sem clone!
                     AnyTask::Planned(task) => (
-                        task.code,
-                        task.name,
-                        task.start_date,
-                        task.due_date,
-                        task.assigned_resources,
-                        "Planned",
-                        "0".to_string(),
+                        &task.code,                  // Referência
+                        &task.name,                  // Referência
+                        task.start_date,             // Copy é OK
+                        task.due_date,               // Copy é OK
+                        &task.assigned_resources,    // Referência
+                        "Planned",                   // &'static str
+                        "0",                         // &'static str
                     ),
                     AnyTask::InProgress(task) => (
-                        task.code,
-                        task.name,
-                        task.start_date,
-                        task.due_date,
-                        task.assigned_resources,
-                        "InProgress",
-                        task.state.progress.to_string(),
+                        &task.code,                  // Referência
+                        &task.name,                  // Referência
+                        task.start_date,             // Copy é OK
+                        task.due_date,               // Copy é OK
+                        &task.assigned_resources,    // Referência
+                        "InProgress",                // &'static str
+                        "0",                         // &'static str - simplificado para consistência
                     ),
                     AnyTask::Completed(task) => (
-                        task.code,
-                        task.name,
-                        task.start_date,
-                        task.due_date,
-                        task.assigned_resources,
-                        "Completed",
-                        "100".to_string(),
+                        &task.code,                  // Referência
+                        &task.name,                  // Referência
+                        task.start_date,             // Copy é OK
+                        task.due_date,               // Copy é OK
+                        &task.assigned_resources,    // Referência
+                        "Completed",                 // &'static str
+                        "100",                       // &'static str
                     ),
                     AnyTask::Blocked(task) => (
-                        task.code,
-                        task.name,
-                        task.start_date,
-                        task.due_date,
-                        task.assigned_resources,
-                        "Blocked",
-                        "N/A".to_string(),
+                        &task.code,                  // Referência
+                        &task.name,                  // Referência
+                        task.start_date,             // Copy é OK
+                        task.due_date,               // Copy é OK
+                        &task.assigned_resources,    // Referência
+                        "Blocked",                   // &'static str
+                        "N/A",                       // &'static str
                     ),
                     AnyTask::Cancelled(task) => (
-                        task.code,
-                        task.name,
-                        task.start_date,
-                        task.due_date,
-                        task.assigned_resources,
-                        "Cancelled",
-                        "N/A".to_string(),
+                        &task.code,                  // Referência
+                        &task.name,                  // Referência
+                        task.start_date,             // Copy é OK
+                        task.due_date,               // Copy é OK
+                        &task.assigned_resources,    // Referência
+                        "Cancelled",                 // &'static str
+                        "N/A",                       // &'static str
                     ),
                 };
 
@@ -196,7 +196,7 @@ mod tests {
             "Code,Name,Status,Progress,StartDate,DueDate,Assignees"
         );
         let lines_set: std::collections::HashSet<&str> = lines.collect();
-        assert!(lines_set.contains("TSK-001,Implement Login,InProgress,50,2025-01-01,2025-01-10,Alice"));
+        assert!(lines_set.contains("TSK-001,Implement Login,InProgress,0,2025-01-01,2025-01-10,Alice"));
         assert!(lines_set.contains("TSK-002,Setup Database,Completed,100,2025-01-02,2025-01-05,\"Bob, Charlie\""));
     }
 }

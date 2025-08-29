@@ -42,7 +42,7 @@ impl<T, P> FactoryRegistry<T, P> {
     /// Register a factory with a name
     pub fn register<F>(&mut self, name: impl Into<String>, factory: F) 
     where
-        F: EntityFactory<T, P> + 'static,
+        F: EntityFactory<T, P> + 'static,  // 'static necessário para Box<dyn>
     {
         self.factories.insert(name.into(), Box::new(factory));
     }

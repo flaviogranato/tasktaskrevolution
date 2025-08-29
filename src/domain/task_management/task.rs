@@ -179,7 +179,7 @@ impl DateRange {
 pub enum TaskError {
     InvalidDateRange,
     ResourceOnVacation(String),
-    MissingField(&'static str),
+    MissingField(String),  // Otimizado: removido &'static str desnecessário
 }
 
 impl std::fmt::Display for TaskError {
@@ -200,7 +200,8 @@ impl std::error::Error for TaskError {}
 
 // Common methods for all Task states
 impl<S: TaskState> Task<S> {
-    // Getters
+    // --- Zero-copy accessors ---
+
     pub fn code(&self) -> &str {
         &self.code
     }
@@ -209,16 +210,46 @@ impl<S: TaskState> Task<S> {
         &self.name
     }
 
+    pub fn project_code(&self) -> &str {
+        &self.project_code
+    }
+
     pub fn description(&self) -> Option<&str> {
         self.description.as_deref()
     }
 
-    pub fn start_date(&self) -> String {
-        self.start_date.format("%Y-%m-%d").to_string()
+    pub fn start_date(&self) -> &NaiveDate {
+        &self.start_date
     }
 
-    pub fn end_date(&self) -> String {
-        self.due_date.format("%Y-%m-%d").to_string()
+    pub fn due_date(&self) -> &NaiveDate {
+        &self.due_date
+    }
+
+    pub fn actual_end_date(&self) -> Option<&NaiveDate> {
+        self.actual_end_date.as_ref()
+    }
+
+    pub fn dependencies(&self) -> &[String] {
+        self.dependencies.as_slice()
+    }
+
+    pub fn assigned_resources(&self) -> &[String] {
+        self.assigned_resources.as_slice()
+    }
+
+    // Nota: Task não tem campos estimated_hours e actual_hours
+    // Esses campos foram removidos na refatoração anterior
+    // Os métodos foram removidos para manter consistência
+
+    // --- Iterators ---
+
+    pub fn dependencies_iter(&self) -> impl Iterator<Item = &String> {
+        self.dependencies.iter()
+    }
+
+    pub fn assigned_resources_iter(&self) -> impl Iterator<Item = &String> {
+        self.assigned_resources.iter()
     }
 
     // Validation methods
@@ -426,8 +457,8 @@ mod tests {
         assert_eq!(task.code(), "TASK-001");
         assert_eq!(task.name(), "Implement Login Feature");
         assert_eq!(task.description(), Some("Create user authentication system"));
-        assert_eq!(task.start_date(), "2024-01-01");
-        assert_eq!(task.end_date(), "2024-01-15");
+        assert_eq!(task.start_date(), &chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+        assert_eq!(task.due_date(), &chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap());
         assert!(task.is_code_valid());
         assert!(task.is_name_valid());
         assert!(task.is_date_range_valid());
