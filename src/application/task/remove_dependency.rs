@@ -280,4 +280,180 @@ mod tests {
         // Assert
         assert!(matches!(result, Err(RemoveDependencyError::DependencyNotFound(_, _))));
     }
+
+    #[test]
+    fn test_remove_dependency_dependency_not_found_in_task() {
+        // Arrange
+        let task_a = create_test_task("TASK-A", vec!["TASK-C".to_string()]); // TASK-A depends on TASK-C
+        let task_b = create_test_task("TASK-B", vec![]); // TASK-B has no dependencies
+
+        let project = setup_test_project(vec![task_a.into(), task_b.into()]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B"); // Try to remove TASK-B from TASK-A's dependencies
+
+        // Assert
+        assert!(matches!(result, Err(RemoveDependencyError::DependencyNotFound(_, _))));
+    }
+
+    #[test]
+    fn test_remove_dependency_task_blocked_by_dependency() {
+        // Arrange
+        use crate::domain::task_management::state::Blocked;
+        
+        let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
+        let task_b = create_test_task("TASK-B", vec![]);
+        
+        // Convert task_a to blocked state
+        let blocked_task = Task::<Blocked> {
+            id: task_a.id,
+            project_code: task_a.project_code,
+            code: task_a.code,
+            name: task_a.name,
+            description: task_a.description,
+            state: Blocked { reason: "Waiting for dependency".to_string() },
+            start_date: task_a.start_date,
+            due_date: task_a.due_date,
+            actual_end_date: task_a.actual_end_date,
+            dependencies: task_a.dependencies,
+            assigned_resources: task_a.assigned_resources,
+        };
+
+        let project = setup_test_project(vec![blocked_task.into(), task_b.into()]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+        };
+
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
+
+        // Assert
+        assert!(matches!(result, Err(RemoveDependencyError::TaskBlockedByDependency(_, _))));
+    }
+
+    #[test]
+    fn test_remove_dependency_task_not_blocked_by_dependency() {
+        // Arrange
+        use crate::domain::task_management::state::Blocked;
+        
+        let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string(), "TASK-C".to_string()]); // Has 2 dependencies
+        let task_b = create_test_task("TASK-B", vec![]);
+        let task_c = create_test_task("TASK-C", vec![]);
+        
+        // Convert task_a to blocked state
+        let blocked_task = Task::<Blocked> {
+            id: task_a.id,
+            project_code: task_a.project_code,
+            code: task_a.code,
+            name: task_a.name,
+            description: task_a.description,
+            state: Blocked { reason: "Waiting for dependency".to_string() },
+            start_date: task_a.start_date,
+            due_date: task_a.due_date,
+            actual_end_date: task_a.actual_end_date,
+            dependencies: task_a.dependencies,
+            assigned_resources: task_a.assigned_resources,
+        };
+
+        let project = setup_test_project(vec![blocked_task.into(), task_b.into(), task_c.into()]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
+        };
+
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
+
+        // Assert
+        assert!(result.is_ok()); // Should succeed because task has multiple dependencies
+    }
+
+    #[test]
+    fn test_remove_dependency_task_not_blocked() {
+        // Arrange
+        let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
+        let task_b = create_test_task("TASK-B", vec![]);
+
+        let project = setup_test_project(vec![task_a.into(), task_b.into()]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
+        };
+
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
+
+        // Assert
+        assert!(result.is_ok()); // Should succeed because task is not blocked
+    }
+
+    #[test]
+    fn test_from_string_error_conversion() {
+        // Arrange
+        let error_message = "Some domain error".to_string();
+        
+        // Act
+        let error: RemoveDependencyError = error_message.into();
+        
+        // Assert
+        match error {
+            RemoveDependencyError::DomainError(msg) => assert_eq!(msg, "Some domain error"),
+            _ => panic!("Expected DomainError variant"),
+        }
+    }
+
+    #[test]
+    fn test_remove_dependency_repository_error() {
+        // Arrange
+        let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
+        let task_b = create_test_task("TASK-B", vec![]);
+        
+        // Create a mock repository that fails on save
+        struct FailingMockProjectRepository;
+        
+        impl ProjectRepository for FailingMockProjectRepository {
+            fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
+                Err(DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::Generic { message: "Repository save failed".to_string() },
+                ))
+            }
+
+            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
+                let project = setup_test_project(vec![
+                    create_test_task("TASK-A", vec!["TASK-B".to_string()]).into(),
+                    create_test_task("TASK-B", vec![]).into(),
+                ]);
+                Ok(Some(project))
+            }
+
+            fn load(&self) -> Result<AnyProject, DomainError> {
+                unimplemented!()
+            }
+
+            fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+                unimplemented!()
+            }
+
+            fn get_next_code(&self) -> Result<String, DomainError> {
+                unimplemented!()
+            }
+        }
+
+        let use_case = RemoveTaskDependencyUseCase::new(FailingMockProjectRepository);
+
+        // Act
+        let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
+
+        // Assert
+        assert!(matches!(result, Err(RemoveDependencyError::RepositoryError(_))));
+    }
 }
