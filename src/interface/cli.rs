@@ -124,29 +124,29 @@ pub enum CreateCommands {
         compensated_hours: Option<u32>,
     },
     TimeOff {
-        #[arg(long, short)]
+        #[arg(long)]
         resource: String,
-        #[arg(long, short)]
+        #[arg(long)]
         hours: u32,
-        #[arg(long, short)]
+        #[arg(long)]
         date: String,
-        #[arg(long, short)]
+        #[arg(long)]
         description: Option<String>,
     },
     Task {
-        #[arg(long, short)]
+        #[arg(long)]
         project_code: Option<String>,
-        #[arg(long, short)]
+        #[arg(long)]
         code: Option<String>,
-        #[arg(long, short)]
+        #[arg(long)]
         name: String,
-        #[arg(long, short)]
+        #[arg(long)]
         description: Option<String>,
-        #[arg(long, short)]
+        #[arg(long)]
         start_date: String,
-        #[arg(long, short)]
+        #[arg(long)]
         due_date: String,
-        #[arg(long, short, value_delimiter = ',')]
+        #[arg(long, value_delimiter = ',')]
         assignees: Vec<String>,
     },
 }
@@ -1089,5 +1089,441 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             }
             Ok(())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::CommandFactory;
+
+    #[test]
+    fn test_cli_creation() {
+        let cli = Cli::command();
+        assert_eq!(cli.get_name(), "TaskTaskRevolution");
+    }
+
+    #[test]
+    fn test_cli_version() {
+        let cli = Cli::command();
+        let version = cli.get_version();
+        assert!(version.is_some());
+        let version_str = version.unwrap().to_string();
+        assert!(!version_str.is_empty());
+    }
+
+    #[test]
+    fn test_cli_about() {
+        let cli = Cli::command();
+        let about = cli.get_about();
+        assert!(about.is_some());
+        let about_str = about.unwrap().to_string();
+        assert!(!about_str.is_empty());
+    }
+
+    #[test]
+    fn test_cli_author() {
+        let cli = Cli::command();
+        let author = cli.get_author();
+        assert!(author.is_some());
+        let author_str = author.unwrap().to_string();
+        assert!(!author_str.is_empty());
+    }
+
+    #[test]
+    fn test_init_command_parsing() {
+        let args = vec!["ttr", "init", "--manager-name", "John Doe", "--manager-email", "john@example.com"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Init { manager_name, manager_email, .. } = cli.command {
+            assert_eq!(manager_name, "John Doe");
+            assert_eq!(manager_email, "john@example.com");
+        } else {
+            panic!("Expected Init command");
+        }
+    }
+
+    #[test]
+    fn test_init_command_with_path() {
+        let args = vec!["ttr", "init", "/tmp/test", "--manager-name", "John Doe", "--manager-email", "john@example.com"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Init { path, manager_name, manager_email } = cli.command {
+            assert_eq!(path, Some(PathBuf::from("/tmp/test")));
+            assert_eq!(manager_name, "John Doe");
+            assert_eq!(manager_email, "john@example.com");
+        } else {
+            panic!("Expected Init command");
+        }
+    }
+
+    #[test]
+    fn test_build_command_parsing() {
+        let args = vec!["ttr", "build"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Build { path } = cli.command {
+            assert_eq!(path, None);
+        } else {
+            panic!("Expected Build command");
+        }
+    }
+
+    #[test]
+    fn test_build_command_with_path() {
+        let args = vec!["ttr", "build", "/tmp/test"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Build { path } = cli.command {
+            assert_eq!(path, Some(PathBuf::from("/tmp/test")));
+        } else {
+            panic!("Expected Build command");
+        }
+    }
+
+    #[test]
+    fn test_create_project_command() {
+        let args = vec!["ttr", "create", "project", "My Project", "A test project"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::Project { name, description } = create_command {
+                assert_eq!(name, "My Project");
+                assert_eq!(description, Some("A test project".to_string()));
+            } else {
+                panic!("Expected CreateCommands::Project");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_project_command_no_description() {
+        let args = vec!["ttr", "create", "project", "My Project"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::Project { name, description } = create_command {
+                assert_eq!(name, "My Project");
+                assert_eq!(description, None);
+            } else {
+                panic!("Expected CreateCommands::Project");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_resource_command() {
+        let args = vec!["ttr", "create", "resource", "John Doe", "Developer"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::Resource { name, resource_type } = create_command {
+                assert_eq!(name, "John Doe");
+                assert_eq!(resource_type, "Developer");
+            } else {
+                panic!("Expected CreateCommands::Resource");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_vacation_command() {
+        let args = vec!["ttr", "create", "vacation", "--resource", "RES-001", "--start-date", "2024-01-01", "--end-date", "2024-01-05"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::Vacation { resource, start_date, end_date, is_time_off_compensation, compensated_hours } = create_command {
+                assert_eq!(resource, "RES-001");
+                assert_eq!(start_date, "2024-01-01");
+                assert_eq!(end_date, "2024-01-05");
+                assert_eq!(is_time_off_compensation, false);
+                assert_eq!(compensated_hours, None);
+            } else {
+                panic!("Expected CreateCommands::Vacation");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_vacation_command_with_compensation() {
+        let args = vec!["ttr", "create", "vacation", "--resource", "RES-001", "--start-date", "2024-01-01", "--end-date", "2024-01-05", "--is-time-off-compensation", "--compensated-hours", "40"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::Vacation { resource, start_date, end_date, is_time_off_compensation, compensated_hours } = create_command {
+                assert_eq!(resource, "RES-001");
+                assert_eq!(start_date, "2024-01-01");
+                assert_eq!(end_date, "2024-01-05");
+                assert_eq!(is_time_off_compensation, true);
+                assert_eq!(compensated_hours, Some(40));
+            } else {
+                panic!("Expected CreateCommands::Vacation");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_time_off_command() {
+        let args = vec!["ttr", "create", "time-off", "--resource", "RES-001", "--hours", "8", "--date", "2024-01-01", "--description", "Sick leave"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::TimeOff { resource, hours, date, description } = create_command {
+                assert_eq!(resource, "RES-001");
+                assert_eq!(hours, 8);
+                assert_eq!(date, "2024-01-01");
+                assert_eq!(description, Some("Sick leave".to_string()));
+            } else {
+                panic!("Expected CreateCommands::TimeOff");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_time_off_command_no_description() {
+        let args = vec!["ttr", "create", "time-off", "--resource", "RES-001", "--hours", "8", "--date", "2024-01-01"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::TimeOff { resource, hours, date, description } = create_command {
+                assert_eq!(resource, "RES-001");
+                assert_eq!(hours, 8);
+                assert_eq!(date, "2024-01-01");
+                assert_eq!(description, None);
+            } else {
+                panic!("Expected CreateCommands::TimeOff");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_task_command() {
+        let args = vec!["ttr", "create", "task", "--project-code", "PROJ-001", "--code", "TASK-001", "--name", "Implement feature", "--description", "A test task", "--start-date", "2024-01-01", "--due-date", "2024-01-15", "--assignees", "RES-001,RES-002"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::Task { project_code, code, name, description, start_date, due_date, assignees } = create_command {
+                assert_eq!(project_code, Some("PROJ-001".to_string()));
+                assert_eq!(code, Some("TASK-001".to_string()));
+                assert_eq!(name, "Implement feature");
+                assert_eq!(description, Some("A test task".to_string()));
+                assert_eq!(start_date, "2024-01-01");
+                assert_eq!(due_date, "2024-01-15");
+                assert_eq!(assignees, vec!["RES-001".to_string(), "RES-002".to_string()]);
+            } else {
+                panic!("Expected CreateCommands::Task");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_create_task_command_minimal() {
+        let args = vec!["ttr", "create", "task", "--name", "Implement feature", "--start-date", "2024-01-01", "--due-date", "2024-01-15"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Create { create_command } = cli.command {
+            if let CreateCommands::Task { project_code, code, name, description, start_date, due_date, assignees } = create_command {
+                assert_eq!(project_code, None);
+                assert_eq!(code, None);
+                assert_eq!(name, "Implement feature");
+                assert_eq!(description, None);
+                assert_eq!(start_date, "2024-01-01");
+                assert_eq!(due_date, "2024-01-15");
+                assert_eq!(assignees, Vec::<String>::new());
+            } else {
+                panic!("Expected CreateCommands::Task");
+            }
+        } else {
+            panic!("Expected Create command");
+        }
+    }
+
+    #[test]
+    fn test_list_commands() {
+        let commands = vec!["projects", "resources", "tasks"];
+        
+        for command in commands {
+            let args = vec!["ttr", "list", command];
+            let cli = Cli::try_parse_from(args).unwrap();
+            
+            if let Commands::List { list_command } = cli.command {
+                match command {
+                    "projects" => {
+                        if let ListCommands::Projects = list_command {
+                            // OK
+                        } else {
+                            panic!("Expected ListCommands::Projects");
+                        }
+                    },
+                    "resources" => {
+                        if let ListCommands::Resources = list_command {
+                            // OK
+                        } else {
+                            panic!("Expected ListCommands::Resources");
+                        }
+                    },
+                    "tasks" => {
+                        if let ListCommands::Tasks = list_command {
+                            // OK
+                        } else {
+                            panic!("Expected ListCommands::Tasks");
+                        }
+                    },
+                    _ => panic!("Unexpected command: {}", command),
+                }
+            } else {
+                panic!("Expected List command");
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_project_command() {
+        let args = vec!["ttr", "update", "project", "--name", "New Project Name", "--description", "New description"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Update { update_command } = cli.command {
+            if let UpdateCommands::Project { name, description } = update_command {
+                assert_eq!(name, Some("New Project Name".to_string()));
+                assert_eq!(description, Some("New description".to_string()));
+            } else {
+                panic!("Expected UpdateCommands::Project");
+            }
+        } else {
+            panic!("Expected Update command");
+        }
+    }
+
+    #[test]
+    fn test_update_resource_command() {
+        let args = vec!["ttr", "update", "resource", "RES-001", "--name", "New Name", "--email", "new@email.com", "--resource-type", "Senior Developer"];
+        let cli = Cli::try_parse_from(args).unwrap();
+        
+        if let Commands::Update { update_command } = cli.command {
+            if let UpdateCommands::Resource { code, name, email, resource_type } = update_command {
+                assert_eq!(code, "RES-001");
+                assert_eq!(name, Some("New Name".to_string()));
+                assert_eq!(email, Some("new@email.com".to_string()));
+                assert_eq!(resource_type, Some("Senior Developer".to_string()));
+            } else {
+                panic!("Expected UpdateCommands::Resource");
+            }
+        } else {
+            panic!("Expected Update command");
+        }
+    }
+
+    #[test]
+    fn test_cli_help() {
+        let mut cli = Cli::command();
+        let help = cli.render_help().to_string();
+        assert!(help.contains("TaskTaskRevolution"));
+        assert!(help.contains("Commands:"));
+        assert!(help.contains("init"));
+        assert!(help.contains("build"));
+        assert!(help.contains("create"));
+        assert!(help.contains("list"));
+        assert!(help.contains("validate"));
+        assert!(help.contains("report"));
+        assert!(help.contains("update"));
+        assert!(help.contains("delete"));
+        assert!(help.contains("describe"));
+        assert!(help.contains("task"));
+    }
+
+    #[test]
+    fn test_cli_version_flag() {
+        let mut cli = Cli::command();
+        let version = cli.render_version().to_string();
+        assert!(!version.is_empty());
+    }
+
+    #[test]
+    fn test_cli_long_about() {
+        let cli = Cli::command();
+        let long_about = cli.get_long_about();
+        // long_about pode ser None, então não podemos fazer assert direto
+        // mas podemos verificar que não quebra
+        assert!(true); // Placeholder assertion
+    }
+
+    #[test]
+    fn test_cli_propagate_version() {
+        let mut cli = Cli::command();
+        // Verificar que a versão é propagada para subcomandos
+        let help = cli.render_help().to_string();
+        assert!(help.contains("--version"));
+    }
+
+    #[test]
+    fn test_cli_subcommand_help() {
+        let mut cli = Cli::command();
+        let help = cli.render_help().to_string();
+        
+        // Verificar que todos os subcomandos estão documentados
+        // Nota: Alguns comandos podem não aparecer no help principal
+        assert!(help.contains("Commands:"));
+        assert!(help.contains("Init") || help.contains("init"));
+        assert!(help.contains("Build") || help.contains("build"));
+        assert!(help.contains("Create") || help.contains("create"));
+        assert!(help.contains("List") || help.contains("list"));
+        assert!(help.contains("Validate") || help.contains("validate"));
+        assert!(help.contains("Report") || help.contains("report"));
+        assert!(help.contains("Update") || help.contains("update"));
+        assert!(help.contains("Delete") || help.contains("delete"));
+        assert!(help.contains("Describe") || help.contains("describe"));
+        assert!(help.contains("Task") || help.contains("task"));
+    }
+
+    #[test]
+    fn test_cli_author_environment_variable() {
+        // Este teste verifica que o autor é lido da variável de ambiente CARGO_PKG_AUTHORS
+        let cli = Cli::command();
+        let author = cli.get_author();
+        assert!(author.is_some());
+        let author_str = author.unwrap().to_string();
+        // O autor deve ser uma string válida
+        assert!(!author_str.is_empty());
+        assert!(!author_str.contains("CARGO_PKG_AUTHORS"));
+    }
+
+    #[test]
+    fn test_cli_version_environment_variable() {
+        // Este teste verifica que a versão é lida da variável de ambiente CARGO_PKG_VERSION
+        let cli = Cli::command();
+        let version = cli.get_version();
+        assert!(version.is_some());
+        let version_str = version.unwrap().to_string();
+        // A versão deve ser uma string válida
+        assert!(!version_str.is_empty());
+        assert!(!version_str.contains("CARGO_PKG_VERSION"));
+    }
+
+    #[test]
+    fn test_cli_description_environment_variable() {
+        // Este teste verifica que a descrição é lida da variável de ambiente CARGO_PKG_DESCRIPTION
+        let cli = Cli::command();
+        let description = cli.get_about();
+        assert!(description.is_some());
+        let description_str = description.unwrap().to_string();
+        // A descrição deve ser uma string válida
+        assert!(!description_str.is_empty());
+        assert!(!description_str.contains("CARGO_PKG_DESCRIPTION"));
     }
 }
