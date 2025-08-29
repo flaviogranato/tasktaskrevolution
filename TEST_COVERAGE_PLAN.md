@@ -2,9 +2,10 @@
 
 ## 📊 Status Atual da Cobertura
 
-**Cobertura Atual**: 44.53% (1474/3310 linhas)
-**Meta**: 85% (2814/3310 linhas)
-**Gap**: +1340 linhas a serem cobertas
+**Cobertura Atual**: 46.24% (1532/3313 linhas)
+**Meta**: 85% (2814/3313 linhas)
+**Gap**: +1282 linhas a serem cobertas
+**Progresso**: +1.71% (58 linhas cobertas)
 
 ## 🎯 Estratégia Geral
 

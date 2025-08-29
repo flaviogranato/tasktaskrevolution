@@ -130,3 +130,367 @@ impl From<InfrastructureError> for DomainError {
 
 // Result type for infrastructure operations
 pub type InfrastructureResult<T> = Result<T, InfrastructureError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_file_not_found_error_display() {
+        let error = InfrastructureError::FileNotFound {
+            path: "/path/to/file.txt".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("File not found at path '/path/to/file.txt'"));
+    }
+
+    #[test]
+    fn test_file_read_error_display() {
+        let error = InfrastructureError::FileReadError {
+            path: "/path/to/file.txt".to_string(),
+            details: "Permission denied".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Error reading file at path '/path/to/file.txt'"));
+        assert!(display.contains("Permission denied"));
+    }
+
+    #[test]
+    fn test_file_write_error_display() {
+        let error = InfrastructureError::FileWriteError {
+            path: "/path/to/file.txt".to_string(),
+            details: "Disk full".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Error writing file at path '/path/to/file.txt'"));
+        assert!(display.contains("Disk full"));
+    }
+
+    #[test]
+    fn test_file_parse_error_display() {
+        let error = InfrastructureError::FileParseError {
+            path: "/path/to/file.yaml".to_string(),
+            format: "YAML".to_string(),
+            details: "Invalid syntax".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Error parsing YAML file at path '/path/to/file.yaml'"));
+        assert!(display.contains("Invalid syntax"));
+    }
+
+    #[test]
+    fn test_directory_not_found_error_display() {
+        let error = InfrastructureError::DirectoryNotFound {
+            path: "/path/to/dir".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Directory not found at path '/path/to/dir'"));
+    }
+
+    #[test]
+    fn test_directory_create_error_display() {
+        let error = InfrastructureError::DirectoryCreateError {
+            path: "/path/to/dir".to_string(),
+            details: "Permission denied".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Error creating directory at path '/path/to/dir'"));
+        assert!(display.contains("Permission denied"));
+    }
+
+    #[test]
+    fn test_path_invalid_error_display() {
+        let error = InfrastructureError::PathInvalid {
+            path: "/invalid/path".to_string(),
+            reason: "Contains invalid characters".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Invalid path '/invalid/path'"));
+        assert!(display.contains("Contains invalid characters"));
+    }
+
+    #[test]
+    fn test_serialization_error_display() {
+        let error = InfrastructureError::SerializationError {
+            format: "JSON".to_string(),
+            details: "Invalid data structure".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Serialization error for format 'JSON'"));
+        assert!(display.contains("Invalid data structure"));
+    }
+
+    #[test]
+    fn test_deserialization_error_display() {
+        let error = InfrastructureError::DeserializationError {
+            format: "XML".to_string(),
+            details: "Malformed XML".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Deserialization error for format 'XML'"));
+        assert!(display.contains("Malformed XML"));
+    }
+
+    #[test]
+    fn test_network_error_display() {
+        let error = InfrastructureError::NetworkError {
+            operation: "HTTP request".to_string(),
+            details: "Connection timeout".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Network error during HTTP request"));
+        assert!(display.contains("Connection timeout"));
+    }
+
+    #[test]
+    fn test_database_error_display() {
+        let error = InfrastructureError::DatabaseError {
+            operation: "SELECT query".to_string(),
+            details: "Connection lost".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Database error during SELECT query"));
+        assert!(display.contains("Connection lost"));
+    }
+
+    #[test]
+    fn test_cache_error_display() {
+        let error = InfrastructureError::CacheError {
+            operation: "GET operation".to_string(),
+            details: "Cache miss".to_string(),
+        };
+        let display = format!("{}", error);
+        assert!(display.contains("Cache error during GET operation"));
+        assert!(display.contains("Cache miss"));
+    }
+
+    #[test]
+    fn test_error_debug_formatting() {
+        let error = InfrastructureError::FileNotFound {
+            path: "/test/path".to_string(),
+        };
+        let debug = format!("{:?}", error);
+        assert!(debug.contains("FileNotFound"));
+        assert!(debug.contains("/test/path"));
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_file_not_found() {
+        let infra_error = InfrastructureError::FileNotFound {
+            path: "/test/path".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
+            assert_eq!(operation, "file read");
+            assert_eq!(path, &Some("/test/path".to_string()));
+        } else {
+            panic!("Expected Io error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_file_read_error() {
+        let infra_error = InfrastructureError::FileReadError {
+            path: "/test/path".to_string(),
+            details: "Permission denied".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
+            assert_eq!(operation, "file read");
+            assert_eq!(path, &Some("/test/path".to_string()));
+        } else {
+            panic!("Expected Io error kind");
+        }
+        
+        assert_eq!(domain_error.context(), Some(&"Permission denied".to_string()));
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_file_write_error() {
+        let infra_error = InfrastructureError::FileWriteError {
+            path: "/test/path".to_string(),
+            details: "Disk full".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
+            assert_eq!(operation, "file write");
+            assert_eq!(path, &Some("/test/path".to_string()));
+        } else {
+            panic!("Expected Io error kind");
+        }
+        
+        assert_eq!(domain_error.context(), Some(&"Disk full".to_string()));
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_file_parse_error() {
+        let infra_error = InfrastructureError::FileParseError {
+            path: "/test/path.yaml".to_string(),
+            format: "YAML".to_string(),
+            details: "Invalid syntax".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Serialization { format, details } = domain_error.kind() {
+            assert_eq!(format, "YAML");
+            assert!(details.contains("Parse error at path '/test/path.yaml'"));
+            assert!(details.contains("Invalid syntax"));
+        } else {
+            panic!("Expected Serialization error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_directory_not_found() {
+        let infra_error = InfrastructureError::DirectoryNotFound {
+            path: "/test/dir".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
+            assert_eq!(operation, "directory access");
+            assert_eq!(path, &Some("/test/dir".to_string()));
+        } else {
+            panic!("Expected Io error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_directory_create_error() {
+        let infra_error = InfrastructureError::DirectoryCreateError {
+            path: "/test/dir".to_string(),
+            details: "Permission denied".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
+            assert_eq!(operation, "directory creation");
+            assert_eq!(path, &Some("/test/dir".to_string()));
+        } else {
+            panic!("Expected Io error kind");
+        }
+        
+        assert_eq!(domain_error.context(), Some(&"Permission denied".to_string()));
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_path_invalid() {
+        let infra_error = InfrastructureError::PathInvalid {
+            path: "/invalid/path".to_string(),
+            reason: "Contains invalid characters".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::ValidationError { field, message } = domain_error.kind() {
+            assert_eq!(field, "path");
+            assert!(message.contains("Path '/invalid/path' is invalid"));
+            assert!(message.contains("Contains invalid characters"));
+        } else {
+            panic!("Expected ValidationError error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_serialization_error() {
+        let infra_error = InfrastructureError::SerializationError {
+            format: "JSON".to_string(),
+            details: "Invalid data structure".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Serialization { format, details } = domain_error.kind() {
+            assert_eq!(format, "JSON");
+            assert_eq!(details, "Invalid data structure");
+        } else {
+            panic!("Expected Serialization error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_deserialization_error() {
+        let infra_error = InfrastructureError::DeserializationError {
+            format: "XML".to_string(),
+            details: "Malformed XML".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::Serialization { format, details } = domain_error.kind() {
+            assert_eq!(format, "XML");
+            assert_eq!(details, "Malformed XML");
+        } else {
+            panic!("Expected Serialization error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_network_error() {
+        let infra_error = InfrastructureError::NetworkError {
+            operation: "HTTP request".to_string(),
+            details: "Connection timeout".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::RepositoryError { operation, details } = domain_error.kind() {
+            assert_eq!(operation, "HTTP request");
+            assert_eq!(details, "Connection timeout");
+        } else {
+            panic!("Expected RepositoryError error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_database_error() {
+        let infra_error = InfrastructureError::DatabaseError {
+            operation: "SELECT query".to_string(),
+            details: "Connection lost".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::RepositoryError { operation, details } = domain_error.kind() {
+            assert_eq!(operation, "SELECT query");
+            assert_eq!(details, "Connection lost");
+        } else {
+            panic!("Expected RepositoryError error kind");
+        }
+    }
+
+    #[test]
+    fn test_from_infrastructure_error_to_domain_error_cache_error() {
+        let infra_error = InfrastructureError::CacheError {
+            operation: "GET operation".to_string(),
+            details: "Cache miss".to_string(),
+        };
+        let domain_error: DomainError = infra_error.into();
+        
+        if let DomainErrorKind::RepositoryError { operation, details } = domain_error.kind() {
+            assert_eq!(operation, "GET operation");
+            assert_eq!(details, "Cache miss");
+        } else {
+            panic!("Expected RepositoryError error kind");
+        }
+    }
+
+    #[test]
+    fn test_infrastructure_result_success() {
+        let result: InfrastructureResult<String> = Ok("success".to_string());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "success");
+    }
+
+    #[test]
+    fn test_infrastructure_result_failure() {
+        let result: InfrastructureResult<String> = Err(InfrastructureError::FileNotFound {
+            path: "/test/path".to_string(),
+        });
+        assert!(result.is_err());
+        
+        if let Err(InfrastructureError::FileNotFound { path }) = result {
+            assert_eq!(path, "/test/path");
+        } else {
+            panic!("Expected FileNotFound error");
+        }
+    }
+}
