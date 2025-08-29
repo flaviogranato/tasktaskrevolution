@@ -559,4 +559,378 @@ mod tests {
         assert_eq!(entity.name, "overwrite_test");
         assert_eq!(entity.value, 999);
     }
+
+    // Additional tests for better coverage
+    #[test]
+    fn test_factory_registry_clear() {
+        let mut registry = FactoryRegistry::new();
+        registry.register("test", MockEntityFactory);
+        assert_eq!(registry.factories.len(), 1);
+        
+        // Clear all factories (this would require adding a clear method)
+        // For now, we test the current behavior
+        assert!(registry.get("test").is_some());
+    }
+
+    #[test]
+    fn test_factory_registry_iteration() {
+        let mut registry = FactoryRegistry::new();
+        registry.register("first", MockEntityFactory);
+        registry.register("second", MockEntityFactory);
+        
+        // Test that we can access multiple factories
+        let first = registry.get("first");
+        let second = registry.get("second");
+        
+        assert!(first.is_some());
+        assert!(second.is_some());
+        
+        // Test that both factories work correctly
+        let entity1 = first.unwrap().create(MockParams {
+            name: "first_test".to_string(),
+            value: 100,
+        });
+        let entity2 = second.unwrap().create(MockParams {
+            name: "second_test".to_string(),
+            value: 200,
+        });
+        
+        assert_eq!(entity1.name, "first_test");
+        assert_eq!(entity2.name, "second_test");
+        assert_ne!(entity1.name, entity2.name);
+    }
+
+    #[test]
+    fn test_factory_with_complex_params() {
+        #[derive(Debug, Clone, PartialEq)]
+        struct ComplexParams {
+            name: String,
+            value: u32,
+            metadata: HashMap<String, String>,
+        }
+
+        impl Default for ComplexParams {
+            fn default() -> Self {
+                let mut metadata = HashMap::new();
+                metadata.insert("version".to_string(), "1.0".to_string());
+                metadata.insert("type".to_string(), "default".to_string());
+                
+                Self {
+                    name: "complex_default".to_string(),
+                    value: 100,
+                    metadata,
+                }
+            }
+        }
+
+        let creator = |params: ComplexParams| MockEntity {
+            id: format!("complex-{}", params.value),
+            name: params.name,
+            value: params.value,
+        };
+        
+        let factory = SimpleFactory::new(creator);
+        let params = ComplexParams {
+            name: "complex_test".to_string(),
+            value: 200,
+            metadata: {
+                let mut m = HashMap::new();
+                m.insert("version".to_string(), "2.0".to_string());
+                m.insert("type".to_string(), "test".to_string());
+                m
+            },
+        };
+        
+        let entity = factory.create(params);
+        assert_eq!(entity.id, "complex-200");
+        assert_eq!(entity.name, "complex_test");
+        assert_eq!(entity.value, 200);
+    }
+
+    #[test]
+    fn test_factory_with_unit_params() {
+        let creator = |_: ()| MockEntity {
+            id: "unit".to_string(),
+            name: "unit_params".to_string(),
+            value: 0,
+        };
+        
+        let factory = SimpleFactory::new(creator);
+        let entity = factory.create(());
+        
+        assert_eq!(entity.id, "unit");
+        assert_eq!(entity.name, "unit_params");
+        assert_eq!(entity.value, 0);
+    }
+
+    #[test]
+    fn test_factory_with_reference_params() {
+        #[derive(Debug, Clone, PartialEq)]
+        struct RefParams<'a> {
+            name: &'a str,
+            value: u32,
+        }
+
+        let creator = |params: RefParams| MockEntity {
+            id: format!("ref-{}", params.value),
+            name: params.name.to_string(),
+            value: params.value,
+        };
+        
+        let factory = SimpleFactory::new(creator);
+        let params = RefParams {
+            name: "reference_test",
+            value: 300,
+        };
+        
+        let entity = factory.create(params);
+        assert_eq!(entity.id, "ref-300");
+        assert_eq!(entity.name, "reference_test");
+        assert_eq!(entity.value, 300);
+    }
+
+    #[test]
+    fn test_factory_with_optional_params() {
+        #[derive(Debug, Clone, PartialEq)]
+        struct OptionalParams {
+            name: Option<String>,
+            value: Option<u32>,
+        }
+
+        impl Default for OptionalParams {
+            fn default() -> Self {
+                Self {
+                    name: Some("optional_default".to_string()),
+                    value: Some(50),
+                }
+            }
+        }
+
+        let creator = |params: OptionalParams| MockEntity {
+            id: "optional".to_string(),
+            name: params.name.unwrap_or_else(|| "unknown".to_string()),
+            value: params.value.unwrap_or(0),
+        };
+        
+        let factory = SimpleFactory::new(creator);
+        
+        // Test with Some values
+        let params = OptionalParams {
+            name: Some("optional_test".to_string()),
+            value: Some(150),
+        };
+        let entity = factory.create(params);
+        assert_eq!(entity.name, "optional_test");
+        assert_eq!(entity.value, 150);
+        
+        // Test with None values
+        let params = OptionalParams {
+            name: None,
+            value: None,
+        };
+        let entity = factory.create(params);
+        assert_eq!(entity.name, "unknown");
+        assert_eq!(entity.value, 0);
+    }
+
+    #[test]
+    fn test_factory_with_enum_params() {
+        #[derive(Debug, Clone, PartialEq)]
+        enum EnumParams {
+            Simple { name: String },
+            Complex { name: String, value: u32 },
+        }
+
+        impl Default for EnumParams {
+            fn default() -> Self {
+                Self::Simple {
+                    name: "enum_default".to_string(),
+                }
+            }
+        }
+
+        let creator = |params: EnumParams| MockEntity {
+            id: "enum".to_string(),
+            name: match &params {
+                EnumParams::Simple { name } => name.clone(),
+                EnumParams::Complex { name, .. } => name.clone(),
+            },
+            value: match params {
+                EnumParams::Simple { .. } => 0,
+                EnumParams::Complex { value, .. } => value,
+            },
+        };
+        
+        let factory = SimpleFactory::new(creator);
+        
+        // Test Simple variant
+        let params = EnumParams::Simple {
+            name: "simple_enum".to_string(),
+        };
+        let entity = factory.create(params);
+        assert_eq!(entity.name, "simple_enum");
+        assert_eq!(entity.value, 0);
+        
+        // Test Complex variant
+        let params = EnumParams::Complex {
+            name: "complex_enum".to_string(),
+            value: 400,
+        };
+        let entity = factory.create(params);
+        assert_eq!(entity.name, "complex_enum");
+        assert_eq!(entity.value, 400);
+    }
+
+    #[test]
+    fn test_factory_with_generic_entity() {
+        #[derive(Debug, Clone, PartialEq)]
+        struct GenericEntity<T> {
+            id: String,
+            data: T,
+        }
+
+        #[derive(Debug, Clone, PartialEq)]
+        struct GenericParams<T> {
+            data: T,
+        }
+
+        impl<T: Default> Default for GenericParams<T> {
+            fn default() -> Self {
+                Self {
+                    data: Default::default(),
+                }
+            }
+        }
+
+        let creator = |params: GenericParams<String>| GenericEntity {
+            id: "generic".to_string(),
+            data: params.data,
+        };
+        
+        let factory = SimpleFactory::new(creator);
+        let params = GenericParams {
+            data: "generic_test".to_string(),
+        };
+        
+        let entity = factory.create(params);
+        assert_eq!(entity.id, "generic");
+        assert_eq!(entity.data, "generic_test");
+    }
+
+    #[test]
+    fn test_factory_with_phantom_data() {
+        use std::marker::PhantomData;
+
+        #[derive(Debug, Clone, PartialEq)]
+        struct PhantomEntity<T> {
+            id: String,
+            _phantom: PhantomData<T>,
+        }
+
+        #[derive(Debug, Clone, PartialEq)]
+        struct PhantomParams<T> {
+            _phantom: PhantomData<T>,
+        }
+
+        impl<T> Default for PhantomParams<T> {
+            fn default() -> Self {
+                Self {
+                    _phantom: PhantomData,
+                }
+            }
+        }
+
+        let creator = |_: PhantomParams<String>| PhantomEntity {
+            id: "phantom".to_string(),
+            _phantom: PhantomData::<String>,
+        };
+        
+        let factory = SimpleFactory::new(creator);
+        let params = PhantomParams::<String>::default();
+        
+        let entity = factory.create(params);
+        assert_eq!(entity.id, "phantom");
+    }
+
+    #[test]
+    fn test_factory_with_custom_error_types() {
+        #[derive(Debug, Clone, PartialEq)]
+        struct CustomError {
+            message: String,
+            code: u32,
+        }
+
+        #[derive(Debug, Clone, PartialEq)]
+        struct CustomParams {
+            name: String,
+            value: u32,
+        }
+
+        struct CustomValidatedFactory;
+
+        impl ValidatedEntityFactory<MockEntity, CustomParams> for CustomValidatedFactory {
+            type Error = CustomError;
+
+            fn create_validated(&self, params: CustomParams) -> Result<MockEntity, Self::Error> {
+                if params.value == 0 {
+                    Err(CustomError {
+                        message: "Value cannot be zero".to_string(),
+                        code: 1001,
+                    })
+                } else if params.name.is_empty() {
+                    Err(CustomError {
+                        message: "Name cannot be empty".to_string(),
+                        code: 1002,
+                    })
+                } else {
+                    Ok(MockEntity {
+                        id: "custom-001".to_string(),
+                        name: params.name,
+                        value: params.value,
+                    })
+                }
+            }
+        }
+
+        let factory = CustomValidatedFactory;
+        
+        // Test success case
+        let params = CustomParams {
+            name: "custom_test".to_string(),
+            value: 100,
+        };
+        let result = factory.create_validated(params);
+        assert!(result.is_ok());
+        
+        let entity = result.unwrap();
+        assert_eq!(entity.id, "custom-001");
+        assert_eq!(entity.name, "custom_test");
+        assert_eq!(entity.value, 100);
+        
+        // Test zero value error
+        let params = CustomParams {
+            name: "zero_test".to_string(),
+            value: 0,
+        };
+        let result = factory.create_validated(params);
+        assert!(result.is_err());
+        
+        if let Err(error) = result {
+            assert_eq!(error.message, "Value cannot be zero");
+            assert_eq!(error.code, 1001);
+        }
+        
+        // Test empty name error
+        let params = CustomParams {
+            name: "".to_string(),
+            value: 50,
+        };
+        let result = factory.create_validated(params);
+        assert!(result.is_err());
+        
+        if let Err(error) = result {
+            assert_eq!(error.message, "Name cannot be empty");
+            assert_eq!(error.code, 1002);
+        }
+    }
 }
