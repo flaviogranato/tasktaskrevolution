@@ -9,7 +9,7 @@ pub struct DomainError {
     context: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DomainErrorKind {
     // Project Management Errors
     ProjectNotFound { code: String },
