@@ -62,7 +62,8 @@ impl AnyTask {
         }
     }
 
-    pub fn assigned_resources(&self) -> &[String] {  // Zero-copy: retorna slice em vez de referência a Vec
+    pub fn assigned_resources(&self) -> &[String] {
+        // Zero-copy: retorna slice em vez de referência a Vec
         match self {
             AnyTask::Planned(task) => task.assigned_resources.as_slice(),
             AnyTask::InProgress(task) => task.assigned_resources.as_slice(),
@@ -83,7 +84,8 @@ impl AnyTask {
         }
     }
 
-    pub fn description(&self) -> Option<&str> {  // Zero-copy: retorna &str em vez de &String
+    pub fn description(&self) -> Option<&str> {
+        // Zero-copy: retorna &str em vez de &String
         match self {
             AnyTask::Planned(t) => t.description.as_deref(),
             AnyTask::InProgress(t) => t.description.as_deref(),

@@ -156,8 +156,9 @@ impl<S: ProjectState> Project<S> {
         if let (Some(start), Some(end)) = (&self.start_date, &self.end_date)
             && let (Ok(start_date), Ok(end_date)) = (
                 chrono::NaiveDate::parse_from_str(start, "%Y-%m-%d"),
-                chrono::NaiveDate::parse_from_str(end, "%Y-%m-%d")
-            ) {
+                chrono::NaiveDate::parse_from_str(end, "%Y-%m-%d"),
+            )
+        {
             return start_date <= end_date;
         }
         false
@@ -190,7 +191,7 @@ pub trait Transition {
 
 impl Transition for Project<Planned> {
     type NextState = InProgress;
-    
+
     fn transition(self) -> Project<InProgress> {
         Project {
             id: self.id,
@@ -209,7 +210,7 @@ impl Transition for Project<Planned> {
 
 impl Transition for Project<InProgress> {
     type NextState = Completed;
-    
+
     fn transition(self) -> Project<Completed> {
         Project {
             id: self.id,
@@ -229,7 +230,6 @@ impl Transition for Project<InProgress> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[test]
     fn test_project_creation_with_valid_data() {

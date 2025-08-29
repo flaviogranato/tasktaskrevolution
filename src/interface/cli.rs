@@ -8,6 +8,7 @@ use crate::{
         },
         initialize_repository_use_case::InitializeRepositoryUseCase,
         list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
+        project::assign_resource_to_task::AssignResourceToTaskUseCase,
         project::{
             cancel_project::CancelProjectUseCase,
             describe_project::DescribeProjectUseCase,
@@ -25,7 +26,6 @@ use crate::{
             link_task::LinkTaskUseCase,
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
-        project::assign_resource_to_task::AssignResourceToTaskUseCase,
         validate::vacations::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
@@ -1132,10 +1132,22 @@ mod tests {
 
     #[test]
     fn test_init_command_parsing() {
-        let args = vec!["ttr", "init", "--manager-name", "John Doe", "--manager-email", "john@example.com"];
+        let args = vec![
+            "ttr",
+            "init",
+            "--manager-name",
+            "John Doe",
+            "--manager-email",
+            "john@example.com",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
-        if let Commands::Init { manager_name, manager_email, .. } = cli.command {
+
+        if let Commands::Init {
+            manager_name,
+            manager_email,
+            ..
+        } = cli.command
+        {
             assert_eq!(manager_name, "John Doe");
             assert_eq!(manager_email, "john@example.com");
         } else {
@@ -1145,10 +1157,23 @@ mod tests {
 
     #[test]
     fn test_init_command_with_path() {
-        let args = vec!["ttr", "init", "/tmp/test", "--manager-name", "John Doe", "--manager-email", "john@example.com"];
+        let args = vec![
+            "ttr",
+            "init",
+            "/tmp/test",
+            "--manager-name",
+            "John Doe",
+            "--manager-email",
+            "john@example.com",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
-        if let Commands::Init { path, manager_name, manager_email } = cli.command {
+
+        if let Commands::Init {
+            path,
+            manager_name,
+            manager_email,
+        } = cli.command
+        {
             assert_eq!(path, Some(PathBuf::from("/tmp/test")));
             assert_eq!(manager_name, "John Doe");
             assert_eq!(manager_email, "john@example.com");
@@ -1161,7 +1186,7 @@ mod tests {
     fn test_build_command_parsing() {
         let args = vec!["ttr", "build"];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Build { path } = cli.command {
             assert_eq!(path, None);
         } else {
@@ -1173,7 +1198,7 @@ mod tests {
     fn test_build_command_with_path() {
         let args = vec!["ttr", "build", "/tmp/test"];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Build { path } = cli.command {
             assert_eq!(path, Some(PathBuf::from("/tmp/test")));
         } else {
@@ -1185,7 +1210,7 @@ mod tests {
     fn test_create_project_command() {
         let args = vec!["ttr", "create", "project", "My Project", "A test project"];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
             if let CreateCommands::Project { name, description } = create_command {
                 assert_eq!(name, "My Project");
@@ -1202,7 +1227,7 @@ mod tests {
     fn test_create_project_command_no_description() {
         let args = vec!["ttr", "create", "project", "My Project"];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
             if let CreateCommands::Project { name, description } = create_command {
                 assert_eq!(name, "My Project");
@@ -1219,7 +1244,7 @@ mod tests {
     fn test_create_resource_command() {
         let args = vec!["ttr", "create", "resource", "John Doe", "Developer"];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
             if let CreateCommands::Resource { name, resource_type } = create_command {
                 assert_eq!(name, "John Doe");
@@ -1234,11 +1259,28 @@ mod tests {
 
     #[test]
     fn test_create_vacation_command() {
-        let args = vec!["ttr", "create", "vacation", "--resource", "RES-001", "--start-date", "2024-01-01", "--end-date", "2024-01-05"];
+        let args = vec![
+            "ttr",
+            "create",
+            "vacation",
+            "--resource",
+            "RES-001",
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-01-05",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Vacation { resource, start_date, end_date, is_time_off_compensation, compensated_hours } = create_command {
+            if let CreateCommands::Vacation {
+                resource,
+                start_date,
+                end_date,
+                is_time_off_compensation,
+                compensated_hours,
+            } = create_command
+            {
                 assert_eq!(resource, "RES-001");
                 assert_eq!(start_date, "2024-01-01");
                 assert_eq!(end_date, "2024-01-05");
@@ -1254,11 +1296,31 @@ mod tests {
 
     #[test]
     fn test_create_vacation_command_with_compensation() {
-        let args = vec!["ttr", "create", "vacation", "--resource", "RES-001", "--start-date", "2024-01-01", "--end-date", "2024-01-05", "--is-time-off-compensation", "--compensated-hours", "40"];
+        let args = vec![
+            "ttr",
+            "create",
+            "vacation",
+            "--resource",
+            "RES-001",
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-01-05",
+            "--is-time-off-compensation",
+            "--compensated-hours",
+            "40",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Vacation { resource, start_date, end_date, is_time_off_compensation, compensated_hours } = create_command {
+            if let CreateCommands::Vacation {
+                resource,
+                start_date,
+                end_date,
+                is_time_off_compensation,
+                compensated_hours,
+            } = create_command
+            {
                 assert_eq!(resource, "RES-001");
                 assert_eq!(start_date, "2024-01-01");
                 assert_eq!(end_date, "2024-01-05");
@@ -1274,11 +1336,29 @@ mod tests {
 
     #[test]
     fn test_create_time_off_command() {
-        let args = vec!["ttr", "create", "time-off", "--resource", "RES-001", "--hours", "8", "--date", "2024-01-01", "--description", "Sick leave"];
+        let args = vec![
+            "ttr",
+            "create",
+            "time-off",
+            "--resource",
+            "RES-001",
+            "--hours",
+            "8",
+            "--date",
+            "2024-01-01",
+            "--description",
+            "Sick leave",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::TimeOff { resource, hours, date, description } = create_command {
+            if let CreateCommands::TimeOff {
+                resource,
+                hours,
+                date,
+                description,
+            } = create_command
+            {
                 assert_eq!(resource, "RES-001");
                 assert_eq!(hours, 8);
                 assert_eq!(date, "2024-01-01");
@@ -1293,11 +1373,27 @@ mod tests {
 
     #[test]
     fn test_create_time_off_command_no_description() {
-        let args = vec!["ttr", "create", "time-off", "--resource", "RES-001", "--hours", "8", "--date", "2024-01-01"];
+        let args = vec![
+            "ttr",
+            "create",
+            "time-off",
+            "--resource",
+            "RES-001",
+            "--hours",
+            "8",
+            "--date",
+            "2024-01-01",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::TimeOff { resource, hours, date, description } = create_command {
+            if let CreateCommands::TimeOff {
+                resource,
+                hours,
+                date,
+                description,
+            } = create_command
+            {
                 assert_eq!(resource, "RES-001");
                 assert_eq!(hours, 8);
                 assert_eq!(date, "2024-01-01");
@@ -1312,11 +1408,38 @@ mod tests {
 
     #[test]
     fn test_create_task_command() {
-        let args = vec!["ttr", "create", "task", "--project-code", "PROJ-001", "--code", "TASK-001", "--name", "Implement feature", "--description", "A test task", "--start-date", "2024-01-01", "--due-date", "2024-01-15", "--assignees", "RES-001,RES-002"];
+        let args = vec![
+            "ttr",
+            "create",
+            "task",
+            "--project-code",
+            "PROJ-001",
+            "--code",
+            "TASK-001",
+            "--name",
+            "Implement feature",
+            "--description",
+            "A test task",
+            "--start-date",
+            "2024-01-01",
+            "--due-date",
+            "2024-01-15",
+            "--assignees",
+            "RES-001,RES-002",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Task { project_code, code, name, description, start_date, due_date, assignees } = create_command {
+            if let CreateCommands::Task {
+                project_code,
+                code,
+                name,
+                description,
+                start_date,
+                due_date,
+                assignees,
+            } = create_command
+            {
                 assert_eq!(project_code, Some("PROJ-001".to_string()));
                 assert_eq!(code, Some("TASK-001".to_string()));
                 assert_eq!(name, "Implement feature");
@@ -1334,11 +1457,30 @@ mod tests {
 
     #[test]
     fn test_create_task_command_minimal() {
-        let args = vec!["ttr", "create", "task", "--name", "Implement feature", "--start-date", "2024-01-01", "--due-date", "2024-01-15"];
+        let args = vec![
+            "ttr",
+            "create",
+            "task",
+            "--name",
+            "Implement feature",
+            "--start-date",
+            "2024-01-01",
+            "--due-date",
+            "2024-01-15",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Task { project_code, code, name, description, start_date, due_date, assignees } = create_command {
+            if let CreateCommands::Task {
+                project_code,
+                code,
+                name,
+                description,
+                start_date,
+                due_date,
+                assignees,
+            } = create_command
+            {
                 assert_eq!(project_code, None);
                 assert_eq!(code, None);
                 assert_eq!(name, "Implement feature");
@@ -1357,11 +1499,11 @@ mod tests {
     #[test]
     fn test_list_commands() {
         let commands = vec!["projects", "resources", "tasks"];
-        
+
         for command in commands {
             let args = vec!["ttr", "list", command];
             let cli = Cli::try_parse_from(args).unwrap();
-            
+
             if let Commands::List { list_command } = cli.command {
                 match command {
                     "projects" => {
@@ -1370,21 +1512,21 @@ mod tests {
                         } else {
                             panic!("Expected ListCommands::Projects");
                         }
-                    },
+                    }
                     "resources" => {
                         if let ListCommands::Resources = list_command {
                             // OK
                         } else {
                             panic!("Expected ListCommands::Resources");
                         }
-                    },
+                    }
                     "tasks" => {
                         if let ListCommands::Tasks = list_command {
                             // OK
                         } else {
                             panic!("Expected ListCommands::Tasks");
                         }
-                    },
+                    }
                     _ => panic!("Unexpected command: {}", command),
                 }
             } else {
@@ -1395,9 +1537,17 @@ mod tests {
 
     #[test]
     fn test_update_project_command() {
-        let args = vec!["ttr", "update", "project", "--name", "New Project Name", "--description", "New description"];
+        let args = vec![
+            "ttr",
+            "update",
+            "project",
+            "--name",
+            "New Project Name",
+            "--description",
+            "New description",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Update { update_command } = cli.command {
             if let UpdateCommands::Project { name, description } = update_command {
                 assert_eq!(name, Some("New Project Name".to_string()));
@@ -1412,11 +1562,28 @@ mod tests {
 
     #[test]
     fn test_update_resource_command() {
-        let args = vec!["ttr", "update", "resource", "RES-001", "--name", "New Name", "--email", "new@email.com", "--resource-type", "Senior Developer"];
+        let args = vec![
+            "ttr",
+            "update",
+            "resource",
+            "RES-001",
+            "--name",
+            "New Name",
+            "--email",
+            "new@email.com",
+            "--resource-type",
+            "Senior Developer",
+        ];
         let cli = Cli::try_parse_from(args).unwrap();
-        
+
         if let Commands::Update { update_command } = cli.command {
-            if let UpdateCommands::Resource { code, name, email, resource_type } = update_command {
+            if let UpdateCommands::Resource {
+                code,
+                name,
+                email,
+                resource_type,
+            } = update_command
+            {
                 assert_eq!(code, "RES-001");
                 assert_eq!(name, Some("New Name".to_string()));
                 assert_eq!(email, Some("new@email.com".to_string()));
@@ -1449,7 +1616,7 @@ mod tests {
 
     #[test]
     fn test_cli_version_flag() {
-        let mut cli = Cli::command();
+        let cli = Cli::command();
         let version = cli.render_version().to_string();
         assert!(!version.is_empty());
     }
@@ -1475,7 +1642,7 @@ mod tests {
     fn test_cli_subcommand_help() {
         let mut cli = Cli::command();
         let help = cli.render_help().to_string();
-        
+
         // Verificar que todos os subcomandos estão documentados
         // Nota: Alguns comandos podem não aparecer no help principal
         assert!(help.contains("Commands:"));

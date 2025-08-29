@@ -43,7 +43,8 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
     fn has_valid_layoff_vacation(&self, vacations: &[Period], vacation_rules: &VacationRules) -> bool {
         if let Some(layoff_periods) = &vacation_rules.layoff_periods
             && let Some(require_layoff) = vacation_rules.require_layoff_vacation_period
-            && require_layoff {
+            && require_layoff
+        {
             // Verifica se pelo menos uma férias coincide com algum período de layoff
             for vacation in vacations {
                 for layoff_period in layoff_periods {
@@ -89,7 +90,8 @@ impl<P: ProjectRepository, R: ResourceRepository> ValidateVacationsUseCase<P, R>
 
                 // Verificar se há férias durante o período de layoff quando necessário
                 if let Some(vacation_rules) = project.vacation_rules()
-                    && !self.has_valid_layoff_vacation(vacations1, vacation_rules) {
+                    && !self.has_valid_layoff_vacation(vacations1, vacation_rules)
+                {
                     mensagens.push(format!(
                         "⚠️ {} não possui férias durante nenhum período de layoff",
                         resource1.name()
@@ -305,7 +307,11 @@ mod tests {
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("Não foram encontradas sobreposições"))
+        );
     }
 
     #[test]
@@ -354,7 +360,11 @@ mod tests {
         let result = use_case.execute().unwrap();
 
         // Não deve haver sobreposição quando há um dia de intervalo
-        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("Não foram encontradas sobreposições"))
+        );
     }
 
     #[test]
@@ -559,7 +569,11 @@ mod tests {
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("Não foram encontradas sobreposições"))
+        );
     }
 
     #[test]
@@ -590,20 +604,26 @@ mod tests {
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("Não foram encontradas sobreposições"))
+        );
     }
 
     #[test]
     fn test_vacation_overlap_empty_resources() {
         let mock_project_repo = MockProjectRepository { vacation_rules: None };
-        let mock_resource_repo = MockResourceRepository {
-            resources: vec![],
-        };
+        let mock_resource_repo = MockResourceRepository { resources: vec![] };
 
         let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
         let result = use_case.execute().unwrap();
 
-        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+        assert!(
+            result
+                .iter()
+                .any(|msg| msg.contains("Não foram encontradas sobreposições"))
+        );
     }
 
     #[test]

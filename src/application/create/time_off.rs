@@ -1,4 +1,7 @@
-use crate::domain::{resource_management::repository::ResourceRepository, shared::errors::{DomainError, DomainErrorKind}};
+use crate::domain::{
+    resource_management::repository::ResourceRepository,
+    shared::errors::{DomainError, DomainErrorKind},
+};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -22,14 +25,23 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
     #[allow(dead_code)]
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
         let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-            .map_err(|_| DomainError::new(DomainErrorKind::Generic { message: "Formato de data inválido. Use YYYY-MM-DD".to_string() }))?
+            .map_err(|_| {
+                DomainError::new(DomainErrorKind::Generic {
+                    message: "Formato de data inválido. Use YYYY-MM-DD".to_string(),
+                })
+            })?
             .and_hms_opt(0, 0, 0)
-            .ok_or_else(|| DomainError::new(DomainErrorKind::Generic { message: "Erro ao converter hora".to_string() }))?;
+            .ok_or_else(|| {
+                DomainError::new(DomainErrorKind::Generic {
+                    message: "Erro ao converter hora".to_string(),
+                })
+            })?;
 
-        Local
-            .from_local_datetime(&naive)
-            .earliest()
-            .ok_or_else(|| DomainError::new(DomainErrorKind::Generic { message: "Erro ao converter data local".to_string() }))
+        Local.from_local_datetime(&naive).earliest().ok_or_else(|| {
+            DomainError::new(DomainErrorKind::Generic {
+                message: "Erro ao converter data local".to_string(),
+            })
+        })
     }
 
     pub fn execute(
@@ -106,9 +118,11 @@ mod tests {
             let resource_any = resources
                 .iter_mut()
                 .find(|r| r.name() == resource_name)
-                .ok_or_else(|| DomainError::new(DomainErrorKind::ResourceNotFound { 
-                    code: "Resource not found".to_string() 
-                }))?;
+                .ok_or_else(|| {
+                    DomainError::new(DomainErrorKind::ResourceNotFound {
+                        code: "Resource not found".to_string(),
+                    })
+                })?;
 
             let updated = match resource_any {
                 AnyResource::Available(r) => {
@@ -121,10 +135,12 @@ mod tests {
                     updated_r.time_off_balance += hours;
                     AnyResource::Assigned(updated_r)
                 }
-                AnyResource::Inactive(_) => return Err(DomainError::new(DomainErrorKind::ResourceInvalidState { 
-                    current: "Inactive".to_string(),
-                    expected: "Active".to_string(),
-                })),
+                AnyResource::Inactive(_) => {
+                    return Err(DomainError::new(DomainErrorKind::ResourceInvalidState {
+                        current: "Inactive".to_string(),
+                        expected: "Active".to_string(),
+                    }));
+                }
             };
             *resource_any = updated.clone();
             Ok(updated)

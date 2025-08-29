@@ -1,5 +1,7 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::{DomainError, DomainErrorKind}, task_management::TaskBuilder,
+    project_management::repository::ProjectRepository,
+    shared::errors::{DomainError, DomainErrorKind},
+    task_management::TaskBuilder,
 };
 use chrono::NaiveDate;
 
@@ -34,17 +36,18 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         } = args;
 
         // 1. Load the project aggregate.
-        let mut project = self
-            .repository
-            .find_by_code(&project_code)?
-            .ok_or_else(|| DomainError::new(DomainErrorKind::ProjectNotFound { code: project_code.clone() }))?;
+        let mut project = self.repository.find_by_code(&project_code)?.ok_or_else(|| {
+            DomainError::new(DomainErrorKind::ProjectNotFound {
+                code: project_code.clone(),
+            })
+        })?;
 
         // 2. Delegate task creation to the project aggregate.
         // This is a placeholder for the future implementation of `project.add_task(...)`
         // For now, we'll keep the builder logic here.
         if start_date > due_date {
-            return Err(DomainError::new(DomainErrorKind::Generic { 
-                message: "Data de início não pode ser posterior à data de vencimento".to_string() 
+            return Err(DomainError::new(DomainErrorKind::Generic {
+                message: "Data de início não pode ser posterior à data de vencimento".to_string(),
             }));
         }
 
@@ -117,7 +120,9 @@ mod test {
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(DomainErrorKind::Generic { message: "Erro mockado ao salvar".to_string() }));
+                return Err(DomainError::new(DomainErrorKind::Generic {
+                    message: "Erro mockado ao salvar".to_string(),
+                }));
             }
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())

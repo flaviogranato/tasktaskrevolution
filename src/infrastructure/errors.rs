@@ -5,18 +5,53 @@ use std::fmt;
 /// Infrastructure-specific error types
 #[derive(Debug)]
 pub enum InfrastructureError {
-    FileNotFound { path: String },
-    FileReadError { path: String, details: String },
-    FileWriteError { path: String, details: String },
-    FileParseError { path: String, format: String, details: String },
-    DirectoryNotFound { path: String },
-    DirectoryCreateError { path: String, details: String },
-    PathInvalid { path: String, reason: String },
-    SerializationError { format: String, details: String },
-    DeserializationError { format: String, details: String },
-    NetworkError { operation: String, details: String },
-    DatabaseError { operation: String, details: String },
-    CacheError { operation: String, details: String },
+    FileNotFound {
+        path: String,
+    },
+    FileReadError {
+        path: String,
+        details: String,
+    },
+    FileWriteError {
+        path: String,
+        details: String,
+    },
+    FileParseError {
+        path: String,
+        format: String,
+        details: String,
+    },
+    DirectoryNotFound {
+        path: String,
+    },
+    DirectoryCreateError {
+        path: String,
+        details: String,
+    },
+    PathInvalid {
+        path: String,
+        reason: String,
+    },
+    SerializationError {
+        format: String,
+        details: String,
+    },
+    DeserializationError {
+        format: String,
+        details: String,
+    },
+    NetworkError {
+        operation: String,
+        details: String,
+    },
+    DatabaseError {
+        operation: String,
+        details: String,
+    },
+    CacheError {
+        operation: String,
+        details: String,
+    },
 }
 
 impl fmt::Display for InfrastructureError {
@@ -67,48 +102,39 @@ impl StdError for InfrastructureError {}
 impl From<InfrastructureError> for DomainError {
     fn from(err: InfrastructureError) -> Self {
         match err {
-            InfrastructureError::FileNotFound { path } => {
-                DomainError::new(DomainErrorKind::Io {
-                    operation: "file read".to_string(),
-                    path: Some(path),
-                })
-            }
-            InfrastructureError::FileReadError { path, details } => {
-                DomainError::new(DomainErrorKind::Io {
-                    operation: "file read".to_string(),
-                    path: Some(path),
-                }).with_context(details)
-            }
-            InfrastructureError::FileWriteError { path, details } => {
-                DomainError::new(DomainErrorKind::Io {
-                    operation: "file write".to_string(),
-                    path: Some(path),
-                }).with_context(details)
-            }
+            InfrastructureError::FileNotFound { path } => DomainError::new(DomainErrorKind::Io {
+                operation: "file read".to_string(),
+                path: Some(path),
+            }),
+            InfrastructureError::FileReadError { path, details } => DomainError::new(DomainErrorKind::Io {
+                operation: "file read".to_string(),
+                path: Some(path),
+            })
+            .with_context(details),
+            InfrastructureError::FileWriteError { path, details } => DomainError::new(DomainErrorKind::Io {
+                operation: "file write".to_string(),
+                path: Some(path),
+            })
+            .with_context(details),
             InfrastructureError::FileParseError { path, format, details } => {
                 DomainError::new(DomainErrorKind::Serialization {
                     format,
                     details: format!("Parse error at path '{}': {}", path, details),
                 })
             }
-            InfrastructureError::DirectoryNotFound { path } => {
-                DomainError::new(DomainErrorKind::Io {
-                    operation: "directory access".to_string(),
-                    path: Some(path),
-                })
-            }
-            InfrastructureError::DirectoryCreateError { path, details } => {
-                DomainError::new(DomainErrorKind::Io {
-                    operation: "directory creation".to_string(),
-                    path: Some(path),
-                }).with_context(details)
-            }
-            InfrastructureError::PathInvalid { path, reason } => {
-                DomainError::new(DomainErrorKind::ValidationError {
-                    field: "path".to_string(),
-                    message: format!("Path '{}' is invalid: {}", path, reason),
-                })
-            }
+            InfrastructureError::DirectoryNotFound { path } => DomainError::new(DomainErrorKind::Io {
+                operation: "directory access".to_string(),
+                path: Some(path),
+            }),
+            InfrastructureError::DirectoryCreateError { path, details } => DomainError::new(DomainErrorKind::Io {
+                operation: "directory creation".to_string(),
+                path: Some(path),
+            })
+            .with_context(details),
+            InfrastructureError::PathInvalid { path, reason } => DomainError::new(DomainErrorKind::ValidationError {
+                field: "path".to_string(),
+                message: format!("Path '{}' is invalid: {}", path, reason),
+            }),
             InfrastructureError::SerializationError { format, details } => {
                 DomainError::new(DomainErrorKind::Serialization { format, details })
             }
@@ -280,7 +306,7 @@ mod tests {
             path: "/test/path".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
             assert_eq!(operation, "file read");
             assert_eq!(path, &Some("/test/path".to_string()));
@@ -296,14 +322,14 @@ mod tests {
             details: "Permission denied".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
             assert_eq!(operation, "file read");
             assert_eq!(path, &Some("/test/path".to_string()));
         } else {
             panic!("Expected Io error kind");
         }
-        
+
         assert_eq!(domain_error.context(), Some(&"Permission denied".to_string()));
     }
 
@@ -314,14 +340,14 @@ mod tests {
             details: "Disk full".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
             assert_eq!(operation, "file write");
             assert_eq!(path, &Some("/test/path".to_string()));
         } else {
             panic!("Expected Io error kind");
         }
-        
+
         assert_eq!(domain_error.context(), Some(&"Disk full".to_string()));
     }
 
@@ -333,7 +359,7 @@ mod tests {
             details: "Invalid syntax".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Serialization { format, details } = domain_error.kind() {
             assert_eq!(format, "YAML");
             assert!(details.contains("Parse error at path '/test/path.yaml'"));
@@ -349,7 +375,7 @@ mod tests {
             path: "/test/dir".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
             assert_eq!(operation, "directory access");
             assert_eq!(path, &Some("/test/dir".to_string()));
@@ -365,14 +391,14 @@ mod tests {
             details: "Permission denied".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
             assert_eq!(operation, "directory creation");
             assert_eq!(path, &Some("/test/dir".to_string()));
         } else {
             panic!("Expected Io error kind");
         }
-        
+
         assert_eq!(domain_error.context(), Some(&"Permission denied".to_string()));
     }
 
@@ -383,7 +409,7 @@ mod tests {
             reason: "Contains invalid characters".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::ValidationError { field, message } = domain_error.kind() {
             assert_eq!(field, "path");
             assert!(message.contains("Path '/invalid/path' is invalid"));
@@ -400,7 +426,7 @@ mod tests {
             details: "Invalid data structure".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Serialization { format, details } = domain_error.kind() {
             assert_eq!(format, "JSON");
             assert_eq!(details, "Invalid data structure");
@@ -416,7 +442,7 @@ mod tests {
             details: "Malformed XML".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::Serialization { format, details } = domain_error.kind() {
             assert_eq!(format, "XML");
             assert_eq!(details, "Malformed XML");
@@ -432,7 +458,7 @@ mod tests {
             details: "Connection timeout".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::RepositoryError { operation, details } = domain_error.kind() {
             assert_eq!(operation, "HTTP request");
             assert_eq!(details, "Connection timeout");
@@ -448,7 +474,7 @@ mod tests {
             details: "Connection lost".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::RepositoryError { operation, details } = domain_error.kind() {
             assert_eq!(operation, "SELECT query");
             assert_eq!(details, "Connection lost");
@@ -464,7 +490,7 @@ mod tests {
             details: "Cache miss".to_string(),
         };
         let domain_error: DomainError = infra_error.into();
-        
+
         if let DomainErrorKind::RepositoryError { operation, details } = domain_error.kind() {
             assert_eq!(operation, "GET operation");
             assert_eq!(details, "Cache miss");
@@ -486,7 +512,7 @@ mod tests {
             path: "/test/path".to_string(),
         });
         assert!(result.is_err());
-        
+
         if let Err(InfrastructureError::FileNotFound { path }) = result {
             assert_eq!(path, "/test/path");
         } else {

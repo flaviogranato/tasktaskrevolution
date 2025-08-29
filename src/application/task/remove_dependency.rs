@@ -1,7 +1,5 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository,
-    shared::errors::DomainError,
-    task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -59,7 +57,10 @@ where
             return Err(RemoveDependencyError::TaskNotFound(task_code.to_string()));
         }
         if !project.tasks().contains_key(dependency_code) {
-            return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string(), task_code.to_string()));
+            return Err(RemoveDependencyError::DependencyNotFound(
+                dependency_code.to_string(),
+                task_code.to_string(),
+            ));
         }
 
         // 3. Check if the dependency actually exists
@@ -73,12 +74,18 @@ where
         };
 
         if !dependencies.contains(&dependency_code.to_string()) {
-            return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string(), task_code.to_string()));
+            return Err(RemoveDependencyError::DependencyNotFound(
+                dependency_code.to_string(),
+                task_code.to_string(),
+            ));
         }
 
         // 4. Validate that removing the dependency won't break critical constraints
         if self.is_task_blocked_by_dependency(&project, task_code, dependency_code)? {
-            return Err(RemoveDependencyError::TaskBlockedByDependency(task_code.to_string(), dependency_code.to_string()));
+            return Err(RemoveDependencyError::TaskBlockedByDependency(
+                task_code.to_string(),
+                dependency_code.to_string(),
+            ));
         }
 
         // 5. Remove the dependency from the task
@@ -98,7 +105,7 @@ where
     ) -> Result<bool, RemoveDependencyError> {
         // This is a simplified check - in a real system, you might want more sophisticated validation
         // For now, we'll just check if the task is currently blocked and the dependency is the only blocker
-        
+
         let task = project.tasks().get(task_code).unwrap();
         let dependencies = match task {
             AnyTask::Planned(t) => &t.dependencies,
@@ -195,12 +202,12 @@ mod tests {
         // Arrange
         let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
         let task_b = create_test_task("TASK-B", vec![]);
-        
+
         let project = setup_test_project(vec![task_a.into(), task_b.into()]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
         };
-        
+
         let use_case = RemoveTaskDependencyUseCase::new(project_repo);
 
         // Act
@@ -210,7 +217,7 @@ mod tests {
         assert!(result.is_ok());
         let updated_task = result.unwrap();
         assert_eq!(updated_task.code(), "TASK-A");
-        
+
         // Verify dependency was removed by checking the returned task
         let dependencies = match updated_task {
             AnyTask::Planned(t) => t.dependencies.clone(),
@@ -225,7 +232,7 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::new()),
         };
-        
+
         let use_case = RemoveTaskDependencyUseCase::new(project_repo);
 
         // Act
@@ -240,11 +247,11 @@ mod tests {
         // Arrange
         let task_b = create_test_task("TASK-B", vec![]);
         let project = setup_test_project(vec![task_b.into()]);
-        
+
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
-        
+
         let use_case = RemoveTaskDependencyUseCase::new(project_repo);
 
         // Act
@@ -259,12 +266,12 @@ mod tests {
         // Arrange
         let task_a = create_test_task("TASK-A", vec![]);
         let task_b = create_test_task("TASK-B", vec![]);
-        
+
         let project = setup_test_project(vec![task_a.into(), task_b.into()]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
-        
+
         let use_case = RemoveTaskDependencyUseCase::new(project_repo);
 
         // Act

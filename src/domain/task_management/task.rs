@@ -179,7 +179,7 @@ impl DateRange {
 pub enum TaskError {
     InvalidDateRange,
     ResourceOnVacation(String),
-    MissingField(String),  // Otimizado: removido &'static str desnecessário
+    MissingField(String), // Otimizado: removido &'static str desnecessário
 }
 
 impl std::fmt::Display for TaskError {
@@ -292,7 +292,7 @@ pub trait Transition {
 
 impl Transition for Task<Planned> {
     type NextState = InProgress;
-    
+
     fn transition(self) -> Task<InProgress> {
         Task {
             id: self.id,
@@ -312,7 +312,7 @@ impl Transition for Task<Planned> {
 
 impl Transition for Task<InProgress> {
     type NextState = Completed;
-    
+
     fn transition(self) -> Task<Completed> {
         Task {
             id: self.id,
@@ -574,8 +574,6 @@ mod tests {
 
         assert!(!invalid_task.is_date_range_valid());
     }
-
-
 
     #[test]
     fn test_task_comprehensive_validation() {

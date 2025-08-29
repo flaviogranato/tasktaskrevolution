@@ -47,7 +47,7 @@ where
     ) -> Result<AnyProject, AssignResourceToTaskError> {
         // 1. Validate that all resources exist
         let all_resources = self.resource_repository.find_all()?;
-        let existing_resource_codes: std::collections::HashSet<String> = 
+        let existing_resource_codes: std::collections::HashSet<String> =
             all_resources.iter().map(|r| r.code().to_string()).collect();
 
         let not_found_resources: Vec<String> = resource_codes
@@ -135,11 +135,24 @@ mod tests {
             unimplemented!()
         }
 
-        fn save_time_off(&self, _name: &str, _hours: u32, _date: &str, _desc: Option<String>) -> Result<AnyResource, DomainError> {
+        fn save_time_off(
+            &self,
+            _name: &str,
+            _hours: u32,
+            _date: &str,
+            _desc: Option<String>,
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
 
-        fn save_vacation(&self, _name: &str, _start: &str, _end: &str, _comp: bool, _hours: Option<u32>) -> Result<AnyResource, DomainError> {
+        fn save_vacation(
+            &self,
+            _name: &str,
+            _start: &str,
+            _end: &str,
+            _comp: bool,
+            _hours: Option<u32>,
+        ) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }
 

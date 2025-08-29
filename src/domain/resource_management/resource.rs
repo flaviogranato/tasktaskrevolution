@@ -250,7 +250,7 @@ pub trait Transition {
 
 impl Transition for Resource<Available> {
     type NextState = Inactive;
-    
+
     fn transition(self) -> Resource<Inactive> {
         Resource {
             id: self.id,
@@ -268,7 +268,7 @@ impl Transition for Resource<Available> {
 
 impl Transition for Resource<Inactive> {
     type NextState = Available;
-    
+
     fn transition(self) -> Resource<Available> {
         Resource {
             id: self.id,

@@ -5,7 +5,7 @@ use uuid7::uuid7;
 pub trait EntityFactory<T, P = ()> {
     /// Create a new entity with the given parameters
     fn create(&self, params: P) -> T;
-    
+
     /// Create a new entity with default parameters
     fn create_default(&self) -> T
     where
@@ -15,7 +15,7 @@ pub trait EntityFactory<T, P = ()> {
 /// A factory trait for creating entities with validation
 pub trait ValidatedEntityFactory<T, P = ()> {
     type Error;
-    
+
     /// Create a new entity with validation
     fn create_validated(&self, params: P) -> Result<T, Self::Error>;
 }
@@ -38,20 +38,20 @@ impl<T, P> FactoryRegistry<T, P> {
             factories: HashMap::new(),
         }
     }
-    
+
     /// Register a factory with a name
-    pub fn register<F>(&mut self, name: impl Into<String>, factory: F) 
+    pub fn register<F>(&mut self, name: impl Into<String>, factory: F)
     where
-        F: EntityFactory<T, P> + 'static,  // 'static necessário para Box<dyn>
+        F: EntityFactory<T, P> + 'static, // 'static necessário para Box<dyn>
     {
         self.factories.insert(name.into(), Box::new(factory));
     }
-    
+
     /// Get a factory by name
     pub fn get(&self, name: &str) -> Option<&dyn EntityFactory<T, P>> {
         self.factories.get(name).map(|f| f.as_ref())
     }
-    
+
     /// Create an entity using the specified factory
     pub fn create(&self, factory_name: &str, params: P) -> Option<T> {
         self.get(factory_name).map(|f| f.create(params))
@@ -76,7 +76,7 @@ where
 {
     /// Create a new simple factory
     pub fn new(creator: F) -> Self {
-        Self { 
+        Self {
             creator,
             _phantom: std::marker::PhantomData,
         }
@@ -90,7 +90,7 @@ where
     fn create(&self, params: P) -> T {
         (self.creator)(params)
     }
-    
+
     fn create_default(&self) -> T
     where
         P: Default,
@@ -111,7 +111,7 @@ where
 {
     /// Create a new unique ID factory
     pub fn new(creator: F) -> Self {
-        Self { 
+        Self {
             creator,
             _phantom: std::marker::PhantomData,
         }
@@ -126,7 +126,7 @@ where
     fn create(&self, params: P) -> T {
         (self.creator)(params, uuid7())
     }
-    
+
     fn create_default(&self) -> T {
         (self.creator)(Default::default(), uuid7())
     }

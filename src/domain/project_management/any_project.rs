@@ -312,7 +312,8 @@ impl AnyProject {
         }
     }
 
-    pub fn status(&self) -> &str {  // Otimizado: removido 'static desnecessário
+    pub fn status(&self) -> &str {
+        // Otimizado: removido 'static desnecessário
         match self {
             AnyProject::Planned(_) => "Planned",
             AnyProject::InProgress(_) => "InProgress",
