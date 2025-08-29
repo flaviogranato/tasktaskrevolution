@@ -420,7 +420,7 @@ mod tests {
         }
 
         fn can_retry(&self) -> bool {
-            self.retry_count < self.max_retries
+            self.retry_count < self.max_retries()
         }
 
         fn increment_retry_count(&mut self) {
@@ -499,34 +499,45 @@ mod tests {
 
     #[test]
     fn test_mock_command_execute_failure() {
-        let command = MockCommand::new("test", "Test command")
-            .with_can_execute(false);
+        let command = MockCommand::new("test", "Test command").with_can_execute(false);
         let result = command.execute();
         assert!(result.is_err());
+        
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Command cannot be executed"));
+        }
     }
 
     #[test]
     fn test_mock_command_validation_success() {
         let command = MockCommand::new("test", "Test command");
-        let result = command.validate();
-        assert!(result.is_ok());
+        assert!(command.validate().is_ok());
     }
 
     #[test]
     fn test_mock_command_validation_failure() {
-        let error = DomainError::new(
-            crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                field: "test".to_string(),
-                message: "Validation failed".to_string(),
-            },
-        );
         let command = MockCommand::new("test", "Test command")
-            .with_validation_result(Err(error));
+            .with_validation_result(Err(DomainError::new(
+                crate::domain::shared::errors::DomainErrorKind::ValidationError {
+                    field: "test".to_string(),
+                    message: "Validation failed".to_string(),
+                },
+            )));
         let result = command.validate();
         assert!(result.is_err());
+        
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Validation failed"));
+        }
     }
 
     // Tests for UndoableCommand trait
+    #[test]
+    fn test_undoable_command_can_undo() {
+        let command = MockUndoableCommand::new("test", "Test command");
+        assert!(command.can_undo());
+    }
+
     #[test]
     fn test_undoable_command_undo_success() {
         let command = MockUndoableCommand::new("test", "Test command");
@@ -537,37 +548,30 @@ mod tests {
 
     #[test]
     fn test_undoable_command_undo_failure() {
-        let command = MockUndoableCommand::new("test", "Test command")
-            .with_can_undo(false);
+        let command = MockUndoableCommand::new("test", "Test command").with_can_undo(false);
         let result = command.undo();
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_undoable_command_can_undo() {
-        let command = MockUndoableCommand::new("test", "Test command");
-        assert!(command.can_undo());
+        
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Command cannot be undone"));
+        }
     }
 
     // Tests for RetryableCommand trait
     #[test]
-    fn test_retryable_command_retry_count() {
+    fn test_retryable_command_can_retry() {
         let command = MockRetryableCommand::new("test", "Test command");
+        assert!(command.can_retry());
         assert_eq!(command.retry_count(), 0);
         assert_eq!(command.max_retries(), 3);
     }
 
     #[test]
-    fn test_retryable_command_can_retry() {
-        let command = MockRetryableCommand::new("test", "Test command");
-        assert!(command.can_retry());
-    }
-
-    #[test]
-    fn test_retryable_command_cannot_retry() {
+    fn test_retryable_command_retry_count() {
         let command = MockRetryableCommand::new("test", "Test command")
-            .with_retry_count(3);
-        assert!(!command.can_retry());
+            .with_retry_count(2);
+        assert_eq!(command.retry_count(), 2);
+        assert!(command.can_retry());
     }
 
     #[test]
@@ -580,19 +584,80 @@ mod tests {
         assert_eq!(command.retry_count(), 2);
     }
 
+    #[test]
+    fn test_retryable_command_cannot_retry() {
+        let mut command = MockRetryableCommand::new("test", "Test command")
+            .with_retry_count(3);
+        assert!(!command.can_retry());
+        command.increment_retry_count();
+        assert!(!command.can_retry());
+    }
+
+    // Tests for SchedulableCommand trait
+    #[test]
+    fn test_schedulable_command_should_execute_now_no_schedule() {
+        let command = MockSchedulableCommand::new("test", "Test command");
+        assert!(command.should_execute_now());
+    }
+
+    #[test]
+    fn test_schedulable_command_should_execute_now_past_schedule() {
+        let past_time = chrono::Utc::now() - chrono::Duration::hours(1);
+        let command = MockSchedulableCommand::new("test", "Test command")
+            .with_scheduled_time(past_time);
+        assert!(command.should_execute_now());
+    }
+
+    #[test]
+    fn test_schedulable_command_should_execute_now_future_schedule() {
+        let future_time = chrono::Utc::now() + chrono::Duration::hours(1);
+        let command = MockSchedulableCommand::new("test", "Test command")
+            .with_scheduled_time(future_time);
+        assert!(!command.should_execute_now());
+    }
+
+    // Tests for ValidatableCommand trait
+    #[test]
+    fn test_validatable_command_trait() {
+        let command = MockValidatableCommand::new("test", "Test command");
+        assert!(<MockValidatableCommand as Command>::validate(&command).is_ok());
+        let errors = command.validation_errors();
+        assert!(errors.is_empty());
+    }
+
+    // Tests for AuthorizableCommand trait
+    #[test]
+    fn test_authorizable_command_trait() {
+        let command = MockAuthorizableCommand::new("test", "Test command");
+        assert!(command.is_authorized("admin"));
+        assert!(!command.is_authorized("user"));
+        let permissions = command.required_permissions();
+        assert_eq!(permissions.len(), 2);
+        assert!(permissions.contains(&"admin".to_string()));
+        assert!(permissions.contains(&"write".to_string()));
+    }
+
+    // Tests for LoggableCommand trait
+    #[test]
+    fn test_loggable_command_trait() {
+        let command = MockLoggableCommand::new("test", "Test command");
+        let log_entry = command.log_entry();
+        assert_eq!(log_entry.command_name, "test");
+        assert_eq!(log_entry.user, "test_user");
+        assert!(log_entry.result.is_none());
+    }
+
     // Tests for CommandBus
     #[test]
     fn test_command_bus_new() {
-        let _bus = CommandBus::new();
-        // Just test that it can be created without errors
-        assert!(true);
+        let bus = CommandBus::new();
+        assert!(bus.handlers.is_empty());
     }
 
     #[test]
     fn test_command_bus_default() {
-        let _bus = CommandBus::default();
-        // Just test that it can be created without errors
-        assert!(true);
+        let bus = CommandBus::default();
+        assert!(bus.handlers.is_empty());
     }
 
     #[test]
@@ -601,32 +666,36 @@ mod tests {
         let command = MockCommand::new("test", "Test command");
         let result = bus.execute(&command);
         assert!(result.is_err());
+        
+        if let Err(err) = result {
+            assert!(err.to_string().contains("No handler found for command"));
+        }
     }
 
     // Tests for CommandLogEntry
     #[test]
     fn test_command_log_entry_new() {
-        let parameters = serde_yaml::to_value("test params").unwrap();
-        let entry = CommandLogEntry::new("test_user", "test_command", parameters.clone());
+        let params = serde_yaml::to_value("test_params").unwrap();
+        let entry = CommandLogEntry::new("test_user", "test_command", params.clone());
         assert_eq!(entry.user, "test_user");
         assert_eq!(entry.command_name, "test_command");
-        assert_eq!(entry.parameters, parameters);
+        assert_eq!(entry.parameters, params);
         assert!(entry.result.is_none());
     }
 
     #[test]
     fn test_command_log_entry_with_result() {
-        let parameters = serde_yaml::to_value("test params").unwrap();
+        let params = serde_yaml::to_value("test_params").unwrap();
         let result = CommandResult::success("Success");
-        let entry = CommandLogEntry::new("test_user", "test_command", parameters)
+        let entry = CommandLogEntry::new("test_user", "test_command", params)
             .with_result(result.clone());
         assert_eq!(entry.result, Some(result));
     }
 
     #[test]
     fn test_command_log_entry_debug_formatting() {
-        let parameters = serde_yaml::to_value("test params").unwrap();
-        let entry = CommandLogEntry::new("test_user", "test_command", parameters);
+        let params = serde_yaml::to_value("test_params").unwrap();
+        let entry = CommandLogEntry::new("test_user", "test_command", params);
         let debug_str = format!("{:?}", entry);
         assert!(debug_str.contains("test_user"));
         assert!(debug_str.contains("test_command"));
@@ -634,8 +703,8 @@ mod tests {
 
     #[test]
     fn test_command_log_entry_clone() {
-        let parameters = serde_yaml::to_value("test params").unwrap();
-        let entry = CommandLogEntry::new("test_user", "test_command", parameters);
+        let params = serde_yaml::to_value("test_params").unwrap();
+        let entry = CommandLogEntry::new("test_user", "test_command", params);
         let cloned = entry.clone();
         assert_eq!(entry.user, cloned.user);
         assert_eq!(entry.command_name, cloned.command_name);
@@ -643,76 +712,314 @@ mod tests {
         assert_eq!(entry.result, cloned.result);
     }
 
-    // Tests for SchedulableCommand trait
-    #[test]
-    fn test_schedulable_command_should_execute_now_no_schedule() {
-        let _command = MockCommand::new("test", "Test command");
-        // Since MockCommand doesn't implement SchedulableCommand, we test the default behavior
-        // The default implementation should return true when no time is scheduled
-        assert!(true);
+    // Additional mock implementations for comprehensive testing
+    #[derive(Debug)]
+    struct MockSchedulableCommand {
+        base: MockCommand,
+        scheduled_time: Option<chrono::DateTime<chrono::Utc>>,
     }
 
-    // Tests for ValidatableCommand trait
-    #[test]
-    fn test_validatable_command_trait() {
-        // Test that the trait can be used as a bound
-        let command = MockCommand::new("test", "Test command");
-        // The MockCommand implements the default validate method
-        let result = command.validate();
-        assert!(result.is_ok());
-    }
-
-    // Tests for AuthorizableCommand trait
-    #[test]
-    fn test_authorizable_command_trait() {
-        // Test that the trait can be used as a bound
-        let _command = MockCommand::new("test", "Test command");
-        // The MockCommand doesn't implement AuthorizableCommand, so we just test compilation
-        assert!(true);
-    }
-
-    // Tests for LoggableCommand trait
-    #[test]
-    fn test_loggable_command_trait() {
-        // Test that the trait can be used as a bound
-        let _command = MockCommand::new("test", "Test command");
-        // The MockCommand doesn't implement LoggableCommand, so we just test compilation
-        assert!(true);
-    }
-
-    // Tests for CommandHandler trait
-    #[test]
-    fn test_command_handler_trait() {
-        // Test that the trait can be used as a bound
-        let _command = MockCommand::new("test", "Test command");
-        // The MockCommand doesn't implement CommandHandler, so we just test compilation
-        assert!(true);
-    }
-
-    // Tests for error handling
-    #[test]
-    fn test_command_execution_with_validation_error() {
-        let error = DomainError::new(
-            crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                field: "test".to_string(),
-                message: "Validation failed".to_string(),
-            },
-        );
-        let command = MockCommand::new("test", "Test command")
-            .with_validation_result(Err(error));
-        let result = command.validate();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_command_execution_with_generic_error() {
-        let command = MockCommand::new("test", "Test command")
-            .with_can_execute(false);
-        let result = command.execute();
-        assert!(result.is_err());
-        if let Err(error) = result {
-            assert!(matches!(error.kind(), 
-                crate::domain::shared::errors::DomainErrorKind::Generic { .. }));
+    impl MockSchedulableCommand {
+        fn new(name: &str, description: &str) -> Self {
+            Self {
+                base: MockCommand::new(name, description),
+                scheduled_time: None,
+            }
         }
+
+        fn with_scheduled_time(mut self, time: chrono::DateTime<chrono::Utc>) -> Self {
+            self.scheduled_time = Some(time);
+            self
+        }
+    }
+
+    impl Command for MockSchedulableCommand {
+        fn execute(&self) -> Result<CommandResult, DomainError> {
+            self.base.execute()
+        }
+
+        fn name(&self) -> &str {
+            self.base.name()
+        }
+
+        fn description(&self) -> &str {
+            self.base.description()
+        }
+
+        fn can_execute(&self) -> bool {
+            self.base.can_execute()
+        }
+
+        fn validate(&self) -> Result<(), DomainError> {
+            self.base.validate()
+        }
+    }
+
+    impl SchedulableCommand for MockSchedulableCommand {
+        fn scheduled_time(&self) -> Option<chrono::DateTime<chrono::Utc>> {
+            self.scheduled_time
+        }
+    }
+
+    #[derive(Debug)]
+    struct MockValidatableCommand {
+        base: MockCommand,
+    }
+
+    impl MockValidatableCommand {
+        fn new(name: &str, description: &str) -> Self {
+            Self {
+                base: MockCommand::new(name, description),
+            }
+        }
+    }
+
+    impl Command for MockValidatableCommand {
+        fn execute(&self) -> Result<CommandResult, DomainError> {
+            self.base.execute()
+        }
+
+        fn name(&self) -> &str {
+            self.base.name()
+        }
+
+        fn description(&self) -> &str {
+            self.base.description()
+        }
+
+        fn can_execute(&self) -> bool {
+            self.base.can_execute()
+        }
+
+        fn validate(&self) -> Result<(), DomainError> {
+            self.base.validate()
+        }
+    }
+
+    impl ValidatableCommand for MockValidatableCommand {
+        fn validate(&self) -> Result<(), DomainError> {
+            self.base.validate()
+        }
+
+        fn validation_errors(&self) -> Vec<String> {
+            match self.base.validate() {
+                Ok(()) => Vec::new(),
+                Err(err) => vec![err.to_string()],
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct MockAuthorizableCommand {
+        base: MockCommand,
+    }
+
+    impl MockAuthorizableCommand {
+        fn new(name: &str, description: &str) -> Self {
+            Self {
+                base: MockCommand::new(name, description),
+            }
+        }
+    }
+
+    impl Command for MockAuthorizableCommand {
+        fn execute(&self) -> Result<CommandResult, DomainError> {
+            self.base.execute()
+        }
+
+        fn name(&self) -> &str {
+            self.base.name()
+        }
+
+        fn description(&self) -> &str {
+            self.base.description()
+        }
+
+        fn can_execute(&self) -> bool {
+            self.base.can_execute()
+        }
+
+        fn validate(&self) -> Result<(), DomainError> {
+            self.base.validate()
+        }
+    }
+
+    impl AuthorizableCommand for MockAuthorizableCommand {
+        fn is_authorized(&self, user: &str) -> bool {
+            user == "admin"
+        }
+
+        fn required_permissions(&self) -> Vec<String> {
+            vec!["admin".to_string(), "write".to_string()]
+        }
+    }
+
+    #[derive(Debug)]
+    struct MockLoggableCommand {
+        base: MockCommand,
+    }
+
+    impl MockLoggableCommand {
+        fn new(name: &str, description: &str) -> Self {
+            Self {
+                base: MockCommand::new(name, description),
+            }
+        }
+    }
+
+    impl Command for MockLoggableCommand {
+        fn execute(&self) -> Result<CommandResult, DomainError> {
+            self.base.execute()
+        }
+
+        fn name(&self) -> &str {
+            self.base.name()
+        }
+
+        fn description(&self) -> &str {
+            self.base.description()
+        }
+
+        fn can_execute(&self) -> bool {
+            self.base.can_execute()
+        }
+
+        fn validate(&self) -> Result<(), DomainError> {
+            self.base.validate()
+        }
+    }
+
+    impl LoggableCommand for MockLoggableCommand {
+        fn log_entry(&self) -> CommandLogEntry {
+            CommandLogEntry::new("test_user", self.name(), serde_yaml::to_value("{}").unwrap())
+        }
+    }
+
+    // Tests for RedoableCommand trait
+    #[test]
+    fn test_redoable_command_redo_success() {
+        let command = MockRedoableCommand::new("test", "Test command");
+        let result = command.redo().unwrap();
+        assert!(result.success);
+        assert_eq!(result.message, "Command redone successfully");
+    }
+
+    #[test]
+    fn test_redoable_command_redo_failure() {
+        let command = MockRedoableCommand::new("test", "Test command").with_can_redo(false);
+        let result = command.redo();
+        assert!(result.is_err());
+        
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Command cannot be redone"));
+        }
+    }
+
+    #[derive(Debug)]
+    struct MockRedoableCommand {
+        base: MockUndoableCommand,
+        can_redo: bool,
+    }
+
+    impl MockRedoableCommand {
+        fn new(name: &str, description: &str) -> Self {
+            Self {
+                base: MockUndoableCommand::new(name, description),
+                can_redo: true,
+            }
+        }
+
+        fn with_can_redo(mut self, can_redo: bool) -> Self {
+            self.can_redo = can_redo;
+            self
+        }
+    }
+
+    impl Command for MockRedoableCommand {
+        fn execute(&self) -> Result<CommandResult, DomainError> {
+            self.base.execute()
+        }
+
+        fn name(&self) -> &str {
+            self.base.name()
+        }
+
+        fn description(&self) -> &str {
+            self.base.description()
+        }
+
+        fn can_execute(&self) -> bool {
+            self.base.can_execute()
+        }
+
+        fn validate(&self) -> Result<(), DomainError> {
+            self.base.validate()
+        }
+    }
+
+    impl UndoableCommand for MockRedoableCommand {
+        fn undo(&self) -> Result<CommandResult, DomainError> {
+            self.base.undo()
+        }
+
+        fn can_undo(&self) -> bool {
+            self.base.can_undo()
+        }
+    }
+
+    impl RedoableCommand for MockRedoableCommand {
+        fn redo(&self) -> Result<CommandResult, DomainError> {
+            if self.can_redo {
+                Ok(CommandResult::success("Command redone successfully"))
+            } else {
+                Err(DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: "Command cannot be redone".to_string(),
+                    },
+                ))
+            }
+        }
+    }
+
+    // Tests for CommandBus register_handler (even though it's not fully implemented)
+    #[test]
+    fn test_command_bus_register_handler() {
+        let mut bus = CommandBus::new();
+        // This test just ensures the method doesn't panic
+        bus.register_handler::<MockCommand, MockCommandHandler>(MockCommandHandler);
+    }
+
+    #[derive(Debug)]
+    struct MockCommandHandler;
+
+    impl CommandHandler<MockCommand> for MockCommandHandler {
+        fn handle(&self, _command: &MockCommand) -> Result<CommandResult, DomainError> {
+            Ok(CommandResult::success("Handled by mock handler"))
+        }
+    }
+
+    // Tests for edge cases and error conditions
+    #[test]
+    fn test_command_result_with_complex_data() {
+        let complex_data = serde_yaml::to_value(vec![1, 2, 3]).unwrap();
+        let result = CommandResult::success_with_data("Complex operation", complex_data.clone());
+        assert!(result.success);
+        assert_eq!(result.data, Some(complex_data));
+    }
+
+    #[test]
+    fn test_command_log_entry_timestamp() {
+        let params = serde_yaml::to_value("test_params").unwrap();
+        let entry = CommandLogEntry::new("test_user", "test_command", params);
+        let now = chrono::Utc::now();
+        let diff = now.signed_duration_since(entry.timestamp);
+        // Should be within 1 second
+        assert!(diff.num_seconds() <= 1);
+    }
+
+    #[test]
+    fn test_command_bus_handlers_initialization() {
+        let bus = CommandBus::new();
+        assert_eq!(bus.handlers.len(), 0);
     }
 }
