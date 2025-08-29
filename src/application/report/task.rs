@@ -85,10 +85,10 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
             let assignees_str = assigned_resources.join(", ");
 
             writer.write_record([
-                &code,
-                &name,
+                code,
+                name,
                 status_str,
-                &progress_str,
+                progress_str,
                 &start_date.to_string(),
                 &due_date.to_string(),
                 &assignees_str,

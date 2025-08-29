@@ -227,7 +227,7 @@ impl TryFrom<ResourceManifest> for AnyResource {
             .metadata
             .id
             .and_then(|id_str| Uuid::from_str(&id_str).ok())
-            .unwrap_or_else(|| uuid7::uuid7());
+            .unwrap_or_else(uuid7::uuid7);
 
         let code = manifest.metadata.code.clone();
         let name = manifest.metadata.name.clone();

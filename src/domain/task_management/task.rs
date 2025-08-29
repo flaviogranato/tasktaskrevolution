@@ -614,7 +614,7 @@ mod tests {
         let validation_result = invalid_task.validate();
         assert!(validation_result.is_ok());
         let errors = validation_result.unwrap();
-        assert!(errors.len() > 0); // Should have validation errors
+        assert!(!errors.is_empty()); // Should have validation errors
         assert!(errors.iter().any(|e| e.contains("code")));
         assert!(errors.iter().any(|e| e.contains("name")));
         assert!(errors.iter().any(|e| e.contains("date")));
@@ -638,7 +638,7 @@ mod tests {
 
         // Transition from Planned to InProgress
         let in_progress_task: Task<InProgress> = planned_task.transition();
-        assert!(matches!(in_progress_task.state, InProgress));
+        assert!(matches!(in_progress_task.state, _InProgress));
 
         // Transition from InProgress to Completed
         let in_progress_task = Task::<InProgress> {
