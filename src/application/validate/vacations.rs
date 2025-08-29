@@ -259,4 +259,448 @@ mod tests {
 
         assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
     }
+
+    #[test]
+    fn test_no_vacation_overlap() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now,
+                end_date: now + Duration::days(5),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(10),
+                end_date: now + Duration::days(15),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_edge_case() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now,
+                end_date: now + Duration::days(10),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(11),
+                end_date: now + Duration::days(15),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Não deve haver sobreposição quando há um dia de intervalo
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_contained() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now,
+                end_date: now + Duration::days(20),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(5),
+                end_date: now + Duration::days(15),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_multiple_periods() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![
+                Period {
+                    start_date: now,
+                    end_date: now + Duration::days(5),
+                    approved: true,
+                    period_type: PeriodType::Vacation,
+                    is_time_off_compensation: false,
+                    compensated_hours: None,
+                    is_layoff: false,
+                },
+                Period {
+                    start_date: now + Duration::days(20),
+                    end_date: now + Duration::days(25),
+                    approved: true,
+                    period_type: PeriodType::Vacation,
+                    is_time_off_compensation: false,
+                    compensated_hours: None,
+                    is_layoff: false,
+                },
+            ]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(3),
+                end_date: now + Duration::days(8),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_three_resources() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now,
+                end_date: now + Duration::days(10),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(5),
+                end_date: now + Duration::days(15),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource3 = Resource::<Available>::new(
+            "dev-3".to_string(),
+            "Pedro".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(12),
+                end_date: now + Duration::days(18),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into(), resource3.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar sobreposição entre resource2 e resource3
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+        assert!(result.iter().any(|msg| msg.contains("Maria") && msg.contains("Pedro")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_no_vacations() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            None,
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            None,
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_single_resource() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now,
+                end_date: now + Duration::days(10),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_empty_resources() {
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_mixed_vacation_types() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now,
+                end_date: now + Duration::days(10),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(5),
+                end_date: now + Duration::days(15),
+                approved: true,
+                period_type: PeriodType::TimeOff,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar sobreposição independente do tipo de período
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
+
+    #[test]
+    fn test_vacation_overlap_approved_and_unapproved() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now,
+                end_date: now + Duration::days(10),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(5),
+                end_date: now + Duration::days(15),
+                approved: false,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { vacation_rules: None };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar sobreposição independente do status de aprovação
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
 }
