@@ -1,10 +1,10 @@
 use crate::domain::{
-    project_management::{repository::ProjectRepository, vacation_rules::VacationRules},
+    project_management::{repository::ProjectRepository, vacation_rules::VacationRules, layoff_period::LayoffPeriod},
     resource_management::repository::ResourceRepository,
     resource_management::resource::Period,
     shared::errors::DomainError,
 };
-use chrono::{DateTime, FixedOffset, Local, NaiveDate, Offset};
+use chrono::{DateTime, FixedOffset, Local, NaiveDate, Offset, TimeZone};
 
 pub struct ValidateVacationsUseCase<P: ProjectRepository, R: ResourceRepository> {
     project_repository: P,
@@ -722,5 +722,806 @@ mod tests {
 
         // Deve detectar sobreposição independente do status de aprovação
         assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_success() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-15", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-25", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+                LayoffPeriod {
+                    start_date: "2024-02-01".to_string(),
+                    end_date: "2024-02-28".to_string(),
+                },
+            ]),
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar que há férias durante período de layoff (sucesso)
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_failure() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(50),
+                end_date: now + Duration::days(60),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+                LayoffPeriod {
+                    start_date: "2024-02-01".to_string(),
+                    end_date: "2024-02-28".to_string(),
+                },
+            ]),
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar que não há férias durante período de layoff
+        assert!(result.iter().any(|msg| msg.contains("não possui férias durante nenhum período de layoff")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_not_required() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(50),
+                end_date: now + Duration::days(60),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(false),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+                LayoffPeriod {
+                    start_date: "2024-02-01".to_string(),
+                    end_date: "2024-02-28".to_string(),
+                },
+            ]),
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Não deve verificar layoff quando não é obrigatório
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_no_layoff_periods() {
+        let now = Local::now();
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: now + Duration::days(5),
+                end_date: now + Duration::days(15),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: None,
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve funcionar mesmo sem períodos de layoff definidos
+        assert!(result.iter().any(|msg| msg.contains("Não foram encontradas sobreposições")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_edge_case_overlap() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-15", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-25", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-20", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-30", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+            ]),
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar sobreposição entre recursos
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_partial_overlap() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-10", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-20", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-15", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-25", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-15".to_string(),
+                    end_date: "2024-01-30".to_string(),
+                },
+            ]),
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar sobreposição entre recursos
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_multiple_layoff_periods() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-03-15", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-03-25", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-03-20", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-03-30", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+                LayoffPeriod {
+                    start_date: "2024-03-01".to_string(),
+                    end_date: "2024-03-31".to_string(),
+                },
+            ]),
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar sobreposição entre recursos
+        assert!(result.iter().any(|msg| msg.contains("Sobreposição detectada")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_no_vacations() {
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+            ]),
+        };
+
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local::now() + Duration::days(60),
+                end_date: Local::now() + Duration::days(75),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: Some(0),
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar que não há férias durante período de layoff
+        assert!(result.iter().any(|msg| msg.contains("não possui férias durante nenhum período de layoff")));
+    }
+
+    #[test]
+    fn test_no_vacation_overlap_success_message() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            None,
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            None,
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: None 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve retornar mensagem de sucesso quando não há sobreposições
+        assert!(result.iter().any(|msg| msg.contains("✅ Não foram encontradas sobreposições de férias")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_with_vacations_but_no_layoff_overlap() {
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+            ]),
+        };
+
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local::now() + Duration::days(60),
+                end_date: Local::now() + Duration::days(75),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: Some(0),
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve detectar que não há férias durante período de layoff
+        assert!(result.iter().any(|msg| msg.contains("não possui férias durante nenhum período de layoff")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_early_return_true() {
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+            ]),
+        };
+
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-15", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-20", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: Some(0),
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Não deve ter mensagem de layoff warning já que férias sobrepõem período de layoff
+        assert!(!result.iter().any(|msg| msg.contains("não possui férias durante nenhum período de layoff")));
+        // Deve retornar mensagem de sucesso
+        assert!(result.iter().any(|msg| msg.contains("✅ Não foram encontradas sobreposições de férias")));
+    }
+
+    #[test]
+    fn test_layoff_vacation_validation_exact_overlap() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-01", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let vacation_rules = VacationRules {
+            max_concurrent_vacations: None,
+            allow_layoff_vacations: Some(true),
+            require_layoff_vacation_period: Some(true),
+            layoff_periods: Some(vec![
+                LayoffPeriod {
+                    start_date: "2024-01-01".to_string(),
+                    end_date: "2024-01-31".to_string(),
+                },
+            ]),
+        };
+
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: Some(vacation_rules) 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve retornar mensagem de sucesso (não há sobreposições entre recursos)
+        assert!(result.iter().any(|msg| msg.contains("✅ Não foram encontradas sobreposições de férias")));
+    }
+
+    #[test]
+    fn test_no_overlaps_no_layoff_rules() {
+        let resource1 = Resource::<Available>::new(
+            "dev-1".to_string(),
+            "João".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-02-01", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-02-15", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        let resource2 = Resource::<Available>::new(
+            "dev-2".to_string(),
+            "Maria".to_string(),
+            None,
+            "Dev".to_string(),
+            Some(vec![Period {
+                start_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-03-01", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                end_date: Local
+                    .from_local_datetime(
+                        &NaiveDate::parse_from_str("2024-03-15", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                    )
+                    .unwrap(),
+                approved: true,
+                period_type: PeriodType::Vacation,
+                is_time_off_compensation: false,
+                compensated_hours: None,
+                is_layoff: false,
+            }]),
+            0,
+        );
+
+        // Sem regras de layoff
+        let mock_project_repo = MockProjectRepository { 
+            vacation_rules: None 
+        };
+        let mock_resource_repo = MockResourceRepository {
+            resources: vec![resource1.into(), resource2.into()],
+        };
+
+        let use_case = ValidateVacationsUseCase::new(mock_project_repo, mock_resource_repo);
+        let result = use_case.execute().unwrap();
+
+        // Deve retornar mensagem de sucesso (não há sobreposições nem regras de layoff)
+        assert!(result.iter().any(|msg| msg.contains("✅ Não foram encontradas sobreposições de férias")));
     }
 }
