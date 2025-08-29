@@ -191,4 +191,119 @@ mod test {
 
         assert!(result.is_err());
     }
+
+    #[test]
+    fn test_create_task_fails_if_start_date_after_due_date() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateTaskUseCase::new(mock_repo);
+        let (start_date, due_date) = create_test_dates();
+
+        // Test with start_date > due_date
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            name: "Task with invalid dates".to_string(),
+            start_date: due_date + chrono::Duration::days(1), // start_date > due_date
+            due_date,
+            assigned_resources: vec![],
+        };
+        let result = use_case.execute(args);
+
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Data de início não pode ser posterior à data de vencimento"));
+        }
+    }
+
+    #[test]
+    fn test_create_task_with_same_start_and_due_date() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateTaskUseCase::new(mock_repo);
+        let (start_date, due_date) = create_test_dates();
+
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            name: "Task with same dates".to_string(),
+            start_date: start_date,    // Use the same date for both
+            due_date: start_date,      // Use the same date for both
+            assigned_resources: vec![],
+        };
+        let result = use_case.execute(args);
+
+        if let Err(e) = &result {
+            eprintln!("Error creating task with same dates: {}", e);
+        }
+        
+        assert!(result.is_ok(), "Expected Ok, but got Err: {:?}", result);
+    }
+
+    #[test]
+    fn test_create_task_without_assigned_resources() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateTaskUseCase::new(mock_repo);
+        let (start_date, due_date) = create_test_dates();
+
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            name: "Task without resources".to_string(),
+            start_date,
+            due_date,
+            assigned_resources: vec![], // Empty resources vector
+        };
+        let result = use_case.execute(args);
+
+        assert!(result.is_ok());
+        let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
+        // Count should be 1 since we're starting with a fresh project
+        assert_eq!(project.tasks().len(), 1);
+        assert_eq!(
+            project.tasks().get("task-1").unwrap().name(),
+            "Task without resources"
+        );
+    }
+
+    #[test]
+    fn test_create_task_with_multiple_assigned_resources() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateTaskUseCase::new(mock_repo);
+        let (start_date, due_date) = create_test_dates();
+
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            name: "Task with multiple resources".to_string(),
+            start_date,
+            due_date,
+            assigned_resources: vec!["dev1".to_string(), "dev2".to_string(), "dev3".to_string()],
+        };
+        let result = use_case.execute(args);
+
+        assert!(result.is_ok());
+        let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
+        // Count should be 1 since we're starting with a fresh project
+        assert_eq!(project.tasks().len(), 1);
+        assert_eq!(
+            project.tasks().get("task-1").unwrap().name(),
+            "Task with multiple resources"
+        );
+    }
+
+    #[test]
+    fn test_create_task_repository_save_failure() {
+        let mock_repo = MockProjectRepository::new(true); // This will make save() fail
+        let use_case = CreateTaskUseCase::new(mock_repo);
+        let (start_date, due_date) = create_test_dates();
+
+        let args = CreateTaskArgs {
+            project_code: "PROJ-1".to_string(),
+            name: "Task that will fail to save".to_string(),
+            start_date,
+            due_date,
+            assigned_resources: vec!["dev1".to_string()],
+        };
+        let result = use_case.execute(args);
+
+        assert!(result.is_err());
+        if let Err(e) = result {
+            assert!(e.to_string().contains("Erro mockado ao salvar"));
+        }
+    }
 }
