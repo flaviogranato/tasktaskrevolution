@@ -1,4 +1,5 @@
 use crate::domain::shared::errors::DomainError;
+use std::collections::HashMap;
 
 /// A command that can be executed
 pub trait Command {
@@ -1021,5 +1022,407 @@ mod tests {
     fn test_command_bus_handlers_initialization() {
         let bus = CommandBus::new();
         assert_eq!(bus.handlers.len(), 0);
+    }
+
+    // Additional tests for better coverage
+    #[test]
+    fn test_command_with_metadata() {
+        #[derive(Debug)]
+        struct MetadataCommand {
+            name: String,
+            description: String,
+            metadata: HashMap<String, String>,
+        }
+
+        impl Command for MetadataCommand {
+            fn execute(&self) -> Result<CommandResult, DomainError> {
+                let metadata_yaml = serde_yaml::to_value(&self.metadata).unwrap();
+                Ok(CommandResult::success_with_data(
+                    "Command executed with metadata",
+                    metadata_yaml,
+                ))
+            }
+
+            fn name(&self) -> &str {
+                &self.name
+            }
+
+            fn description(&self) -> &str {
+                &self.description
+            }
+        }
+
+        let mut metadata = HashMap::new();
+        metadata.insert("priority".to_string(), "high".to_string());
+        metadata.insert("category".to_string(), "test".to_string());
+
+        let command = MetadataCommand {
+            name: "metadata_test".to_string(),
+            description: "Test command with metadata".to_string(),
+            metadata,
+        };
+
+        let result = command.execute().unwrap();
+        assert!(result.success);
+        assert!(result.data.is_some());
+        
+        if let Some(data) = result.data {
+            let metadata_map: HashMap<String, String> = serde_yaml::from_value(data).unwrap();
+            assert_eq!(metadata_map.get("priority"), Some(&"high".to_string()));
+            assert_eq!(metadata_map.get("category"), Some(&"test".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_command_with_validation_rules() {
+        #[derive(Debug)]
+        struct ValidatedCommand {
+            name: String,
+            description: String,
+            value: i32,
+            max_value: i32,
+        }
+
+        impl Command for ValidatedCommand {
+            fn execute(&self) -> Result<CommandResult, DomainError> {
+                if self.value > self.max_value {
+                    Err(DomainError::new(
+                        crate::domain::shared::errors::DomainErrorKind::ValidationError {
+                            field: "value".to_string(),
+                            message: format!("Value {} exceeds maximum {}", self.value, self.max_value),
+                        },
+                    ))
+                } else {
+                    Ok(CommandResult::success("Value within limits"))
+                }
+            }
+
+            fn name(&self) -> &str {
+                &self.name
+            }
+
+            fn description(&self) -> &str {
+                &self.description
+            }
+
+            fn validate(&self) -> Result<(), DomainError> {
+                if self.value < 0 {
+                    Err(DomainError::new(
+                        crate::domain::shared::errors::DomainErrorKind::ValidationError {
+                            field: "value".to_string(),
+                            message: "Value cannot be negative".to_string(),
+                        },
+                    ))
+                } else {
+                    Ok(())
+                }
+            }
+        }
+
+        // Test valid command
+        let valid_command = ValidatedCommand {
+            name: "valid_test".to_string(),
+            description: "Valid command test".to_string(),
+            value: 50,
+            max_value: 100,
+        };
+
+        assert!(valid_command.validate().is_ok());
+        let result = valid_command.execute().unwrap();
+        assert!(result.success);
+
+        // Test invalid command (value too high)
+        let invalid_command = ValidatedCommand {
+            name: "invalid_test".to_string(),
+            description: "Invalid command test".to_string(),
+            value: 150,
+            max_value: 100,
+        };
+
+        let result = invalid_command.execute();
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("exceeds maximum"));
+        }
+
+        // Test negative value validation
+        let negative_command = ValidatedCommand {
+            name: "negative_test".to_string(),
+            description: "Negative command test".to_string(),
+            value: -10,
+            max_value: 100,
+        };
+
+        let result = negative_command.validate();
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("cannot be negative"));
+        }
+    }
+
+    #[test]
+    fn test_command_with_conditional_execution() {
+        #[derive(Debug)]
+        struct ConditionalCommand {
+            name: String,
+            description: String,
+            should_execute: bool,
+            condition_met: bool,
+        }
+
+        impl Command for ConditionalCommand {
+            fn execute(&self) -> Result<CommandResult, DomainError> {
+                if !self.should_execute {
+                    return Err(DomainError::new(
+                        crate::domain::shared::errors::DomainErrorKind::Generic {
+                            message: "Command execution disabled".to_string(),
+                        },
+                    ));
+                }
+
+                if !self.condition_met {
+                    return Err(DomainError::new(
+                        crate::domain::shared::errors::DomainErrorKind::Generic {
+                            message: "Condition not met".to_string(),
+                        },
+                    ));
+                }
+
+                Ok(CommandResult::success("Conditional command executed"))
+            }
+
+            fn name(&self) -> &str {
+                &self.name
+            }
+
+            fn description(&self) -> &str {
+                &self.description
+            }
+
+            fn can_execute(&self) -> bool {
+                self.should_execute && self.condition_met
+            }
+        }
+
+        // Test successful execution
+        let success_command = ConditionalCommand {
+            name: "success_test".to_string(),
+            description: "Success test".to_string(),
+            should_execute: true,
+            condition_met: true,
+        };
+
+        assert!(success_command.can_execute());
+        let result = success_command.execute().unwrap();
+        assert!(result.success);
+
+        // Test execution disabled
+        let disabled_command = ConditionalCommand {
+            name: "disabled_test".to_string(),
+            description: "Disabled test".to_string(),
+            should_execute: false,
+            condition_met: true,
+        };
+
+        assert!(!disabled_command.can_execute());
+        let result = disabled_command.execute();
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("execution disabled"));
+        }
+
+        // Test condition not met
+        let condition_failed_command = ConditionalCommand {
+            name: "condition_failed_test".to_string(),
+            description: "Condition failed test".to_string(),
+            should_execute: true,
+            condition_met: false,
+        };
+
+        assert!(!condition_failed_command.can_execute());
+        let result = condition_failed_command.execute();
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Condition not met"));
+        }
+    }
+
+    #[test]
+    fn test_command_with_retry_logic() {
+        #[derive(Debug)]
+        struct RetryableCommand {
+            name: String,
+            description: String,
+            max_attempts: u32,
+            current_attempt: u32,
+            success_on_attempt: u32,
+        }
+
+        impl Command for RetryableCommand {
+            fn execute(&self) -> Result<CommandResult, DomainError> {
+                if self.current_attempt >= self.max_attempts {
+                    return Err(DomainError::new(
+                        crate::domain::shared::errors::DomainErrorKind::Generic {
+                            message: "Max attempts exceeded".to_string(),
+                        },
+                    ));
+                }
+
+                if self.current_attempt == self.success_on_attempt {
+                    Ok(CommandResult::success("Command succeeded on retry"))
+                } else {
+                    Err(DomainError::new(
+                        crate::domain::shared::errors::DomainErrorKind::Generic {
+                            message: format!("Attempt {} failed", self.current_attempt),
+                        },
+                    ))
+                }
+            }
+
+            fn name(&self) -> &str {
+                &self.name
+            }
+
+            fn description(&self) -> &str {
+                &self.description
+            }
+        }
+
+        // Test command that succeeds on first attempt
+        let first_attempt_success = RetryableCommand {
+            name: "first_success".to_string(),
+            description: "First attempt success".to_string(),
+            max_attempts: 3,
+            current_attempt: 0,
+            success_on_attempt: 0,
+        };
+
+        let result = first_attempt_success.execute().unwrap();
+        assert!(result.success);
+
+        // Test command that succeeds on retry
+        let retry_success = RetryableCommand {
+            name: "retry_success".to_string(),
+            description: "Retry success".to_string(),
+            max_attempts: 3,
+            current_attempt: 2,
+            success_on_attempt: 2,
+        };
+
+        let result = retry_success.execute().unwrap();
+        assert!(result.success);
+
+        // Test command that fails all attempts
+        let all_failed = RetryableCommand {
+            name: "all_failed".to_string(),
+            description: "All attempts failed".to_string(),
+            max_attempts: 3,
+            current_attempt: 3,
+            success_on_attempt: 5, // Never reached
+        };
+
+        let result = all_failed.execute();
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("Max attempts exceeded"));
+        }
+    }
+
+    #[test]
+    fn test_command_with_async_behavior() {
+        #[derive(Debug)]
+        struct AsyncCommand {
+            name: String,
+            description: String,
+            delay_ms: u64,
+        }
+
+        impl Command for AsyncCommand {
+            fn execute(&self) -> Result<CommandResult, DomainError> {
+                // Simulate async behavior with a small delay
+                std::thread::sleep(std::time::Duration::from_millis(self.delay_ms));
+                Ok(CommandResult::success("Async command completed"))
+            }
+
+            fn name(&self) -> &str {
+                &self.name
+            }
+
+            fn description(&self) -> &str {
+                &self.description
+            }
+        }
+
+        let async_command = AsyncCommand {
+            name: "async_test".to_string(),
+            description: "Async command test".to_string(),
+            delay_ms: 10, // Small delay for testing
+        };
+
+        let result = async_command.execute().unwrap();
+        assert!(result.success);
+        assert_eq!(result.message, "Async command completed");
+    }
+
+    #[test]
+    fn test_command_with_resource_management() {
+        #[derive(Debug)]
+        struct ResourceCommand {
+            name: String,
+            description: String,
+            resource_id: String,
+            resource_available: bool,
+        }
+
+        impl Command for ResourceCommand {
+            fn execute(&self) -> Result<CommandResult, DomainError> {
+                if !self.resource_available {
+                    return Err(DomainError::new(
+                        crate::domain::shared::errors::DomainErrorKind::Generic {
+                            message: format!("Resource {} not available", self.resource_id),
+                        },
+                    ));
+                }
+
+                Ok(CommandResult::success_with_data(
+                    "Resource acquired successfully",
+                    serde_yaml::to_value(&self.resource_id).unwrap(),
+                ))
+            }
+
+            fn name(&self) -> &str {
+                &self.name
+            }
+
+            fn description(&self) -> &str {
+                &self.description
+            }
+        }
+
+        // Test with available resource
+        let available_resource_command = ResourceCommand {
+            name: "available_resource".to_string(),
+            description: "Available resource test".to_string(),
+            resource_id: "res-001".to_string(),
+            resource_available: true,
+        };
+
+        let result = available_resource_command.execute().unwrap();
+        assert!(result.success);
+        assert!(result.data.is_some());
+
+        // Test with unavailable resource
+        let unavailable_resource_command = ResourceCommand {
+            name: "unavailable_resource".to_string(),
+            description: "Unavailable resource test".to_string(),
+            resource_id: "res-002".to_string(),
+            resource_available: false,
+        };
+
+        let result = unavailable_resource_command.execute();
+        assert!(result.is_err());
+        if let Err(err) = result {
+            assert!(err.to_string().contains("not available"));
+        }
     }
 }
