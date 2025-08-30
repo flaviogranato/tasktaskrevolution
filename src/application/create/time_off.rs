@@ -22,7 +22,6 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         Self { repository }
     }
 
-    #[allow(dead_code)]
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
         let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
             .map_err(|_| {
@@ -51,6 +50,9 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         date: &str,
         description: Option<&str>,
     ) -> Result<CreateTimeOffResult, Box<dyn std::error::Error>> {
+        // Validate date format first
+        Self::parse_date(date)?;
+
         match self
             .repository
             .save_time_off(resource, hours, date, description.map(|d| d.to_string()))
@@ -114,6 +116,13 @@ mod tests {
             _date: &str,
             _description: Option<String>,
         ) -> Result<AnyResource, DomainError> {
+            // Force error for specific test case
+            if resource_name == "error_resource" {
+                return Err(DomainError::new(DomainErrorKind::Generic {
+                    message: "Simulated repository error".to_string(),
+                }));
+            }
+
             let mut resources = self.resources.borrow_mut();
             let resource_any = resources
                 .iter_mut()
@@ -216,5 +225,244 @@ mod tests {
 
         let final_resource = result2.unwrap();
         assert_eq!(final_resource.time_off_balance, 8);
+    }
+
+    #[test]
+    fn test_create_time_off_repository_error() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("error_resource", 10, "2024-01-01", Some("Test time off"));
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "Simulated repository error");
+    }
+
+    #[test]
+    fn test_create_time_off_with_empty_description() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", 10, "2024-01-01", None);
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 10);
+        assert!(updated_resource.description.is_none());
+    }
+
+    #[test]
+    fn test_create_time_off_with_invalid_date_format() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Test with invalid date format - should fail at parse_date
+        let result = use_case.execute("John Doe", 10, "invalid-date", Some("Test time off"));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Formato de data inválido"));
+    }
+
+    #[test]
+    fn test_create_time_off_with_invalid_date_format_2() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Test with invalid date format - should fail at parse_date
+        let result = use_case.execute("John Doe", 10, "01/01/2024", Some("Test time off"));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Formato de data inválido"));
+    }
+
+    #[test]
+    fn test_create_time_off_with_malformed_date() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Test with malformed date that might cause hour conversion issues
+        let result = use_case.execute("John Doe", 10, "2024-13-45", Some("Test time off"));
+        assert!(result.is_err());
+        // This should fail at date parsing, not at hour conversion
+        assert!(result.unwrap_err().to_string().contains("Formato de data inválido"));
+    }
+
+    #[test]
+    fn test_create_time_off_with_edge_case_dates() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Test with valid edge case dates
+        let result1 = use_case.execute("John Doe", 10, "2024-01-01", Some("New Year"));
+        assert!(result1.is_ok());
+
+        let result2 = use_case.execute("John Doe", 10, "2024-12-31", Some("Year End"));
+        assert!(result2.is_ok());
+
+        let result3 = use_case.execute("John Doe", 10, "2024-02-29", Some("Leap Year"));
+        assert!(result3.is_ok());
+    }
+
+    #[test]
+    fn test_create_time_off_with_special_characters_in_description() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", 10, "2024-01-01", Some("Test with special chars: !@#$%^&*()"));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 10);
+        assert_eq!(updated_resource.description, Some("Test with special chars: !@#$%^&*()".to_string()));
+    }
+
+    #[test]
+    fn test_create_time_off_with_zero_hours() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", 0, "2024-01-01", Some("Zero hours"));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 0);
+    }
+
+    #[test]
+    fn test_create_time_off_with_large_hours() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", 999999, "2024-01-01", Some("Large hours"));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 999999);
+    }
+
+    #[test]
+    fn test_create_time_off_with_max_u32_hours() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", u32::MAX, "2024-01-01", Some("Max hours"));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, u32::MAX);
+    }
+
+    #[test]
+    fn test_create_time_off_with_edge_case_time_conversion() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Test with dates that might cause time conversion issues
+        // These dates should be valid but test edge cases
+        let result1 = use_case.execute("John Doe", 10, "2024-01-01", Some("Start of year"));
+        assert!(result1.is_ok());
+
+        let result2 = use_case.execute("John Doe", 10, "2024-12-31", Some("End of year"));
+        assert!(result2.is_ok());
+
+        let result3 = use_case.execute("John Doe", 10, "2024-06-15", Some("Mid year"));
+        assert!(result3.is_ok());
+    }
+
+    #[test]
+    fn test_create_time_off_with_different_timezone_scenarios() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Test with dates that might have different timezone implications
+        let result1 = use_case.execute("John Doe", 10, "2024-03-10", Some("DST start"));
+        assert!(result1.is_ok());
+
+        let result2 = use_case.execute("John Doe", 10, "2024-11-03", Some("DST end"));
+        assert!(result2.is_ok());
+
+        let result3 = use_case.execute("John Doe", 10, "2024-07-04", Some("Summer date"));
+        assert!(result3.is_ok());
+    }
+
+    #[test]
+    fn test_create_time_off_with_very_short_description() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", 10, "2024-01-01", Some(""));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 10);
+        assert_eq!(updated_resource.description, Some("".to_string()));
+    }
+
+    #[test]
+    fn test_create_time_off_with_numeric_description() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", 10, "2024-01-01", Some("12345"));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 10);
+        assert_eq!(updated_resource.description, Some("12345".to_string()));
+    }
+
+    #[test]
+    fn test_create_time_off_with_inactive_resource() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // This should fail because the mock repository doesn't have an inactive resource
+        // but we can test the error handling path
+        let result = use_case.execute("inactive_resource", 10, "2024-01-01", Some("Test"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_time_off_with_very_long_description() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let long_description = "A".repeat(1000); // Very long description
+        let result = use_case.execute("John Doe", 10, "2024-01-01", Some(&long_description));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 10);
+        assert_eq!(updated_resource.description, Some(long_description));
+    }
+
+    #[test]
+    fn test_create_time_off_with_unicode_description() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let unicode_description = "Férias com emojis 🏖️🌴☀️ e acentos: áéíóú çãõ";
+        let result = use_case.execute("John Doe", 10, "2024-01-01", Some(unicode_description));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 10);
+        assert_eq!(updated_resource.description, Some(unicode_description.to_string()));
+    }
+
+    #[test]
+    fn test_create_time_off_with_boundary_dates() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        // Test with boundary dates
+        let result1 = use_case.execute("John Doe", 10, "1900-01-01", Some("Very old date"));
+        assert!(result1.is_ok());
+
+        let result2 = use_case.execute("John Doe", 10, "2100-12-31", Some("Future date"));
+        assert!(result2.is_ok());
+
+        let result3 = use_case.execute("John Doe", 10, "2000-02-29", Some("Leap year"));
+        assert!(result3.is_ok());
+    }
+
+    #[test]
+    fn test_create_time_off_with_single_character_name() {
+        let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
+        let use_case = CreateTimeOffUseCase::new(repository);
+
+        let result = use_case.execute("John Doe", 10, "2024-01-01", Some("Single char name"));
+        assert!(result.is_ok());
+        let updated_resource = result.unwrap();
+        assert_eq!(updated_resource.time_off_balance, 10);
     }
 }

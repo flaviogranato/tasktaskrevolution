@@ -1,5 +1,7 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository, 
+    shared::errors::{DomainError, DomainErrorKind}, 
+    task_management::any_task::AnyTask,
 };
 use thiserror::Error;
 
@@ -120,12 +122,19 @@ mod tests {
     // --- Mocks ---
     struct MockProjectRepository {
         projects: RefCell<HashMap<String, AnyProject>>,
+        should_fail_save: bool, // Added for testing repository errors
     }
 
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), DomainError> {
-            self.projects.borrow_mut().insert(project.code().to_string(), project);
-            Ok(())
+            if self.should_fail_save {
+                Err(DomainError::new(DomainErrorKind::Generic {
+                    message: "Simulated save failure".to_string(),
+                }))
+            } else {
+                self.projects.borrow_mut().insert(project.code().to_string(), project);
+                Ok(())
+            }
         }
         fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
             Ok(self.projects.borrow().get(code).cloned())
@@ -176,6 +185,7 @@ mod tests {
         let project = setup_test_project(vec![create_test_task("A"), create_test_task("B")]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            should_fail_save: false,
         };
         let use_case = LinkTaskUseCase::new(project_repo);
 
@@ -196,6 +206,7 @@ mod tests {
         let project = setup_test_project(vec![create_test_task("A")]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            should_fail_save: false,
         };
         let use_case = LinkTaskUseCase::new(project_repo);
 
@@ -208,6 +219,7 @@ mod tests {
         let project = setup_test_project(vec![create_test_task("A")]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            should_fail_save: false,
         };
         let use_case = LinkTaskUseCase::new(project_repo);
 
@@ -220,6 +232,7 @@ mod tests {
         let project = setup_test_project(vec![create_test_task("A")]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            should_fail_save: false,
         };
         let use_case = LinkTaskUseCase::new(project_repo);
 
@@ -239,6 +252,7 @@ mod tests {
         let project = setup_test_project(vec![task_a, task_b]);
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            should_fail_save: false,
         };
         let use_case = LinkTaskUseCase::new(project_repo);
 
@@ -246,5 +260,108 @@ mod tests {
         let result = use_case.execute("PROJ-1", "A", "B");
 
         assert!(matches!(result, Err(LinkTaskError::CircularDependencyError)));
+    }
+
+    #[test]
+    fn test_from_string_error_conversion() {
+        let error_string = "Some error message".to_string();
+        let link_task_error: LinkTaskError = error_string.into();
+        
+        match link_task_error {
+            LinkTaskError::DomainError(msg) => assert_eq!(msg, "Some error message"),
+            _ => panic!("Expected DomainError variant"),
+        }
+    }
+
+    #[test]
+    fn test_link_task_with_different_task_states() {
+        // Create tasks with different states to test the match statement
+        let mut task_a = create_test_task("A");
+        let mut task_b = create_test_task("B");
+        let mut task_c = create_test_task("C");
+        let mut task_d = create_test_task("D");
+        let mut task_e = create_test_task("E");
+
+        // Add some dependencies to test the different match arms
+        if let AnyTask::Planned(t) = &mut task_a {
+            t.dependencies.push("X".to_string());
+        }
+        if let AnyTask::InProgress(t) = &mut task_b {
+            t.dependencies.push("Y".to_string());
+        }
+        if let AnyTask::Blocked(t) = &mut task_c {
+            t.dependencies.push("Z".to_string());
+        }
+        if let AnyTask::Completed(t) = &mut task_d {
+            t.dependencies.push("W".to_string());
+        }
+        if let AnyTask::Cancelled(t) = &mut task_e {
+            t.dependencies.push("V".to_string());
+        }
+
+        let project = setup_test_project(vec![task_a, task_b, task_c, task_d, task_e]);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            should_fail_save: false,
+        };
+        let use_case = LinkTaskUseCase::new(project_repo);
+
+        // This should succeed and test all the different task state match arms
+        let result = use_case.execute("PROJ-1", "A", "B");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_link_task_project_not_found() {
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::new()), // Empty repository
+            should_fail_save: false,
+        };
+        let use_case = LinkTaskUseCase::new(project_repo);
+
+        let result = use_case.execute("NONEXISTENT_PROJECT", "A", "B");
+        assert!(matches!(result, Err(LinkTaskError::ProjectNotFound(_))));
+    }
+
+    #[test]
+    fn test_link_task_repository_error() {
+        let task_a = create_test_task("A");
+        let task_b = create_test_task("B");
+        let project = setup_test_project(vec![task_a, task_b]);
+        
+        // Create a mock repository that fails on save
+        struct FailingMockProjectRepository {
+            project: AnyProject,
+        }
+        
+        impl ProjectRepository for FailingMockProjectRepository {
+            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
+                Ok(Some(self.project.clone()))
+            }
+            
+            fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
+                Err(DomainError::new(DomainErrorKind::Generic {
+                    message: "Repository save failed".to_string(),
+                }))
+            }
+            
+            fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+                Ok(vec![self.project.clone()])
+            }
+            
+            fn load(&self) -> Result<AnyProject, DomainError> {
+                Ok(self.project.clone())
+            }
+            
+            fn get_next_code(&self) -> Result<String, DomainError> {
+                Ok("PROJ-1".to_string())
+            }
+        }
+        
+        let project_repo = FailingMockProjectRepository { project };
+        let use_case = LinkTaskUseCase::new(project_repo);
+        
+        let result = use_case.execute("PROJ-1", "A", "B");
+        assert!(result.is_err());
     }
 }
