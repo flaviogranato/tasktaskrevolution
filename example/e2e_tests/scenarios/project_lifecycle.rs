@@ -1,5 +1,4 @@
-use crate::e2e_tests::utils::{CliRunner, FileAssertions, FileAssertionBuilder};
-use std::path::Path;
+use crate::utils::{cli_runner::CliRunner, file_assertions::{FileAssertions, FileAssertionBuilder}};
 
 /// Testa o fluxo completo de criação e gerenciamento de um projeto
 pub struct ProjectLifecycleTest;
@@ -76,7 +75,7 @@ impl ProjectLifecycleTest {
             ("Task 3", "7d"),
         ];
         
-        for (name, duration) in tasks {
+        for (name, duration) in &tasks {
             runner.add_task("PROJ-001", name, duration)?;
         }
         
@@ -84,7 +83,7 @@ impl ProjectLifecycleTest {
         let project_file = runner.projects_path().join("PROJ-001.yaml");
         let content = std::fs::read_to_string(&project_file)?;
         
-        for (name, _) in tasks {
+        for (name, _) in &tasks {
             assert!(content.contains(name), "Task '{}' não foi encontrada no arquivo", name);
         }
         
@@ -108,12 +107,12 @@ impl ProjectLifecycleTest {
             ("RES-003", "Server-01", "Equipment"),
         ];
         
-        for (code, name, resource_type) in resources {
+        for (code, name, resource_type) in &resources {
             runner.create_resource(code, name, resource_type)?;
         }
         
         // Verificar se recursos foram criados
-        for (code, _, _) in resources {
+        for (code, _, _) in &resources {
             assert!(runner.resource_exists(code));
         }
         
@@ -123,7 +122,7 @@ impl ProjectLifecycleTest {
             ("Task 1", "RES-002", "60"),
         ];
         
-        for (task, resource, allocation) in assignments {
+        for (task, resource, allocation) in &assignments {
             runner.assign_resource("PROJ-001", task, resource, allocation)?;
         }
         
@@ -131,7 +130,7 @@ impl ProjectLifecycleTest {
         let project_file = runner.projects_path().join("PROJ-001.yaml");
         let content = std::fs::read_to_string(&project_file)?;
         
-        for (_, resource, _) in assignments {
+        for (_, resource, _) in &assignments {
             assert!(content.contains(resource), "Resource '{}' não foi atribuído", resource);
         }
         
@@ -175,7 +174,7 @@ impl ProjectLifecycleTest {
         
         // Verificar se arquivo CSV foi criado
         let csv_file = runner.temp_path().join(csv_output);
-        FileAssertionBuilder::new(csv_file)
+        FileAssertionBuilder::new(csv_file.clone())
             .exists()
             .valid_csv()
             .has_extension("csv")
@@ -207,7 +206,7 @@ impl ProjectLifecycleTest {
         
         // Verificar se arquivo HTML foi criado
         let gantt_file = runner.temp_path().join(gantt_output);
-        FileAssertionBuilder::new(gantt_file)
+        FileAssertionBuilder::new(gantt_file.clone())
             .exists()
             .valid_html()
             .has_extension("html")

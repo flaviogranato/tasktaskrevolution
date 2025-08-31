@@ -1,7 +1,6 @@
 use std::process::{Command, Output, Stdio};
 use std::path::Path;
 use tempfile::TempDir;
-use std::io::Write;
 
 /// Runner para executar comandos CLI TTR nos testes
 pub struct CliRunner {
@@ -176,14 +175,14 @@ impl TestScenarioBuilder {
     }
     
     /// Configura um cenário básico com empresa e projeto
-    pub fn setup_basic_scenario(mut self, company: &str, project_code: &str, project_name: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn setup_basic_scenario(self, company: &str, project_code: &str, project_name: &str) -> Result<Self, Box<dyn std::error::Error>> {
         self.runner.init_ttr(company)?;
         self.runner.create_project(project_code, project_name, company)?;
         Ok(self)
     }
     
     /// Adiciona tarefas ao projeto
-    pub fn with_tasks(mut self, tasks: &[(&str, &str)]) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn with_tasks(self, tasks: &[(&str, &str)]) -> Result<Self, Box<dyn std::error::Error>> {
         for (name, duration) in tasks {
             self.runner.add_task("PROJ-001", name, duration)?;
         }
@@ -191,7 +190,7 @@ impl TestScenarioBuilder {
     }
     
     /// Adiciona recursos
-    pub fn with_resources(mut self, resources: &[(&str, &str, &str)]) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn with_resources(self, resources: &[(&str, &str, &str)]) -> Result<Self, Box<dyn std::error::Error>> {
         for (code, name, resource_type) in resources {
             self.runner.create_resource(code, name, resource_type)?;
         }
@@ -199,7 +198,7 @@ impl TestScenarioBuilder {
     }
     
     /// Atribui recursos às tarefas
-    pub fn with_assignments(mut self, assignments: &[(&str, &str, &str, &str)]) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn with_assignments(self, assignments: &[(&str, &str, &str)]) -> Result<Self, Box<dyn std::error::Error>> {
         for (task, resource, allocation) in assignments {
             self.runner.assign_resource("PROJ-001", task, resource, allocation)?;
         }
