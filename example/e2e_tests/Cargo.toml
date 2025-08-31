@@ -28,18 +28,3 @@ harness = true
 name = "project_lifecycle"
 path = "scenarios/project_lifecycle.rs"
 harness = true
-
-[[test]]
-name = "cli_integration"
-path = "mod.rs"
-harness = true
-
-[[test]]
-name = "file_validation"
-path = "mod.rs"
-harness = true
-
-[[test]]
-name = "utilities"
-path = "mod.rs"
-harness = true

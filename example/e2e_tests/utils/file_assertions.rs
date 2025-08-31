@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::fs;
 use serde_yaml;
-use std::collections::HashMap;
 
 /// Utilitários para validar arquivos e diretórios nos testes
 pub struct FileAssertions;

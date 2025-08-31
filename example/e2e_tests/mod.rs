@@ -11,7 +11,7 @@ pub use scenarios::project_lifecycle::{ProjectLifecycleTest, ProjectErrorTest};
 /// Executa todos os testes e2e
 pub fn run_all_e2e_tests() -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Iniciando execução de todos os testes E2E...");
-    println!("=" .repeat(60));
+    println!("{}", "=".repeat(60));
     
     // Testes de ciclo de vida do projeto
     ProjectLifecycleTest::run_all()?;
@@ -26,7 +26,7 @@ pub fn run_all_e2e_tests() -> Result<(), Box<dyn std::error::Error>> {
     // - ReportingWorkflowTest::run_all()?;
     // - DataConsistencyTest::run_all()?;
     
-    println!("=" .repeat(60));
+    println!("{}", "=".repeat(60));
     println!("🎉 Todos os testes E2E foram executados com sucesso!");
     
     Ok(())
@@ -48,7 +48,7 @@ pub fn run_error_handling_tests() -> Result<(), Box<dyn std::error::Error>> {
 pub fn run_file_validation_tests() -> Result<(), Box<dyn std::error::Error>> {
     println!("📁 Executando testes de validação de arquivos...");
     
-    use utils::FileAssertions;
+    use crate::utils::file_assertions::FileAssertions;
     use tempfile::TempDir;
     use std::fs;
     
@@ -87,7 +87,7 @@ pub fn run_file_validation_tests() -> Result<(), Box<dyn std::error::Error>> {
 pub fn run_cli_integration_tests() -> Result<(), Box<dyn std::error::Error>> {
     println!("🔧 Executando testes de integração CLI...");
     
-    use utils::CliRunner;
+    use crate::utils::cli_runner::CliRunner;
     
     let runner = CliRunner::new()?;
     
