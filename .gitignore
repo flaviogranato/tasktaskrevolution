@@ -2,5 +2,6 @@
 /teste
 /.idea
 /example
+!/example/e2e_tests/
 /public
 /docs
