@@ -1,0 +1,45 @@
+[package]
+name = "ttr-e2e-tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Dependências principais
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+tempfile = "3.8"
+uuid = { version = "1.6", features = ["v7"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Dependências de teste
+tokio = { version = "1.0", features = ["full"] }
+
+[dev-dependencies]
+# Dependências específicas para testes
+criterion = "0.5"
+proptest = "1.3"
+
+[[test]]
+name = "e2e"
+path = "mod.rs"
+harness = true
+
+[[test]]
+name = "project_lifecycle"
+path = "scenarios/project_lifecycle.rs"
+harness = true
+
+[[test]]
+name = "cli_integration"
+path = "mod.rs"
+harness = true
+
+[[test]]
+name = "file_validation"
+path = "mod.rs"
+harness = true
+
+[[test]]
+name = "utilities"
+path = "mod.rs"
+harness = true
