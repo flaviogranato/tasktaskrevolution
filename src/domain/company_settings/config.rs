@@ -100,12 +100,93 @@ impl Config {
         self.work_days.contains(day)
     }
 
+    /// Checks if a given time is within work hours
     pub fn is_work_hours(&self, time: &str) -> bool {
         if let (Some(start), Some(end)) = (&self.work_hours_start, &self.work_hours_end) {
             time >= start.as_str() && time <= end.as_str()
         } else {
             true // Se não há horário definido, considera sempre horário de trabalho
         }
+    }
+
+    /// Updates the company name
+    pub fn update_company_name(&mut self, company_name: String) {
+        self.company_name = Some(company_name);
+        self.updated_at = Some(chrono::Utc::now());
+    }
+
+    /// Updates the manager information
+    pub fn update_manager(&mut self, name: String, email: String) {
+        self.manager_name = name;
+        self.manager_email = email;
+        self.updated_at = Some(chrono::Utc::now());
+    }
+
+    /// Updates the default timezone
+    pub fn update_timezone(&mut self, timezone: String) {
+        self.default_timezone = timezone;
+        self.updated_at = Some(chrono::Utc::now());
+    }
+
+    /// Updates work hours
+    pub fn update_work_hours(&mut self, start: String, end: String) {
+        self.work_hours_start = Some(start);
+        self.work_hours_end = Some(end);
+        self.updated_at = Some(chrono::Utc::now());
+    }
+
+    /// Validates if the configuration is complete and valid
+    pub fn is_valid(&self) -> bool {
+        !self.manager_name.trim().is_empty() 
+            && !self.manager_email.trim().is_empty()
+            && !self.default_timezone.trim().is_empty()
+            && !self.work_days.is_empty()
+    }
+
+    /// Gets the current work schedule as a formatted string
+    pub fn work_schedule_display(&self) -> String {
+        let days = self.work_days.iter()
+            .map(|d| d.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        
+        let hours = if let (Some(start), Some(end)) = (&self.work_hours_start, &self.work_hours_end) {
+            format!("{} - {}", start, end)
+        } else {
+            "Not configured".to_string()
+        };
+        
+        format!("Days: {} | Hours: {}", days, hours)
+    }
+
+    /// Checks if a given timezone is valid
+    pub fn is_valid_timezone(&self) -> bool {
+        // Basic timezone validation - can be enhanced with chrono-tz
+        let valid_timezones = [
+            "UTC", "GMT", "EST", "PST", "CST", "MST",
+            "America/New_York", "America/Los_Angeles", "America/Chicago",
+            "Europe/London", "Europe/Paris", "Europe/Berlin",
+            "Asia/Tokyo", "Asia/Shanghai", "Asia/Dubai",
+            "America/Sao_Paulo", "America/Argentina/Buenos_Aires"
+        ];
+        
+        valid_timezones.contains(&self.default_timezone.as_str())
+    }
+
+    /// Gets the company display name
+    pub fn display_name(&self) -> String {
+        self.company_name.clone().unwrap_or_else(|| "Unnamed Company".to_string())
+    }
+
+    /// Creates a summary of the configuration
+    pub fn summary(&self) -> String {
+        format!(
+            "Company: {} | Manager: {} | Timezone: {} | Work Schedule: {}",
+            self.display_name(),
+            self.manager_name,
+            self.default_timezone,
+            self.work_schedule_display()
+        )
     }
 }
 
