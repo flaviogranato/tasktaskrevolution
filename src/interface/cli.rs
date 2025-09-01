@@ -679,7 +679,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             println!("{}", result.message);
                         }
                     }
-                    Err(e) => println!("Erro inesperado: {e}"),
+                    Err(e) => println!("Unexpected error: {e}"),
                 };
                 Ok(())
             }
@@ -696,16 +696,16 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Ok(result) => {
                         if result.success {
                             println!("{}", result.message);
-                            println!("Novo saldo: {} horas", result.time_off_balance);
+                            println!("New balance: {} hours", result.time_off_balance);
                             if let Some(desc) = &result.description {
-                                println!("Descrição: {desc}");
+                                println!("Description: {desc}");
                             }
-                            println!("Data: {}", result.date);
+                            println!("Date: {}", result.date);
                         } else {
                             println!("{}", result.message);
                         }
                     }
-                    Err(e) => println!("Erro inesperado: {e}"),
+                    Err(e) => println!("Unexpected error: {e}"),
                 };
                 Ok(())
             }
@@ -750,7 +750,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         let manifest: ProjManifest = match serde_yaml::from_str(&content) {
                             Ok(m) => m,
                             Err(e) => {
-                                println!("Erro ao analisar 'project.yaml': {e}");
+                                println!("Error parsing 'project.yaml': {e}");
                                 return Ok(());
                             }
                         };
@@ -763,7 +763,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let start = match NaiveDate::parse_from_str(start_date, "%Y-%m-%d") {
                     Ok(date) => date,
                     Err(_) => {
-                        println!("Erro: Data de início inválida. Use o formato YYYY-MM-DD");
+                        println!("Error: Invalid start date. Use format YYYY-MM-DD");
                         return Ok(());
                     }
                 };
@@ -771,7 +771,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let due = match NaiveDate::parse_from_str(due_date, "%Y-%m-%d") {
                     Ok(date) => date,
                     Err(_) => {
-                        println!("Erro: Data de vencimento inválida. Use o formato YYYY-MM-DD");
+                        println!("Error: Invalid due date. Use format YYYY-MM-DD");
                         return Ok(());
                     }
                 };
@@ -788,19 +788,19 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 match use_case.execute(args) {
                     Ok(_) => {
-                        println!("Task '{name}' criada com sucesso!");
+                        println!("Task '{name}' created successfully!");
                         // The generated task code is now an internal detail of the project aggregate,
                         // and the main success message is printed by the use case.
                         if let Some(desc) = description {
-                            println!("Descrição: {desc}");
+                            println!("Description: {desc}");
                         }
-                        println!("Período: {start_date} até {due_date}");
+                        println!("Period: {start_date} to {due_date}");
                         if !assignees.is_empty() {
-                            println!("Responsáveis: {}", assignees.join(", "));
+                            println!("Assignees: {}", assignees.join(", "));
                         }
                     }
                     Err(e) => {
-                        println!("Erro ao criar task: {e}");
+                        println!("Error creating task: {e}");
                     }
                 };
                 Ok(())
@@ -813,16 +813,16 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute() {
                     Ok(projects) => {
                         if projects.is_empty() {
-                            println!("Nenhum projeto encontrado.");
+                            println!("No projects found.");
                         } else {
-                            println!("{:<15} {:<30}", "CÓDIGO", "NOME");
+                            println!("{:<15} {:<30}", "CODE", "NAME");
                             println!("{:-<15} {:-<30}", "", "");
                             for project in projects {
                                 println!("{:<15} {:<30}", project.code(), project.name());
                             }
                         }
                     }
-                    Err(e) => println!("Erro ao listar projetos: {e}"),
+                    Err(e) => println!("Error listing projects: {e}"),
                 }
                 Ok(())
             }
@@ -832,9 +832,9 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute() {
                     Ok(resources) => {
                         if resources.is_empty() {
-                            println!("Nenhum recurso encontrado.");
+                            println!("No resources found.");
                         } else {
-                            println!("{:<15} {:<25} {:<20}", "CÓDIGO", "NOME", "TIPO");
+                            println!("{:<15} {:<25} {:<20}", "CODE", "NAME", "TYPE");
                             println!("{:-<15} {:-<25} {:-<20}", "", "", "");
                             for resource in resources {
                                 println!(
@@ -846,7 +846,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             }
                         }
                     }
-                    Err(e) => println!("Erro ao listar recursos: {e}"),
+                    Err(e) => println!("Error listing resources: {e}"),
                 }
                 Ok(())
             }
@@ -875,7 +875,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             }
                         }
                     }
-                    Err(e) => println!("Erro ao listar tarefas: {e}"),
+                    Err(e) => println!("Error listing tasks: {e}"),
                 }
                 Ok(())
             }
