@@ -355,7 +355,7 @@ mod tests {
         let result = use_case.execute("TASK-001", "RES-001");
 
         // Assert
-        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceAlreadyAssigned(_))));
+        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceAlreadyAssigned(_, _))));
     }
 
     #[test]
