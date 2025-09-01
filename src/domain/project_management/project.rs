@@ -128,6 +128,27 @@ impl Transition for Project<Planned> {
     }
 }
 
+impl Project<Planned> {
+    pub fn cancel(self) -> Project<Cancelled> {
+        Project {
+            id: self.id,
+            code: self.code,
+            name: self.name,
+            description: self.description,
+            start_date: self.start_date,
+            end_date: self.end_date,
+            vacation_rules: self.vacation_rules,
+            timezone: self.timezone,
+            tasks: self.tasks,
+            state: Cancelled,
+        }
+    }
+
+    pub fn start(self) -> Project<InProgress> {
+        self.transition()
+    }
+}
+
 impl Transition for Project<InProgress> {
     type NextState = Completed;
 
@@ -143,6 +164,23 @@ impl Transition for Project<InProgress> {
             timezone: self.timezone,
             tasks: self.tasks,
             state: Completed,
+        }
+    }
+}
+
+impl Project<InProgress> {
+    pub fn cancel(self) -> Project<Cancelled> {
+        Project {
+            id: self.id,
+            code: self.code,
+            name: self.name,
+            description: self.description,
+            start_date: self.start_date,
+            end_date: self.end_date,
+            vacation_rules: self.vacation_rules,
+            timezone: self.timezone,
+            tasks: self.tasks,
+            state: Cancelled,
         }
     }
 }

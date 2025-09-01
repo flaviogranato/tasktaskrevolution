@@ -250,7 +250,7 @@ impl Project {
         let now = Utc::now();
         
         Ok(Self {
-            id: Uuid::new_v7().to_string(),
+            id: uuid7::uuid7().to_string(),
             code,
             name,
             description: None,
@@ -454,7 +454,7 @@ impl Task {
         let now = Utc::now();
         
         Ok(Self {
-            id: Uuid::new_v7().to_string(),
+            id: uuid7::uuid7().to_string(),
             name,
             description: None,
             status: TaskStatus::NotStarted,

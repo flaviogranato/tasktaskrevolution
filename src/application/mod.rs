@@ -3,6 +3,7 @@ pub mod initialize_repository_use_case;
 
 pub mod company_settings;
 pub mod create;
+pub mod init;
 pub mod list;
 pub mod project;
 pub mod report;
