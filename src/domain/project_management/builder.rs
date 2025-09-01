@@ -1,123 +1,115 @@
-use crate::domain::{
-    project_management::{project::Project, state::Planned, vacation_rules::VacationRules},
-    shared::errors::{DomainError, DomainErrorKind},
-    task_management::any_task::AnyTask,
-};
+use super::project::{Project, ProjectSettings, VacationRules, WorkHours};
+use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::DomainErrorKind::ProjectInvalidState;
+use chrono::{DateTime, NaiveDate, Utc};
 use std::collections::HashMap;
-use uuid7::{Uuid, uuid7};
+use uuid7::Uuid;
 
-// Type states for the builder pattern
-pub struct New;
-pub struct WithName;
-pub struct WithCode;
-pub struct WithDates;
-pub struct Ready;
-
-/// Builder for the `Project` struct using the typestate pattern.
-///
-/// This builder provides a more ergonomic and type-safe way to construct a `Project` instance,
-/// ensuring all required fields are provided before a project can be built.
-#[derive(Debug)]
-pub struct ProjectBuilder<State> {
-    id: Uuid,
+/// Builder for creating `Project` instances with a fluent interface.
+/// This builder ensures that all required fields are set before building.
+#[derive(Debug, Clone)]
+pub struct ProjectBuilder {
+    id: String,
     code: Option<String>,
     name: Option<String>,
     description: Option<String>,
-    start_date: Option<String>,
-    end_date: Option<String>,
+    start_date: Option<NaiveDate>,
+    end_date: Option<NaiveDate>,
+    company_code: Option<String>,
+    created_by: Option<String>,
     vacation_rules: Option<VacationRules>,
     timezone: Option<String>,
-    tasks: HashMap<String, AnyTask>,
-    _state: std::marker::PhantomData<State>,
+    work_hours: Option<WorkHours>,
+    tasks: HashMap<String, crate::domain::task_management::any_task::AnyTask>,
 }
 
-impl ProjectBuilder<New> {
-    /// Creates a new `ProjectBuilder` with a required name.
-    pub fn new(name: impl Into<String>) -> Self {
+impl ProjectBuilder {
+    /// Creates a new `ProjectBuilder` instance.
+    pub fn new() -> Self {
         Self {
-            id: uuid7(),
-            name: Some(name.into()),
+            id: uuid7::uuid7().to_string(),
             code: None,
+            name: None,
             description: None,
             start_date: None,
             end_date: None,
+            company_code: None,
+            created_by: None,
             vacation_rules: None,
             timezone: None,
+            work_hours: None,
             tasks: HashMap::new(),
-            _state: std::marker::PhantomData,
         }
     }
-}
 
-impl ProjectBuilder<WithName> {
-    /// Sets the code for the project.
-    pub fn code(self, code: impl Into<String>) -> ProjectBuilder<WithCode> {
-        ProjectBuilder {
-            id: self.id,
-            code: Some(code.into()),
-            name: self.name,
-            description: self.description,
-            start_date: self.start_date,
-            end_date: self.end_date,
-            vacation_rules: self.vacation_rules,
-            timezone: self.timezone,
-            tasks: self.tasks,
-            _state: std::marker::PhantomData,
-        }
-    }
-}
-
-impl ProjectBuilder<WithCode> {
-    /// Sets the description for the project.
-    pub fn description(mut self, description: impl Into<String>) -> Self {
-        self.description = Some(description.into());
+    /// Sets the project code.
+    pub fn code(mut self, code: String) -> Self {
+        self.code = Some(code);
         self
     }
 
-    /// Sets the start date for the project.
-    pub fn start_date(mut self, start_date: impl Into<String>) -> Self {
-        self.start_date = Some(start_date.into());
+    /// Sets the project name.
+    pub fn name(mut self, name: String) -> Self {
+        self.name = Some(name);
         self
     }
 
-    /// Sets the end date for the project.
-    pub fn end_date(self, end_date: impl Into<String>) -> ProjectBuilder<WithDates> {
-        ProjectBuilder {
-            id: self.id,
-            code: self.code,
-            name: self.name,
-            description: self.description,
-            start_date: self.start_date,
-            end_date: Some(end_date.into()),
-            vacation_rules: self.vacation_rules,
-            timezone: self.timezone,
-            tasks: self.tasks,
-            _state: std::marker::PhantomData,
-        }
+    /// Sets the project description.
+    pub fn description(mut self, description: Option<String>) -> Self {
+        self.description = description;
+        self
     }
-}
 
-impl ProjectBuilder<WithDates> {
-    /// Sets the vacation rules for the project.
+    /// Sets the project start date.
+    pub fn start_date(mut self, start_date: NaiveDate) -> Self {
+        self.start_date = Some(start_date);
+        self
+    }
+
+    /// Sets the project end date.
+    pub fn end_date(mut self, end_date: NaiveDate) -> Self {
+        self.end_date = Some(end_date);
+        self
+    }
+
+    /// Sets the company code.
+    pub fn company_code(mut self, company_code: String) -> Self {
+        self.company_code = Some(company_code);
+        self
+    }
+
+    /// Sets the creator of the project.
+    pub fn created_by(mut self, created_by: String) -> Self {
+        self.created_by = Some(created_by);
+        self
+    }
+
+    /// Sets the vacation rules.
     pub fn vacation_rules(mut self, vacation_rules: VacationRules) -> Self {
         self.vacation_rules = Some(vacation_rules);
         self
     }
 
-    /// Sets the timezone for the project.
-    pub fn timezone(mut self, timezone: impl Into<String>) -> Self {
-        self.timezone = Some(timezone.into());
+    /// Sets the timezone.
+    pub fn timezone(mut self, timezone: String) -> Self {
+        self.timezone = Some(timezone);
+        self
+    }
+
+    /// Sets the work hours.
+    pub fn work_hours(mut self, work_hours: WorkHours) -> Self {
+        self.work_hours = Some(work_hours);
         self
     }
 
     /// Adds a task to the project.
-    pub fn add_task(mut self, task: AnyTask) -> Self {
+    pub fn add_task(mut self, task: crate::domain::task_management::any_task::AnyTask) -> Self {
         self.tasks.insert(task.code().to_string(), task);
         self
     }
 
     /// Validates the project configuration and builds the `Project` instance.
-    pub fn build(self) -> Result<Project<Planned>, DomainError> {
+    pub fn build(self) -> Result<Project, DomainError> {
         // Validate required fields
         let code = self.code.ok_or_else(|| {
             DomainError::new(DomainErrorKind::ValidationError {
@@ -133,83 +125,147 @@ impl ProjectBuilder<WithDates> {
             })
         })?;
 
-        // Validate dates if both are provided
-        if let (Some(start), Some(end)) = (&self.start_date, &self.end_date)
-            && start > end
-        {
-            return Err(DomainError::new(DomainErrorKind::ProjectInvalidState {
-                current: "invalid_dates".to_string(),
-                expected: "start_date < end_date".to_string(),
+        let company_code = self.company_code.ok_or_else(|| {
+            DomainError::new(DomainErrorKind::ValidationError {
+                field: "company_code".to_string(),
+                message: "Company code is required".to_string(),
             })
-            .with_context("Start date must be before end date"));
+        })?;
+
+        let created_by = self.created_by.ok_or_else(|| {
+            DomainError::new(DomainErrorKind::ValidationError {
+                field: "created_by".to_string(),
+                message: "Creator is required".to_string(),
+            })
+        })?;
+
+        // Validate dates if both are provided
+        if let (Some(start), Some(end)) = (self.start_date, self.end_date) {
+            if start > end {
+                return Err(DomainError::new(ProjectInvalidState {
+                    current: "invalid_dates".to_string(),
+                    expected: "start_date < end_date".to_string(),
+                })
+                .with_context("Start date must be before end date"));
+            }
         }
+
+        let now = Utc::now();
+        
+        let settings = ProjectSettings {
+            timezone: self.timezone,
+            vacation_rules: self.vacation_rules,
+            work_hours: self.work_hours,
+        };
 
         Ok(Project {
             id: self.id,
             code,
             name,
             description: self.description,
+            status: super::project::ProjectStatus::Planned,
+            priority: super::project::ProjectPriority::Medium,
             start_date: self.start_date,
             end_date: self.end_date,
-            vacation_rules: self.vacation_rules,
-            timezone: self.timezone,
+            actual_start_date: None,
+            actual_end_date: None,
+            company_code,
+            manager_id: None,
+            created_at: now,
+            updated_at: now,
+            created_by,
             tasks: self.tasks,
-            state: Planned,
+            resources: HashMap::new(),
+            settings,
+            metadata: HashMap::new(),
         })
     }
 }
 
-// Convenience methods for backward compatibility and simpler use cases
-impl ProjectBuilder<New> {
-    /// Legacy method for backward compatibility.
-    /// Prefer using the typestate pattern: new() -> code() -> end_date() -> build()
-    pub fn code(mut self, code: String) -> Self {
-        self.code = Some(code);
-        self
+impl Default for ProjectBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::NaiveDate;
+
+    #[test]
+    fn test_project_builder_with_required_fields() {
+        let project = ProjectBuilder::new()
+            .code("PROJ-001".to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("user@example.com".to_string())
+            .build()
+            .unwrap();
+
+        assert_eq!(project.code(), "PROJ-001");
+        assert_eq!(project.name(), "Test Project");
+        assert_eq!(project.company_code(), "COMP-001");
+        assert_eq!(project.created_by(), "user@example.com");
     }
 
-    /// Legacy method for backward compatibility.
-    pub fn description(mut self, description: Option<String>) -> Self {
-        self.description = description;
-        self
+    #[test]
+    fn test_project_builder_with_optional_fields() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+
+        let project = ProjectBuilder::new()
+            .code("PROJ-001".to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("user@example.com".to_string())
+            .description(Some("A test project".to_string()))
+            .start_date(start_date)
+            .end_date(end_date)
+            .build()
+            .unwrap();
+
+        assert_eq!(project.description(), Some("A test project"));
+        assert_eq!(project.start_date(), Some(start_date));
+        assert_eq!(project.end_date(), Some(end_date));
     }
 
-    /// Legacy method for backward compatibility.
-    pub fn start_date(mut self, start_date: String) -> Self {
-        self.start_date = Some(start_date);
-        self
+    #[test]
+    fn test_project_builder_validation_missing_code() {
+        let result = ProjectBuilder::new()
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("user@example.com".to_string())
+            .build();
+
+        assert!(result.is_err());
     }
 
-    /// Legacy method for backward compatibility.
-    pub fn end_date(mut self, end_date: String) -> Self {
-        self.end_date = Some(end_date);
-        self
+    #[test]
+    fn test_project_builder_validation_missing_name() {
+        let result = ProjectBuilder::new()
+            .code("PROJ-001".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("user@example.com".to_string())
+            .build();
+
+        assert!(result.is_err());
     }
 
-    /// Legacy method for backward compatibility.
-    pub fn vacation_rules(mut self, vacation_rules: VacationRules) -> Self {
-        self.vacation_rules = Some(vacation_rules);
-        self
-    }
+    #[test]
+    fn test_project_builder_validation_invalid_dates() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
 
-    /// Legacy method for backward compatibility.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the name is not set, which should not happen if `new()` is used.
-    pub fn build(self) -> Project<Planned> {
-        // For legacy compatibility, we'll create a simple project without validation
-        Project {
-            id: self.id,
-            code: self.code.expect("Project code must be set"),
-            name: self.name.expect("Project name must be set"),
-            description: self.description,
-            start_date: self.start_date,
-            end_date: self.end_date,
-            vacation_rules: self.vacation_rules,
-            timezone: self.timezone,
-            tasks: self.tasks,
-            state: Planned,
-        }
+        let result = ProjectBuilder::new()
+            .code("PROJ-001".to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("user@example.com".to_string())
+            .start_date(start_date)
+            .end_date(end_date)
+            .build();
+
+        assert!(result.is_err());
     }
 }

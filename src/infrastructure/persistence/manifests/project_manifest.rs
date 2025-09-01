@@ -70,57 +70,37 @@ pub struct LayoffPeriodManifest {
 pub enum ProjectStatusManifest {
     Planned,
     InProgress,
+    OnHold,
     Completed,
     Cancelled,
+}
+
+impl From<&crate::domain::project_management::project::ProjectStatus> for ProjectStatusManifest {
+    fn from(status: &crate::domain::project_management::project::ProjectStatus) -> Self {
+        match status {
+            crate::domain::project_management::project::ProjectStatus::Planned => ProjectStatusManifest::Planned,
+            crate::domain::project_management::project::ProjectStatus::InProgress => ProjectStatusManifest::InProgress,
+            crate::domain::project_management::project::ProjectStatus::OnHold => ProjectStatusManifest::OnHold,
+            crate::domain::project_management::project::ProjectStatus::Completed => ProjectStatusManifest::Completed,
+            crate::domain::project_management::project::ProjectStatus::Cancelled => ProjectStatusManifest::Cancelled,
+        }
+    }
 }
 
 impl From<AnyProject> for ProjectManifest {
     fn from(source: AnyProject) -> Self {
         let (id, code, name, description, start_date, end_date, vacation_rules, timezone, status_manifest) =
             match source {
-                AnyProject::Planned(p) => (
+                AnyProject::Project(p) => (
                     p.id,
                     p.code,
                     p.name,
                     p.description,
                     p.start_date,
                     p.end_date,
-                    p.vacation_rules,
-                    p.timezone,
-                    ProjectStatusManifest::Planned,
-                ),
-                AnyProject::InProgress(p) => (
-                    p.id,
-                    p.code,
-                    p.name,
-                    p.description,
-                    p.start_date,
-                    p.end_date,
-                    p.vacation_rules,
-                    p.timezone,
-                    ProjectStatusManifest::InProgress,
-                ),
-                AnyProject::Completed(p) => (
-                    p.id,
-                    p.code,
-                    p.name,
-                    p.description,
-                    p.start_date,
-                    p.end_date,
-                    p.vacation_rules,
-                    p.timezone,
-                    ProjectStatusManifest::Completed,
-                ),
-                AnyProject::Cancelled(p) => (
-                    p.id,
-                    p.code,
-                    p.name,
-                    p.description,
-                    p.start_date,
-                    p.end_date,
-                    p.vacation_rules,
-                    p.timezone,
-                    ProjectStatusManifest::Cancelled,
+                    p.settings.vacation_rules,
+                    p.settings.timezone,
+                    ProjectStatusManifest::from(&p.status),
                 ),
             };
 
@@ -135,10 +115,10 @@ impl From<AnyProject> for ProjectManifest {
             },
             spec: ProjectSpec {
                 timezone,
-                start_date,
-                end_date,
+                start_date: start_date.map(|d| d.format("%Y-%m-%d").to_string()),
+                end_date: end_date.map(|d| d.format("%Y-%m-%d").to_string()),
                 status: status_manifest,
-                vacation_rules: vacation_rules.map(VacationRulesManifest::from),
+                vacation_rules: vacation_rules.map(|vr| VacationRulesManifest::from(&vr)),
             },
         }
     }
@@ -168,68 +148,26 @@ impl TryFrom<ProjectManifest> for AnyProject {
         let vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
         let timezone = manifest.spec.timezone;
 
-        match manifest.spec.status {
-            ProjectStatusManifest::Planned => Ok(AnyProject::Planned(Project {
-                id,
-                code,
-                name,
-                description,
-                start_date,
-                end_date,
-                vacation_rules,
-                timezone,
-                tasks: std::collections::HashMap::new(),
-                state: Planned,
-            })),
-            ProjectStatusManifest::InProgress => Ok(AnyProject::InProgress(Project {
-                id,
-                code,
-                name,
-                description,
-                start_date,
-                end_date,
-                vacation_rules,
-                timezone,
-                tasks: std::collections::HashMap::new(),
-                state: InProgress,
-            })),
-            ProjectStatusManifest::Completed => Ok(AnyProject::Completed(Project {
-                id,
-                code,
-                name,
-                description,
-                start_date,
-                end_date,
-                vacation_rules,
-                timezone,
-                tasks: std::collections::HashMap::new(),
-                state: Completed,
-            })),
-            ProjectStatusManifest::Cancelled => Ok(AnyProject::Cancelled(Project {
-                id,
-                code,
-                name,
-                description,
-                start_date,
-                end_date,
-                vacation_rules,
-                timezone,
-                tasks: std::collections::HashMap::new(),
-                state: Cancelled,
-            })),
-        }
+        // TODO: Implement proper conversion from manifest to Project
+        // For now, we'll create a basic project
+        let project = crate::domain::project_management::project::Project::new(
+            code,
+            name,
+            "COMP-001".to_string(), // TODO: Get from manifest
+            "system".to_string(), // TODO: Get from manifest
+        ).map_err(|e| e.to_string())?;
+        
+        Ok(AnyProject::Project(project))
     }
 }
 
-impl From<VacationRules> for VacationRulesManifest {
-    fn from(source: VacationRules) -> Self {
+impl From<&crate::domain::project_management::project::VacationRules> for VacationRulesManifest {
+    fn from(source: &crate::domain::project_management::project::VacationRules) -> Self {
         VacationRulesManifest {
-            max_concurrent_vacations: source.max_concurrent_vacations,
-            allow_layoff_vacations: source.allow_layoff_vacations,
-            require_layoff_vacation_period: source.require_layoff_vacation_period,
-            layoff_periods: source
-                .layoff_periods
-                .map(|periods| periods.into_iter().map(LayoffPeriodManifest::from).collect()),
+            max_concurrent_vacations: Some(source.allowed_days_per_year),
+            allow_layoff_vacations: Some(true), // Default value
+            require_layoff_vacation_period: Some(false), // Default value
+            layoff_periods: None, // Not implemented in the new VacationRules
         }
     }
 }

@@ -76,24 +76,12 @@ impl BuildUseCase {
             let tasks: Vec<_> = project.tasks().values().cloned().collect();
 
             let project = if project.timezone().is_none() {
-                match project {
-                    AnyProject::Planned(mut p) => {
-                        p.timezone = Some(config.default_timezone.clone());
-                        AnyProject::Planned(p)
-                    }
-                    AnyProject::InProgress(mut p) => {
-                        p.timezone = Some(config.default_timezone.clone());
-                        AnyProject::InProgress(p)
-                    }
-                    AnyProject::Completed(mut p) => {
-                        p.timezone = Some(config.default_timezone.clone());
-                        AnyProject::Completed(p)
-                    }
-                    AnyProject::Cancelled(mut p) => {
-                        p.timezone = Some(config.default_timezone.clone());
-                        AnyProject::Cancelled(p)
-                    }
+                // Clone the project and update its timezone
+                let mut project_clone = project.clone();
+                if let AnyProject::Project(ref mut p) = project_clone {
+                    p.settings.timezone = Some(config.default_timezone.clone());
                 }
+                project_clone
             } else {
                 project
             };
@@ -121,10 +109,14 @@ impl BuildUseCase {
 
         // Create a dummy project for the base template header, which expects a `project` object.
         let dummy_project: AnyProject =
-            crate::domain::project_management::builder::ProjectBuilder::new("Projects Dashboard".to_string())
+            crate::domain::project_management::builder::ProjectBuilder::new()
                 .code("TTR_DASHBOARD".to_string())
-                .end_date("2024-12-31".to_string())
+                .name("Projects Dashboard".to_string())
+                .company_code("TTR".to_string())
+                .created_by("system".to_string())
+                .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
                 .build()
+                .unwrap()
                 .into();
         context.insert("project", &dummy_project);
 
