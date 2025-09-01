@@ -1,16 +1,33 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository,
+    shared::errors::DomainError,
+    task_management::any_task::AnyTask,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum DescribeTaskError {
-    #[error("Project with code '{0}' not found.")]
     ProjectNotFound(String),
-    #[error("Task with code '{0}' not found in project '{1}'.")]
-    TaskNotFound(String, String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    TaskNotFound(String),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for DescribeTaskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DescribeTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            DescribeTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
+            DescribeTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for DescribeTaskError {}
+
+impl From<DomainError> for DescribeTaskError {
+    fn from(err: DomainError) -> Self {
+        DescribeTaskError::RepositoryError(err)
+    }
 }
 
 pub struct DescribeTaskUseCase<PR>
@@ -38,7 +55,7 @@ where
             .tasks()
             .get(task_code)
             .cloned()
-            .ok_or_else(|| DescribeTaskError::TaskNotFound(task_code.to_string(), project_code.to_string()))?;
+            .ok_or_else(|| DescribeTaskError::TaskNotFound(task_code.to_string()))?;
 
         Ok(task)
     }
@@ -137,7 +154,7 @@ mod tests {
 
         let result = use_case.execute(project_code, "TSK-NONEXISTENT");
 
-        assert!(matches!(result, Err(DescribeTaskError::TaskNotFound(_, _))));
+        assert!(matches!(result, Err(DescribeTaskError::TaskNotFound(_))));
     }
 
     #[test]

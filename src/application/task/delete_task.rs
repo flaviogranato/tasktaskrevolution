@@ -1,30 +1,45 @@
 use crate::domain::{
-    project_management::{repository::ProjectRepository, any_project::AnyProject}, 
-    shared::errors::DomainError, 
+    project_management::{any_project::AnyProject, repository::ProjectRepository},
+    shared::errors::DomainError,
     task_management::any_task::AnyTask,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
-pub enum CancelTaskError {
-    #[error("Project with code '{0}' not found.")]
+#[derive(Debug)]
+pub enum DeleteTaskError {
     ProjectNotFound(String),
-    #[error("Task with code '{0}' not found in project.")]
     TaskNotFound(String),
-    #[error("An unexpected domain rule was violated: {0}")]
     DomainError(String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
 }
 
-pub struct CancelTaskUseCase<PR>
+impl fmt::Display for DeleteTaskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DeleteTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            DeleteTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
+            DeleteTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
+            DeleteTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for DeleteTaskError {}
+
+impl From<DomainError> for DeleteTaskError {
+    fn from(err: DomainError) -> Self {
+        DeleteTaskError::RepositoryError(err)
+    }
+}
+
+pub struct DeleteTaskUseCase<PR>
 where
     PR: ProjectRepository,
 {
     project_repository: PR,
 }
 
-impl<PR> CancelTaskUseCase<PR>
+impl<PR> DeleteTaskUseCase<PR>
 where
     PR: ProjectRepository,
 {
@@ -32,18 +47,18 @@ where
         Self { project_repository }
     }
 
-    pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, CancelTaskError> {
+    pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DeleteTaskError> {
         // 1. Load the project aggregate.
         let mut project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| CancelTaskError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| DeleteTaskError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Delegate the cancellation to the project aggregate.
         // TODO: Implement cancel_task method in AnyProject
         // For now, we'll just remove the task
         if let AnyProject::Project(ref mut p) = project {
-            p.remove_task(task_code).map_err(|e| CancelTaskError::DomainError(e.to_string()))?;
+            p.remove_task(task_code).map_err(|e| DeleteTaskError::DomainError(e.to_string()))?;
         }
 
         // 3. Save the updated project aggregate.
@@ -56,7 +71,7 @@ where
             .tasks()
             .get(task_code)
             .cloned()
-            .ok_or_else(|| CancelTaskError::TaskNotFound(task_code.to_string()))?;
+            .ok_or_else(|| DeleteTaskError::TaskNotFound(task_code.to_string()))?;
 
         Ok(cancelled_task)
     }
@@ -138,10 +153,10 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::new()),
         };
-        let use_case = CancelTaskUseCase::new(project_repo);
+        let use_case = DeleteTaskUseCase::new(project_repo);
 
         let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1");
-        assert!(matches!(result, Err(CancelTaskError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(DeleteTaskError::ProjectNotFound(_))));
     }
 
     // TODO: Enable this test once `AnyProject::cancel_task` is implemented.
@@ -153,7 +168,7 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
-        let use_case = CancelTaskUseCase::new(project_repo.clone());
+        let use_case = DeleteTaskUseCase::new(project_repo.clone());
 
         let result = use_case.execute("PROJ-1", "TSK-1");
 

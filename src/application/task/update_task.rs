@@ -2,18 +2,33 @@ use crate::domain::{
     project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
 };
 use chrono::NaiveDate;
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum UpdateTaskError {
-    #[error("Project with code '{0}' not found.")]
     ProjectNotFound(String),
-    #[error("Task with code '{0}' not found in project.")]
     TaskNotFound(String),
-    #[error("An unexpected domain rule was violated: {0}")]
     DomainError(String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for UpdateTaskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UpdateTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            UpdateTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
+            UpdateTaskError::DomainError(message) => write!(f, "An unexpected domain rule was violated: {}", message),
+            UpdateTaskError::RepositoryError(err) => write!(f, "A repository error occurred: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for UpdateTaskError {}
+
+impl From<DomainError> for UpdateTaskError {
+    fn from(err: DomainError) -> Self {
+        UpdateTaskError::RepositoryError(err)
+    }
 }
 
 #[derive(Debug, Clone, Default)]

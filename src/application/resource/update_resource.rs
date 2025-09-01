@@ -2,15 +2,31 @@ use crate::domain::{
     resource_management::{any_resource::AnyResource, repository::ResourceRepository},
     shared::errors::DomainError,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum UpdateResourceError {
-    #[error("Resource with code '{0}' not found.")]
     ResourceNotFound(String),
+    DomainError(String),
+    RepositoryError(DomainError),
+}
 
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+impl fmt::Display for UpdateResourceError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UpdateResourceError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            UpdateResourceError::DomainError(message) => write!(f, "Domain error: {}", message),
+            UpdateResourceError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for UpdateResourceError {}
+
+impl From<DomainError> for UpdateResourceError {
+    fn from(err: DomainError) -> Self {
+        UpdateResourceError::RepositoryError(err)
+    }
 }
 
 #[derive(Debug, Clone, Default)]

@@ -2,16 +2,33 @@ use crate::domain::{
     project_management::{any_project::AnyProject, repository::ProjectRepository},
     shared::errors::DomainError,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum CancelProjectError {
-    #[error("Project with code '{0}' not found.")]
     ProjectNotFound(String),
-    #[error("An unexpected domain rule was violated: {0}")]
+    ProjectAlreadyCancelled(String),
     DomainError(String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for CancelProjectError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            CancelProjectError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            CancelProjectError::ProjectAlreadyCancelled(code) => write!(f, "Project '{}' is already cancelled.", code),
+            CancelProjectError::DomainError(message) => write!(f, "Domain error: {}", message),
+            CancelProjectError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for CancelProjectError {}
+
+impl From<DomainError> for CancelProjectError {
+    fn from(err: DomainError) -> Self {
+        CancelProjectError::RepositoryError(err)
+    }
 }
 
 pub struct CancelProjectUseCase<PR>

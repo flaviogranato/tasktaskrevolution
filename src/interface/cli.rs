@@ -23,7 +23,7 @@ use crate::{
             update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
         },
         task::{
-            delete_task::CancelTaskUseCase,
+            delete_task::DeleteTaskUseCase,
             describe_task::DescribeTaskUseCase,
             link_task::LinkTaskUseCase,
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
@@ -1064,7 +1064,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 };
 
                 let project_repo = FileProjectRepository::new();
-                let use_case = CancelTaskUseCase::new(project_repo);
+                let use_case = DeleteTaskUseCase::new(project_repo);
 
                 match use_case.execute(&project_code, code) {
                     Ok(cancelled_task) => {
@@ -1435,7 +1435,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let resource_repo = FileResourceRepository::new(".");
                     let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
                     let resource_refs: Vec<&str> = resources.iter().map(|s| s.as_str()).collect();
-                    match use_case.execute(&project_code, task, &resource_refs) {
+                    match use_case.execute(&project_code, task, resource_refs[0]) {
                         Ok(updated_project) => {
                             if let Some(updated_task) = updated_project.tasks().get(task) {
                                 println!("Successfully assigned resources to task '{}'.", updated_task.code());

@@ -1,26 +1,36 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository,
+    shared::errors::DomainError,
+    task_management::any_task::AnyTask,
 };
+use std::fmt;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum RemoveDependencyError {
-    #[error("Project with code '{0}' not found")]
     ProjectNotFound(String),
-    #[error("Task with code '{0}' not found in the project")]
     TaskNotFound(String),
-    #[error("Dependency '{0}' not found in task '{1}'")]
-    DependencyNotFound(String, String),
-    #[error("Cannot remove dependency: task '{0}' is currently blocked by '{1}'")]
-    TaskBlockedByDependency(String, String),
-    #[error("Domain rule violation: {0}")]
+    DependencyNotFound(String),
     DomainError(String),
-    #[error("Repository error: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
 }
 
-impl From<String> for RemoveDependencyError {
-    fn from(err: String) -> Self {
-        RemoveDependencyError::DomainError(err)
+impl fmt::Display for RemoveDependencyError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RemoveDependencyError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            RemoveDependencyError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
+            RemoveDependencyError::DependencyNotFound(code) => write!(f, "Dependency '{}' not found for task.", code),
+            RemoveDependencyError::DomainError(message) => write!(f, "Domain error: {}", message),
+            RemoveDependencyError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for RemoveDependencyError {}
+
+impl From<DomainError> for RemoveDependencyError {
+    fn from(err: DomainError) -> Self {
+        RemoveDependencyError::RepositoryError(err)
     }
 }
 
@@ -59,7 +69,6 @@ where
         if !project.tasks().contains_key(dependency_code) {
             return Err(RemoveDependencyError::DependencyNotFound(
                 dependency_code.to_string(),
-                task_code.to_string(),
             ));
         }
 
@@ -76,15 +85,13 @@ where
         if !dependencies.contains(&dependency_code.to_string()) {
             return Err(RemoveDependencyError::DependencyNotFound(
                 dependency_code.to_string(),
-                task_code.to_string(),
             ));
         }
 
         // 4. Validate that removing the dependency won't break critical constraints
         if self.is_task_blocked_by_dependency(&project, task_code, dependency_code)? {
-            return Err(RemoveDependencyError::TaskBlockedByDependency(
-                task_code.to_string(),
-                dependency_code.to_string(),
+            return Err(RemoveDependencyError::DomainError(
+                "Cannot remove dependency: task is currently blocked by another dependency.".to_string(),
             ));
         }
 
@@ -285,7 +292,7 @@ mod tests {
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
 
         // Assert
-        assert!(matches!(result, Err(RemoveDependencyError::DependencyNotFound(_, _))));
+        assert!(matches!(result, Err(RemoveDependencyError::DependencyNotFound(_))));
     }
 
     #[test]
@@ -305,7 +312,7 @@ mod tests {
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B"); // Try to remove TASK-B from TASK-A's dependencies
 
         // Assert
-        assert!(matches!(result, Err(RemoveDependencyError::DependencyNotFound(_, _))));
+        assert!(matches!(result, Err(RemoveDependencyError::DependencyNotFound(_))));
     }
 
     #[test]
@@ -342,7 +349,7 @@ mod tests {
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
 
         // Assert
-        assert!(matches!(result, Err(RemoveDependencyError::TaskBlockedByDependency(_, _))));
+        assert!(matches!(result, Err(RemoveDependencyError::DomainError(_))));
     }
 
     #[test]

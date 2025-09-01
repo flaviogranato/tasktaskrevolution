@@ -2,16 +2,33 @@ use crate::domain::{
     resource_management::{any_resource::AnyResource, repository::ResourceRepository},
     shared::errors::DomainError,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum DeactivateResourceError {
-    #[error("Resource with code '{0}' not found.")]
     ResourceNotFound(String),
-    #[error("An unexpected domain rule was violated: {0}")]
+    ResourceAlreadyDeactivated(String),
     DomainError(String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for DeactivateResourceError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DeactivateResourceError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            DeactivateResourceError::ResourceAlreadyDeactivated(code) => write!(f, "Resource '{}' is already deactivated.", code),
+            DeactivateResourceError::DomainError(message) => write!(f, "Domain error: {}", message),
+            DeactivateResourceError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for DeactivateResourceError {}
+
+impl From<DomainError> for DeactivateResourceError {
+    fn from(err: DomainError) -> Self {
+        DeactivateResourceError::RepositoryError(err)
+    }
 }
 
 pub struct DeactivateResourceUseCase<RR>
