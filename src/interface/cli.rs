@@ -123,8 +123,8 @@ enum Commands {
 pub enum CompanyCommands {
     /// Create a new company
     Create {
-        /// Company code (e.g., COMP-001)
-        #[clap(long, value_name = "CODE")]
+        /// Company code (e.g., COMP-001) - optional, will be auto-generated if not provided
+        #[clap(long, value_name = "CODE", default_value = "")]
         code: String,
         /// Company name
         #[clap(long, value_name = "NAME")]
@@ -402,7 +402,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileCompanyRepository::new(".");
                 let use_case = CreateCompanyUseCase::new(repository);
 
-                match use_case.execute(CreateCompanyArgs {
+                let args = CreateCompanyArgs {
                     code: code.clone(),
                     name: name.clone(),
                     description: description.clone(),
@@ -413,10 +413,16 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     website: website.clone(),
                     industry: industry.clone(),
                     created_by: created_by.clone(),
-                }) {
+                };
+
+                match use_case.execute(args) {
                     Ok(company) => {
                         println!("Empresa criada com sucesso!");
-                        println!("Código: {}", company.code);
+                        if code.is_empty() {
+                            println!("Código gerado automaticamente: {}", company.code);
+                        } else {
+                            println!("Código: {}", company.code);
+                        }
                         println!("Nome: {}", company.name);
                         println!("ID: {}", company.id);
                         if let Some(desc) = &company.description {

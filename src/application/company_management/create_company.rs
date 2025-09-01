@@ -37,8 +37,15 @@ where
 
     /// Executes the company creation use case.
     pub fn execute(&self, args: CreateCompanyArgs) -> Result<Company, DomainError> {
+        // Generate code automatically if not provided
+        let code = if args.code.is_empty() {
+            self.company_repository.get_next_code()?
+        } else {
+            args.code
+        };
+
         // Check if company code already exists
-        let code_exists = self.company_repository.code_exists(&args.code)?;
+        let code_exists = self.company_repository.code_exists(&code)?;
         if code_exists {
             return Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::ValidationError {
                 field: "code".to_string(),
@@ -57,7 +64,7 @@ where
 
         // Create the company
         let mut company = Company::new(
-            args.code,
+            code,
             args.name,
             args.created_by,
         )?;
