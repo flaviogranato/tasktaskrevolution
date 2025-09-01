@@ -6,7 +6,7 @@ use crate::{
             project::CreateProjectUseCase, resource::CreateResourceUseCase, task::CreateTaskArgs,
             task::CreateTaskUseCase, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase,
         },
-        initialize_repository_use_case::InitializeRepositoryUseCase,
+        init::{InitManagerUseCase, InitManagerData},
         list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
         project::assign_resource_to_task::AssignResourceToTaskUseCase,
         project::{
@@ -52,11 +52,24 @@ pub struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Init {
-        path: Option<PathBuf>,
+        /// Nome do manager/consultor
         #[clap(long, value_name = "NAME")]
-        manager_name: String,
+        name: String,
+        /// Email do manager/consultor
         #[clap(long, value_name = "EMAIL")]
-        manager_email: String,
+        email: String,
+        /// Nome da empresa/consultoria
+        #[clap(long, value_name = "COMPANY")]
+        company_name: String,
+        /// Timezone (ex: UTC, America/Sao_Paulo)
+        #[clap(long, value_name = "TIMEZONE", default_value = "UTC")]
+        timezone: String,
+        /// Hora de início do trabalho (HH:MM)
+        #[clap(long, value_name = "TIME", default_value = "08:00")]
+        work_start: String,
+        /// Hora de fim do trabalho (HH:MM)
+        #[clap(long, value_name = "TIME", default_value = "18:00")]
+        work_end: String,
     },
     Build {
         /// Opcional: Caminho para o diretório do projeto.
@@ -276,15 +289,43 @@ enum TaskCommands {
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     match &cli.command {
         Commands::Init {
-            path,
-            manager_name,
-            manager_email,
+            name,
+            email,
+            company_name,
+            timezone,
+            work_start,
+            work_end,
         } => {
             let repository = FileConfigRepository::new();
-            let use_case = InitializeRepositoryUseCase::new(repository);
-            let repo_path = path.clone().unwrap_or(std::env::current_dir()?);
+            let use_case = InitManagerUseCase::new(Box::new(repository));
+            
+            let init_data = InitManagerData {
+                name: name.clone(),
+                email: email.clone(),
+                company_name: company_name.clone(),
+                timezone: timezone.clone(),
+                work_hours_start: work_start.clone(),
+                work_hours_end: work_end.clone(),
+            };
 
-            use_case.execute(repo_path, manager_name.clone(), manager_email.clone())?;
+            match use_case.execute(init_data) {
+                Ok(config) => {
+                    println!("✅ Manager/Consultor configurado com sucesso!");
+                    println!("👤 Manager: {} ({})", config.manager_name, config.manager_email);
+                    if let Some(company) = &config.company_name {
+                        println!("🏢 Empresa: {}", company);
+                    }
+                    println!("🌍 Timezone: {}", config.default_timezone);
+                    if let (Some(start), Some(end)) = (&config.work_hours_start, &config.work_hours_end) {
+                        println!("⏰ Horário de trabalho: {} - {}", start, end);
+                    }
+                    println!("📁 Configuração salva em: config.yaml");
+                }
+                Err(e) => {
+                    println!("❌ Erro ao configurar manager: {:?}", e);
+                    return Err(Box::new(e));
+                }
+            }
             Ok(())
         }
         Commands::Build { path } => {
@@ -1135,48 +1176,70 @@ mod tests {
         let args = vec![
             "ttr",
             "init",
-            "--manager-name",
+            "--name",
             "John Doe",
-            "--manager-email",
+            "--email",
             "john@example.com",
+            "--company-name",
+            "TechConsulting",
         ];
         let cli = Cli::try_parse_from(args).unwrap();
 
         if let Commands::Init {
-            manager_name,
-            manager_email,
-            ..
+            name,
+            email,
+            company_name,
+            timezone,
+            work_start,
+            work_end,
         } = cli.command
         {
-            assert_eq!(manager_name, "John Doe");
-            assert_eq!(manager_email, "john@example.com");
+            assert_eq!(name, "John Doe");
+            assert_eq!(email, "john@example.com");
+            assert_eq!(company_name, "TechConsulting");
+            assert_eq!(timezone, "UTC");
+            assert_eq!(work_start, "08:00");
+            assert_eq!(work_end, "18:00");
         } else {
             panic!("Expected Init command");
         }
     }
 
     #[test]
-    fn test_init_command_with_path() {
+    fn test_init_command_with_timezone() {
         let args = vec![
             "ttr",
             "init",
-            "/tmp/test",
-            "--manager-name",
-            "John Doe",
-            "--manager-email",
-            "john@example.com",
+            "--name",
+            "João Silva",
+            "--email",
+            "joao@consultoria.com",
+            "--company-name",
+            "Consultoria Brasil",
+            "--timezone",
+            "America/Sao_Paulo",
+            "--work-start",
+            "09:00",
+            "--work-end",
+            "17:00",
         ];
         let cli = Cli::try_parse_from(args).unwrap();
 
         if let Commands::Init {
-            path,
-            manager_name,
-            manager_email,
+            name,
+            email,
+            company_name,
+            timezone,
+            work_start,
+            work_end,
         } = cli.command
         {
-            assert_eq!(path, Some(PathBuf::from("/tmp/test")));
-            assert_eq!(manager_name, "John Doe");
-            assert_eq!(manager_email, "john@example.com");
+            assert_eq!(name, "João Silva");
+            assert_eq!(email, "joao@consultoria.com");
+            assert_eq!(company_name, "Consultoria Brasil");
+            assert_eq!(timezone, "America/Sao_Paulo");
+            assert_eq!(work_start, "09:00");
+            assert_eq!(work_end, "17:00");
         } else {
             panic!("Expected Init command");
         }
