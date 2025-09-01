@@ -81,10 +81,14 @@ mod tests {
 
     // --- Helpers ---
     fn create_test_project(code: &str) -> AnyProject {
-        ProjectBuilder::new("Test Project".to_string())
+        ProjectBuilder::new()
             .code(code.to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .description(Some("A test project.".to_string()))
             .build()
+            .unwrap()
             .into()
     }
 
