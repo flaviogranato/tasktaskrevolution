@@ -115,9 +115,13 @@ mod tests {
     }
 
     fn create_test_project(code: &str, tasks: Vec<AnyTask>) -> AnyProject {
-        let mut project: AnyProject = ProjectBuilder::new("Test Project".to_string())
+        let mut project: AnyProject = ProjectBuilder::new()
             .code(code.to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
         for task in tasks {
             project.add_task(task);
