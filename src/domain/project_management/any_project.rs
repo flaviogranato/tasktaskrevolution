@@ -30,6 +30,18 @@ impl AnyProject {
         }
     }
 
+    pub fn set_name(&mut self, name: String) {
+        match self {
+            AnyProject::Project(p) => p.name = name,
+        }
+    }
+
+    pub fn set_description(&mut self, description: Option<String>) {
+        match self {
+            AnyProject::Project(p) => p.description = description,
+        }
+    }
+
     pub fn timezone(&self) -> Option<&String> {
         match self {
             AnyProject::Project(p) => p.settings.timezone.as_ref(),

@@ -59,18 +59,10 @@ where
 
         // 2. Update the fields on the aggregate.
         if let Some(name) = args.name {
-            if let AnyProject::Project(ref mut p) = project {
-                // TODO: Implement proper setter methods in Project
-                // For now, we'll need to create a new Project instance
-                // This is a temporary workaround
-            }
+            project.set_name(name);
         }
         if let Some(description) = args.description {
-            if let AnyProject::Project(ref mut p) = project {
-                // TODO: Implement proper setter methods in Project
-                // For now, we'll need to create a new Project instance
-                // This is a temporary workaround
-            }
+            project.set_description(Some(description));
         }
 
         // 3. Save the updated project aggregate.
@@ -125,7 +117,6 @@ mod tests {
 
     // --- Tests ---
 
-    // TODO: Enable this test once `AnyProject::set_name` and `AnyProject::set_description` are implemented.
     #[test]
     fn test_update_project_name_and_description_success() {
         let initial_project = create_test_project("PROJ-1", "Old Name", Some("Old Description"));
