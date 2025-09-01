@@ -42,6 +42,22 @@ impl AnyProject {
         }
     }
 
+    pub fn cancel_task(&mut self, task_code: &str) -> Result<AnyTask, String> {
+        match self {
+            AnyProject::Project(p) => {
+                if let Some(task) = p.tasks.get(task_code) {
+                    // Create a new cancelled task by cloning and cancelling
+                    let cancelled_task = task.clone().cancel();
+                    // Replace the old task with the cancelled one
+                    p.tasks.insert(task_code.to_string(), cancelled_task.clone());
+                    Ok(cancelled_task)
+                } else {
+                    Err(format!("Task '{}' not found in project", task_code))
+                }
+            }
+        }
+    }
+
     pub fn timezone(&self) -> Option<&String> {
         match self {
             AnyProject::Project(p) => p.settings.timezone.as_ref(),
@@ -75,9 +91,8 @@ impl AnyProject {
     pub fn add_task(&mut self, task: AnyTask) {
         match self {
             AnyProject::Project(p) => {
-                // Por enquanto, vamos usar um ID placeholder
-                // TODO: Implementar geração de ID único para tarefas
-                let _ = p.add_task(task);
+                // Insert the task directly using its code
+                p.tasks.insert(task.code().to_string(), task);
             }
         }
     }
