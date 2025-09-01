@@ -73,9 +73,26 @@ impl AnyProject {
     pub fn assign_resource_to_task(&mut self, task_code: &str, resource_codes: &[&str]) -> Result<(), String> {
         match self {
             AnyProject::Project(p) => {
-                // TODO: Implementar alocação de recursos
-                // Por enquanto, apenas retornamos sucesso
-                Ok(())
+                // Find the task
+                if let Some(task) = p.tasks.get_mut(task_code) {
+                    // Add the new resource codes to the task's assigned resources
+                    for &resource_code in resource_codes {
+                        if !task.assigned_resources().contains(&resource_code.to_string()) {
+                            // We need to modify the task's assigned_resources
+                            // Since AnyTask doesn't have a mutable reference to assigned_resources,
+                            // we'll need to create a new task with updated resources
+                            let mut new_assigned_resources = task.assigned_resources().to_vec();
+                            new_assigned_resources.push(resource_code.to_string());
+                            
+                            // Create a new task with updated resources
+                            let new_task = task.with_assigned_resources(new_assigned_resources);
+                            p.tasks.insert(task_code.to_string(), new_task);
+                        }
+                    }
+                    Ok(())
+                } else {
+                    Err(format!("Task '{}' not found in project", task_code))
+                }
             }
         }
     }

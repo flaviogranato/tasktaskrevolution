@@ -84,6 +84,36 @@ impl AnyTask {
         }
     }
 
+    pub fn with_assigned_resources(&self, new_assigned_resources: Vec<String>) -> Self {
+        match self {
+            AnyTask::Planned(task) => {
+                let mut new_task = task.clone();
+                new_task.assigned_resources = new_assigned_resources;
+                AnyTask::Planned(new_task)
+            }
+            AnyTask::InProgress(task) => {
+                let mut new_task = task.clone();
+                new_task.assigned_resources = new_assigned_resources;
+                AnyTask::InProgress(new_task)
+            }
+            AnyTask::Blocked(task) => {
+                let mut new_task = task.clone();
+                new_task.assigned_resources = new_assigned_resources;
+                AnyTask::Blocked(new_task)
+            }
+            AnyTask::Completed(task) => {
+                let mut new_task = task.clone();
+                new_task.assigned_resources = new_assigned_resources;
+                AnyTask::Completed(new_task)
+            }
+            AnyTask::Cancelled(task) => {
+                let mut new_task = task.clone();
+                new_task.assigned_resources = new_assigned_resources;
+                AnyTask::Cancelled(new_task)
+            }
+        }
+    }
+
     pub fn description(&self) -> Option<&str> {
         // Zero-copy: retorna &str em vez de &String
         match self {
