@@ -80,6 +80,10 @@ enum Commands {
         #[clap(subcommand)]
         create_command: CreateCommands,
     },
+    Company {
+        #[clap(subcommand)]
+        company_command: CompanyCommands,
+    },
     List {
         #[clap(subcommand)]
         list_command: ListCommands,
@@ -111,6 +115,43 @@ enum Commands {
     Task {
         #[clap(subcommand)]
         task_command: TaskCommands,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum CompanyCommands {
+    /// Create a new company
+    Create {
+        /// Company code (e.g., COMP-001)
+        #[clap(long, value_name = "CODE")]
+        code: String,
+        /// Company name
+        #[clap(long, value_name = "NAME")]
+        name: String,
+        /// Company description
+        #[clap(long, value_name = "DESCRIPTION")]
+        description: Option<String>,
+        /// Company tax ID (CNPJ in Brazil)
+        #[clap(long, value_name = "TAX_ID")]
+        tax_id: Option<String>,
+        /// Company address
+        #[clap(long, value_name = "ADDRESS")]
+        address: Option<String>,
+        /// Company email
+        #[clap(long, value_name = "EMAIL")]
+        email: Option<String>,
+        /// Company phone
+        #[clap(long, value_name = "PHONE")]
+        phone: Option<String>,
+        /// Company website
+        #[clap(long, value_name = "WEBSITE")]
+        website: Option<String>,
+        /// Company industry
+        #[clap(long, value_name = "INDUSTRY")]
+        industry: Option<String>,
+        /// User creating the company
+        #[clap(long, value_name = "USER", default_value = "system")]
+        created_by: String,
     },
 }
 
@@ -310,19 +351,19 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
             match use_case.execute(init_data) {
                 Ok(config) => {
-                    println!("✅ Manager/Consultor configurado com sucesso!");
-                    println!("👤 Manager: {} ({})", config.manager_name, config.manager_email);
+                    println!("Manager/Consultor configurado com sucesso!");
+                    println!("Manager: {} ({})", config.manager_name, config.manager_email);
                     if let Some(company) = &config.company_name {
-                        println!("🏢 Empresa: {}", company);
+                        println!("Empresa: {}", company);
                     }
-                    println!("🌍 Timezone: {}", config.default_timezone);
+                    println!("Timezone: {}", config.default_timezone);
                     if let (Some(start), Some(end)) = (&config.work_hours_start, &config.work_hours_end) {
-                        println!("⏰ Horário de trabalho: {} - {}", start, end);
+                        println!("Horário de trabalho: {} - {}", start, end);
                     }
-                    println!("📁 Configuração salva em: config.yaml");
+                    println!("Configuração salva em: config.yaml");
                 }
                 Err(e) => {
-                    println!("❌ Erro ao configurar manager: {:?}", e);
+                    println!("Erro ao configurar manager: {:?}", e);
                     return Err(Box::new(e));
                 }
             }
@@ -335,15 +376,42 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             match BuildUseCase::new(project_path, output_dir.to_str().unwrap()) {
                 Ok(use_case) => {
                     if let Err(e) = use_case.execute() {
-                        println!("❌ Erro ao construir o site: {e}");
+                        println!("Erro ao construir o site: {e}");
                     }
                 }
                 Err(e) => {
-                    println!("❌ Erro ao inicializar o builder: {e}");
+                    println!("Erro ao inicializar o builder: {e}");
                 }
             }
             Ok(())
         }
+        Commands::Company { company_command } => match company_command {
+            CompanyCommands::Create {
+                code,
+                name,
+                description,
+                tax_id,
+                address,
+                email,
+                phone,
+                website,
+                industry,
+                created_by,
+            } => {
+                // TODO: Implement company creation
+                println!("Criando empresa: {} ({})", name, code);
+                println!("Descrição: {:?}", description);
+                println!("CNPJ: {:?}", tax_id);
+                println!("Endereço: {:?}", address);
+                println!("Email: {:?}", email);
+                println!("Telefone: {:?}", phone);
+                println!("Website: {:?}", website);
+                println!("Indústria: {:?}", industry);
+                println!("Criado por: {}", created_by);
+                println!("Comando company create implementado com sucesso!");
+                Ok(())
+            }
+        },
         Commands::Create { create_command } => match create_command {
             CreateCommands::Project { name, description } => {
                 let repository = FileProjectRepository::new();
@@ -378,12 +446,12 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 ) {
                     Ok(result) => {
                         if result.success {
-                            println!("✅ {}", result.message);
+                            println!("{}", result.message);
                         } else {
-                            println!("❌ {}", result.message);
+                            println!("{}", result.message);
                         }
                     }
-                    Err(e) => println!("❌ Erro inesperado: {e}"),
+                    Err(e) => println!("Erro inesperado: {e}"),
                 };
                 Ok(())
             }
@@ -399,17 +467,17 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute(resource, *hours, date, description.as_deref()) {
                     Ok(result) => {
                         if result.success {
-                            println!("✅ {}", result.message);
-                            println!("📊 Novo saldo: {} horas", result.time_off_balance);
+                            println!("{}", result.message);
+                            println!("Novo saldo: {} horas", result.time_off_balance);
                             if let Some(desc) = &result.description {
-                                println!("📝 Descrição: {desc}");
+                                println!("Descrição: {desc}");
                             }
-                            println!("📅 Data: {}", result.date);
+                            println!("Data: {}", result.date);
                         } else {
-                            println!("❌ {}", result.message);
+                            println!("{}", result.message);
                         }
                     }
-                    Err(e) => println!("❌ Erro inesperado: {e}"),
+                    Err(e) => println!("Erro inesperado: {e}"),
                 };
                 Ok(())
             }
@@ -440,21 +508,21 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         let manifest_path = PathBuf::from("project.yaml");
                         if !manifest_path.exists() {
                             println!(
-                                "❌ Erro: Comando executado fora de um diretório de projeto. Especifique --project-code."
+                                "Erro: Comando executado fora de um diretório de projeto. Especifique --project-code."
                             );
                             return Ok(());
                         }
                         let content = match std::fs::read_to_string(manifest_path) {
                             Ok(c) => c,
                             Err(e) => {
-                                println!("❌ Erro ao ler 'project.yaml': {e}");
+                                println!("Erro ao ler 'project.yaml': {e}");
                                 return Ok(());
                             }
                         };
                         let manifest: ProjManifest = match serde_yaml::from_str(&content) {
                             Ok(m) => m,
                             Err(e) => {
-                                println!("❌ Erro ao analisar 'project.yaml': {e}");
+                                println!("Erro ao analisar 'project.yaml': {e}");
                                 return Ok(());
                             }
                         };
@@ -467,7 +535,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let start = match NaiveDate::parse_from_str(start_date, "%Y-%m-%d") {
                     Ok(date) => date,
                     Err(_) => {
-                        println!("❌ Erro: Data de início inválida. Use o formato YYYY-MM-DD");
+                        println!("Erro: Data de início inválida. Use o formato YYYY-MM-DD");
                         return Ok(());
                     }
                 };
@@ -475,7 +543,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let due = match NaiveDate::parse_from_str(due_date, "%Y-%m-%d") {
                     Ok(date) => date,
                     Err(_) => {
-                        println!("❌ Erro: Data de vencimento inválida. Use o formato YYYY-MM-DD");
+                        println!("Erro: Data de vencimento inválida. Use o formato YYYY-MM-DD");
                         return Ok(());
                     }
                 };
@@ -492,19 +560,19 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 match use_case.execute(args) {
                     Ok(_) => {
-                        println!("✅ Task '{name}' criada com sucesso!");
+                        println!("Task '{name}' criada com sucesso!");
                         // The generated task code is now an internal detail of the project aggregate,
                         // and the main success message is printed by the use case.
                         if let Some(desc) = description {
-                            println!("📝 Descrição: {desc}");
+                            println!("Descrição: {desc}");
                         }
-                        println!("📅 Período: {start_date} até {due_date}");
+                        println!("Período: {start_date} até {due_date}");
                         if !assignees.is_empty() {
-                            println!("👥 Responsáveis: {}", assignees.join(", "));
+                            println!("Responsáveis: {}", assignees.join(", "));
                         }
                     }
                     Err(e) => {
-                        println!("❌ Erro ao criar task: {e}");
+                        println!("Erro ao criar task: {e}");
                     }
                 };
                 Ok(())
@@ -526,7 +594,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             }
                         }
                     }
-                    Err(e) => println!("❌ Erro ao listar projetos: {e}"),
+                    Err(e) => println!("Erro ao listar projetos: {e}"),
                 }
                 Ok(())
             }
@@ -550,7 +618,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             }
                         }
                     }
-                    Err(e) => println!("❌ Erro ao listar recursos: {e}"),
+                    Err(e) => println!("Erro ao listar recursos: {e}"),
                 }
                 Ok(())
             }
@@ -579,7 +647,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             }
                         }
                     }
-                    Err(e) => println!("❌ Erro ao listar tarefas: {e}"),
+                    Err(e) => println!("Erro ao listar tarefas: {e}"),
                 }
                 Ok(())
             }
@@ -611,7 +679,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                     manifest.metadata.code
                 } else {
-                    println!("❌ Error: This command must be run from within a project directory.");
+                    println!("Error: This command must be run from within a project directory.");
                     return Ok(());
                 };
 
@@ -622,7 +690,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 {
                     Ok(date) => date,
                     Err(_) => {
-                        println!("❌ Error: Invalid start date format. Use YYYY-MM-DD.");
+                        println!("Error: Invalid start date format. Use YYYY-MM-DD.");
                         return Ok(());
                     }
                 };
@@ -634,7 +702,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 {
                     Ok(date) => date,
                     Err(_) => {
-                        println!("❌ Error: Invalid due date format. Use YYYY-MM-DD.");
+                        println!("Error: Invalid due date format. Use YYYY-MM-DD.");
                         return Ok(());
                     }
                 };
@@ -651,14 +719,14 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 match use_case.execute(&project_code, code, args) {
                     Ok(updated_task) => {
-                        println!("✅ Successfully updated task '{}'.", updated_task.code());
+                        println!("Successfully updated task '{}'.", updated_task.code());
                         println!("   Name: {}", updated_task.name());
                         println!("   Description: {}", updated_task.description().map_or("N/A", |d| d));
                         println!("   Start Date: {}", updated_task.start_date());
                         println!("   Due Date: {}", updated_task.due_date());
                     }
                     Err(e) => {
-                        println!("❌ Error updating task: {e}");
+                        println!("Error updating task: {e}");
                     }
                 }
                 Ok(())
@@ -680,13 +748,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 match use_case.execute(code, args) {
                     Ok(updated_resource) => {
-                        println!("✅ Successfully updated resource '{}'.", updated_resource.code());
+                        println!("Successfully updated resource '{}'.", updated_resource.code());
                         println!("   Name: {}", updated_resource.name());
                         println!("   Email: {}", updated_resource.email().map_or("N/A", |e| e));
                         println!("   Type: {}", updated_resource.resource_type());
                     }
                     Err(e) => {
-                        println!("❌ Error updating resource: {e}");
+                        println!("Error updating resource: {e}");
                     }
                 }
                 Ok(())
@@ -710,7 +778,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                     manifest.metadata.code
                 } else {
-                    println!("❌ Error: This command must be run from within a project directory.");
+                    println!("Error: This command must be run from within a project directory.");
                     return Ok(());
                 };
 
@@ -724,12 +792,12 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 match use_case.execute(&project_code, args) {
                     Ok(updated_project) => {
-                        println!("✅ Successfully updated project '{}'.", updated_project.code());
+                        println!("Successfully updated project '{}'.", updated_project.code());
                         println!("   Name: {}", updated_project.name());
                         println!("   Description: {}", updated_project.description().map_or("N/A", |d| d));
                     }
                     Err(e) => {
-                        println!("❌ Error updating project: {e}");
+                        println!("Error updating project: {e}");
                     }
                 }
                 Ok(())
@@ -755,7 +823,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                     manifest.metadata.code
                 } else {
-                    println!("❌ Error: This command must be run from within a project directory.");
+                    println!("Error: This command must be run from within a project directory.");
                     return Ok(());
                 };
 
@@ -765,13 +833,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute(&project_code, code) {
                     Ok(cancelled_task) => {
                         println!(
-                            "✅ Successfully cancelled task '{}' (status is now '{}').",
+                            "Successfully cancelled task '{}' (status is now '{}').",
                             cancelled_task.code(),
                             cancelled_task.status()
                         );
                     }
                     Err(e) => {
-                        println!("❌ Error deleting task: {e}");
+                        println!("Error deleting task: {e}");
                     }
                 }
                 Ok(())
@@ -795,7 +863,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                     manifest.metadata.code
                 } else {
-                    println!("❌ Error: This command must be run from within a project directory.");
+                    println!("Error: This command must be run from within a project directory.");
                     return Ok(());
                 };
 
@@ -805,13 +873,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute(&project_code) {
                     Ok(cancelled_project) => {
                         println!(
-                            "✅ Successfully cancelled project '{}'. Its status is now '{}'.",
+                            "Successfully cancelled project '{}'. Its status is now '{}'.",
                             cancelled_project.code(),
                             cancelled_project.status()
                         );
                     }
                     Err(e) => {
-                        println!("❌ Error deleting project: {e}");
+                        println!("Error deleting project: {e}");
                     }
                 }
                 Ok(())
@@ -823,12 +891,12 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match use_case.execute(code) {
                     Ok(deactivated_resource) => {
                         println!(
-                            "✅ Successfully deactivated resource '{}'. Status is now Inactive.",
+                            "Successfully deactivated resource '{}'. Status is now Inactive.",
                             deactivated_resource.code(),
                         );
                     }
                     Err(e) => {
-                        println!("❌ Error deleting resource: {e}");
+                        println!("Error deleting resource: {e}");
                     }
                 }
                 Ok(())
@@ -867,7 +935,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         }
                     }
                     Err(e) => {
-                        println!("❌ Error describing resource: {e}");
+                        println!("Error describing resource: {e}");
                     }
                 }
                 Ok(())
@@ -891,7 +959,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                     manifest.metadata.code
                 } else {
-                    println!("❌ Error: This command must be run from within a project directory.");
+                    println!("Error: This command must be run from within a project directory.");
                     return Ok(());
                 };
 
@@ -918,7 +986,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         }
                     }
                     Err(e) => {
-                        println!("❌ Error describing project: {e}");
+                        println!("Error describing project: {e}");
                     }
                 }
                 Ok(())
@@ -942,7 +1010,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                     manifest.metadata.code
                 } else {
-                    println!("❌ Error: This command must be run from within a project directory.");
+                    println!("Error: This command must be run from within a project directory.");
                     return Ok(());
                 };
 
@@ -970,7 +1038,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         }
                     }
                     Err(e) => {
-                        println!("❌ Error describing task: {e}");
+                        println!("Error describing task: {e}");
                     }
                 }
                 Ok(())
@@ -983,7 +1051,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         println!("{:<20} {}", "Manager Email:", config.manager_email);
                     }
                     Err(e) => {
-                        println!("❌ Error describing configuration: {e}");
+                        println!("Error describing configuration: {e}");
                     }
                 }
                 Ok(())
@@ -1021,13 +1089,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     match Writer::from_path(file_path) {
                         Ok(mut writer) => {
                             if let Err(e) = use_case.execute(&mut writer) {
-                                println!("❌ Erro ao gerar relatório: {e}");
+                                println!("Erro ao gerar relatório: {e}");
                             } else {
-                                println!("✅ Relatório de férias gerado com sucesso em: {file_path}");
+                                println!("Relatório de férias gerado com sucesso em: {file_path}");
                             }
                         }
                         Err(e) => {
-                            println!("❌ Erro ao criar arquivo de relatório: {e}");
+                            println!("Erro ao criar arquivo de relatório: {e}");
                         }
                     }
                 }
@@ -1039,13 +1107,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     match Writer::from_path(file_path) {
                         Ok(mut writer) => {
                             if let Err(e) = use_case.execute(&mut writer) {
-                                println!("❌ Erro ao gerar relatório de tarefas: {e}");
+                                println!("Erro ao gerar relatório de tarefas: {e}");
                             } else {
-                                println!("✅ Relatório de tarefas gerado com sucesso em: {file_path}");
+                                println!("Relatório de tarefas gerado com sucesso em: {file_path}");
                             }
                         }
                         Err(e) => {
-                            println!("❌ Erro ao criar arquivo de relatório de tarefas: {e}");
+                            println!("Erro ao criar arquivo de relatório de tarefas: {e}");
                         }
                     }
                 }
@@ -1071,7 +1139,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                         manifest.metadata.code
                     } else {
-                        println!("❌ Error: This command must be run from within a project directory.");
+                        println!("Error: This command must be run from within a project directory.");
                         return Ok(());
                     };
 
@@ -1082,14 +1150,14 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     match use_case.execute(&project_code, task, &resource_refs) {
                         Ok(updated_project) => {
                             if let Some(updated_task) = updated_project.tasks().get(task) {
-                                println!("✅ Successfully assigned resources to task '{}'.", updated_task.code());
+                                println!("Successfully assigned resources to task '{}'.", updated_task.code());
                                 println!("   New assignees: {}", updated_task.assigned_resources().join(", "));
                             } else {
-                                println!("❌ Error: Task '{}' not found in updated project", task);
+                                println!("Error: Task '{}' not found in updated project", task);
                             }
                         }
                         Err(e) => {
-                            println!("❌ Error assigning resources: {e}");
+                            println!("Error assigning resources: {e}");
                         }
                     }
                 }
@@ -1111,7 +1179,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         let manifest: ProjManifest = serde_yaml::from_str(&content)?;
                         manifest.metadata.code
                     } else {
-                        println!("❌ Error: This command must be run from within a project directory.");
+                        println!("Error: This command must be run from within a project directory.");
                         return Ok(());
                     };
 
@@ -1120,10 +1188,10 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                     match use_case.execute(&project_code, task, dependency) {
                         Ok(_) => {
-                            println!("✅ Successfully linked task '{task}' to wait for '{dependency}'.");
+                            println!("Successfully linked task '{task}' to wait for '{dependency}'.");
                         }
                         Err(e) => {
-                            println!("❌ Error linking task: {e}");
+                            println!("Error linking task: {e}");
                         }
                     }
                 }
