@@ -140,10 +140,7 @@ mod test {
         assert!(saved_config.is_some());
         let any_project = saved_config.as_ref().unwrap();
         assert_eq!(any_project.name(), name);
-        if let AnyProject::Planned(p) = any_project {
-            assert_eq!(p.description.as_deref(), description);
-        } else {
-            panic!("Expected Planned project");
-        }
+        // AnyProject is no longer an enum with variants, so we can access the project directly
+        assert_eq!(any_project.description().as_deref().map(|s| s.as_str()), description.as_deref());
     }
 }
