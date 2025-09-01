@@ -172,9 +172,13 @@ mod tests {
             assigned_resources: vec!["Bob".to_string(), "Charlie".to_string()],
         };
 
-        let mut project: AnyProject = ProjectBuilder::new("Test Project".to_string())
+        let mut project: AnyProject = ProjectBuilder::new()
             .code("PROJ-1".to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
         project.add_task(task1.into());
         project.add_task(task2.into());
@@ -247,9 +251,13 @@ mod tests {
             assigned_resources: vec![],
         };
 
-        let mut project: AnyProject = ProjectBuilder::new("All States Project".to_string())
+        let mut project: AnyProject = ProjectBuilder::new()
             .code("PROJ-ALL".to_string())
+            .name("All States Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
         project.add_task(planned_task.into());
         project.add_task(blocked_task.into());
@@ -326,9 +334,13 @@ mod tests {
             assigned_resources: vec![],
         };
 
-        let mut project: AnyProject = ProjectBuilder::new("No Resources Project".to_string())
+        let mut project: AnyProject = ProjectBuilder::new()
             .code("PROJ-NO-RES".to_string())
+            .name("No Resources Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
         project.add_task(task.into());
 
@@ -376,9 +388,13 @@ mod tests {
             ],
         };
 
-        let mut project: AnyProject = ProjectBuilder::new("Multi Resource Project".to_string())
+        let mut project: AnyProject = ProjectBuilder::new()
             .code("PROJ-MULTI".to_string())
+            .name("Multi Resource Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
         project.add_task(task.into());
 
@@ -422,9 +438,13 @@ mod tests {
             assigned_resources: vec!["John \"The Developer\"".to_string()],
         };
 
-        let mut project: AnyProject = ProjectBuilder::new("Format Test Project".to_string())
+        let mut project: AnyProject = ProjectBuilder::new()
             .code("PROJ-FORMAT".to_string())
+            .name("Format Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
         project.add_task(task.into());
 
@@ -506,9 +526,13 @@ mod tests {
             assigned_resources: vec![],
         };
 
-        let mut project: AnyProject = ProjectBuilder::new("Error Test Project".to_string())
+        let mut project: AnyProject = ProjectBuilder::new()
             .code("PROJ-ERROR".to_string())
+            .name("Error Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
         project.add_task(task.into());
 
