@@ -2,7 +2,6 @@ use crate::domain::project_management::{
     AnyProject,
     layoff_period::LayoffPeriod,
     project::Project,
-    state::{Cancelled, Completed, InProgress, Planned},
     vacation_rules::VacationRules,
 };
 use serde::{Deserialize, Serialize};
@@ -212,9 +211,13 @@ mod tests {
     #[test]
     fn test_bidirectional_conversion() {
         // Create a Planned project
-        let original_project = ProjectBuilder::new("Test Project".to_string())
+        let original_project = ProjectBuilder::new()
+            .name("Test Project".to_string())
             .code("proj-1".to_string())
-            .build();
+            .company_code("COMP-001".to_string())
+            .created_by("system".to_string())
+            .build()
+            .unwrap();
         let original_any = AnyProject::from(original_project.clone());
 
         // Convert to Manifest
@@ -224,9 +227,9 @@ mod tests {
 
         // Convert back to AnyProject
         let converted_any = AnyProject::try_from(manifest).unwrap();
-        assert!(matches!(converted_any, AnyProject::Planned(_)));
+        assert!(matches!(converted_any, AnyProject::Project(_)));
 
-        if let AnyProject::Planned(converted) = converted_any {
+        if let AnyProject::Project(converted) = converted_any {
             assert_eq!(original_project.name, converted.name);
             assert_eq!(original_project.id, converted.id);
         }

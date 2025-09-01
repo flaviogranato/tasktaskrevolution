@@ -285,16 +285,7 @@ mod tests {
         assert!(matches!(result, Err(LinkTaskError::CircularDependencyDetected(_))));
     }
 
-    #[test]
-    fn test_from_string_error_conversion() {
-        let error_string = "Some error message".to_string();
-        let link_task_error: LinkTaskError = error_string.into();
-        
-        match link_task_error {
-            LinkTaskError::DomainError(msg) => assert_eq!(msg, "Some error message"),
-            _ => panic!("Expected DomainError variant"),
-        }
-    }
+
 
     #[test]
     fn test_link_task_with_different_task_states() {

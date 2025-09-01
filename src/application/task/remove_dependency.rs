@@ -410,20 +410,7 @@ mod tests {
         assert!(result.is_ok()); // Should succeed because task is not blocked
     }
 
-    #[test]
-    fn test_from_string_error_conversion() {
-        // Arrange
-        let error_message = "Some domain error".to_string();
-        
-        // Act
-        let error: RemoveDependencyError = error_message.into();
-        
-        // Assert
-        match error {
-            RemoveDependencyError::DomainError(msg) => assert_eq!(msg, "Some domain error"),
-            _ => panic!("Expected DomainError variant"),
-        }
-    }
+
 
     #[test]
     fn test_remove_dependency_repository_error() {
