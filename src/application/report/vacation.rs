@@ -154,10 +154,13 @@ mod tests {
     #[test]
     fn test_vacation_report_generation() {
         // 1. Setup: Create test data
-        let project: AnyProject = ProjectBuilder::new("ProjetoTTR".to_string())
+        let project: AnyProject = ProjectBuilder::new()
             .code("proj-1".to_string())
+            .name("ProjetoTTR".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
-            .start()
+            .unwrap()
             .into();
 
         let mut resource1 = Resource::<Available>::new(
