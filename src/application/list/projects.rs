@@ -55,13 +55,21 @@ mod tests {
     #[test]
     fn test_list_projects_success() {
         let projects = vec![
-            ProjectBuilder::new("Project A".to_string())
+            ProjectBuilder::new()
                 .code("proj-a".to_string())
+                .name("Project A".to_string())
+                .company_code("COMP-001".to_string())
+                .created_by("test-user".to_string())
                 .build()
+                .unwrap()
                 .into(),
-            ProjectBuilder::new("Project B".to_string())
+            ProjectBuilder::new()
                 .code("proj-b".to_string())
+                .name("Project B".to_string())
+                .company_code("COMP-001".to_string())
+                .created_by("test-user".to_string())
                 .build()
+                .unwrap()
                 .into(),
         ];
         let mock_repo = MockProjectRepository::new(projects);
