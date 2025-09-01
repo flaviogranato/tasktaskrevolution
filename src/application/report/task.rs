@@ -281,9 +281,13 @@ mod tests {
 
     #[test]
     fn test_task_report_with_empty_project() {
-        let project: AnyProject = ProjectBuilder::new("Empty Project".to_string())
+        let project: AnyProject = ProjectBuilder::new()
             .code("PROJ-EMPTY".to_string())
+            .name("Empty Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into();
 
         let mock_repo = MockProjectRepository { project };
