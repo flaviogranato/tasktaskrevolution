@@ -1,0 +1,211 @@
+use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
+
+use crate::domain::company_management::company::{Company, CompanySize, CompanyStatus};
+
+/// Manifest for serializing/deserializing Company entities to/from YAML.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CompanyManifest {
+    pub api_version: String,
+    pub kind: String,
+    pub metadata: CompanyMetadata,
+    pub spec: CompanySpec,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CompanyMetadata {
+    pub id: String,
+    pub code: String,
+    pub name: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub created_by: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CompanySpec {
+    pub description: Option<String>,
+    pub tax_id: Option<String>,
+    pub address: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub website: Option<String>,
+    pub industry: Option<String>,
+    pub size: CompanySizeManifest,
+    pub status: CompanyStatusManifest,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum CompanySizeManifest {
+    Small,
+    Medium,
+    Large,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum CompanyStatusManifest {
+    Active,
+    Inactive,
+    Suspended,
+}
+
+impl From<&Company> for CompanyManifest {
+    fn from(company: &Company) -> Self {
+        Self {
+            api_version: "company.tasktaskrevolution.io/v1".to_string(),
+            kind: "Company".to_string(),
+            metadata: CompanyMetadata {
+                id: company.id.clone(),
+                code: company.code.clone(),
+                name: company.name.clone(),
+                created_at: company.created_at,
+                updated_at: company.updated_at,
+                created_by: company.created_by.clone(),
+            },
+            spec: CompanySpec {
+                description: company.description.clone(),
+                tax_id: company.tax_id.clone(),
+                address: company.address.clone(),
+                email: company.email.clone(),
+                phone: company.phone.clone(),
+                website: company.website.clone(),
+                industry: company.industry.clone(),
+                size: CompanySizeManifest::from(&company.size),
+                status: CompanyStatusManifest::from(&company.status),
+            },
+        }
+    }
+}
+
+impl From<&CompanySize> for CompanySizeManifest {
+    fn from(size: &CompanySize) -> Self {
+        match size {
+            CompanySize::Small => CompanySizeManifest::Small,
+            CompanySize::Medium => CompanySizeManifest::Medium,
+            CompanySize::Large => CompanySizeManifest::Large,
+        }
+    }
+}
+
+impl From<&CompanyStatus> for CompanyStatusManifest {
+    fn from(status: &CompanyStatus) -> Self {
+        match status {
+            CompanyStatus::Active => CompanyStatusManifest::Active,
+            CompanyStatus::Inactive => CompanyStatusManifest::Inactive,
+            CompanyStatus::Suspended => CompanyStatusManifest::Suspended,
+        }
+    }
+}
+
+impl CompanyManifest {
+    pub fn to(&self) -> Company {
+        Company {
+            id: self.metadata.id.clone(),
+            code: self.metadata.code.clone(),
+            name: self.metadata.name.clone(),
+            description: self.spec.description.clone(),
+            tax_id: self.spec.tax_id.clone(),
+            address: self.spec.address.clone(),
+            email: self.spec.email.clone(),
+            phone: self.spec.phone.clone(),
+            website: self.spec.website.clone(),
+            industry: self.spec.industry.clone(),
+            size: self.spec.size.to(),
+            status: self.spec.status.to(),
+            created_at: self.metadata.created_at,
+            updated_at: self.metadata.updated_at,
+            created_by: self.metadata.created_by.clone(),
+        }
+    }
+}
+
+impl CompanySizeManifest {
+    pub fn to(&self) -> CompanySize {
+        match self {
+            CompanySizeManifest::Small => CompanySize::Small,
+            CompanySizeManifest::Medium => CompanySize::Medium,
+            CompanySizeManifest::Large => CompanySize::Large,
+        }
+    }
+}
+
+impl CompanyStatusManifest {
+    pub fn to(&self) -> CompanyStatus {
+        match self {
+            CompanyStatusManifest::Active => CompanyStatus::Active,
+            CompanyStatusManifest::Inactive => CompanyStatus::Inactive,
+            CompanyStatusManifest::Suspended => CompanyStatus::Suspended,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::company_management::company::{Company, CompanySize, CompanyStatus};
+
+    #[test]
+    fn test_company_manifest_creation() {
+        let company = Company::new(
+            "COMP-001".to_string(),
+            "TechConsulting Ltda".to_string(),
+            "user@example.com".to_string(),
+        ).unwrap();
+
+        let manifest = CompanyManifest::from(&company);
+        
+        assert_eq!(manifest.api_version, "company.tasktaskrevolution.io/v1");
+        assert_eq!(manifest.kind, "Company");
+        assert_eq!(manifest.metadata.code, "COMP-001");
+        assert_eq!(manifest.metadata.name, "TechConsulting Ltda");
+        assert_eq!(manifest.metadata.created_by, "user@example.com");
+        assert_eq!(manifest.spec.size, CompanySizeManifest::Medium);
+        assert_eq!(manifest.spec.status, CompanyStatusManifest::Active);
+    }
+
+    #[test]
+    fn test_company_manifest_conversion() {
+        let original_company = Company::new(
+            "COMP-002".to_string(),
+            "Outra Empresa Ltda".to_string(),
+            "admin@example.com".to_string(),
+        ).unwrap();
+
+        let manifest = CompanyManifest::from(&original_company);
+        let converted_company = manifest.to();
+
+        assert_eq!(original_company.id, converted_company.id);
+        assert_eq!(original_company.code, converted_company.code);
+        assert_eq!(original_company.name, converted_company.name);
+        assert_eq!(original_company.created_by, converted_company.created_by);
+        assert_eq!(original_company.size, converted_company.size);
+        assert_eq!(original_company.status, converted_company.status);
+    }
+
+    #[test]
+    fn test_company_size_manifest_conversion() {
+        let sizes = vec![CompanySize::Small, CompanySize::Medium, CompanySize::Large];
+        
+        for size in sizes {
+            let manifest = CompanySizeManifest::from(&size);
+            let converted = manifest.to();
+            assert_eq!(size, converted);
+        }
+    }
+
+    #[test]
+    fn test_company_status_manifest_conversion() {
+        let statuses = vec![CompanyStatus::Active, CompanyStatus::Inactive, CompanyStatus::Suspended];
+        
+        for status in statuses {
+            let manifest = CompanyStatusManifest::from(&status);
+            let converted = manifest.to();
+            assert_eq!(status, converted);
+        }
+    }
+}

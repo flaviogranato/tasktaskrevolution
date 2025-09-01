@@ -2,6 +2,7 @@ use crate::domain::company_settings::repository::ConfigRepository;
 use crate::{
     application::{
         build_use_case::BuildUseCase,
+        company_management::{CreateCompanyUseCase, CreateCompanyArgs},
         create::{
             project::CreateProjectUseCase, resource::CreateResourceUseCase, task::CreateTaskArgs,
             task::CreateTaskUseCase, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase,
@@ -29,8 +30,8 @@ use crate::{
         validate::vacations::ValidateVacationsUseCase,
     },
     infrastructure::persistence::{
-        config_repository::FileConfigRepository, project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository,
+        company_repository::FileCompanyRepository, config_repository::FileConfigRepository, 
+        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
     },
 };
 use clap::{Parser, Subcommand};
@@ -327,7 +328,7 @@ enum TaskCommands {
     },
 }
 
-pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+pub async fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     match &cli.command {
         Commands::Init {
             name,
@@ -398,17 +399,58 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 industry,
                 created_by,
             } => {
-                // TODO: Implement company creation
-                println!("Criando empresa: {} ({})", name, code);
-                println!("Descrição: {:?}", description);
-                println!("CNPJ: {:?}", tax_id);
-                println!("Endereço: {:?}", address);
-                println!("Email: {:?}", email);
-                println!("Telefone: {:?}", phone);
-                println!("Website: {:?}", website);
-                println!("Indústria: {:?}", industry);
-                println!("Criado por: {}", created_by);
-                println!("Comando company create implementado com sucesso!");
+                let repository = FileCompanyRepository::new(".");
+                let use_case = CreateCompanyUseCase::new(repository);
+
+                match use_case.execute(CreateCompanyArgs {
+                    code: code.clone(),
+                    name: name.clone(),
+                    description: description.clone(),
+                    tax_id: tax_id.clone(),
+                    address: address.clone(),
+                    email: email.clone(),
+                    phone: phone.clone(),
+                    website: website.clone(),
+                    industry: industry.clone(),
+                    created_by: created_by.clone(),
+                }).await {
+                    Ok(company) => {
+                        println!("Empresa criada com sucesso!");
+                        println!("Código: {}", company.code);
+                        println!("Nome: {}", company.name);
+                        println!("ID: {}", company.id);
+                        if let Some(desc) = &company.description {
+                            println!("Descrição: {}", desc);
+                        }
+                        if let Some(cnpj) = &company.tax_id {
+                            println!("CNPJ: {}", cnpj);
+                        }
+                        if let Some(addr) = &company.address {
+                            println!("Endereço: {}", addr);
+                        }
+                        if let Some(mail) = &company.email {
+                            println!("Email: {}", mail);
+                        }
+                        if let Some(tel) = &company.phone {
+                            println!("Telefone: {}", tel);
+                        }
+                        if let Some(site) = &company.website {
+                            println!("Website: {}", site);
+                        }
+                        if let Some(ind) = &company.industry {
+                            println!("Indústria: {}", ind);
+                        }
+                        println!("Tamanho: {}", company.size);
+                        println!("Status: {}", company.status);
+                        println!("Criado por: {}", company.created_by);
+                        println!("Criado em: {}", company.created_at);
+                        println!("Arquivo salvo em: companies/{}.yaml", company.code);
+                    }
+                    Err(e) => {
+                        eprintln!("Erro ao criar empresa: {}", e);
+                        return Err(e.into());
+                    }
+                }
                 Ok(())
             }
         },
