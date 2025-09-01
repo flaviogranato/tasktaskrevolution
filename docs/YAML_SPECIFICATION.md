@@ -337,6 +337,42 @@ yq '.metadata.name' companies/COMP-001.yaml
 - [ ] Documentação de API
 - [ ] Ferramentas de Validação
 
+## Funcionalidades Futuras
+
+### Batch Operations (Operações em Lote)
+
+**Descrição**: Funcionalidades para realizar operações em massa em múltiplas entidades, essencial para consultores que gerenciam múltiplos projetos e recursos.
+
+#### Casos de Uso Principais:
+1. **Reassign de Recursos**: Transferir todas as tarefas de um recurso para outro (ex: férias, licença)
+2. **Suspensão em Massa**: Pausar todas as tarefas de um projeto
+3. **Ajuste de Datas**: Modificar datas de múltiplas tarefas de forma cascata
+4. **Rebalanceamento**: Redistribuir carga de trabalho entre recursos
+
+#### Comandos CLI Planejados:
+```bash
+# Transferir todas as tarefas de um recurso
+ttr resource reassign-tasks --from "dev-1" --to "dev-2" --project "proj-1"
+
+# Suspender todas as tarefas de um projeto
+ttr project suspend-tasks --project "proj-1" --reason "Pausado para revisão"
+
+# Ajustar datas de todas as tarefas
+ttr project adjust-dates --project "proj-1" --shift-days 7
+
+# Preview das mudanças (dry-run)
+ttr resource reassign-tasks --from "dev-1" --to "dev-2" --dry-run
+```
+
+#### Considerações Técnicas:
+- **Transações atômicas** para garantir consistência
+- **Dry-run mode** para preview das mudanças
+- **Validação de dependências** entre tarefas
+- **Log de auditoria** de todas as operações
+- **Rollback automático** em caso de falha
+
+#### Prioridade: Baixa (implementar após CRUD básico completo)
+
 ---
 
 *Esta especificação é inspirada nos padrões do Kubernetes e Backstage, adaptada para as necessidades específicas do TaskTaskRevolution.*
