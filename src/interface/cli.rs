@@ -154,6 +154,47 @@ pub enum CompanyCommands {
         #[clap(long, value_name = "USER", default_value = "system")]
         created_by: String,
     },
+    /// List all companies
+    List,
+    /// Describe a specific company
+    Describe {
+        /// Company code to describe
+        code: String,
+    },
+    /// Update an existing company
+    Update {
+        /// Company code to update
+        code: String,
+        /// New company name
+        #[clap(long, value_name = "NAME")]
+        name: Option<String>,
+        /// New company description
+        #[clap(long, value_name = "DESCRIPTION")]
+        description: Option<String>,
+        /// New company tax ID
+        #[clap(long, value_name = "TAX_ID")]
+        tax_id: Option<String>,
+        /// New company address
+        #[clap(long, value_name = "ADDRESS")]
+        address: Option<String>,
+        /// New company email
+        #[clap(long, value_name = "EMAIL")]
+        email: Option<String>,
+        /// New company phone
+        #[clap(long, value_name = "PHONE")]
+        phone: Option<String>,
+        /// New company website
+        #[clap(long, value_name = "WEBSITE")]
+        website: Option<String>,
+        /// New company industry
+        #[clap(long, value_name = "INDUSTRY")]
+        industry: Option<String>,
+    },
+    /// Delete (deactivate) a company
+    Delete {
+        /// Company code to delete
+        code: String,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -454,6 +495,171 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                     Err(e) => {
                         eprintln!("Erro ao criar empresa: {}", e);
+                        return Err(e.into());
+                    }
+                }
+                Ok(())
+            }
+            CompanyCommands::List => {
+                let repository = FileCompanyRepository::new(".");
+                match repository.find_all() {
+                    Ok(companies) => {
+                        if companies.is_empty() {
+                            println!("Nenhuma empresa encontrada.");
+                        } else {
+                            println!("Empresas encontradas ({}):", companies.len());
+                            println!();
+                            for company in companies {
+                                println!("Código: {}", company.code);
+                                println!("Nome: {}", company.name);
+                                if let Some(desc) = &company.description {
+                                    println!("Descrição: {}", desc);
+                                }
+                                println!("Status: {}", company.status);
+                                println!("Tamanho: {}", company.size);
+                                println!("---");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Erro ao listar empresas: {}", e);
+                        return Err(e.into());
+                    }
+                }
+                Ok(())
+            }
+            CompanyCommands::Describe { code } => {
+                let repository = FileCompanyRepository::new(".");
+                match repository.find_by_code(&code) {
+                    Ok(Some(company)) => {
+                        println!("Detalhes da Empresa:");
+                        println!("Código: {}", company.code);
+                        println!("Nome: {}", company.name);
+                        println!("ID: {}", company.id);
+                        if let Some(desc) = &company.description {
+                            println!("Descrição: {}", desc);
+                        }
+                        if let Some(cnpj) = &company.tax_id {
+                            println!("CNPJ: {}", cnpj);
+                        }
+                        if let Some(addr) = &company.address {
+                            println!("Endereço: {}", addr);
+                        }
+                        if let Some(mail) = &company.email {
+                            println!("Email: {}", mail);
+                        }
+                        if let Some(tel) = &company.phone {
+                            println!("Telefone: {}", tel);
+                        }
+                        if let Some(site) = &company.website {
+                            println!("Website: {}", site);
+                        }
+                        if let Some(ind) = &company.industry {
+                            println!("Indústria: {}", ind);
+                        }
+                        println!("Tamanho: {}", company.size);
+                        println!("Status: {}", company.status);
+                        println!("Criado por: {}", company.created_by);
+                        println!("Criado em: {}", company.created_at);
+                        println!("Atualizado em: {}", company.updated_at);
+                    }
+                    Ok(None) => {
+                        eprintln!("Empresa com código '{}' não encontrada.", code);
+                        return Err("Company not found".into());
+                    }
+                    Err(e) => {
+                        eprintln!("Erro ao buscar empresa: {}", e);
+                        return Err(e.into());
+                    }
+                }
+                Ok(())
+            }
+            CompanyCommands::Update {
+                code,
+                name,
+                description,
+                tax_id,
+                address,
+                email,
+                phone,
+                website,
+                industry,
+            } => {
+                let repository = FileCompanyRepository::new(".");
+                match repository.find_by_code(&code) {
+                    Ok(Some(mut company)) => {
+                        // Update fields if provided
+                        if let Some(new_name) = name {
+                            company = company.update_name(new_name)?;
+                        }
+                        if let Some(new_description) = description {
+                            company.update_description(Some(new_description));
+                        }
+                        if let Some(new_tax_id) = tax_id {
+                            company.update_tax_id(Some(new_tax_id));
+                        }
+                        if let Some(new_address) = address {
+                            company.update_address(Some(new_address));
+                        }
+                        if let Some(new_email) = email {
+                            company.update_email(Some(new_email));
+                        }
+                        if let Some(new_phone) = phone {
+                            company.update_phone(Some(new_phone));
+                        }
+                        if let Some(new_website) = website {
+                            company.update_website(Some(new_website));
+                        }
+                        if let Some(new_industry) = industry {
+                            company.update_industry(Some(new_industry));
+                        }
+
+                        // Save updated company
+                        match repository.update(company.clone()) {
+                            Ok(_) => {
+                                println!("Empresa '{}' atualizada com sucesso!", code);
+                                println!("Nome: {}", company.name);
+                                if let Some(desc) = &company.description {
+                                    println!("Descrição: {}", desc);
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Erro ao salvar empresa atualizada: {}", e);
+                                return Err(e.into());
+                            }
+                        }
+                    }
+                    Ok(None) => {
+                        eprintln!("Empresa com código '{}' não encontrada.", code);
+                        return Err("Company not found".into());
+                    }
+                    Err(e) => {
+                        eprintln!("Erro ao buscar empresa: {}", e);
+                        return Err(e.into());
+                    }
+                }
+                Ok(())
+            }
+            CompanyCommands::Delete { code } => {
+                let repository = FileCompanyRepository::new(".");
+                match repository.find_by_code(&code) {
+                    Ok(Some(_)) => {
+                        match repository.delete(&code) {
+                            Ok(_) => {
+                                println!("Empresa '{}' deletada com sucesso!", code);
+                            }
+                            Err(e) => {
+                                eprintln!("Erro ao deletar empresa: {}", e);
+                                return Err(e.into());
+                            }
+                        }
+                    }
+                    Ok(None) => {
+                        eprintln!("Empresa com código '{}' não encontrada.", code);
+                        return Err("Company not found".into());
+                    }
+                    Err(e) => {
+                        eprintln!("Erro ao buscar empresa: {}", e);
                         return Err(e.into());
                     }
                 }
