@@ -28,7 +28,12 @@ use crate::{
             link_task::LinkTaskUseCase,
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
-        validate::vacations::ValidateVacationsUseCase,
+        validate::{
+            system::ValidateSystemUseCase,
+            entities::ValidateEntitiesUseCase,
+            business_rules::ValidateBusinessRulesUseCase,
+            data_integrity::ValidateDataIntegrityUseCase,
+        },
     },
     infrastructure::persistence::{
         company_repository::FileCompanyRepository, config_repository::FileConfigRepository, 
@@ -313,7 +318,10 @@ pub enum DescribeCommands {
 
 #[derive(Subcommand)]
 enum ValidateCommands {
-    Vacations,
+    System,
+    Entities,
+    BusinessRules,
+    DataIntegrity,
 }
 
 #[derive(Subcommand)]
@@ -1287,20 +1295,72 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         },
         Commands::Validate { validate_command } => {
             match validate_command {
-                ValidateCommands::Vacations => {
+                ValidateCommands::System => {
                     let project_repository = FileProjectRepository::new();
                     let resource_repository = FileResourceRepository::new(".");
-                    let use_case = ValidateVacationsUseCase::new(project_repository, resource_repository);
+                    let company_repository = FileCompanyRepository::new(".");
+                    let use_case = ValidateSystemUseCase::new(project_repository, resource_repository, company_repository);
 
                     match use_case.execute() {
-                        Ok(mensagens) => {
-                            println!("\nResultado da validação de férias:");
-                            println!("--------------------------------");
-                            for mensagem in mensagens {
-                                println!("{mensagem}");
+                        Ok(messages) => {
+                            println!("\nSystem validation results:");
+                            println!("=========================");
+                            for message in messages {
+                                println!("{message}");
                             }
                         }
-                        Err(e) => println!("Erro ao validar férias: {e}"),
+                        Err(e) => println!("Error validating system: {e}"),
+                    }
+                }
+                ValidateCommands::Entities => {
+                    let project_repository = FileProjectRepository::new();
+                    let resource_repository = FileResourceRepository::new(".");
+                    let company_repository = FileCompanyRepository::new(".");
+                    let use_case = ValidateEntitiesUseCase::new(&project_repository, &resource_repository, &company_repository);
+
+                    match use_case.execute() {
+                        Ok(messages) => {
+                            println!("\nEntity validation results:");
+                            println!("=========================");
+                            for message in messages {
+                                println!("{message}");
+                            }
+                        }
+                        Err(e) => println!("Error validating entities: {e}"),
+                    }
+                }
+                ValidateCommands::BusinessRules => {
+                    let project_repository = FileProjectRepository::new();
+                    let resource_repository = FileResourceRepository::new(".");
+                    let company_repository = FileCompanyRepository::new(".");
+                    let use_case = ValidateBusinessRulesUseCase::new(&project_repository, &resource_repository, &company_repository);
+
+                    match use_case.execute() {
+                        Ok(messages) => {
+                            println!("\nBusiness rules validation results:");
+                            println!("==================================");
+                            for message in messages {
+                                println!("{message}");
+                            }
+                        }
+                        Err(e) => println!("Error validating business rules: {e}"),
+                    }
+                }
+                ValidateCommands::DataIntegrity => {
+                    let project_repository = FileProjectRepository::new();
+                    let resource_repository = FileResourceRepository::new(".");
+                    let company_repository = FileCompanyRepository::new(".");
+                    let use_case = ValidateDataIntegrityUseCase::new(&project_repository, &resource_repository, &company_repository);
+
+                    match use_case.execute() {
+                        Ok(messages) => {
+                            println!("\nData integrity validation results:");
+                            println!("===================================");
+                            for message in messages {
+                                println!("{message}");
+                            }
+                        }
+                        Err(e) => println!("Error validating data integrity: {e}"),
                     }
                 }
             }
