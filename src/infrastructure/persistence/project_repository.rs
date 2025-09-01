@@ -11,6 +11,7 @@ use serde_yaml;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
+use chrono::NaiveDate;
 
 /// `FileProjectRepository` é uma implementação da trait `ProjectRepository`
 /// que persiste os dados do projeto no sistema de arquivos.
@@ -286,12 +287,16 @@ mod tests {
 
     use uuid7::uuid7;
 
-    fn create_test_project() -> Project<Planned> {
-        ProjectBuilder::new("Test Project".to_string())
+    fn create_test_project() -> Project {
+        ProjectBuilder::new()
             .code("TEST-001".to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .description(Some("A test project for repository testing".to_string()))
-            .end_date("2024-12-31".to_string())
+            .end_date(NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
             .build()
+            .unwrap()
     }
 
     fn create_test_project_manifest() -> ProjectManifest {
@@ -372,15 +377,23 @@ mod tests {
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
 
         // Create and save multiple projects
-        let project1 = ProjectBuilder::new("Project 1".to_string())
+        let project1 = ProjectBuilder::new()
             .code("PROJ-001".to_string())
-            .end_date("2024-12-31".to_string())
-            .build();
+            .name("Project 1".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
+            .end_date(NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+            .build()
+            .unwrap();
 
-        let project2 = ProjectBuilder::new("Project 2".to_string())
+        let project2 = ProjectBuilder::new()
             .code("PROJ-002".to_string())
-            .end_date("2024-12-31".to_string())
-            .build();
+            .name("Project 2".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
+            .end_date(NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+            .build()
+            .unwrap();
 
         repository.save(project1.into()).expect("Failed to save project 1");
         repository.save(project2.into()).expect("Failed to save project 2");
@@ -406,7 +419,7 @@ mod tests {
         repository.save(project.clone().into()).expect("Failed to save project");
 
         // Update project state to InProgress
-        let in_progress_project: Project<InProgress> = project.start();
+        let in_progress_project = project; // Project is no longer generic, just use the project as is
         repository
             .save(in_progress_project.clone().into())
             .expect("Failed to update project");
@@ -485,10 +498,14 @@ mod tests {
             let repo_path = repo_path.clone();
             let handle = std::thread::spawn(move || {
                 let repo = FileProjectRepository::with_base_path(repo_path.to_path_buf());
-                let project = ProjectBuilder::new(format!("Project {}", i))
+                let project = ProjectBuilder::new()
                     .code(format!("PROJ-{:03}", i))
-                    .end_date("2024-12-31".to_string())
-                    .build();
+                    .name(format!("Project {}", i))
+                    .company_code("COMP-001".to_string())
+                    .created_by("test-user".to_string())
+                    .end_date(NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+                    .build()
+                    .unwrap();
                 repo.save(project.into())
             });
             handles.push(handle);
