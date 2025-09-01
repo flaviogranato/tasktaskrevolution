@@ -114,6 +114,16 @@ impl AnyTask {
         }
     }
 
+    pub fn cancel(self) -> Self {
+        match self {
+            AnyTask::Planned(task) => AnyTask::Cancelled(task.cancel()),
+            AnyTask::InProgress(task) => AnyTask::Cancelled(task.cancel()),
+            AnyTask::Blocked(task) => AnyTask::Cancelled(task.cancel()),
+            AnyTask::Completed(_) => self, // Completed tasks cannot be cancelled
+            AnyTask::Cancelled(_) => self, // Already cancelled
+        }
+    }
+
     pub fn description(&self) -> Option<&str> {
         // Zero-copy: retorna &str em vez de &String
         match self {

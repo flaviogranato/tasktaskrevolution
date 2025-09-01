@@ -54,25 +54,14 @@ where
             .find_by_code(project_code)?
             .ok_or_else(|| DeleteTaskError::ProjectNotFound(project_code.to_string()))?;
 
-        // 2. Delegate the cancellation to the project aggregate.
-        // TODO: Implement cancel_task method in AnyProject
-        // For now, we'll just remove the task
-        if let AnyProject::Project(ref mut p) = project {
-            p.remove_task(task_code).map_err(|e| DeleteTaskError::DomainError(e.to_string()))?;
-        }
+        // 2. Cancel the task (change its state to Cancelled)
+        let cancelled_task = project.cancel_task(task_code)
+            .map_err(|e| DeleteTaskError::DomainError(e))?;
 
         // 3. Save the updated project aggregate.
         self.project_repository.save(project.clone())?;
 
-        // 4. Return the updated (cancelled) task.
-        // TODO: Implement proper task cancellation
-        // For now, we'll return a placeholder
-        let cancelled_task = project
-            .tasks()
-            .get(task_code)
-            .cloned()
-            .ok_or_else(|| DeleteTaskError::TaskNotFound(task_code.to_string()))?;
-
+        // 4. Return the cancelled task.
         Ok(cancelled_task)
     }
 }
@@ -159,12 +148,11 @@ mod tests {
         assert!(matches!(result, Err(DeleteTaskError::ProjectNotFound(_))));
     }
 
-    // TODO: Enable this test once `AnyProject::cancel_task` is implemented.
-
     #[test]
     fn test_cancel_task_success() {
         // This requires `cancel_task` to be implemented on the real `AnyProject`
         let project = setup_test_project(vec![create_test_task("TSK-1")]);
+        
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
