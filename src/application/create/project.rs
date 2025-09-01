@@ -15,17 +15,20 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
     pub fn execute(&self, name: &str, description: Option<&str>) -> Result<(), DomainError> {
         let code = self.repository.get_next_code()?;
 
-        // Use the typestate builder for type safety
-        let mut project = ProjectBuilder::new(name.to_string())
+        // Use the unified builder
+        let mut project = ProjectBuilder::new()
+            .name(name.to_string())
             .code(code)
-            .end_date("2024-12-31".to_string()); // Required for WithDates state
+            .company_code("COMP-001".to_string()) // TODO: Get from config
+            .created_by("system".to_string()) // TODO: Get from config
+            .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap());
 
         // Add description if provided
         if let Some(desc) = description {
             project = project.description(Some(desc.to_string()));
         }
 
-        let project = project.build(); // This returns Project<Planned> (legacy method)
+        let project = project.build()?; // This returns Result<Project, DomainError>
 
         self.repository.save(project.into())?;
         println!("Projeto {name} criado");
@@ -58,11 +61,15 @@ mod test {
             Self {
                 should_fail,
                 saved_config: RefCell::new(None),
-                project: ProjectBuilder::new("John".to_string())
-                    .code("proj-1".to_string())
-                    .end_date("2024-12-31".to_string())
-                    .build()
-                    .into(),
+                            project: ProjectBuilder::new()
+                .name("John".to_string())
+                .code("proj-1".to_string())
+                .company_code("COMP-001".to_string())
+                .created_by("system".to_string())
+                .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+                .build()
+                .unwrap()
+                .into(),
             }
         }
     }
