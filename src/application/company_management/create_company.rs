@@ -36,9 +36,9 @@ where
     }
 
     /// Executes the company creation use case.
-    pub async fn execute(&self, args: CreateCompanyArgs) -> Result<Company, DomainError> {
+    pub fn execute(&self, args: CreateCompanyArgs) -> Result<Company, DomainError> {
         // Check if company code already exists
-        let code_exists = self.company_repository.code_exists(&args.code).await?;
+        let code_exists = self.company_repository.code_exists(&args.code)?;
         if code_exists {
             return Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::ValidationError {
                 field: "code".to_string(),
@@ -47,7 +47,7 @@ where
         }
 
         // Check if company name already exists
-        let name_exists = self.company_repository.name_exists(&args.name).await?;
+        let name_exists = self.company_repository.name_exists(&args.name)?;
         if name_exists {
             return Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::ValidationError {
                 field: "name".to_string(),
@@ -86,7 +86,7 @@ where
         }
 
         // Save the company
-        self.company_repository.save(company.clone()).await?;
+        self.company_repository.save(company.clone())?;
 
         Ok(company)
     }
@@ -97,84 +97,101 @@ mod tests {
     use super::*;
     use crate::domain::company_management::Company;
     use crate::domain::shared::errors::DomainError;
-    use async_trait::async_trait;
-    use mockall::mock;
+    use crate::infrastructure::persistence::company_repository::FileCompanyRepository;
+    use tempfile::TempDir;
 
-    mock! {
-        CompanyRepository {}
+    #[test]
+    fn test_create_company_success() {
+        let temp_dir = TempDir::new().unwrap();
+        let repository = FileCompanyRepository::new(temp_dir.path());
+        let use_case = CreateCompanyUseCase::new(repository);
 
-        #[async_trait]
-        impl CompanyRepository for CompanyRepository {
-            async fn save(&self, company: Company) -> Result<(), DomainError>;
-            async fn find_by_id(&self, id: &str) -> Result<Option<Company>, DomainError>;
-            async fn find_by_code(&self, code: &str) -> Result<Option<Company>, DomainError>;
-            async fn find_by_name(&self, name: &str) -> Result<Option<Company>, DomainError>;
-            async fn find_all(&self) -> Result<Vec<Company>, DomainError>;
-            async fn update(&self, company: Company) -> Result<(), DomainError>;
-            async fn delete(&self, id: &str) -> Result<(), DomainError>;
-            async fn get_next_code(&self) -> Result<String, DomainError>;
-            async fn code_exists(&self, code: &str) -> Result<bool, DomainError>;
-            async fn name_exists(&self, name: &str) -> Result<bool, DomainError>;
+        let args = CreateCompanyArgs {
+            code: "TEST-001".to_string(),
+            name: "Test Company".to_string(),
+            description: Some("A test company".to_string()),
+            tax_id: Some("12.345.678/0001-90".to_string()),
+            address: None,
+            email: Some("test@company.com".to_string()),
+            phone: None,
+            website: None,
+            industry: Some("Technology".to_string()),
+            created_by: "test@example.com".to_string(),
+        };
+
+        let result = use_case.execute(args);
+        assert!(result.is_ok());
+
+        let company = result.unwrap();
+        assert_eq!(company.code, "TEST-001");
+        assert_eq!(company.name, "Test Company");
+        assert_eq!(company.description, Some("A test company".to_string()));
+        assert_eq!(company.tax_id, Some("12.345.678/0001-90".to_string()));
+        assert_eq!(company.email, Some("test@company.com".to_string()));
+        assert_eq!(company.industry, Some("Technology".to_string()));
+        assert_eq!(company.created_by, "test@example.com");
+    }
+
+    #[test]
+    fn test_create_company_duplicate_code() {
+        let temp_dir = TempDir::new().unwrap();
+        let repository = FileCompanyRepository::new(temp_dir.path());
+        let use_case = CreateCompanyUseCase::new(repository);
+
+        let args1 = CreateCompanyArgs {
+            code: "DUPLICATE".to_string(),
+            name: "First Company".to_string(),
+            description: None,
+            tax_id: None,
+            address: None,
+            email: None,
+            phone: None,
+            website: None,
+            industry: None,
+            created_by: "test@example.com".to_string(),
+        };
+
+        let args2 = CreateCompanyArgs {
+            code: "DUPLICATE".to_string(),
+            name: "Second Company".to_string(),
+            description: None,
+            tax_id: None,
+            address: None,
+            email: None,
+            phone: None,
+            website: None,
+            industry: None,
+            created_by: "test@example.com".to_string(),
+        };
+
+        // First company should be created successfully
+        let result1 = use_case.execute(args1);
+        assert!(result1.is_ok());
+
+        // Second company with same code should fail
+        let result2 = use_case.execute(args2);
+        assert!(result2.is_err());
+
+        if let Err(DomainError { kind, .. }) = result2 {
+            match kind {
+                crate::domain::shared::errors::DomainErrorKind::ValidationError { field, message } => {
+                    assert_eq!(field, "code");
+                    assert_eq!(message, "Company code already exists");
+                }
+                _ => panic!("Expected ValidationError"),
+            }
         }
     }
 
-    #[tokio::test]
-    async fn test_create_company_success() {
-        let mut mock_repo = MockCompanyRepository::new();
-        
-        // Setup expectations
-        mock_repo.expect_code_exists()
-            .with(mockall::predicate::eq("COMP-001"))
-            .times(1)
-            .returning(|_| Ok(false));
-        
-        mock_repo.expect_name_exists()
-            .with(mockall::predicate::eq("TechConsulting Ltda"))
-            .times(1)
-            .returning(|_| Ok(false));
-        
-        mock_repo.expect_save()
-            .times(1)
-            .returning(|_| Ok(()));
+    #[test]
+    fn test_create_company_duplicate_name() {
+        let temp_dir = TempDir::new().unwrap();
+        let repository = FileCompanyRepository::new(temp_dir.path());
+        let use_case = CreateCompanyUseCase::new(repository);
 
-        let use_case = CreateCompanyUseCase::new(mock_repo);
-        
-        let args = CreateCompanyArgs {
+        let args1 = CreateCompanyArgs {
             code: "COMP-001".to_string(),
-            name: "TechConsulting Ltda".to_string(),
-            description: Some("Technology consulting company".to_string()),
-            tax_id: None,
-            address: None,
-            email: None,
-            phone: None,
-            website: None,
-            industry: None,
-            created_by: "user@example.com".to_string(),
-        };
-
-        let result = use_case.execute(args).await;
-        assert!(result.is_ok());
-        
-        let company = result.unwrap();
-        assert_eq!(company.code(), "COMP-001");
-        assert_eq!(company.name(), "TechConsulting Ltda");
-        assert_eq!(company.description, Some("Technology consulting company".to_string()));
-    }
-
-    #[tokio::test]
-    async fn test_create_company_code_exists() {
-        let mut mock_repo = MockCompanyRepository::new();
-        
-        mock_repo.expect_code_exists()
-            .with(mockall::predicate::eq("COMP-001"))
-            .times(1)
-            .returning(|_| Ok(true));
-
-        let use_case = CreateCompanyUseCase::new(mock_repo);
-        
-        let args = CreateCompanyArgs {
-            code: "COMP-001".to_string(),
-            name: "TechConsulting Ltda".to_string(),
+            name: "Same Name".to_string(),
             description: None,
             tax_id: None,
             address: None,
@@ -182,32 +199,12 @@ mod tests {
             phone: None,
             website: None,
             industry: None,
-            created_by: "user@example.com".to_string(),
+            created_by: "test@example.com".to_string(),
         };
 
-        let result = use_case.execute(args).await;
-        assert!(result.is_err());
-    }
-
-    #[tokio::test]
-    async fn test_create_company_name_exists() {
-        let mut mock_repo = MockCompanyRepository::new();
-        
-        mock_repo.expect_code_exists()
-            .with(mockall::predicate::eq("COMP-001"))
-            .times(1)
-            .returning(|_| Ok(false));
-        
-        mock_repo.expect_name_exists()
-            .with(mockall::predicate::eq("TechConsulting Ltda"))
-            .times(1)
-            .returning(|_| Ok(true));
-
-        let use_case = CreateCompanyUseCase::new(mock_repo);
-        
-        let args = CreateCompanyArgs {
-            code: "COMP-001".to_string(),
-            name: "TechConsulting Ltda".to_string(),
+        let args2 = CreateCompanyArgs {
+            code: "COMP-002".to_string(),
+            name: "Same Name".to_string(),
             description: None,
             tax_id: None,
             address: None,
@@ -215,10 +212,25 @@ mod tests {
             phone: None,
             website: None,
             industry: None,
-            created_by: "user@example.com".to_string(),
+            created_by: "test@example.com".to_string(),
         };
 
-        let result = use_case.execute(args).await;
-        assert!(result.is_err());
+        // First company should be created successfully
+        let result1 = use_case.execute(args1);
+        assert!(result1.is_ok());
+
+        // Second company with same name should fail
+        let result2 = use_case.execute(args2);
+        assert!(result2.is_err());
+
+        if let Err(DomainError { kind, .. }) = result2 {
+            match kind {
+                crate::domain::shared::errors::DomainErrorKind::ValidationError { field, message } => {
+                    assert_eq!(field, "name");
+                    assert_eq!(message, "Company name already exists");
+                }
+                _ => panic!("Expected ValidationError"),
+            }
+        }
     }
 }
