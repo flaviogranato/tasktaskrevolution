@@ -2,14 +2,31 @@ use crate::domain::{
     project_management::{any_project::AnyProject, repository::ProjectRepository},
     shared::errors::DomainError,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum UpdateProjectError {
-    #[error("Project with code '{0}' not found.")]
     ProjectNotFound(String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    DomainError(String),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for UpdateProjectError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            UpdateProjectError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            UpdateProjectError::DomainError(message) => write!(f, "Domain error: {}", message),
+            UpdateProjectError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for UpdateProjectError {}
+
+impl From<DomainError> for UpdateProjectError {
+    fn from(err: DomainError) -> Self {
+        UpdateProjectError::RepositoryError(err)
+    }
 }
 
 #[derive(Debug, Clone, Default)]

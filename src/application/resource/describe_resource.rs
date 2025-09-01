@@ -2,14 +2,29 @@ use crate::domain::{
     resource_management::{any_resource::AnyResource, repository::ResourceRepository},
     shared::errors::DomainError,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum DescribeResourceError {
-    #[error("Resource with code '{0}' not found.")]
     ResourceNotFound(String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for DescribeResourceError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DescribeResourceError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            DescribeResourceError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for DescribeResourceError {}
+
+impl From<DomainError> for DescribeResourceError {
+    fn from(err: DomainError) -> Self {
+        DescribeResourceError::RepositoryError(err)
+    }
 }
 
 pub struct DescribeResourceUseCase<RR>

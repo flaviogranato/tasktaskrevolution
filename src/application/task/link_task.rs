@@ -1,31 +1,40 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, 
-    shared::errors::{DomainError, DomainErrorKind}, 
+    project_management::repository::ProjectRepository,
+    shared::errors::DomainError,
     task_management::any_task::AnyTask,
 };
-use thiserror::Error;
+use std::fmt;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum LinkTaskError {
-    #[error("Project with code '{0}' not found.")]
     ProjectNotFound(String),
-    #[error("Task with code '{0}' not found in the project.")]
     TaskNotFound(String),
-    #[error("Dependency task with code '{0}' not found in the project.")]
     DependencyNotFound(String),
-    #[error("A task cannot depend on itself.")]
-    SelfDependencyError,
-    #[error("Circular dependency detected: adding this link would create a loop.")]
-    CircularDependencyError,
-    #[error("An unexpected domain rule was violated: {0}")]
+    CircularDependencyDetected(Vec<String>),
     DomainError(String),
-    #[error("A repository error occurred: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
 }
 
-impl From<String> for LinkTaskError {
-    fn from(err: String) -> Self {
-        LinkTaskError::DomainError(err)
+impl fmt::Display for LinkTaskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LinkTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            LinkTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
+            LinkTaskError::DependencyNotFound(code) => write!(f, "Dependency task with code '{}' not found.", code),
+            LinkTaskError::CircularDependencyDetected(tasks) => {
+                write!(f, "Circular dependency detected between tasks: {:?}", tasks)
+            }
+            LinkTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
+            LinkTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for LinkTaskError {}
+
+impl From<DomainError> for LinkTaskError {
+    fn from(err: DomainError) -> Self {
+        LinkTaskError::RepositoryError(err)
     }
 }
 
@@ -52,7 +61,7 @@ where
         dependency_code: &str,
     ) -> Result<AnyTask, LinkTaskError> {
         if task_code == dependency_code {
-            return Err(LinkTaskError::SelfDependencyError);
+            return Err(LinkTaskError::DomainError("A task cannot depend on itself.".to_string()));
         }
 
         // 1. Load the project aggregate that contains the tasks.
@@ -76,7 +85,10 @@ where
 
         while let Some(current_code) = stack.pop() {
             if current_code == task_code {
-                return Err(LinkTaskError::CircularDependencyError);
+                return Err(LinkTaskError::CircularDependencyDetected(vec![
+                    task_code.to_string(),
+                    dependency_code.to_string(),
+                ]));
             }
 
             // To avoid infinite loops on existing cycles, we only process each node once.
@@ -135,7 +147,7 @@ mod tests {
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), DomainError> {
             if self.should_fail_save {
-                Err(DomainError::new(DomainErrorKind::Generic {
+                Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
                     message: "Simulated save failure".to_string(),
                 }))
             } else {
@@ -248,7 +260,7 @@ mod tests {
         let use_case = LinkTaskUseCase::new(project_repo);
 
         let result = use_case.execute("PROJ-1", "A", "A");
-        assert!(matches!(result, Err(LinkTaskError::SelfDependencyError)));
+        assert!(matches!(result, Err(LinkTaskError::DomainError(_))));
     }
 
     #[test]
@@ -270,7 +282,7 @@ mod tests {
         // Try to create dependency A -> B, which would create a cycle (A -> B -> A)
         let result = use_case.execute("PROJ-1", "A", "B");
 
-        assert!(matches!(result, Err(LinkTaskError::CircularDependencyError)));
+        assert!(matches!(result, Err(LinkTaskError::CircularDependencyDetected(_))));
     }
 
     #[test]
@@ -351,7 +363,7 @@ mod tests {
             }
             
             fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
-                Err(DomainError::new(DomainErrorKind::Generic {
+                Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
                     message: "Repository save failed".to_string(),
                 }))
             }

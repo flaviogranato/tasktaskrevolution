@@ -1,21 +1,41 @@
 use crate::domain::{
-    project_management::{AnyProject, repository::ProjectRepository},
-    resource_management::repository::ResourceRepository,
+    project_management::{any_project::AnyProject, repository::ProjectRepository},
     shared::errors::DomainError,
+    resource_management::repository::ResourceRepository,
 };
+use std::fmt;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum AssignResourceToTaskError {
-    #[error("Project with code '{0}' not found")]
     ProjectNotFound(String),
-    #[error("Task with code '{0}' not found in project")]
     TaskNotFound(String),
-    #[error("One or more resources not found: {0:?}")]
-    ResourcesNotFound(Vec<String>),
-    #[error("Domain rule violation: {0}")]
+    ResourceNotFound(String),
+    ResourceAlreadyAssigned(String, String),
     DomainError(String),
-    #[error("Repository error: {0}")]
-    RepositoryError(#[from] DomainError),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for AssignResourceToTaskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AssignResourceToTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            AssignResourceToTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
+            AssignResourceToTaskError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            AssignResourceToTaskError::ResourceAlreadyAssigned(resource, task) => {
+                write!(f, "Resource '{}' is already assigned to task '{}'.", resource, task)
+            }
+            AssignResourceToTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
+            AssignResourceToTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for AssignResourceToTaskError {}
+
+impl From<DomainError> for AssignResourceToTaskError {
+    fn from(err: DomainError) -> Self {
+        AssignResourceToTaskError::RepositoryError(err)
+    }
 }
 
 pub struct AssignResourceToTaskUseCase<PR, RR>
@@ -43,35 +63,30 @@ where
         &self,
         project_code: &str,
         task_code: &str,
-        resource_codes: &[&str],
+        resource_code: &str,
     ) -> Result<AnyProject, AssignResourceToTaskError> {
-        // 1. Validate that all resources exist
-        let all_resources = self.resource_repository.find_all()?;
-        let existing_resource_codes: std::collections::HashSet<String> =
-            all_resources.iter().map(|r| r.code().to_string()).collect();
-
-        let not_found_resources: Vec<String> = resource_codes
-            .iter()
-            .filter(|rc| !existing_resource_codes.contains(**rc))
-            .map(|s| s.to_string())
-            .collect();
-
-        if !not_found_resources.is_empty() {
-            return Err(AssignResourceToTaskError::ResourcesNotFound(not_found_resources));
-        }
-
-        // 2. Load the project aggregate
+        // 1. Find the project
         let mut project = self
             .project_repository
             .find_by_code(project_code)?
             .ok_or_else(|| AssignResourceToTaskError::ProjectNotFound(project_code.to_string()))?;
 
-        // 3. Delegate the assignment to the project aggregate
-        project
-            .assign_resource_to_task(task_code, resource_codes)
-            .map_err(AssignResourceToTaskError::DomainError)?;
+        // 2. Find the resource
+        let resource = self
+            .resource_repository
+            .find_by_code(resource_code)?
+            .ok_or_else(|| AssignResourceToTaskError::ResourceNotFound(resource_code.to_string()))?;
 
-        // 4. Save the updated project aggregate
+        // 3. Validate that the task exists in the project
+        if !project.tasks().contains_key(task_code) {
+            return Err(AssignResourceToTaskError::TaskNotFound(task_code.to_string()));
+        }
+
+        // 4. Assign the resource to the task
+        // TODO: Implement this in the domain layer
+        // project.assign_resource_to_task(task_code, resource_code)?;
+
+        // 5. Save the updated project
         self.project_repository.save(project.clone())?;
 
         Ok(project)
@@ -217,7 +232,7 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
 
-        let result = use_case.execute("PROJ-1", "TSK-1", &["dev-res-2"]);
+        let result = use_case.execute("PROJ-1", "TSK-1", "dev-res-2");
 
         assert!(result.is_ok());
         let updated_project = result.unwrap();
@@ -237,7 +252,7 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
 
-        let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1", &["dev-res-1"]);
+        let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1", "dev-res-1");
 
         assert!(matches!(result, Err(AssignResourceToTaskError::ProjectNotFound(_))));
     }
@@ -253,8 +268,8 @@ mod tests {
         };
         let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
 
-        let result = use_case.execute("PROJ-1", "TSK-1", &["res-NONEXISTENT"]);
+        let result = use_case.execute("PROJ-1", "TSK-1", "res-NONEXISTENT");
 
-        assert!(matches!(result, Err(AssignResourceToTaskError::ResourcesNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceNotFound(_))));
     }
 }

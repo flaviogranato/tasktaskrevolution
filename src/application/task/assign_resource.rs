@@ -1,21 +1,42 @@
 use crate::domain::{
-    resource_management::{AnyResource, repository::ResourceRepository},
-    shared::errors::{DomainError, DomainErrorKind},
-    task_management::{AnyTask, repository::TaskRepository},
+    project_management::repository::ProjectRepository,
+    shared::errors::DomainError,
+    task_management::{any_task::AnyTask, repository::TaskRepository},
+    resource_management::{any_resource::AnyResource, repository::ResourceRepository},
 };
+use std::fmt;
 
-#[derive(Debug, thiserror::Error)]
-pub enum AssignResourceError {
-    #[error("Task with code '{0}' not found")]
-    TaskNotFound(String),
-    #[error("Resource with code '{0}' not found")]
-    ResourceNotFound(String),
-    #[error("Project '{0}' not found for task")]
+#[derive(Debug)]
+pub enum AssignResourceToTaskError {
     ProjectNotFound(String),
-    #[error("Resource '{0}' is not available for assignment")]
-    ResourceNotAvailable(String),
-    #[error("Repository error: {0}")]
-    RepositoryError(#[from] DomainError),
+    TaskNotFound(String),
+    ResourceNotFound(String),
+    ResourceAlreadyAssigned(String, String),
+    DomainError(String),
+    RepositoryError(DomainError),
+}
+
+impl fmt::Display for AssignResourceToTaskError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AssignResourceToTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            AssignResourceToTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
+            AssignResourceToTaskError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            AssignResourceToTaskError::ResourceAlreadyAssigned(resource, task) => {
+                write!(f, "Resource '{}' is already assigned to task '{}'.", resource, task)
+            }
+            AssignResourceToTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
+            AssignResourceToTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+        }
+    }
+}
+
+impl std::error::Error for AssignResourceToTaskError {}
+
+impl From<DomainError> for AssignResourceToTaskError {
+    fn from(err: DomainError) -> Self {
+        AssignResourceToTaskError::RepositoryError(err)
+    }
 }
 
 pub struct AssignResourceToTaskUseCase<TR, RR>
@@ -39,40 +60,38 @@ where
         }
     }
 
-    pub fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceError> {
+    pub fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceToTaskError> {
         // 1. Find the task
         let task = self
             .task_repository
             .find_by_code(task_code)?
-            .ok_or_else(|| AssignResourceError::TaskNotFound(task_code.to_string()))?;
+            .ok_or_else(|| AssignResourceToTaskError::TaskNotFound(task_code.to_string()))?;
 
         // 2. Find the resource
         let resource = self
             .resource_repository
             .find_by_code(resource_code)?
-            .ok_or_else(|| AssignResourceError::ResourceNotFound(resource_code.to_string()))?;
+            .ok_or_else(|| AssignResourceToTaskError::ResourceNotFound(resource_code.to_string()))?;
 
         // 3. Validate resource availability
         if !self.is_resource_available(&resource) {
-            return Err(AssignResourceError::ResourceNotAvailable(resource_code.to_string()));
+            return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(resource_code.to_string(), task_code.to_string()));
         }
 
-        // 4. Assign resource to task (this will be implemented in the domain)
+        // 4. Assign the resource to the task
         let updated_task = self.assign_resource_to_task(task, resource)?;
-
-        // 5. Save the updated task
-        self.task_repository.save(updated_task.clone())?;
 
         Ok(updated_task)
     }
 
     fn is_resource_available(&self, _resource: &AnyResource) -> bool {
-        // For now, consider all resources available
-        // This can be enhanced with business logic later
+        // TODO: Implement resource availability check
+        // This should check if the resource is not already assigned to another task
+        // or if it's not on vacation, etc.
         true
     }
 
-    fn assign_resource_to_task(&self, task: AnyTask, _resource: AnyResource) -> Result<AnyTask, AssignResourceError> {
+    fn assign_resource_to_task(&self, task: AnyTask, _resource: AnyResource) -> Result<AnyTask, AssignResourceToTaskError> {
         // This will be implemented in the domain layer
         // For now, return the task as-is
         Ok(task)
@@ -242,7 +261,7 @@ mod tests {
         let result = use_case.execute("NONEXISTENT-TASK", "RES-001");
 
         // Assert
-        assert!(matches!(result, Err(AssignResourceError::TaskNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToTaskError::TaskNotFound(_))));
     }
 
     #[test]
@@ -263,7 +282,7 @@ mod tests {
         let result = use_case.execute("TASK-001", "NONEXISTENT-RESOURCE");
 
         // Assert
-        assert!(matches!(result, Err(AssignResourceError::ResourceNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceNotFound(_))));
     }
 
     #[test]
@@ -293,22 +312,22 @@ mod tests {
                 }
             }
 
-            fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceError> {
+            fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceToTaskError> {
                 // 1. Find the task
                 let task = self
                     .task_repository
                     .find_by_code(task_code)?
-                    .ok_or_else(|| AssignResourceError::TaskNotFound(task_code.to_string()))?;
+                    .ok_or_else(|| AssignResourceToTaskError::TaskNotFound(task_code.to_string()))?;
 
                 // 2. Find the resource
                 let resource = self
                     .resource_repository
                     .find_by_code(resource_code)?
-                    .ok_or_else(|| AssignResourceError::ResourceNotFound(resource_code.to_string()))?;
+                    .ok_or_else(|| AssignResourceToTaskError::ResourceNotFound(resource_code.to_string()))?;
 
                 // 3. Validate resource availability - always return false
                 if !self.is_resource_available(&resource) {
-                    return Err(AssignResourceError::ResourceNotAvailable(resource_code.to_string()));
+                    return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(resource_code.to_string(), task_code.to_string()));
                 }
 
                 // 4. Assign resource to task
@@ -325,7 +344,7 @@ mod tests {
                 false
             }
 
-            fn assign_resource_to_task(&self, task: AnyTask, _resource: AnyResource) -> Result<AnyTask, AssignResourceError> {
+            fn assign_resource_to_task(&self, task: AnyTask, _resource: AnyResource) -> Result<AnyTask, AssignResourceToTaskError> {
                 Ok(task)
             }
         }
@@ -336,7 +355,7 @@ mod tests {
         let result = use_case.execute("TASK-001", "RES-001");
 
         // Assert
-        assert!(matches!(result, Err(AssignResourceError::ResourceNotAvailable(_))));
+        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceAlreadyAssigned(_))));
     }
 
     #[test]
@@ -352,7 +371,7 @@ mod tests {
 
         impl TaskRepository for FailingMockTaskRepository {
             fn save(&self, _task: AnyTask) -> Result<AnyTask, DomainError> {
-                Err(DomainError::new(DomainErrorKind::Generic {
+                Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
                     message: "Save failed".to_string(),
                 }))
             }
@@ -393,7 +412,7 @@ mod tests {
             eprintln!("Error type: {:?}", e);
             // Check if it's a RepositoryError and contains the expected message
             match e {
-                AssignResourceError::RepositoryError(domain_error) => {
+                AssignResourceToTaskError::RepositoryError(domain_error) => {
                     assert!(domain_error.to_string().contains("Save failed"));
                 }
                 _ => {
