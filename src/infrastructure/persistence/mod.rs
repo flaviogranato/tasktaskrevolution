@@ -1,3 +1,4 @@
+pub mod company_repository;
 pub mod config_repository;
 pub mod manifests;
 pub mod project_repository;

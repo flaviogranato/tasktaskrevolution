@@ -49,11 +49,31 @@ pub enum CompanySize {
     Large,      // 251+ employees
 }
 
+impl std::fmt::Display for CompanySize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompanySize::Small => write!(f, "Pequena (1-50 funcionários)"),
+            CompanySize::Medium => write!(f, "Média (51-250 funcionários)"),
+            CompanySize::Large => write!(f, "Grande (251+ funcionários)"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum CompanyStatus {
     Active,
     Inactive,
     Suspended,
+}
+
+impl std::fmt::Display for CompanyStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompanyStatus::Active => write!(f, "Ativa"),
+            CompanyStatus::Inactive => write!(f, "Inativa"),
+            CompanyStatus::Suspended => write!(f, "Suspensa"),
+        }
+    }
 }
 
 impl Company {
