@@ -122,78 +122,52 @@ enum Commands {
 
 #[derive(Subcommand, Debug)]
 pub enum CompanyCommands {
-    /// Create a new company
     Create {
-        /// Company code (e.g., COMP-001) - optional, will be auto-generated if not provided
         #[clap(long, value_name = "CODE", default_value = "")]
         code: String,
-        /// Company name
         #[clap(long, value_name = "NAME")]
         name: String,
-        /// Company description
         #[clap(long, value_name = "DESCRIPTION")]
         description: Option<String>,
-        /// Company tax ID (CNPJ in Brazil)
         #[clap(long, value_name = "TAX_ID")]
         tax_id: Option<String>,
-        /// Company address
         #[clap(long, value_name = "ADDRESS")]
         address: Option<String>,
-        /// Company email
         #[clap(long, value_name = "EMAIL")]
         email: Option<String>,
-        /// Company phone
         #[clap(long, value_name = "PHONE")]
         phone: Option<String>,
-        /// Company website
         #[clap(long, value_name = "WEBSITE")]
         website: Option<String>,
-        /// Company industry
         #[clap(long, value_name = "INDUSTRY")]
         industry: Option<String>,
-        /// User creating the company
         #[clap(long, value_name = "USER", default_value = "system")]
         created_by: String,
     },
-    /// List all companies
     List,
-    /// Describe a specific company
     Describe {
-        /// Company code to describe
         code: String,
     },
-    /// Update an existing company
     Update {
-        /// Company code to update
         code: String,
-        /// New company name
         #[clap(long, value_name = "NAME")]
         name: Option<String>,
-        /// New company description
         #[clap(long, value_name = "DESCRIPTION")]
         description: Option<String>,
-        /// New company tax ID
         #[clap(long, value_name = "TAX_ID")]
         tax_id: Option<String>,
-        /// New company address
         #[clap(long, value_name = "ADDRESS")]
         address: Option<String>,
-        /// New company email
         #[clap(long, value_name = "EMAIL")]
         email: Option<String>,
-        /// New company phone
         #[clap(long, value_name = "PHONE")]
         phone: Option<String>,
-        /// New company website
         #[clap(long, value_name = "WEBSITE")]
         website: Option<String>,
-        /// New company industry
         #[clap(long, value_name = "INDUSTRY")]
         industry: Option<String>,
     },
-    /// Delete (deactivate) a company
     Delete {
-        /// Company code to delete
         code: String,
     },
 }
@@ -459,43 +433,43 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 match use_case.execute(args) {
                     Ok(company) => {
-                        println!("Empresa criada com sucesso!");
+                        println!("Company created successfully!");
                         if code.is_empty() {
-                            println!("Código gerado automaticamente: {}", company.code);
+                            println!("Code generated automatically: {}", company.code);
                         } else {
-                            println!("Código: {}", company.code);
+                            println!("Code: {}", company.code);
                         }
-                        println!("Nome: {}", company.name);
+                        println!("Name: {}", company.name);
                         println!("ID: {}", company.id);
                         if let Some(desc) = &company.description {
-                            println!("Descrição: {}", desc);
+                            println!("Description: {}", desc);
                         }
                         if let Some(cnpj) = &company.tax_id {
-                            println!("CNPJ: {}", cnpj);
+                            println!("Tax ID: {}", cnpj);
                         }
                         if let Some(addr) = &company.address {
-                            println!("Endereço: {}", addr);
+                            println!("Address: {}", addr);
                         }
                         if let Some(mail) = &company.email {
                             println!("Email: {}", mail);
                         }
                         if let Some(tel) = &company.phone {
-                            println!("Telefone: {}", tel);
+                            println!("Phone: {}", tel);
                         }
                         if let Some(site) = &company.website {
                             println!("Website: {}", site);
                         }
                         if let Some(ind) = &company.industry {
-                            println!("Indústria: {}", ind);
+                            println!("Industry: {}", ind);
                         }
-                        println!("Tamanho: {}", company.size);
+                        println!("Size: {}", company.size);
                         println!("Status: {}", company.status);
-                        println!("Criado por: {}", company.created_by);
-                        println!("Criado em: {}", company.created_at);
-                        println!("Arquivo salvo em: companies/{}.yaml", company.code);
+                        println!("Created By: {}", company.created_by);
+                        println!("Created At: {}", company.created_at);
+                        println!("File saved to: companies/{}.yaml", company.code);
                     }
                     Err(e) => {
-                        eprintln!("Erro ao criar empresa: {}", e);
+                        eprintln!("Error creating company: {}", e);
                         return Err(e.into());
                     }
                 }
@@ -506,24 +480,24 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 match repository.find_all() {
                     Ok(companies) => {
                         if companies.is_empty() {
-                            println!("Nenhuma empresa encontrada.");
+                            println!("No companies found.");
                         } else {
-                            println!("Empresas encontradas ({}):", companies.len());
+                            println!("Companies found ({}):", companies.len());
                             println!();
                             for company in companies {
-                                println!("Código: {}", company.code);
-                                println!("Nome: {}", company.name);
+                                println!("Code: {}", company.code);
+                                println!("Name: {}", company.name);
                                 if let Some(desc) = &company.description {
-                                    println!("Descrição: {}", desc);
+                                    println!("Description: {}", desc);
                                 }
                                 println!("Status: {}", company.status);
-                                println!("Tamanho: {}", company.size);
+                                println!("Size: {}", company.size);
                                 println!("---");
                             }
                         }
                     }
                     Err(e) => {
-                        eprintln!("Erro ao listar empresas: {}", e);
+                        eprintln!("Error listing companies: {}", e);
                         return Err(e.into());
                     }
                 }
@@ -617,24 +591,24 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         // Save updated company
                         match repository.update(company.clone()) {
                             Ok(_) => {
-                                println!("Empresa '{}' atualizada com sucesso!", code);
-                                println!("Nome: {}", company.name);
+                                println!("Company '{}' updated successfully!", code);
+                                println!("Name: {}", company.name);
                                 if let Some(desc) = &company.description {
-                                    println!("Descrição: {}", desc);
+                                    println!("Description: {}", desc);
                                 }
                             }
                             Err(e) => {
-                                eprintln!("Erro ao salvar empresa atualizada: {}", e);
+                                eprintln!("Error saving updated company: {}", e);
                                 return Err(e.into());
                             }
                         }
                     }
                     Ok(None) => {
-                        eprintln!("Empresa com código '{}' não encontrada.", code);
+                        eprintln!("Company with code '{}' not found.", code);
                         return Err("Company not found".into());
                     }
                     Err(e) => {
-                        eprintln!("Erro ao buscar empresa: {}", e);
+                        eprintln!("Error finding company: {}", e);
                         return Err(e.into());
                     }
                 }
@@ -646,20 +620,20 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Ok(Some(_)) => {
                         match repository.delete(&code) {
                             Ok(_) => {
-                                println!("Empresa '{}' deletada com sucesso!", code);
+                                println!("Company '{}' deleted successfully!", code);
                             }
                             Err(e) => {
-                                eprintln!("Erro ao deletar empresa: {}", e);
+                                eprintln!("Error deleting company: {}", e);
                                 return Err(e.into());
                             }
                         }
                     }
                     Ok(None) => {
-                        eprintln!("Empresa com código '{}' não encontrada.", code);
+                        eprintln!("Company with code '{}' not found.", code);
                         return Err("Company not found".into());
                     }
                     Err(e) => {
-                        eprintln!("Erro ao buscar empresa: {}", e);
+                        eprintln!("Error finding company: {}", e);
                         return Err(e.into());
                     }
                 }
