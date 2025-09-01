@@ -102,8 +102,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::company_management::Company;
-    use crate::domain::shared::errors::DomainError;
+    
     use crate::infrastructure::persistence::company_repository::FileCompanyRepository;
     use tempfile::TempDir;
 
@@ -179,8 +178,8 @@ mod tests {
         let result2 = use_case.execute(args2);
         assert!(result2.is_err());
 
-        if let Err(DomainError { kind, .. }) = result2 {
-            match kind {
+        if let Err(error) = result2 {
+            match error.kind() {
                 crate::domain::shared::errors::DomainErrorKind::ValidationError { field, message } => {
                     assert_eq!(field, "code");
                     assert_eq!(message, "Company code already exists");
@@ -230,8 +229,8 @@ mod tests {
         let result2 = use_case.execute(args2);
         assert!(result2.is_err());
 
-        if let Err(DomainError { kind, .. }) = result2 {
-            match kind {
+        if let Err(error) = result2 {
+            match error.kind() {
                 crate::domain::shared::errors::DomainErrorKind::ValidationError { field, message } => {
                     assert_eq!(field, "name");
                     assert_eq!(message, "Company name already exists");

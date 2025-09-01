@@ -225,9 +225,9 @@ mod tests {
             .build()
             .unwrap();
 
-        assert_eq!(project.description(), Some("A test project"));
-        assert_eq!(project.start_date(), Some(start_date));
-        assert_eq!(project.end_date(), Some(end_date));
+        assert_eq!(project.description, Some("A test project".to_string()));
+        assert_eq!(project.start_date, Some(start_date));
+        assert_eq!(project.end_date, Some(end_date));
     }
 
     #[test]

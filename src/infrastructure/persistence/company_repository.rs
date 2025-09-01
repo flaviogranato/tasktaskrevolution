@@ -308,7 +308,7 @@ mod tests {
         repo.save(company.clone()).unwrap();
 
         // Update company
-        company = company.update_name("Updated Name").unwrap();
+        company.update_name("Updated Name".to_string()).unwrap();
         let result = repo.update(company.clone());
         assert!(result.is_ok());
 
