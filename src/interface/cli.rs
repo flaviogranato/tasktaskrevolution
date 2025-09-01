@@ -328,7 +328,7 @@ enum TaskCommands {
     },
 }
 
-pub async fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     match &cli.command {
         Commands::Init {
             name,
@@ -413,7 +413,7 @@ pub async fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync
                     website: website.clone(),
                     industry: industry.clone(),
                     created_by: created_by.clone(),
-                }).await {
+                }) {
                     Ok(company) => {
                         println!("Empresa criada com sucesso!");
                         println!("Código: {}", company.code);
