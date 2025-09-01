@@ -1,4 +1,5 @@
 use crate::domain::company_settings::repository::ConfigRepository;
+use crate::domain::company_management::repository::CompanyRepository;
 use crate::{
     application::{
         build_use_case::BuildUseCase,
@@ -532,43 +533,42 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let repository = FileCompanyRepository::new(".");
                 match repository.find_by_code(&code) {
                     Ok(Some(company)) => {
-                        println!("Detalhes da Empresa:");
-                        println!("Código: {}", company.code);
-                        println!("Nome: {}", company.name);
-                        println!("ID: {}", company.id);
+                        println!("Name:         {}", company.name);
+                        println!("Code:         {}", company.code);
+                        println!("ID:           {}", company.id);
                         if let Some(desc) = &company.description {
-                            println!("Descrição: {}", desc);
+                            println!("Description:  {}", desc);
                         }
                         if let Some(cnpj) = &company.tax_id {
-                            println!("CNPJ: {}", cnpj);
+                            println!("Tax ID:       {}", cnpj);
                         }
                         if let Some(addr) = &company.address {
-                            println!("Endereço: {}", addr);
+                            println!("Address:      {}", addr);
                         }
                         if let Some(mail) = &company.email {
-                            println!("Email: {}", mail);
+                            println!("Email:        {}", mail);
                         }
                         if let Some(tel) = &company.phone {
-                            println!("Telefone: {}", tel);
+                            println!("Phone:        {}", tel);
                         }
                         if let Some(site) = &company.website {
-                            println!("Website: {}", site);
+                            println!("Website:      {}", site);
                         }
                         if let Some(ind) = &company.industry {
-                            println!("Indústria: {}", ind);
+                            println!("Industry:     {}", ind);
                         }
-                        println!("Tamanho: {}", company.size);
-                        println!("Status: {}", company.status);
-                        println!("Criado por: {}", company.created_by);
-                        println!("Criado em: {}", company.created_at);
-                        println!("Atualizado em: {}", company.updated_at);
+                        println!("Size:         {}", company.size);
+                        println!("Status:       {}", company.status);
+                        println!("Created By:   {}", company.created_by);
+                        println!("Created At:   {}", company.created_at);
+                        println!("Updated At:   {}", company.updated_at);
                     }
                     Ok(None) => {
-                        eprintln!("Empresa com código '{}' não encontrada.", code);
+                        eprintln!("Company with code '{}' not found.", code);
                         return Err("Company not found".into());
                     }
                     Err(e) => {
-                        eprintln!("Erro ao buscar empresa: {}", e);
+                        eprintln!("Error finding company: {}", e);
                         return Err(e.into());
                     }
                 }
@@ -590,28 +590,28 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     Ok(Some(mut company)) => {
                         // Update fields if provided
                         if let Some(new_name) = name {
-                            company = company.update_name(new_name)?;
+                            company.update_name(new_name.clone())?;
                         }
                         if let Some(new_description) = description {
-                            company.update_description(Some(new_description));
+                            company.update_description(Some(new_description.clone()));
                         }
                         if let Some(new_tax_id) = tax_id {
-                            company.update_tax_id(Some(new_tax_id));
+                            company.update_tax_id(Some(new_tax_id.clone()));
                         }
                         if let Some(new_address) = address {
-                            company.update_address(Some(new_address));
+                            company.update_address(Some(new_address.clone()));
                         }
                         if let Some(new_email) = email {
-                            company.update_email(Some(new_email));
+                            company.update_email(Some(new_email.clone()));
                         }
                         if let Some(new_phone) = phone {
-                            company.update_phone(Some(new_phone));
+                            company.update_phone(Some(new_phone.clone()));
                         }
                         if let Some(new_website) = website {
-                            company.update_website(Some(new_website));
+                            company.update_website(Some(new_website.clone()));
                         }
                         if let Some(new_industry) = industry {
-                            company.update_industry(Some(new_industry));
+                            company.update_industry(Some(new_industry.clone()));
                         }
 
                         // Save updated company
