@@ -68,6 +68,7 @@ mod tests {
     use super::*;
     use crate::domain::project_management::builder::ProjectBuilder;
     use std::{cell::RefCell, collections::HashMap};
+    use crate::domain::project_management::project::ProjectStatus;
 
     // --- Mocks ---
     #[derive(Clone)]
@@ -96,9 +97,13 @@ mod tests {
 
     // --- Helpers ---
     fn create_test_project(code: &str) -> AnyProject {
-        ProjectBuilder::new("Test Project".to_string())
+        ProjectBuilder::new()
             .code(code.to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test-user".to_string())
             .build()
+            .unwrap()
             .into()
     }
 
@@ -128,6 +133,6 @@ mod tests {
 
         assert!(result.is_ok());
         let cancelled_project = result.unwrap();
-        assert_eq!(cancelled_project.status(), "Cancelled");
+        assert_eq!(cancelled_project.status(), ProjectStatus::Cancelled);
     }
 }
