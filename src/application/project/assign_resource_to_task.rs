@@ -83,8 +83,8 @@ where
         }
 
         // 4. Assign the resource to the task
-        // TODO: Implement this in the domain layer
-        // project.assign_resource_to_task(task_code, resource_code)?;
+        project.assign_resource_to_task(task_code, &[resource_code])
+            .map_err(|e| AssignResourceToTaskError::DomainError(e))?;
 
         // 5. Save the updated project
         self.project_repository.save(project.clone())?;
@@ -210,18 +210,17 @@ mod tests {
     }
 
     fn setup_test_project(tasks: Vec<AnyTask>) -> AnyProject {
-        let mut project: AnyProject = ProjectBuilder::new()
+        let mut builder = ProjectBuilder::new()
             .code("PROJ-1".to_string())
             .name("Test Project".to_string())
             .company_code("COMP-001".to_string())
-            .created_by("test-user".to_string())
-            .build()
-            .unwrap()
-            .into();
+            .created_by("test-user".to_string());
+        
         for task in tasks {
-            project.add_task(task);
+            builder = builder.add_task(task);
         }
-        project
+        
+        builder.build().unwrap().into()
     }
 
     // --- Tests ---
@@ -238,6 +237,10 @@ mod tests {
 
         let result = use_case.execute("PROJ-1", "TSK-1", "dev-res-2");
 
+        if let Err(ref e) = result {
+            eprintln!("Error: {}", e);
+        }
+        
         assert!(result.is_ok());
         let updated_project = result.unwrap();
         let updated_task = updated_project.tasks().get("TSK-1").unwrap();
