@@ -1,3 +1,4 @@
+use super::priority::Priority;
 use super::state::Planned;
 use super::task::{Task, TaskError};
 use chrono::NaiveDate;
@@ -28,6 +29,7 @@ pub struct TaskBuilder<State> {
     start_date: Option<NaiveDate>,
     due_date: Option<NaiveDate>,
     assigned_resources: Vec<String>,
+    priority: Priority,
     _state: PhantomData<State>,
 }
 
@@ -43,6 +45,7 @@ impl TaskBuilder<New> {
             start_date: None,
             due_date: None,
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
             _state: PhantomData,
         }
     }
@@ -57,6 +60,7 @@ impl TaskBuilder<New> {
             start_date: self.start_date,
             due_date: self.due_date,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
             _state: PhantomData,
         }
     }
@@ -80,6 +84,7 @@ impl TaskBuilder<WithProjectCode> {
             start_date: self.start_date,
             due_date: self.due_date,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
             _state: PhantomData,
         }
     }
@@ -90,6 +95,12 @@ impl TaskBuilder<WithName> {
     /// Sets the code for the task.
     pub fn code(mut self, code: impl Into<String>) -> Self {
         self.code = Some(code.into());
+        self
+    }
+
+    /// Sets the priority for the task.
+    pub fn priority(mut self, priority: Priority) -> Self {
+        self.priority = priority;
         self
     }
 
@@ -107,6 +118,7 @@ impl TaskBuilder<WithName> {
             start_date: Some(start),
             due_date: Some(due),
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
             _state: PhantomData,
         })
     }
@@ -145,6 +157,7 @@ impl TaskBuilder<WithDates> {
             start_date: self.start_date,
             due_date: self.due_date,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
             _state: PhantomData,
         })
     }
@@ -168,6 +181,7 @@ impl TaskBuilder<Ready> {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         })
     }
 }

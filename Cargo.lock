@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "TaskTaskRevolution"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "assert_fs",
  "chrono",
@@ -16,6 +16,7 @@ dependencies = [
  "mockall",
  "rust-embed",
  "serde",
+ "serde_json",
  "serde_yaml",
  "speculate",
  "strum",
