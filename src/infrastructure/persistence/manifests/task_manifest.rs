@@ -161,7 +161,7 @@ impl From<AnyTask> for TaskManifest {
             AnyTask::Blocked(task) => {
                 let comments = vec![Comment {
                     author: "system".to_string(),
-                    message: format!("Tarefa bloqueada: {}", task.state.reason),
+                    message: format!("Task blocked: {}", task.state.reason),
                     timestamp: chrono::Utc::now().naive_utc().date(),
                 }];
                 (
@@ -335,10 +335,10 @@ impl TryFrom<TaskManifest> for AnyTask {
                     .spec
                     .comments
                     .iter()
-                    .find(|c| c.message.starts_with("Tarefa bloqueada:"))
-                    .and_then(|c| c.message.strip_prefix("Tarefa bloqueada: "))
+                    .find(|c| c.message.starts_with("Task blocked:"))
+                    .and_then(|c| c.message.strip_prefix("Task blocked: "))
                     .map(|s| s.to_string())
-                    .unwrap_or_else(|| "Motivo não especificado".to_string());
+                    .unwrap_or_else(|| "Reason not specified".to_string());
                 AnyTask::Blocked(Task {
                     id,
                     project_code: manifest.spec.project_code,
@@ -475,7 +475,7 @@ mod convertable_tests {
 
         assert_eq!(manifest.spec.status, Status::Blocked);
         assert_eq!(manifest.spec.comments.len(), 1);
-        assert_eq!(manifest.spec.comments[0].message, format!("Tarefa bloqueada: {reason}"));
+        assert_eq!(manifest.spec.comments[0].message, format!("Task blocked: {reason}"));
     }
 
     #[test]
@@ -545,7 +545,7 @@ mod convertable_tests {
         let reason = "Waiting for review".to_string();
         manifest.spec.comments.push(Comment {
             author: "system".to_string(),
-            message: format!("Tarefa bloqueada: {reason}"),
+            message: format!("Task blocked: {reason}"),
             timestamp: test_date(2024, 1, 5),
         });
         let any_task = AnyTask::try_from(manifest).unwrap();

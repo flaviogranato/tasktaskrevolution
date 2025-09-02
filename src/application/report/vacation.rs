@@ -5,10 +5,8 @@ use csv::Writer;
 use std::error::Error;
 use std::io;
 
-/// `VacationReportUseCase` gera um relatório em formato CSV com os períodos de férias
-/// de todos os recursos, associados ao projeto atual.
-/// `VacationReportUseCase` gera um relatório em formato CSV com os períodos de férias
-/// de todos os recursos, associados ao projeto atual.
+/// `VacationReportUseCase` generates a CSV report with vacation periods
+/// of all resources, associated with the current project.
 pub struct VacationReportUseCase<P: ProjectRepository, R: ResourceRepository> {
     project_repository: P,
     resource_repository: R,
@@ -23,26 +21,26 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
         }
     }
 
-    /// Executa a geração do relatório, escrevendo o resultado em um `Writer` fornecido.
+    /// Executes report generation, writing the result to a provided `Writer`.
     ///
     /// # Arguments
     ///
-    /// * `writer` - Um `csv::Writer` para onde o relatório será escrito.
+    /// * `writer` - A `csv::Writer` where the report will be written.
     ///
     /// # Errors
     ///
-    /// Retorna um erro se houver falha ao carregar os dados dos repositórios ou
-    /// ao escrever no `writer`.
+    /// Returns an error if there is a failure loading data from repositories or
+    /// writing to the `writer`.
     pub fn execute<W: io::Write>(&self, writer: &mut Writer<W>) -> Result<(), Box<dyn Error>> {
-        // Escrever o cabeçalho do CSV
-        writer.write_record(["Recurso", "Projeto", "Data Início", "Data Fim", "Layoff"])?;
+        // Write CSV header
+        writer.write_record(["Resource", "Project", "Start Date", "End Date", "Layoff"])?;
 
-        // Carregar o projeto do diretório atual.
-        // A lógica assume que há um único projeto de referência no contexto.
+        // Load the project from the current directory.
+        // The logic assumes there is a single reference project in the context.
         let project = self.project_repository.load()?;
         let resources = self.resource_repository.find_all()?;
 
-        // Iterar sobre os recursos e seus períodos de férias
+        // Iterate over resources and their vacation periods
         for resource in resources {
             if let Some(periods) = resource.vacations() {
                 for period in periods {
@@ -156,7 +154,7 @@ mod tests {
         // 1. Setup: Create test data
         let project: AnyProject = ProjectBuilder::new()
             .code("proj-1".to_string())
-            .name("ProjetoTTR".to_string())
+            .name("TTRProject".to_string())
             .company_code("COMP-001".to_string())
             .created_by("test-user".to_string())
             .build()
@@ -200,9 +198,9 @@ mod tests {
         let csv_data = String::from_utf8(writer.into_inner().unwrap()).unwrap();
         let mut lines = csv_data.trim().lines();
 
-        assert_eq!(lines.next().unwrap(), "Recurso,Projeto,Data Início,Data Fim,Layoff");
+        assert_eq!(lines.next().unwrap(), "Resource,Project,Start Date,End Date,Layoff");
         let alice_line = lines.next().unwrap();
-        assert!(alice_line.starts_with("Alice,ProjetoTTR,"));
+        assert!(alice_line.starts_with("Alice,TTRProject,"));
         assert!(alice_line.ends_with(",false"));
         assert!(lines.next().is_none()); // Bob should not be in the report
     }

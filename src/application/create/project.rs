@@ -31,7 +31,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         let project = project.build()?; // This returns Result<Project, DomainError>
 
         self.repository.save(project.into())?;
-        println!("Projeto {name} criado");
+        println!("Project {name} created");
         Ok(())
     }
 

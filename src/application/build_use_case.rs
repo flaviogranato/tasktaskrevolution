@@ -1,7 +1,6 @@
 use crate::domain::{
     company_settings::repository::ConfigRepository,
     project_management::AnyProject,
-    resource_management::repository::ResourceRepository,
     // task_management::repository::TaskRepository,
 };
 use crate::infrastructure::persistence::{

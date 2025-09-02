@@ -385,19 +385,19 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
             match use_case.execute(init_data) {
                 Ok(config) => {
-                    println!("Manager/Consultor configurado com sucesso!");
+                    println!("Manager/Consultant configured successfully!");
                     println!("Manager: {} ({})", config.manager_name, config.manager_email);
                     if let Some(company) = &config.company_name {
-                        println!("Empresa: {}", company);
+                        println!("Company: {}", company);
                     }
                     println!("Timezone: {}", config.default_timezone);
                     if let (Some(start), Some(end)) = (&config.work_hours_start, &config.work_hours_end) {
-                        println!("Horário de trabalho: {} - {}", start, end);
+                        println!("Work hours: {} - {}", start, end);
                     }
-                    println!("Configuração salva em: config.yaml");
+                    println!("Configuration saved to: config.yaml");
                 }
                 Err(e) => {
-                    println!("Erro ao configurar manager: {:?}", e);
+                    println!("Error configuring manager: {:?}", e);
                     return Err(Box::new(e));
                 }
             }
@@ -588,7 +588,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         let manifest_path = PathBuf::from("project.yaml");
                         if !manifest_path.exists() {
                             println!(
-                                "Erro: Comando executado fora de um diretório de projeto. Especifique --project-code."
+                                "Error: Command executed outside a project directory. Specify --project-code."
                             );
                             return Ok(());
                         }
@@ -1231,13 +1231,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     match Writer::from_path(file_path) {
                         Ok(mut writer) => {
                             if let Err(e) = use_case.execute(&mut writer) {
-                                println!("Erro ao gerar relatório: {e}");
+                                println!("Error generating report: {e}");
                             } else {
-                                println!("Relatório de férias gerado com sucesso em: {file_path}");
+                                println!("Vacation report generated successfully at: {file_path}");
                             }
                         }
                         Err(e) => {
-                            println!("Erro ao criar arquivo de relatório: {e}");
+                            println!("Error creating report file: {e}");
                         }
                     }
                 }
@@ -1249,13 +1249,13 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     match Writer::from_path(file_path) {
                         Ok(mut writer) => {
                             if let Err(e) = use_case.execute(&mut writer) {
-                                println!("Erro ao gerar relatório de tarefas: {e}");
+                                println!("Error generating task report: {e}");
                             } else {
-                                println!("Relatório de tarefas gerado com sucesso em: {file_path}");
+                                println!("Task report generated successfully at: {file_path}");
                             }
                         }
                         Err(e) => {
-                            println!("Erro ao criar arquivo de relatório de tarefas: {e}");
+                            println!("Error creating task report file: {e}");
                         }
                     }
                 }
