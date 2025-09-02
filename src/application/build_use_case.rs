@@ -72,17 +72,24 @@ impl BuildUseCase {
 
         // 4. Find all projects and load their data.
         let mut all_projects_data = Vec::new();
-        let project_manifest_pattern = self.base_path.join("**/project.yaml");
+        let project_manifest_pattern = self.base_path.join("companies/*/projects/*/project.yaml");
         for entry in glob(project_manifest_pattern.to_str().unwrap())? {
             let manifest_path = entry?;
             let project_path = manifest_path.parent().unwrap().to_path_buf();
             println!("[INFO] Loading project from: {}", project_path.display());
 
-            let project_repo = FileProjectRepository::with_base_path(project_path.clone());
-            let resource_repo = FileResourceRepository::new(project_path.clone());
+            let project_repo = FileProjectRepository::with_base_path(self.base_path.clone());
+            let resource_repo = FileResourceRepository::new(self.base_path.clone());
 
             let project = project_repo.load_from_path(&project_path)?;
-            let resources = resource_repo.find_all()?;
+            
+            // Extract company and project codes from the path
+            let path_components: Vec<_> = project_path.components().collect();
+            let company_code = path_components[path_components.len() - 3].as_os_str().to_str().unwrap();
+            let project_code = project.code();
+            
+            // Load resources using the new hierarchical method
+            let resources = resource_repo.find_all_by_project(company_code, project_code)?;
             let tasks: Vec<_> = project.tasks().values().cloned().collect();
 
             let project = if project.timezone().is_none() {
