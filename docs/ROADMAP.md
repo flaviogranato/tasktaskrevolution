@@ -314,6 +314,10 @@ TaskJuggler é uma ferramenta de gerenciamento de projetos que fornece várias f
 
 Baseado na análise do projeto [TaskJuggler Fedora 20](https://taskjuggler.org/tj3/examples/Fedora-20/f-20.tjp), identificamos funcionalidades específicas que podem evoluir significativamente o TTR:
 
+#### **Análise de Exemplos Adicionais do TaskJuggler:**
+
+Baseado na análise dos exemplos [Project Template](https://taskjuggler.org/tj3/examples/ProjectTemplate/template.tjp), [Tutorial](https://taskjuggler.org/tj3/examples/Tutorial/tutorial.tjp), [ToDo-List](https://taskjuggler.org/tj3/examples/ToDo-List/todolist.tjp) e [Scrum](https://taskjuggler.org/tj3/examples/Scrum/scrum.tjp), identificamos funcionalidades adicionais para evolução do TTR:
+
 6. **Sistema de Dependências Avançado**
    - **Aplicação TTR**: Dependências com gaps temporais e tipos específicos
    - **Benefício**: Planejamento mais preciso e realista
@@ -365,6 +369,61 @@ Baseado na análise do projeto [TaskJuggler Fedora 20](https://taskjuggler.org/t
     - **Benefício**: Visualizações específicas para diferentes stakeholders
     - **Implementação**: Sistema de relatórios com filtros dinâmicos
 
+13. **Sistema de Templates de Projeto**
+    - **Aplicação TTR**: Templates predefinidos para diferentes tipos de projeto
+    - **Benefício**: Criação rápida e padronizada de projetos
+    - **Implementação**: Sistema de templates com estruturas reutilizáveis
+
+14. **Sistema de Contas e Orçamento**
+    - **Aplicação TTR**: Controle financeiro com contas de custo e receita
+    - **Benefício**: Análise de lucratividade e controle de orçamento
+    - **Implementação**: Sistema de contas hierárquico com balanceamento
+
+15. **Sistema de Feriados e Disponibilidade**
+    - **Aplicação TTR**: Gerenciamento de feriados e disponibilidade de recursos
+    - **Benefício**: Planejamento realista considerando dias não úteis
+    - **Implementação**: Sistema de feriados com suporte a feriados anuais
+
+16. **Sistema de Cenários Avançado**
+    - **Aplicação TTR**: Múltiplos cenários com comparação automática
+    - **Benefício**: Análise de riscos e planejamento baseado em cenários
+    - **Implementação**: Sistema de cenários com modificações específicas
+
+17. **Sistema de Alertas e Status**
+    - **Aplicação TTR**: Alertas automáticos baseados em regras de negócio
+    - **Benefício**: Detecção proativa de problemas e atrasos
+    - **Implementação**: Sistema de alertas com níveis (verde, amarelo, vermelho)
+
+18. **Sistema de Journal/Log de Status**
+    - **Aplicação TTR**: Acompanhamento histórico de mudanças e status
+    - **Benefício**: Rastreabilidade e auditoria de mudanças
+    - **Implementação**: Sistema de journal com histórico detalhado
+
+19. **Sistema de Prioridades**
+    - **Aplicação TTR**: Priorização de tarefas com níveis (baixa, média, alta, crítica)
+    - **Benefício**: Foco em tarefas mais importantes
+    - **Implementação**: Sistema de prioridades com filtros e ordenação
+
+20. **Sistema de Categorização de Tarefas**
+    - **Aplicação TTR**: Categorias de tarefas com cores e ícones
+    - **Benefício**: Organização visual e filtros por categoria
+    - **Implementação**: Sistema de categorias com personalização visual
+
+21. **Sistema de Sprints e Backlog**
+    - **Aplicação TTR**: Metodologias ágeis com sprints e backlog
+    - **Benefício**: Suporte a metodologias ágeis como Scrum
+    - **Implementação**: Sistema de sprints com capacidade e backlog
+
+22. **Sistema de Burndown Charts**
+    - **Aplicação TTR**: Gráficos de burndown para acompanhamento de progresso
+    - **Benefício**: Visualização clara do progresso em sprints
+    - **Implementação**: Sistema de gráficos com dados de burndown
+
+23. **Sistema de Story Points**
+    - **Aplicação TTR**: Estimativa de complexidade com story points
+    - **Benefício**: Estimativas mais precisas e consistentes
+    - **Implementação**: Sistema de story points com níveis de complexidade
+
 #### **Funcionalidades de Médio Valor:**
 
 6. **Rastreamento de Tempo**
@@ -389,15 +448,15 @@ Baseado na análise do projeto [TaskJuggler Fedora 20](https://taskjuggler.org/t
 11. **Colaboração em Tempo Real** - Fora do escopo do TTR
 
 #### **Prioridade de Implementação:**
-1. **Alta Prioridade**: Sistema de Dependências Avançado, Cálculo Automático de Datas, Sistema de Recursos com Capacidade, Sistema de Cenários
-2. **Média Prioridade**: Sistema de Flags/Tags Hierárquico, Tarefas Shadow/Ancora, Relatórios Dinâmicos, Rastreamento de Tempo, Integração com Calendário
-3. **Baixa Prioridade**: Interface web, funcionalidades em tempo real, Sistema de Export
+1. **Alta Prioridade**: Sistema de Dependências Avançado, Cálculo Automático de Datas, Sistema de Recursos com Capacidade, Sistema de Templates de Projeto, Sistema de Alertas e Status
+2. **Média Prioridade**: Sistema de Flags/Tags Hierárquico, Tarefas Shadow/Ancora, Sistema de Cenários Avançado, Sistema de Contas e Orçamento, Sistema de Prioridades, Sistema de Categorização
+3. **Baixa Prioridade**: Sistema de Sprints e Backlog, Sistema de Burndown Charts, Sistema de Story Points, Sistema de Journal/Log, Sistema de Feriados, Interface web, funcionalidades em tempo real
 
 #### **Esforço de Desenvolvimento Estimado:**
-- **Funcionalidades de Alta Prioridade**: 6-8 meses
-- **Funcionalidades de Média Prioridade**: 4-5 meses
-- **Funcionalidades de Baixa Prioridade**: 2-3 meses
-- **Total**: 12-16 meses para conjunto completo de funcionalidades inspiradas no TaskJuggler (incluindo análise do Fedora 20)
+- **Funcionalidades de Alta Prioridade**: 8-10 meses
+- **Funcionalidades de Média Prioridade**: 6-8 meses
+- **Funcionalidades de Baixa Prioridade**: 4-5 meses
+- **Total**: 18-23 meses para conjunto completo de funcionalidades inspiradas no TaskJuggler (incluindo todos os exemplos analisados)
 
 ---
 
@@ -470,52 +529,81 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 
 ## Recomendações Consolidadas de Funcionalidades
 
-### **Fase 1: Melhorias Core (4-5 meses)**
+### **Fase 1: Melhorias Core (5-6 meses)**
 1. **Sistema de Dependências Avançado** (inspirado no TaskJuggler Fedora 20)
 2. **Cálculo Automático de Datas** (inspirado no TaskJuggler Fedora 20)
-3. **Motor de Agendamento de Recursos** (inspirado no Kubernetes)
-4. **Modelos de Projeto** (inspirado no Backstage)
-5. **Geração de Gráficos Gantt** (inspirado no MS Project)
+3. **Sistema de Templates de Projeto** (inspirado no TaskJuggler Template)
+4. **Sistema de Alertas e Status** (inspirado no TaskJuggler Tutorial)
+5. **Motor de Agendamento de Recursos** (inspirado no Kubernetes)
+6. **Geração de Gráficos Gantt** (inspirado no MS Project)
 
-### **Fase 2: Funcionalidades Avançadas (5-6 meses)**
+### **Fase 2: Funcionalidades Avançadas (6-7 meses)**
 1. **Sistema de Recursos com Capacidade** (inspirado no TaskJuggler Fedora 20)
-2. **Sistema de Cenários** (inspirado no TaskJuggler Fedora 20)
-3. **Sistema de Plugins** (inspirado no Backstage)
-4. **Verificações de Saúde & Monitoramento** (inspirado no Kubernetes)
-5. **Gerenciamento de Riscos** (inspirado no TaskJuggler)
-6. **Análise de Caminho Crítico** (inspirado no MS Project)
+2. **Sistema de Cenários Avançado** (inspirado no TaskJuggler Tutorial)
+3. **Sistema de Contas e Orçamento** (inspirado no TaskJuggler Template)
+4. **Sistema de Prioridades** (inspirado no TaskJuggler ToDo-List)
+5. **Sistema de Plugins** (inspirado no Backstage)
+6. **Verificações de Saúde & Monitoramento** (inspirado no Kubernetes)
+7. **Gerenciamento de Riscos** (inspirado no TaskJuggler)
+8. **Análise de Caminho Crítico** (inspirado no MS Project)
 
-### **Fase 3: Integração & Polimento (3-4 meses)**
+### **Fase 3: Integração & Polimento (4-5 meses)**
 1. **Sistema de Flags/Tags Hierárquico** (inspirado no TaskJuggler Fedora 20)
 2. **Tarefas Shadow/Ancora** (inspirado no TaskJuggler Fedora 20)
-3. **Relatórios Dinâmicos com Filtros** (inspirado no TaskJuggler Fedora 20)
-4. **Suporte Multi-idioma** (inspirado no Hugo)
-5. **Relatórios Avançados** (inspirado no MS Project)
-6. **Integração com Calendário** (inspirado no TaskJuggler)
+3. **Sistema de Categorização de Tarefas** (inspirado no TaskJuggler ToDo-List)
+4. **Sistema de Journal/Log de Status** (inspirado no TaskJuggler Tutorial)
+5. **Relatórios Dinâmicos com Filtros** (inspirado no TaskJuggler Fedora 20)
+6. **Suporte Multi-idioma** (inspirado no Hugo)
+7. **Relatórios Avançados** (inspirado no MS Project)
+8. **Integração com Calendário** (inspirado no TaskJuggler)
 
-### **Total Estimado: 12-15 meses**
+### **Fase 4: Metodologias Ágeis (3-4 meses)**
+1. **Sistema de Sprints e Backlog** (inspirado no TaskJuggler Scrum)
+2. **Sistema de Burndown Charts** (inspirado no TaskJuggler Scrum)
+3. **Sistema de Story Points** (inspirado no TaskJuggler Scrum)
+4. **Sistema de Feriados e Disponibilidade** (inspirado no TaskJuggler Template)
+
+### **Total Estimado: 18-22 meses**
 
 ### **Matriz de Prioridade:**
-- **Alto Impacto, Baixo Esforço**: Sistema de Flags/Tags Hierárquico, Modelos de Projeto, Gráficos Gantt, Relatórios Dinâmicos
-- **Alto Impacto, Alto Esforço**: Sistema de Dependências Avançado, Cálculo Automático de Datas, Sistema de Recursos com Capacidade, Sistema de Cenários
-- **Médio Impacto, Baixo Esforço**: Tarefas Shadow/Ancora, Multi-idioma, Sistema de Export, Verificações de Saúde
-- **Médio Impacto, Alto Esforço**: Análise de Caminho Crítico, Nivelamento de Recursos, EVM, Sistema de Plugins
+- **Alto Impacto, Baixo Esforço**: Sistema de Templates de Projeto, Sistema de Prioridades, Sistema de Categorização, Gráficos Gantt, Relatórios Dinâmicos
+- **Alto Impacto, Alto Esforço**: Sistema de Dependências Avançado, Cálculo Automático de Datas, Sistema de Recursos com Capacidade, Sistema de Cenários Avançado, Sistema de Alertas e Status
+- **Médio Impacto, Baixo Esforço**: Sistema de Flags/Tags Hierárquico, Sistema de Feriados, Sistema de Journal/Log, Multi-idioma, Verificações de Saúde
+- **Médio Impacto, Alto Esforço**: Sistema de Contas e Orçamento, Sistema de Sprints e Backlog, Sistema de Burndown Charts, Análise de Caminho Crítico, Sistema de Plugins
 
 ---
 
 ## Itens do Backlog
 
-### Funcionalidades do TaskJuggler Fedora 20 (Análise Detalhada)
+### Funcionalidades do TaskJuggler (Análise Completa)
+**Baseado na análise dos exemplos: Fedora 20, Project Template, Tutorial, ToDo-List e Scrum**
+
+#### **Funcionalidades de Alta Prioridade:**
 - **Sistema de Dependências Avançado**: Implementar tipos de dependências (FinishToStart, StartToStart, etc.) com gaps temporais
 - **Cálculo Automático de Datas**: Motor de cálculo que atualiza datas automaticamente baseado em dependências
-- **Sistema de Cenários**: Múltiplas versões do projeto (otimista, realista, pessimista) para análise de riscos
+- **Sistema de Templates de Projeto**: Templates predefinidos para diferentes tipos de projeto
+- **Sistema de Alertas e Status**: Alertas automáticos baseados em regras de negócio
+- **Sistema de Recursos com Capacidade**: Recursos com limitações de tempo, disponibilidade e habilidades
+
+#### **Funcionalidades de Média Prioridade:**
+- **Sistema de Cenários Avançado**: Múltiplos cenários com comparação automática
+- **Sistema de Contas e Orçamento**: Controle financeiro com contas de custo e receita
+- **Sistema de Prioridades**: Priorização de tarefas com níveis (baixa, média, alta, crítica)
+- **Sistema de Categorização de Tarefas**: Categorias de tarefas com cores e ícones
 - **Sistema de Flags/Tags Hierárquico**: Tags organizadas por categoria com filtros inteligentes
 - **Tarefas Shadow/Ancora**: Tarefas invisíveis para ancorar datas e marcos temporais
-- **Sistema de Recursos com Capacidade**: Recursos com limitações de tempo, disponibilidade e habilidades
+
+#### **Funcionalidades de Baixa Prioridade:**
+- **Sistema de Sprints e Backlog**: Metodologias ágeis com sprints e backlog
+- **Sistema de Burndown Charts**: Gráficos de burndown para acompanhamento de progresso
+- **Sistema de Story Points**: Estimativa de complexidade com story points
+- **Sistema de Journal/Log de Status**: Acompanhamento histórico de mudanças e status
+- **Sistema de Feriados e Disponibilidade**: Gerenciamento de feriados e disponibilidade de recursos
 - **Relatórios Dinâmicos com Filtros**: Relatórios baseados em tags com filtros personalizáveis
+
 - **Status**: Adicionado ao roadmap principal
-- **Prioridade**: Alta (Fase 1 e 2)
-- **Esforço Estimado**: 9-11 meses
+- **Prioridade**: Alta, Média e Baixa (Fases 1-4)
+- **Esforço Estimado**: 18-22 meses
 
 ### Grupos de Recursos (Sugestão do Usuário)
 - Implementar grupos de recursos como uma forma de alocação de recursos
