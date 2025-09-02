@@ -1,14 +1,14 @@
-use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::company_management::repository::CompanyRepository;
+use crate::domain::company_settings::repository::ConfigRepository;
 use crate::{
     application::{
         build_use_case::BuildUseCase,
-        company_management::{CreateCompanyUseCase, CreateCompanyArgs},
+        company_management::{CreateCompanyArgs, CreateCompanyUseCase},
         create::{
             project::CreateProjectUseCase, resource::CreateResourceUseCase, task::CreateTaskArgs,
             task::CreateTaskUseCase, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase,
         },
-        init::{InitManagerUseCase, InitManagerData},
+        init::{InitManagerData, InitManagerUseCase},
         list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
         project::assign_resource_to_task::AssignResourceToTaskUseCase,
         project::{
@@ -29,14 +29,12 @@ use crate::{
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
         validate::{
-            system::ValidateSystemUseCase,
-            entities::ValidateEntitiesUseCase,
-            business_rules::ValidateBusinessRulesUseCase,
-            data_integrity::ValidateDataIntegrityUseCase,
+            business_rules::ValidateBusinessRulesUseCase, data_integrity::ValidateDataIntegrityUseCase,
+            entities::ValidateEntitiesUseCase, system::ValidateSystemUseCase,
         },
     },
     infrastructure::persistence::{
-        company_repository::FileCompanyRepository, config_repository::FileConfigRepository, 
+        company_repository::FileCompanyRepository, config_repository::FileConfigRepository,
         project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
     },
 };
@@ -364,7 +362,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         } => {
             let repository = FileConfigRepository::new();
             let use_case = InitManagerUseCase::new(Box::new(repository));
-            
+
             let init_data = InitManagerData {
                 name: name.clone(),
                 email: email.clone(),
@@ -513,7 +511,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             }
             CompanyCommands::Describe { code } => {
                 let repository = FileCompanyRepository::new(".");
-                match repository.find_by_code(&code) {
+                match repository.find_by_code(code) {
                     Ok(Some(company)) => {
                         println!("Name:         {}", company.name);
                         println!("Code:         {}", company.code);
@@ -568,7 +566,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 industry,
             } => {
                 let repository = FileCompanyRepository::new(".");
-                match repository.find_by_code(&code) {
+                match repository.find_by_code(code) {
                     Ok(Some(mut company)) => {
                         // Update fields if provided
                         if let Some(new_name) = name {
@@ -624,18 +622,16 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             }
             CompanyCommands::Delete { code } => {
                 let repository = FileCompanyRepository::new(".");
-                match repository.find_by_code(&code) {
-                    Ok(Some(_)) => {
-                        match repository.delete(&code) {
-                            Ok(_) => {
-                                println!("Company '{}' deleted successfully!", code);
-                            }
-                            Err(e) => {
-                                eprintln!("Error deleting company: {}", e);
-                                return Err(e.into());
-                            }
+                match repository.find_by_code(code) {
+                    Ok(Some(_)) => match repository.delete(code) {
+                        Ok(_) => {
+                            println!("Company '{}' deleted successfully!", code);
                         }
-                    }
+                        Err(e) => {
+                            eprintln!("Error deleting company: {}", e);
+                            return Err(e.into());
+                        }
+                    },
                     Ok(None) => {
                         eprintln!("Company with code '{}' not found.", code);
                         return Err("Company not found".into());
@@ -1299,7 +1295,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let project_repository = FileProjectRepository::new();
                     let resource_repository = FileResourceRepository::new(".");
                     let company_repository = FileCompanyRepository::new(".");
-                    let use_case = ValidateSystemUseCase::new(project_repository, resource_repository, company_repository);
+                    let use_case =
+                        ValidateSystemUseCase::new(project_repository, resource_repository, company_repository);
 
                     match use_case.execute() {
                         Ok(messages) => {
@@ -1316,7 +1313,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let project_repository = FileProjectRepository::new();
                     let resource_repository = FileResourceRepository::new(".");
                     let company_repository = FileCompanyRepository::new(".");
-                    let use_case = ValidateEntitiesUseCase::new(&project_repository, &resource_repository, &company_repository);
+                    let use_case =
+                        ValidateEntitiesUseCase::new(&project_repository, &resource_repository, &company_repository);
 
                     match use_case.execute() {
                         Ok(messages) => {
@@ -1333,7 +1331,11 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let project_repository = FileProjectRepository::new();
                     let resource_repository = FileResourceRepository::new(".");
                     let company_repository = FileCompanyRepository::new(".");
-                    let use_case = ValidateBusinessRulesUseCase::new(&project_repository, &resource_repository, &company_repository);
+                    let use_case = ValidateBusinessRulesUseCase::new(
+                        &project_repository,
+                        &resource_repository,
+                        &company_repository,
+                    );
 
                     match use_case.execute() {
                         Ok(messages) => {
@@ -1350,7 +1352,11 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     let project_repository = FileProjectRepository::new();
                     let resource_repository = FileResourceRepository::new(".");
                     let company_repository = FileCompanyRepository::new(".");
-                    let use_case = ValidateDataIntegrityUseCase::new(&project_repository, &resource_repository, &company_repository);
+                    let use_case = ValidateDataIntegrityUseCase::new(
+                        &project_repository,
+                        &resource_repository,
+                        &company_repository,
+                    );
 
                     match use_case.execute() {
                         Ok(messages) => {

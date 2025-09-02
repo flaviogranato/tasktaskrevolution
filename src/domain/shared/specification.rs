@@ -329,9 +329,9 @@ mod tests {
 
     impl IdGreaterThanSpec {
         fn new(threshold: u32) -> Self {
-            Self { 
+            Self {
                 threshold,
-                description: format!("ID must be greater than {}", threshold)
+                description: format!("ID must be greater than {}", threshold),
             }
         }
     }
@@ -355,7 +355,7 @@ mod tests {
         fn new(substring: &str) -> Self {
             Self {
                 substring: substring.to_string(),
-                description: format!("Name must contain '{}'", substring)
+                description: format!("Name must contain '{}'", substring),
             }
         }
     }
@@ -378,10 +378,10 @@ mod tests {
 
     impl ValueInRangeSpec {
         fn new(min: i32, max: i32) -> Self {
-            Self { 
-                min, 
+            Self {
+                min,
                 max,
-                description: format!("Value must be between {} and {}", min, max)
+                description: format!("Value must be between {} and {}", min, max),
             }
         }
     }
@@ -426,7 +426,10 @@ mod tests {
         let entity = MockEntity::new(3, "test", 42, true);
 
         let explanation = spec.explain_why_not_satisfied(&entity);
-        assert_eq!(explanation, Some("Item does not satisfy: ID must be greater than 5".to_string()));
+        assert_eq!(
+            explanation,
+            Some("Item does not satisfy: ID must be greater than 5".to_string())
+        );
 
         let entity_satisfied = MockEntity::new(10, "test", 42, true);
         let explanation_satisfied = spec.explain_why_not_satisfied(&entity_satisfied);
@@ -593,7 +596,11 @@ mod tests {
         let entity = MockEntity::new(3, "other entity", 42, true);
         let explanation = spec.explain_why_not_satisfied(&entity);
         assert!(explanation.is_some());
-        assert!(explanation.unwrap().contains("None of the specifications were satisfied"));
+        assert!(
+            explanation
+                .unwrap()
+                .contains("None of the specifications were satisfied")
+        );
     }
 
     #[test]
@@ -612,7 +619,10 @@ mod tests {
     fn test_not_specification_new() {
         let inner_spec = IdGreaterThanSpec::new(5);
         let spec = NotSpecification::new(Box::new(inner_spec));
-        assert!(spec.specification.is_satisfied_by(&MockEntity::new(10, "test", 42, true)));
+        assert!(
+            spec.specification
+                .is_satisfied_by(&MockEntity::new(10, "test", 42, true))
+        );
     }
 
     #[test]
@@ -624,7 +634,7 @@ mod tests {
         let entity_below = MockEntity::new(3, "test", 42, true);
 
         assert!(!spec.is_satisfied_by(&entity_above)); // inner spec is true, so not spec is false
-        assert!(spec.is_satisfied_by(&entity_below));   // inner spec is false, so not spec is true
+        assert!(spec.is_satisfied_by(&entity_below)); // inner spec is false, so not spec is true
     }
 
     #[test]
@@ -666,7 +676,10 @@ mod tests {
     #[test]
     fn test_always_true_specification_description() {
         let spec: AlwaysTrueSpecification = AlwaysTrueSpecification;
-        assert_eq!(<AlwaysTrueSpecification as Specification<MockEntity>>::description(&spec), "Always satisfied");
+        assert_eq!(
+            <AlwaysTrueSpecification as Specification<MockEntity>>::description(&spec),
+            "Always satisfied"
+        );
     }
 
     #[test]
@@ -688,7 +701,10 @@ mod tests {
     #[test]
     fn test_always_false_specification_description() {
         let spec: AlwaysFalseSpecification = AlwaysFalseSpecification;
-        assert_eq!(<AlwaysFalseSpecification as Specification<MockEntity>>::description(&spec), "Never satisfied");
+        assert_eq!(
+            <AlwaysFalseSpecification as Specification<MockEntity>>::description(&spec),
+            "Never satisfied"
+        );
     }
 
     #[test]
@@ -853,10 +869,10 @@ mod tests {
 
         // entity1: id > 5 AND active = true, so (true AND true) OR false = true, so NOT true = false
         assert!(!spec.is_satisfied_by(&entity1));
-        
+
         // entity2: id > 5 AND active = false, so (false AND false) OR true = true, so NOT true = false
         assert!(!spec.is_satisfied_by(&entity2));
-        
+
         // entity3: id > 5 AND active = true, so (true AND true) OR true = true, so NOT true = false
         assert!(!spec.is_satisfied_by(&entity3));
     }

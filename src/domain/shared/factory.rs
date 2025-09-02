@@ -220,9 +220,9 @@ mod tests {
             name: "test".to_string(),
             value: 123,
         };
-        
+
         let entity = factory.create(params);
-        
+
         assert_eq!(entity.id, "mock-001");
         assert_eq!(entity.name, "test");
         assert_eq!(entity.value, 123);
@@ -232,7 +232,7 @@ mod tests {
     fn test_entity_factory_create_default() {
         let factory = MockEntityFactory;
         let entity = factory.create_default();
-        
+
         assert_eq!(entity.id, "mock-default");
         assert_eq!(entity.name, "default");
         assert_eq!(entity.value, 42);
@@ -246,10 +246,10 @@ mod tests {
             name: "valid".to_string(),
             value: 50,
         };
-        
+
         let result = factory.create_validated(params);
         assert!(result.is_ok());
-        
+
         let entity = result.unwrap();
         assert_eq!(entity.id, "validated-001");
         assert_eq!(entity.name, "valid");
@@ -263,7 +263,7 @@ mod tests {
             name: "invalid".to_string(),
             value: 150,
         };
-        
+
         let result = factory.create_validated(params);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Value too high");
@@ -279,9 +279,9 @@ mod tests {
         };
         let mut config = HashMap::new();
         config.insert("prefix".to_string(), "custom".to_string());
-        
+
         let entity = factory.create_with_config(params, config);
-        
+
         assert_eq!(entity.id, "custom-001");
         assert_eq!(entity.name, "config");
         assert_eq!(entity.value, 75);
@@ -295,9 +295,9 @@ mod tests {
             value: 25,
         };
         let config = HashMap::new();
-        
+
         let entity = factory.create_with_config(params, config);
-        
+
         assert_eq!(entity.id, "config-001");
         assert_eq!(entity.name, "no-config");
         assert_eq!(entity.value, 25);
@@ -320,18 +320,18 @@ mod tests {
     fn test_factory_registry_register_and_get() {
         let mut registry = FactoryRegistry::new();
         let factory = MockEntityFactory;
-        
+
         registry.register("mock", factory);
-        
+
         let retrieved_factory = registry.get("mock");
         assert!(retrieved_factory.is_some());
-        
+
         let retrieved_factory = retrieved_factory.unwrap();
         let entity = retrieved_factory.create(MockParams {
             name: "retrieved".to_string(),
             value: 99,
         });
-        
+
         assert_eq!(entity.id, "mock-001");
         assert_eq!(entity.name, "retrieved");
         assert_eq!(entity.value, 99);
@@ -348,14 +348,17 @@ mod tests {
     fn test_factory_registry_create() {
         let mut registry = FactoryRegistry::new();
         let factory = MockEntityFactory;
-        
+
         registry.register("mock", factory);
-        
-        let entity = registry.create("mock", MockParams {
-            name: "created".to_string(),
-            value: 88,
-        });
-        
+
+        let entity = registry.create(
+            "mock",
+            MockParams {
+                name: "created".to_string(),
+                value: 88,
+            },
+        );
+
         assert!(entity.is_some());
         let entity = entity.unwrap();
         assert_eq!(entity.id, "mock-001");
@@ -366,10 +369,13 @@ mod tests {
     #[test]
     fn test_factory_registry_create_nonexistent() {
         let registry: FactoryRegistry<MockEntity, MockParams> = FactoryRegistry::new();
-        let entity = registry.create("nonexistent", MockParams {
-            name: "test".to_string(),
-            value: 0,
-        });
+        let entity = registry.create(
+            "nonexistent",
+            MockParams {
+                name: "test".to_string(),
+                value: 0,
+            },
+        );
         assert!(entity.is_none());
     }
 
@@ -381,13 +387,13 @@ mod tests {
             name: params.name,
             value: params.value,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let params = MockParams {
             name: "simple_test".to_string(),
             value: 33,
         };
-        
+
         let entity = factory.create(params);
         assert_eq!(entity.id, "simple");
         assert_eq!(entity.name, "simple_test");
@@ -401,10 +407,10 @@ mod tests {
             name: params.name,
             value: params.value,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let entity = factory.create_default();
-        
+
         assert_eq!(entity.id, "simple_default");
         assert_eq!(entity.name, "default");
         assert_eq!(entity.value, 42);
@@ -418,13 +424,13 @@ mod tests {
             name: params.name,
             value: params.value,
         };
-        
+
         let factory = UniqueIdFactory::new(creator);
         let params = MockParams {
             name: "unique".to_string(),
             value: 55,
         };
-        
+
         let entity = factory.create(params);
         assert!(!entity.id.is_empty());
         assert_eq!(entity.name, "unique");
@@ -438,10 +444,10 @@ mod tests {
             name: params.name,
             value: params.value,
         };
-        
+
         let factory = UniqueIdFactory::new(creator);
         let entity = factory.create_default();
-        
+
         assert!(!entity.id.is_empty());
         assert_eq!(entity.name, "default");
         assert_eq!(entity.value, 42);
@@ -454,16 +460,16 @@ mod tests {
             name: params.name,
             value: params.value,
         };
-        
+
         let factory = UniqueIdFactory::new(creator);
         let params = MockParams {
             name: "unique_test".to_string(),
             value: 10,
         };
-        
+
         let entity1 = factory.create(params.clone());
         let entity2 = factory.create(params);
-        
+
         assert_ne!(entity1.id, entity2.id);
         assert_eq!(entity1.name, entity2.name);
         assert_eq!(entity1.value, entity2.value);
@@ -473,26 +479,39 @@ mod tests {
     #[test]
     fn test_factory_registry_multiple_factories() {
         let mut registry = FactoryRegistry::new();
-        
+
         // Register multiple factories
         registry.register("mock", MockEntityFactory);
-        registry.register("simple", SimpleFactory::new(|params: MockParams| MockEntity {
-            id: "simple".to_string(),
-            name: params.name,
-            value: params.value,
-        }));
-        
+        registry.register(
+            "simple",
+            SimpleFactory::new(|params: MockParams| MockEntity {
+                id: "simple".to_string(),
+                name: params.name,
+                value: params.value,
+            }),
+        );
+
         // Test both factories
-        let mock_entity = registry.create("mock", MockParams {
-            name: "mock_test".to_string(),
-            value: 111,
-        }).unwrap();
-        
-        let simple_entity = registry.create("simple", MockParams {
-            name: "simple_test".to_string(),
-            value: 222,
-        }).unwrap();
-        
+        let mock_entity = registry
+            .create(
+                "mock",
+                MockParams {
+                    name: "mock_test".to_string(),
+                    value: 111,
+                },
+            )
+            .unwrap();
+
+        let simple_entity = registry
+            .create(
+                "simple",
+                MockParams {
+                    name: "simple_test".to_string(),
+                    value: 222,
+                },
+            )
+            .unwrap();
+
         assert_eq!(mock_entity.id, "mock-001");
         assert_eq!(simple_entity.id, "simple");
         assert_ne!(mock_entity.id, simple_entity.id);
@@ -502,16 +521,16 @@ mod tests {
     fn test_factory_trait_objects() {
         let mut registry = FactoryRegistry::new();
         let factory = MockEntityFactory;
-        
+
         registry.register("trait_object", factory);
-        
+
         // Test that we can use the factory through trait objects
         let factory_ref = registry.get("trait_object").unwrap();
         let entity = factory_ref.create(MockParams {
             name: "trait_test".to_string(),
             value: 77,
         });
-        
+
         assert_eq!(entity.id, "mock-001");
         assert_eq!(entity.name, "trait_test");
         assert_eq!(entity.value, 77);
@@ -525,10 +544,10 @@ mod tests {
             name: "empty_params".to_string(),
             value: 0,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let entity = factory.create(());
-        
+
         assert_eq!(entity.id, "empty");
         assert_eq!(entity.name, "empty_params");
         assert_eq!(entity.value, 0);
@@ -537,10 +556,10 @@ mod tests {
     #[test]
     fn test_factory_registry_overwrite() {
         let mut registry = FactoryRegistry::new();
-        
+
         // Register first factory
         registry.register("overwrite", MockEntityFactory);
-        
+
         // Register second factory with same name
         let creator = |params: MockParams| MockEntity {
             id: "overwritten".to_string(),
@@ -548,13 +567,18 @@ mod tests {
             value: params.value,
         };
         registry.register("overwrite", SimpleFactory::new(creator));
-        
+
         // Should get the second factory
-        let entity = registry.create("overwrite", MockParams {
-            name: "overwrite_test".to_string(),
-            value: 999,
-        }).unwrap();
-        
+        let entity = registry
+            .create(
+                "overwrite",
+                MockParams {
+                    name: "overwrite_test".to_string(),
+                    value: 999,
+                },
+            )
+            .unwrap();
+
         assert_eq!(entity.id, "overwritten");
         assert_eq!(entity.name, "overwrite_test");
         assert_eq!(entity.value, 999);
@@ -566,7 +590,7 @@ mod tests {
         let mut registry = FactoryRegistry::new();
         registry.register("test", MockEntityFactory);
         assert_eq!(registry.factories.len(), 1);
-        
+
         // Clear all factories (this would require adding a clear method)
         // For now, we test the current behavior
         assert!(registry.get("test").is_some());
@@ -577,14 +601,14 @@ mod tests {
         let mut registry = FactoryRegistry::new();
         registry.register("first", MockEntityFactory);
         registry.register("second", MockEntityFactory);
-        
+
         // Test that we can access multiple factories
         let first = registry.get("first");
         let second = registry.get("second");
-        
+
         assert!(first.is_some());
         assert!(second.is_some());
-        
+
         // Test that both factories work correctly
         let entity1 = first.unwrap().create(MockParams {
             name: "first_test".to_string(),
@@ -594,7 +618,7 @@ mod tests {
             name: "second_test".to_string(),
             value: 200,
         });
-        
+
         assert_eq!(entity1.name, "first_test");
         assert_eq!(entity2.name, "second_test");
         assert_ne!(entity1.name, entity2.name);
@@ -614,7 +638,7 @@ mod tests {
                 let mut metadata = HashMap::new();
                 metadata.insert("version".to_string(), "1.0".to_string());
                 metadata.insert("type".to_string(), "default".to_string());
-                
+
                 Self {
                     name: "complex_default".to_string(),
                     value: 100,
@@ -628,7 +652,7 @@ mod tests {
             name: params.name,
             value: params.value,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let params = ComplexParams {
             name: "complex_test".to_string(),
@@ -640,7 +664,7 @@ mod tests {
                 m
             },
         };
-        
+
         let entity = factory.create(params);
         assert_eq!(entity.id, "complex-200");
         assert_eq!(entity.name, "complex_test");
@@ -654,10 +678,10 @@ mod tests {
             name: "unit_params".to_string(),
             value: 0,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let entity = factory.create(());
-        
+
         assert_eq!(entity.id, "unit");
         assert_eq!(entity.name, "unit_params");
         assert_eq!(entity.value, 0);
@@ -676,13 +700,13 @@ mod tests {
             name: params.name.to_string(),
             value: params.value,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let params = RefParams {
             name: "reference_test",
             value: 300,
         };
-        
+
         let entity = factory.create(params);
         assert_eq!(entity.id, "ref-300");
         assert_eq!(entity.name, "reference_test");
@@ -711,9 +735,9 @@ mod tests {
             name: params.name.unwrap_or_else(|| "unknown".to_string()),
             value: params.value.unwrap_or(0),
         };
-        
+
         let factory = SimpleFactory::new(creator);
-        
+
         // Test with Some values
         let params = OptionalParams {
             name: Some("optional_test".to_string()),
@@ -722,7 +746,7 @@ mod tests {
         let entity = factory.create(params);
         assert_eq!(entity.name, "optional_test");
         assert_eq!(entity.value, 150);
-        
+
         // Test with None values
         let params = OptionalParams {
             name: None,
@@ -760,9 +784,9 @@ mod tests {
                 EnumParams::Complex { value, .. } => value,
             },
         };
-        
+
         let factory = SimpleFactory::new(creator);
-        
+
         // Test Simple variant
         let params = EnumParams::Simple {
             name: "simple_enum".to_string(),
@@ -770,7 +794,7 @@ mod tests {
         let entity = factory.create(params);
         assert_eq!(entity.name, "simple_enum");
         assert_eq!(entity.value, 0);
-        
+
         // Test Complex variant
         let params = EnumParams::Complex {
             name: "complex_enum".to_string(),
@@ -806,12 +830,12 @@ mod tests {
             id: "generic".to_string(),
             data: params.data,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let params = GenericParams {
             data: "generic_test".to_string(),
         };
-        
+
         let entity = factory.create(params);
         assert_eq!(entity.id, "generic");
         assert_eq!(entity.data, "generic_test");
@@ -834,9 +858,7 @@ mod tests {
 
         impl<T> Default for PhantomParams<T> {
             fn default() -> Self {
-                Self {
-                    _phantom: PhantomData,
-                }
+                Self { _phantom: PhantomData }
             }
         }
 
@@ -844,10 +866,10 @@ mod tests {
             id: "phantom".to_string(),
             _phantom: PhantomData::<String>,
         };
-        
+
         let factory = SimpleFactory::new(creator);
         let params = PhantomParams::<String>::default();
-        
+
         let entity = factory.create(params);
         assert_eq!(entity.id, "phantom");
     }
@@ -893,7 +915,7 @@ mod tests {
         }
 
         let factory = CustomValidatedFactory;
-        
+
         // Test success case
         let params = CustomParams {
             name: "custom_test".to_string(),
@@ -901,12 +923,12 @@ mod tests {
         };
         let result = factory.create_validated(params);
         assert!(result.is_ok());
-        
+
         let entity = result.unwrap();
         assert_eq!(entity.id, "custom-001");
         assert_eq!(entity.name, "custom_test");
         assert_eq!(entity.value, 100);
-        
+
         // Test zero value error
         let params = CustomParams {
             name: "zero_test".to_string(),
@@ -914,12 +936,12 @@ mod tests {
         };
         let result = factory.create_validated(params);
         assert!(result.is_err());
-        
+
         if let Err(error) = result {
             assert_eq!(error.message, "Value cannot be zero");
             assert_eq!(error.code, 1001);
         }
-        
+
         // Test empty name error
         let params = CustomParams {
             name: "".to_string(),
@@ -927,7 +949,7 @@ mod tests {
         };
         let result = factory.create_validated(params);
         assert!(result.is_err());
-        
+
         if let Err(error) = result {
             assert_eq!(error.message, "Name cannot be empty");
             assert_eq!(error.code, 1002);

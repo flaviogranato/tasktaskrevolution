@@ -16,7 +16,9 @@ impl fmt::Display for DeactivateResourceError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DeactivateResourceError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
-            DeactivateResourceError::ResourceAlreadyDeactivated(code) => write!(f, "Resource '{}' is already deactivated.", code),
+            DeactivateResourceError::ResourceAlreadyDeactivated(code) => {
+                write!(f, "Resource '{}' is already deactivated.", code)
+            }
             DeactivateResourceError::DomainError(message) => write!(f, "Domain error: {}", message),
             DeactivateResourceError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }

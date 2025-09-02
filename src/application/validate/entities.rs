@@ -1,15 +1,10 @@
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository,
-    company_management::repository::CompanyRepository,
-    shared::errors::DomainError,
-};
+use super::specifications::{ProjectHasAssignedResourcesSpec, ProjectHasTasksSpec};
 use super::types::ValidationResult;
-use super::specifications::{
-    ProjectHasAssignedResourcesSpec,
-    ProjectHasTasksSpec,
-};
 use crate::domain::shared::specification::{AndSpecification, Specification};
+use crate::domain::{
+    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
+    resource_management::repository::ResourceRepository, shared::errors::DomainError,
+};
 
 pub struct ValidateEntitiesUseCase<'a, P, R, C>
 where
@@ -72,7 +67,11 @@ where
                 results.push(
                     ValidationResult::error("Project references non-existent company".to_string())
                         .with_entity("Project".to_string(), project.code().to_string())
-                        .with_details(format!("Project '{}' references company '{}' which does not exist", project.code(), ref_company))
+                        .with_details(format!(
+                            "Project '{}' references company '{}' which does not exist",
+                            project.code(),
+                            ref_company
+                        )),
                 );
             }
         }
@@ -84,7 +83,7 @@ where
                 results.push(
                     ValidationResult::info("Company has no projects".to_string())
                         .with_entity("Company".to_string(), company.code.clone())
-                        .with_details("Company exists but has no associated projects".to_string())
+                        .with_details("Company exists but has no associated projects".to_string()),
                 );
             }
         }
@@ -97,7 +96,11 @@ where
                         results.push(
                             ValidationResult::error("Task references non-existent resource".to_string())
                                 .with_entity("Task".to_string(), task.code().to_string())
-                                .with_details(format!("Task '{}' references resource '{}' which does not exist", task.code(), resource_code))
+                                .with_details(format!(
+                                    "Task '{}' references resource '{}' which does not exist",
+                                    task.code(),
+                                    resource_code
+                                )),
                         );
                     }
                 }
@@ -119,14 +122,14 @@ where
             .add(Box::new(ProjectHasAssignedResourcesSpec));
 
         for project in projects {
-            if !project_completeness_spec.is_satisfied_by(project) {
-                if let Some(explanation) = project_completeness_spec.explain_why_not_satisfied(project) {
-                    results.push(
-                        ValidationResult::warning("Project may be incomplete".to_string())
-                            .with_entity("Project".to_string(), project.code().to_string())
-                            .with_details(explanation)
-                    );
-                }
+            if !project_completeness_spec.is_satisfied_by(project)
+                && let Some(explanation) = project_completeness_spec.explain_why_not_satisfied(project)
+            {
+                results.push(
+                    ValidationResult::warning("Project may be incomplete".to_string())
+                        .with_entity("Project".to_string(), project.code().to_string())
+                        .with_details(explanation),
+                );
             }
         }
 

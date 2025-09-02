@@ -1,7 +1,5 @@
 use crate::domain::{
-    project_management::{any_project::AnyProject, repository::ProjectRepository},
-    shared::errors::DomainError,
-    task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
 };
 use std::fmt;
 
@@ -55,8 +53,7 @@ where
             .ok_or_else(|| DeleteTaskError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Cancel the task (change its state to Cancelled)
-        let cancelled_task = project.cancel_task(task_code)
-            .map_err(|e| DeleteTaskError::DomainError(e))?;
+        let cancelled_task = project.cancel_task(task_code).map_err(DeleteTaskError::DomainError)?;
 
         // 3. Save the updated project aggregate.
         self.project_repository.save(project.clone())?;
@@ -152,7 +149,7 @@ mod tests {
     fn test_cancel_task_success() {
         // This requires `cancel_task` to be implemented on the real `AnyProject`
         let project = setup_test_project(vec![create_test_task("TSK-1")]);
-        
+
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };

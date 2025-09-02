@@ -61,15 +61,15 @@ mod test {
             Self {
                 should_fail,
                 saved_config: RefCell::new(None),
-                            project: ProjectBuilder::new()
-                .name("John".to_string())
-                .code("proj-1".to_string())
-                .company_code("COMP-001".to_string())
-                .created_by("system".to_string())
-                .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
-                .build()
-                .unwrap()
-                .into(),
+                project: ProjectBuilder::new()
+                    .name("John".to_string())
+                    .code("proj-1".to_string())
+                    .company_code("COMP-001".to_string())
+                    .created_by("system".to_string())
+                    .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+                    .build()
+                    .unwrap()
+                    .into(),
             }
         }
     }
@@ -141,6 +141,9 @@ mod test {
         let any_project = saved_config.as_ref().unwrap();
         assert_eq!(any_project.name(), name);
         // AnyProject is no longer an enum with variants, so we can access the project directly
-        assert_eq!(any_project.description().as_deref().map(|s| s.as_str()), description.as_deref());
+        assert_eq!(
+            any_project.description().as_deref().map(|s| s.as_str()),
+            description.as_deref()
+        );
     }
 }

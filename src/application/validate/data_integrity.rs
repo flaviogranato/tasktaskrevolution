@@ -1,19 +1,13 @@
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository,
-    company_management::repository::CompanyRepository,
-    shared::errors::DomainError,
+use super::specifications::{
+    ProjectHasTasksSpec, TaskWithinProjectTimelineSpec, ValidCompanySettingsSpec, ValidProjectDateRangeSpec,
+    ValidResourceVacationSpec,
 };
 use super::types::ValidationResult;
-use super::specifications::{
-    ValidProjectDateRangeSpec,
-    TaskWithinProjectTimelineSpec,
-    ValidResourceVacationSpec,
-    ValidCompanySettingsSpec,
-    ProjectHasAssignedResourcesSpec,
-    ProjectHasTasksSpec,
-};
 use crate::domain::shared::specification::{AndSpecification, Specification};
+use crate::domain::{
+    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
+    resource_management::repository::ResourceRepository, shared::errors::DomainError,
+};
 
 pub struct ValidateDataIntegrityUseCase<'a, P, R, C>
 where
@@ -69,14 +63,14 @@ where
             .add(Box::new(ProjectHasTasksSpec));
 
         for project in projects {
-            if !project_spec.is_satisfied_by(project) {
-                if let Some(explanation) = project_spec.explain_why_not_satisfied(project) {
-                    results.push(
-                        ValidationResult::warning(project_spec.description().to_string())
-                            .with_entity("Project".to_string(), project.code().to_string())
-                            .with_details(explanation)
-                    );
-                }
+            if !project_spec.is_satisfied_by(project)
+                && let Some(explanation) = project_spec.explain_why_not_satisfied(project)
+            {
+                results.push(
+                    ValidationResult::warning(project_spec.description().to_string())
+                        .with_entity("Project".to_string(), project.code().to_string())
+                        .with_details(explanation),
+                );
             }
         }
 
@@ -92,14 +86,14 @@ where
         let resource_spec = ValidResourceVacationSpec;
 
         for resource in resources {
-            if !resource_spec.is_satisfied_by(resource) {
-                if let Some(explanation) = resource_spec.explain_why_not_satisfied(resource) {
-                    results.push(
-                        ValidationResult::warning(resource_spec.description().to_string())
-                            .with_entity("Resource".to_string(), resource.code().to_string())
-                            .with_details(explanation)
-                    );
-                }
+            if !resource_spec.is_satisfied_by(resource)
+                && let Some(explanation) = resource_spec.explain_why_not_satisfied(resource)
+            {
+                results.push(
+                    ValidationResult::warning(resource_spec.description().to_string())
+                        .with_entity("Resource".to_string(), resource.code().to_string())
+                        .with_details(explanation),
+                );
             }
         }
 
@@ -115,14 +109,14 @@ where
         let company_spec = ValidCompanySettingsSpec;
 
         for company in companies {
-            if !company_spec.is_satisfied_by(company) {
-                if let Some(explanation) = company_spec.explain_why_not_satisfied(company) {
-                    results.push(
-                        ValidationResult::warning(company_spec.description().to_string())
-                            .with_entity("Company".to_string(), company.code().to_string())
-                            .with_details(explanation)
-                    );
-                }
+            if !company_spec.is_satisfied_by(company)
+                && let Some(explanation) = company_spec.explain_why_not_satisfied(company)
+            {
+                results.push(
+                    ValidationResult::warning(company_spec.description().to_string())
+                        .with_entity("Company".to_string(), company.code().to_string())
+                        .with_details(explanation),
+                );
             }
         }
 

@@ -99,10 +99,21 @@ impl BuildUseCase {
                 let mut project_map = tera::Map::new();
                 project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
                 project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
-                project_map.insert("description".to_string(), tera::Value::String(project.description().map_or("No description available.".to_string(), |d| d.to_string())));
+                project_map.insert(
+                    "description".to_string(),
+                    tera::Value::String(
+                        project
+                            .description()
+                            .map_or("No description available.".to_string(), |d| d.to_string()),
+                    ),
+                );
                 project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
-                project_map.insert("start_date".to_string(), 
-                    project.start_date().map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())));
+                project_map.insert(
+                    "start_date".to_string(),
+                    project
+                        .start_date()
+                        .map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())),
+                );
 
                 let mut map = tera::Map::new();
                 map.insert("project".to_string(), tera::Value::Object(project_map));
@@ -117,16 +128,15 @@ impl BuildUseCase {
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 
         // Create a dummy project for the base template header, which expects a `project` object.
-        let dummy_project: AnyProject =
-            crate::domain::project_management::builder::ProjectBuilder::new()
-                .code("TTR_DASHBOARD".to_string())
-                .name("Projects Dashboard".to_string())
-                .company_code("TTR".to_string())
-                .created_by("system".to_string())
-                .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
-                .build()
-                .unwrap()
-                .into();
+        let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
+            .code("TTR_DASHBOARD".to_string())
+            .name("Projects Dashboard".to_string())
+            .company_code("TTR".to_string())
+            .created_by("system".to_string())
+            .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+            .build()
+            .unwrap()
+            .into();
         context.insert("project", &dummy_project);
 
         let index_html = match self.tera.render("index.html", &context) {
@@ -156,10 +166,21 @@ impl BuildUseCase {
             let mut project_map = tera::Map::new();
             project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
             project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
-            project_map.insert("description".to_string(), tera::Value::String(project.description().map_or("No description available.".to_string(), |d| d.to_string())));
+            project_map.insert(
+                "description".to_string(),
+                tera::Value::String(
+                    project
+                        .description()
+                        .map_or("No description available.".to_string(), |d| d.to_string()),
+                ),
+            );
             project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
-            project_map.insert("start_date".to_string(), 
-                project.start_date().map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())));
+            project_map.insert(
+                "start_date".to_string(),
+                project
+                    .start_date()
+                    .map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())),
+            );
 
             context.insert("project", &tera::Value::Object(project_map));
             context.insert("tasks", tasks);
@@ -361,14 +382,14 @@ spec:
         // Test that the use case can handle existing output directory
         let temp_root = setup_test_environment();
         let output_dir = temp_root.join("public");
-        
+
         // Create the output directory beforehand
         fs::create_dir_all(&output_dir).unwrap();
-        
+
         let use_case = BuildUseCase::new(temp_root, output_dir.to_str().unwrap()).unwrap();
         let result = use_case.execute();
         assert!(result.is_ok());
-        
+
         // Verify files were still created
         let global_index_path = output_dir.join("index.html");
         assert!(global_index_path.exists());

@@ -1,7 +1,7 @@
 use crate::domain::{
     project_management::{any_project::AnyProject, repository::ProjectRepository},
-    shared::errors::DomainError,
     resource_management::repository::ResourceRepository,
+    shared::errors::DomainError,
 };
 use std::fmt;
 
@@ -83,8 +83,9 @@ where
         }
 
         // 4. Assign the resource to the task
-        project.assign_resource_to_task(task_code, &[resource_code])
-            .map_err(|e| AssignResourceToTaskError::DomainError(e))?;
+        project
+            .assign_resource_to_task(task_code, &[resource_code])
+            .map_err(AssignResourceToTaskError::DomainError)?;
 
         // 5. Save the updated project
         self.project_repository.save(project.clone())?;
@@ -215,11 +216,11 @@ mod tests {
             .name("Test Project".to_string())
             .company_code("COMP-001".to_string())
             .created_by("test-user".to_string());
-        
+
         for task in tasks {
             builder = builder.add_task(task);
         }
-        
+
         builder.build().unwrap().into()
     }
 
@@ -240,7 +241,7 @@ mod tests {
         if let Err(ref e) = result {
             eprintln!("Error: {}", e);
         }
-        
+
         assert!(result.is_ok());
         let updated_project = result.unwrap();
         let updated_task = updated_project.tasks().get("TSK-1").unwrap();

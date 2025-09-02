@@ -30,9 +30,7 @@ where
 {
     /// Creates a new instance of CreateCompanyUseCase.
     pub fn new(company_repository: R) -> Self {
-        Self {
-            company_repository,
-        }
+        Self { company_repository }
     }
 
     /// Executes the company creation use case.
@@ -47,27 +45,27 @@ where
         // Check if company code already exists
         let code_exists = self.company_repository.code_exists(&code)?;
         if code_exists {
-            return Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                field: "code".to_string(),
-                message: "Company code already exists".to_string(),
-            }));
+            return Err(DomainError::new(
+                crate::domain::shared::errors::DomainErrorKind::ValidationError {
+                    field: "code".to_string(),
+                    message: "Company code already exists".to_string(),
+                },
+            ));
         }
 
         // Check if company name already exists
         let name_exists = self.company_repository.name_exists(&args.name)?;
         if name_exists {
-            return Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                field: "name".to_string(),
-                message: "Company name already exists".to_string(),
-            }));
+            return Err(DomainError::new(
+                crate::domain::shared::errors::DomainErrorKind::ValidationError {
+                    field: "name".to_string(),
+                    message: "Company name already exists".to_string(),
+                },
+            ));
         }
 
         // Create the company
-        let mut company = Company::new(
-            code,
-            args.name,
-            args.created_by,
-        )?;
+        let mut company = Company::new(code, args.name, args.created_by)?;
 
         // Set optional fields
         if let Some(description) = args.description {
@@ -102,7 +100,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use crate::infrastructure::persistence::company_repository::FileCompanyRepository;
     use tempfile::TempDir;
 

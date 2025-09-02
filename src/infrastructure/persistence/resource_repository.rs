@@ -284,8 +284,8 @@ impl ResourceRepository for FileResourceRepository {
 
         if let Ok(project) = project_repo.load()
             && let Some(vacation_rules) = project.vacation_rules()
-            // TODO: Implement layoff_periods in the new VacationRules
-            // && let Some(layoff_periods) = &vacation_rules.layoff_periods
+        // TODO: Implement layoff_periods in the new VacationRules
+        // && let Some(layoff_periods) = &vacation_rules.layoff_periods
         {
             // For now, we'll just return false since layoff_periods is not implemented
             return false;

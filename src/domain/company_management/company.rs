@@ -5,7 +5,7 @@ use uuid7;
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 
 /// Represents a company entity in the system.
-/// 
+///
 /// A company is an aggregate root that can have multiple projects,
 /// resources, and other business entities associated with it.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -42,11 +42,12 @@ pub struct Company {
     pub created_by: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum CompanySize {
-    Small,      // 1-50 employees
-    Medium,     // 51-250 employees
-    Large,      // 251+ employees
+    Small, // 1-50 employees
+    #[default]
+    Medium, // 51-250 employees
+    Large, // 251+ employees
 }
 
 impl std::fmt::Display for CompanySize {
@@ -59,8 +60,9 @@ impl std::fmt::Display for CompanySize {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum CompanyStatus {
+    #[default]
     Active,
     Inactive,
     Suspended,
@@ -78,11 +80,7 @@ impl std::fmt::Display for CompanyStatus {
 
 impl Company {
     /// Creates a new company instance.
-    pub fn new(
-        code: String,
-        name: String,
-        created_by: String,
-    ) -> Result<Self, DomainError> {
+    pub fn new(code: String, name: String, created_by: String) -> Result<Self, DomainError> {
         if code.trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "code".to_string(),
@@ -98,7 +96,7 @@ impl Company {
         }
 
         let now = Utc::now();
-        
+
         Ok(Self {
             id: uuid7::uuid7().to_string(),
             code,
@@ -207,18 +205,6 @@ impl Company {
     }
 }
 
-impl Default for CompanySize {
-    fn default() -> Self {
-        CompanySize::Medium
-    }
-}
-
-impl Default for CompanyStatus {
-    fn default() -> Self {
-        CompanyStatus::Active
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -229,7 +215,8 @@ mod tests {
             "COMP-001".to_string(),
             "TechConsulting Ltda".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(company.code(), "COMP-001");
         assert_eq!(company.name(), "TechConsulting Ltda");
@@ -251,11 +238,7 @@ mod tests {
 
     #[test]
     fn test_company_creation_empty_name() {
-        let result = Company::new(
-            "COMP-001".to_string(),
-            "".to_string(),
-            "user@example.com".to_string(),
-        );
+        let result = Company::new("COMP-001".to_string(), "".to_string(), "user@example.com".to_string());
 
         assert!(result.is_err());
     }
@@ -266,7 +249,8 @@ mod tests {
             "COMP-001".to_string(),
             "TechConsulting Ltda".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         company.update_name("New Company Name".to_string()).unwrap();
         assert_eq!(company.name(), "New Company Name");
@@ -278,7 +262,8 @@ mod tests {
             "COMP-001".to_string(),
             "TechConsulting Ltda".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let result = company.update_name("".to_string());
         assert!(result.is_err());
@@ -290,7 +275,8 @@ mod tests {
             "COMP-001".to_string(),
             "TechConsulting Ltda".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         company.change_status(CompanyStatus::Inactive);
         assert!(!company.is_active());

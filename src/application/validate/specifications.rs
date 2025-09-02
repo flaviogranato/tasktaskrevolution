@@ -1,8 +1,6 @@
 use crate::domain::{
-    project_management::any_project::AnyProject,
-    resource_management::any_resource::AnyResource,
-    company_management::company::Company,
-    shared::specification::Specification,
+    company_management::company::Company, project_management::any_project::AnyProject,
+    resource_management::any_resource::AnyResource, shared::specification::Specification,
 };
 
 /// Specification to check if a project has valid date range
@@ -97,9 +95,9 @@ pub struct ValidResourceVacationSpec;
 impl Specification<AnyResource> for ValidResourceVacationSpec {
     fn is_satisfied_by(&self, resource: &AnyResource) -> bool {
         if let Some(vacations) = resource.vacations() {
-            vacations.iter().all(|period| {
-                period.start_date.date_naive() < period.end_date.date_naive()
-            })
+            vacations
+                .iter()
+                .all(|period| period.start_date.date_naive() < period.end_date.date_naive())
         } else {
             true // No vacations means valid
         }
@@ -113,9 +111,7 @@ impl Specification<AnyResource> for ValidResourceVacationSpec {
         if let Some(vacations) = resource.vacations() {
             let invalid_vacations: Vec<_> = vacations
                 .iter()
-                .filter(|period| {
-                    period.start_date.date_naive() >= period.end_date.date_naive()
-                })
+                .filter(|period| period.start_date.date_naive() >= period.end_date.date_naive())
                 .collect();
 
             if invalid_vacations.is_empty() {
@@ -193,10 +189,7 @@ impl Specification<AnyProject> for ProjectHasAssignedResourcesSpec {
 
     fn explain_why_not_satisfied(&self, project: &AnyProject) -> Option<String> {
         if project.resources().is_empty() {
-            Some(format!(
-                "Project '{}' has no assigned resources",
-                project.code()
-            ))
+            Some(format!("Project '{}' has no assigned resources", project.code()))
         } else {
             None
         }
@@ -217,10 +210,7 @@ impl Specification<AnyProject> for ProjectHasTasksSpec {
 
     fn explain_why_not_satisfied(&self, project: &AnyProject) -> Option<String> {
         if project.tasks().is_empty() {
-            Some(format!(
-                "Project '{}' has no tasks",
-                project.code()
-            ))
+            Some(format!("Project '{}' has no tasks", project.code()))
         } else {
             None
         }

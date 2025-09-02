@@ -283,73 +283,73 @@ impl ProjectDashboard {
             recommendations: Vec::new(),
         }
     }
-    
+
     pub fn add_chart(&mut self, chart: Chart) {
         self.charts.push(chart);
     }
-    
+
     pub fn add_alert(&mut self, alert: Alert) {
         self.alerts.push(alert);
     }
-    
+
     pub fn add_recommendation(&mut self, recommendation: Recommendation) {
         self.recommendations.push(recommendation);
     }
-    
+
     pub fn get_critical_alerts(&self) -> Vec<&Alert> {
         self.alerts.iter()
             .filter(|alert| alert.severity == AlertSeverity::Critical)
             .collect()
     }
-    
+
     pub fn get_unacknowledged_alerts(&self) -> Vec<&Alert> {
         self.alerts.iter()
             .filter(|alert| !alert.acknowledged)
             .collect()
     }
-    
+
     pub fn get_high_priority_recommendations(&self) -> Vec<&Recommendation> {
         self.recommendations.iter()
             .filter(|rec| matches!(rec.priority, RecommendationPriority::High | RecommendationPriority::Critical))
             .collect()
     }
-    
+
     pub fn calculate_overall_health_score(&self) -> f64 {
         let mut total_score = 0.0;
         let mut weight_sum = 0.0;
-        
+
         // Schedule Performance (30%)
         let schedule_score = self.calculate_schedule_score();
         total_score += schedule_score * 0.3;
         weight_sum += 0.3;
-        
+
         // Cost Performance (25%)
         let cost_score = self.calculate_cost_score();
         total_score += cost_score * 0.25;
         weight_sum += 0.25;
-        
+
         // Resource Performance (20%)
         let resource_score = self.calculate_resource_score();
         total_score += resource_score * 0.2;
         weight_sum += 0.2;
-        
+
         // Quality Performance (15%)
         let quality_score = self.calculate_quality_score();
         total_score += quality_score * 0.15;
         weight_sum += 0.15;
-        
+
         // Risk Performance (10%)
         let risk_score = self.calculate_risk_score();
         total_score += risk_score * 0.1;
         weight_sum += 0.1;
-        
+
         if weight_sum > 0.0 {
             total_score / weight_sum
         } else {
             0.0
         }
     }
-    
+
     fn calculate_schedule_score(&self) -> f64 {
         if let Some(spi) = self.metrics.schedule_performance.schedule_performance_index {
             if spi >= 1.0 {
@@ -365,7 +365,7 @@ impl ProjectDashboard {
             50.0 // Default score if SPI not available
         }
     }
-    
+
     fn calculate_cost_score(&self) -> f64 {
         if let Some(cpi) = self.metrics.cost_performance.cost_performance_index {
             if cpi >= 1.0 {
@@ -381,32 +381,32 @@ impl ProjectDashboard {
             50.0 // Default score if CPI not available
         }
     }
-    
+
     fn calculate_resource_score(&self) -> f64 {
         let utilization = self.metrics.resource_performance.resource_utilization;
         let overallocation_penalty = self.metrics.resource_performance.overallocation_count as f64 * 5.0;
         let underallocation_penalty = self.metrics.resource_performance.underallocation_count as f64 * 2.0;
-        
+
         let base_score = utilization * 100.0;
         let final_score = base_score - overallocation_penalty - underallocation_penalty;
-        
+
         final_score.max(0.0).min(100.0)
     }
-    
+
     fn calculate_quality_score(&self) -> f64 {
         let quality_score = self.metrics.quality_metrics.quality_score;
         let defect_penalty = self.metrics.quality_metrics.defect_rate * 50.0;
-        
+
         let final_score = quality_score - defect_penalty;
         final_score.max(0.0).min(100.0)
     }
-    
+
     fn calculate_risk_score(&self) -> f64 {
         let base_score = 100.0;
         let high_risk_penalty = self.metrics.risk_metrics.high_risk_count as f64 * 15.0;
         let medium_risk_penalty = self.metrics.risk_metrics.medium_risk_count as f64 * 8.0;
         let low_risk_penalty = self.metrics.risk_metrics.low_risk_count as f64 * 3.0;
-        
+
         let final_score = base_score - high_risk_penalty - medium_risk_penalty - low_risk_penalty;
         final_score.max(0.0).min(100.0)
     }
@@ -431,17 +431,17 @@ impl Alert {
             acknowledged_at: None,
         }
     }
-    
+
     pub fn acknowledge(&mut self, user_id: String) {
         self.acknowledged = true;
         self.acknowledged_by = Some(user_id);
         self.acknowledged_at = Some(Utc::now());
     }
-    
+
     pub fn is_critical(&self) -> bool {
         self.severity == AlertSeverity::Critical
     }
-    
+
     pub fn requires_immediate_action(&self) -> bool {
         matches!(self.severity, AlertSeverity::Error | AlertSeverity::Critical)
     }
@@ -468,22 +468,22 @@ impl Recommendation {
             implementation_steps,
         }
     }
-    
+
     pub fn is_high_priority(&self) -> bool {
         matches!(self.priority, RecommendationPriority::High | RecommendationPriority::Critical)
     }
-    
+
     pub fn calculate_roi(&self) -> f64 {
         let total_cost_impact = self.impact.cost_impact.abs();
         let effort_cost = self.effort.estimated_hours * 100.0; // Assuming $100/hour
-        
+
         if effort_cost > 0.0 {
             total_cost_impact / effort_cost
         } else {
             0.0
         }
     }
-    
+
     pub fn get_implementation_summary(&self) -> String {
         format!(
             "Effort: {:.1} hours, Timeline: {} days, ROI: {:.2}",
@@ -516,7 +516,7 @@ impl Report {
             checksum: Some(calculate_checksum(&content)),
         }
     }
-    
+
     pub fn get_file_extension(&self) -> &'static str {
         match self.format {
             ReportFormat::Html => "html",
@@ -525,7 +525,7 @@ impl Report {
             ReportFormat::Text => "txt",
         }
     }
-    
+
     pub fn get_mime_type(&self) -> &'static str {
         match self.format {
             ReportFormat::Html => "text/html",
@@ -534,7 +534,7 @@ impl Report {
             ReportFormat::Text => "text/plain",
         }
     }
-    
+
     pub fn is_exportable(&self) -> bool {
         matches!(self.format, ReportFormat::Csv | ReportFormat::Json | ReportFormat::Text)
     }
@@ -635,7 +635,7 @@ impl Default for RiskMetrics {
 fn calculate_checksum(content: &str) -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     content.hash(&mut hasher);
     format!("{:x}", hasher.finish())
@@ -648,7 +648,7 @@ fn calculate_checksum(content: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_project_dashboard_creation() {
         let dashboard = ProjectDashboard::new(
@@ -656,7 +656,7 @@ mod tests {
             "COMP-001".to_string(),
             "user-001".to_string(),
         );
-        
+
         assert_eq!(dashboard.project_id, "PROJ-001");
         assert_eq!(dashboard.company_code, "COMP-001");
         assert_eq!(dashboard.generated_by, "user-001");
@@ -664,7 +664,7 @@ mod tests {
         assert!(dashboard.alerts.is_empty());
         assert!(dashboard.recommendations.is_empty());
     }
-    
+
     #[test]
     fn test_alert_creation() {
         let alert = Alert::new(
@@ -673,14 +673,14 @@ mod tests {
             "Project Delay".to_string(),
             "Project is behind schedule by 5 days".to_string(),
         );
-        
+
         assert_eq!(alert.severity, AlertSeverity::Warning);
         assert_eq!(alert.category, AlertCategory::Schedule);
         assert_eq!(alert.title, "Project Delay");
         assert!(!alert.acknowledged);
         assert!(alert.acknowledged_by.is_none());
     }
-    
+
     #[test]
     fn test_alert_acknowledgment() {
         let mut alert = Alert::new(
@@ -689,16 +689,16 @@ mod tests {
             "Budget Overrun".to_string(),
             "Project costs exceed budget by 15%".to_string(),
         );
-        
+
         assert!(!alert.acknowledged);
-        
+
         alert.acknowledge("manager-001".to_string());
-        
+
         assert!(alert.acknowledged);
         assert_eq!(alert.acknowledged_by, Some("manager-001".to_string()));
         assert!(alert.acknowledged_at.is_some());
     }
-    
+
     #[test]
     fn test_alert_severity_checks() {
         let critical_alert = Alert::new(
@@ -707,21 +707,21 @@ mod tests {
             "Critical Risk".to_string(),
             "High-risk event detected".to_string(),
         );
-        
+
         let warning_alert = Alert::new(
             AlertSeverity::Warning,
             AlertCategory::Quality,
             "Quality Issue".to_string(),
             "Minor quality concern".to_string(),
         );
-        
+
         assert!(critical_alert.is_critical());
         assert!(!warning_alert.is_critical());
-        
+
         assert!(critical_alert.requires_immediate_action());
         assert!(!warning_alert.requires_immediate_action());
     }
-    
+
     #[test]
     fn test_recommendation_creation() {
         let impact = RecommendationImpact {
@@ -730,14 +730,14 @@ mod tests {
             quality_impact: 0.1,
             risk_impact: -0.2,
         };
-        
+
         let effort = RecommendationEffort {
             estimated_hours: 40.0,
             required_skills: vec!["Project Management".to_string()],
             dependencies: vec!["Approval from Stakeholders".to_string()],
             timeline: Duration::days(5),
         };
-        
+
         let recommendation = Recommendation::new(
             RecommendationPriority::High,
             RecommendationCategory::CostReduction,
@@ -751,25 +751,25 @@ mod tests {
                 "Implement changes".to_string(),
             ],
         );
-        
+
         assert_eq!(recommendation.priority, RecommendationPriority::High);
         assert_eq!(recommendation.category, RecommendationCategory::CostReduction);
         assert!(recommendation.is_high_priority());
-        
+
         let roi = recommendation.calculate_roi();
         assert!(roi > 0.0);
-        
+
         let summary = recommendation.get_implementation_summary();
         assert!(summary.contains("40.0 hours"));
         assert!(summary.contains("5 days"));
     }
-    
+
     #[test]
     fn test_report_creation() {
         let mut parameters = HashMap::new();
         parameters.insert("start_date".to_string(), "2024-01-01".to_string());
         parameters.insert("end_date".to_string(), "2024-12-31".to_string());
-        
+
         let report = Report::new(
             "Monthly Status Report".to_string(),
             ReportType::ProjectStatus,
@@ -778,18 +778,18 @@ mod tests {
             "user-001".to_string(),
             parameters,
         );
-        
+
         assert_eq!(report.name, "Monthly Status Report");
         assert_eq!(report.report_type, ReportType::ProjectStatus);
         assert_eq!(report.format, ReportFormat::Html);
         assert_eq!(report.get_file_extension(), "html");
         assert_eq!(report.get_mime_type(), "text/html");
         assert!(!report.is_exportable());
-        
+
         assert_eq!(report.parameters.len(), 2);
         assert_eq!(report.parameters.get("start_date"), Some(&"2024-01-01".to_string()));
     }
-    
+
     #[test]
     fn test_csv_report_export() {
         let report = Report::new(
@@ -800,12 +800,12 @@ mod tests {
             "user-001".to_string(),
             HashMap::new(),
         );
-        
+
         assert_eq!(report.get_file_extension(), "csv");
         assert_eq!(report.get_mime_type(), "text/csv");
         assert!(report.is_exportable());
     }
-    
+
     #[test]
     fn test_dashboard_health_score_calculation() {
         let mut dashboard = ProjectDashboard::new(
@@ -813,7 +813,7 @@ mod tests {
             "COMP-001".to_string(),
             "user-001".to_string(),
         );
-        
+
         // Configurar métricas para um projeto saudável
         dashboard.metrics.schedule_performance.schedule_performance_index = Some(1.1);
         dashboard.metrics.cost_performance.cost_performance_index = Some(1.05);
@@ -825,16 +825,16 @@ mod tests {
         dashboard.metrics.risk_metrics.high_risk_count = 0;
         dashboard.metrics.risk_metrics.medium_risk_count = 1;
         dashboard.metrics.risk_metrics.low_risk_count = 2;
-        
+
         let health_score = dashboard.calculate_overall_health_score();
-        
+
         // Score deve estar entre 0 e 100
         assert!(health_score >= 0.0 && health_score <= 100.0);
-        
+
         // Para um projeto com métricas boas, o score deve ser alto
         assert!(health_score > 70.0);
     }
-    
+
     #[test]
     fn test_dashboard_critical_alerts() {
         let mut dashboard = ProjectDashboard::new(
@@ -842,28 +842,28 @@ mod tests {
             "COMP-001".to_string(),
             "user-001".to_string(),
         );
-        
+
         let critical_alert = Alert::new(
             AlertSeverity::Critical,
             AlertCategory::Risk,
             "Critical Risk".to_string(),
             "High-risk event detected".to_string(),
         );
-        
+
         let warning_alert = Alert::new(
             AlertSeverity::Warning,
             AlertCategory::Schedule,
             "Minor Delay".to_string(),
             "Project slightly behind schedule".to_string(),
         );
-        
+
         dashboard.add_alert(critical_alert);
         dashboard.add_alert(warning_alert);
-        
+
         let critical_alerts = dashboard.get_critical_alerts();
         assert_eq!(critical_alerts.len(), 1);
         assert_eq!(critical_alerts[0].severity, AlertSeverity::Critical);
-        
+
         let unacknowledged = dashboard.get_unacknowledged_alerts();
         assert_eq!(unacknowledged.len(), 2);
     }

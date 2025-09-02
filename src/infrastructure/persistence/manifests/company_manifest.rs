@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 use crate::domain::company_management::company::{Company, CompanySize, CompanyStatus};
 
@@ -155,10 +155,11 @@ mod tests {
             "COMP-001".to_string(),
             "TechConsulting Ltda".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let manifest = CompanyManifest::from(&company);
-        
+
         assert_eq!(manifest.api_version, "company.tasktaskrevolution.io/v1");
         assert_eq!(manifest.kind, "Company");
         assert_eq!(manifest.metadata.code, "COMP-001");
@@ -174,7 +175,8 @@ mod tests {
             "COMP-002".to_string(),
             "Outra Empresa Ltda".to_string(),
             "admin@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let manifest = CompanyManifest::from(&original_company);
         let converted_company = manifest.to();
@@ -190,7 +192,7 @@ mod tests {
     #[test]
     fn test_company_size_manifest_conversion() {
         let sizes = vec![CompanySize::Small, CompanySize::Medium, CompanySize::Large];
-        
+
         for size in sizes {
             let manifest = CompanySizeManifest::from(&size);
             let converted = manifest.to();
@@ -201,7 +203,7 @@ mod tests {
     #[test]
     fn test_company_status_manifest_conversion() {
         let statuses = vec![CompanyStatus::Active, CompanyStatus::Inactive, CompanyStatus::Suspended];
-        
+
         for status in statuses {
             let manifest = CompanyStatusManifest::from(&status);
             let converted = manifest.to();

@@ -173,7 +173,7 @@ mod tests {
         let invalid_item = MockValidatable::new("test", 42, false);
         let result = <MockValidatable as Validatable>::validate(&invalid_item);
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Validation failed for test"));
         }
@@ -220,7 +220,7 @@ mod tests {
         let item = MockValidatable::new("", 42, true);
         let result = validator.validate(&item);
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Name cannot be empty"));
         }
@@ -272,8 +272,7 @@ mod tests {
 
     #[test]
     fn test_composite_validator_add() {
-        let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator));
+        let validator = CompositeValidator::<MockValidatable>::new().add(Box::new(NameValidator));
         assert_eq!(validator.validators.len(), 1);
     }
 
@@ -283,9 +282,8 @@ mod tests {
             Box::new(NameValidator) as Box<dyn Validator<MockValidatable>>,
             Box::new(ValueValidator) as Box<dyn Validator<MockValidatable>>,
         ];
-        
-        let validator = CompositeValidator::<MockValidatable>::new()
-            .add_all(validators);
+
+        let validator = CompositeValidator::<MockValidatable>::new().add_all(validators);
         assert_eq!(validator.validators.len(), 2);
     }
 
@@ -294,7 +292,7 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("test", 42, true);
         assert!(validator.validate(&item).is_ok());
     }
@@ -304,11 +302,11 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("", 42, true);
         let result = validator.validate(&item);
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Name cannot be empty"));
         }
@@ -319,11 +317,11 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("test", -1, true);
         let result = validator.validate(&item);
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Value must be non-negative"));
         }
@@ -334,11 +332,11 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("", -1, true);
         let result = validator.validate(&item);
         assert!(result.is_err());
-        
+
         // Should fail on first validation error (NameValidator)
         if let Err(err) = result {
             assert!(err.to_string().contains("Name cannot be empty"));
@@ -350,7 +348,7 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("test", 42, true);
         assert!(validator.is_valid(&item));
     }
@@ -360,7 +358,7 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("", 42, true);
         assert!(!validator.is_valid(&item));
     }
@@ -370,7 +368,7 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("test", 42, true);
         let errors = validator.validation_errors(&item);
         assert!(errors.is_empty());
@@ -381,7 +379,7 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("", 42, true);
         let errors = validator.validation_errors(&item);
         assert_eq!(errors.len(), 1);
@@ -402,7 +400,7 @@ mod tests {
     fn test_validatable_as_validator() {
         let item = MockValidatable::new("test", 42, true);
         let validator: &dyn Validator<MockValidatable> = &item;
-        
+
         assert!(validator.validate(&item).is_ok());
         assert!(validator.is_valid(&item));
         assert!(validator.validation_errors(&item).is_empty());
@@ -412,11 +410,11 @@ mod tests {
     fn test_validatable_as_validator_failure() {
         let item = MockValidatable::new("test", 42, false);
         let validator: &dyn Validator<MockValidatable> = &item;
-        
+
         let result = validator.validate(&item);
         assert!(result.is_err());
         assert!(!validator.is_valid(&item));
-        
+
         let errors = validator.validation_errors(&item);
         assert_eq!(errors.len(), 1);
         assert!(errors[0].contains("Validation failed for test"));
@@ -429,16 +427,16 @@ mod tests {
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator))
             .add(Box::new(CompositeTestValidator));
-        
+
         assert_eq!(validator.validators.len(), 3);
-        
+
         let valid_item = MockValidatable::new("test", 42, true);
         assert!(validator.validate(&valid_item).is_ok());
-        
+
         let invalid_name_item = MockValidatable::new("invalid", 42, true);
         let result = validator.validate(&invalid_name_item);
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Special invalid name"));
         }
@@ -446,14 +444,11 @@ mod tests {
 
     #[test]
     fn test_validator_trait_objects() {
-        let validators: Vec<Box<dyn Validator<MockValidatable>>> = vec![
-            Box::new(NameValidator),
-            Box::new(ValueValidator),
-        ];
-        
-        let validator = CompositeValidator::<MockValidatable>::new()
-            .add_all(validators);
-        
+        let validators: Vec<Box<dyn Validator<MockValidatable>>> =
+            vec![Box::new(NameValidator), Box::new(ValueValidator)];
+
+        let validator = CompositeValidator::<MockValidatable>::new().add_all(validators);
+
         let item = MockValidatable::new("test", 42, true);
         assert!(validator.validate(&item).is_ok());
     }
@@ -463,11 +458,11 @@ mod tests {
         let validator = CompositeValidator::<MockValidatable>::new()
             .add(Box::new(NameValidator))
             .add(Box::new(ValueValidator));
-        
+
         let item = MockValidatable::new("", -1, true);
         let result = validator.validate(&item);
         assert!(result.is_err());
-        
+
         // Should fail on first validation error and not continue
         if let Err(err) = result {
             assert!(err.to_string().contains("Name cannot be empty"));

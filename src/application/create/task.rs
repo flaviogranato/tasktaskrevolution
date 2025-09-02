@@ -172,7 +172,7 @@ mod test {
         assert!(result.is_ok());
         let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
         assert_eq!(project.tasks().len(), 1);
-        
+
         // Find the task by iterating through all tasks since we don't know the exact code
         let task = project.tasks().values().next().unwrap();
         assert_eq!(task.name(), "Implementar autenticação");
@@ -214,7 +214,10 @@ mod test {
 
         assert!(result.is_err());
         if let Err(e) = result {
-            assert!(e.to_string().contains("Data de início não pode ser posterior à data de vencimento"));
+            assert!(
+                e.to_string()
+                    .contains("Data de início não pode ser posterior à data de vencimento")
+            );
         }
     }
 
@@ -227,8 +230,8 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task with same dates".to_string(),
-            start_date: start_date,    // Use the same date for both
-            due_date: start_date,      // Use the same date for both
+            start_date: start_date, // Use the same date for both
+            due_date: start_date,   // Use the same date for both
             assigned_resources: vec![],
         };
         let result = use_case.execute(args);
@@ -236,7 +239,7 @@ mod test {
         if let Err(e) = &result {
             eprintln!("Error creating task with same dates: {}", e);
         }
-        
+
         assert!(result.is_ok(), "Expected Ok, but got Err: {:?}", result);
     }
 
@@ -259,7 +262,7 @@ mod test {
         let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
         // Count should be 1 since we're starting with a fresh project
         assert_eq!(project.tasks().len(), 1);
-        
+
         // Find the task by iterating through all tasks since we don't know the exact code
         let task = project.tasks().values().next().unwrap();
         assert_eq!(task.name(), "Task without resources");
@@ -284,7 +287,7 @@ mod test {
         let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
         // Count should be 1 since we're starting with a fresh project
         assert_eq!(project.tasks().len(), 1);
-        
+
         // Find the task by iterating through all tasks since we don't know the exact code
         let task = project.tasks().values().next().unwrap();
         assert_eq!(task.name(), "Task with multiple resources");

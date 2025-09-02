@@ -1,6 +1,6 @@
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use crate::domain::company_settings::Config;
 use crate::domain::company_settings::repository::ConfigRepository;
+use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use std::boxed::Box;
 
 /// Data structure for initializing a manager/consultant
@@ -30,11 +30,7 @@ impl InitManagerUseCase {
         self.validate_input(&data)?;
 
         // Create company config
-        let mut config = Config::new(
-            data.name.clone(),
-            data.email.clone(),
-            data.timezone.clone(),
-        );
+        let mut config = Config::new(data.name.clone(), data.email.clone(), data.timezone.clone());
 
         // Set company name
         config = config.with_company_name(data.company_name.clone());
@@ -144,11 +140,13 @@ mod tests {
         }
 
         fn load(&self) -> Result<(Config, PathBuf), DomainError> {
-            self.saved_config.borrow().clone().map(|c| {
-                (c, PathBuf::from("/tmp"))
-            }).ok_or(DomainError::new(DomainErrorKind::ConfigurationMissing {
-                field: "config".to_string()
-            }))
+            self.saved_config
+                .borrow()
+                .clone()
+                .map(|c| (c, PathBuf::from("/tmp")))
+                .ok_or(DomainError::new(DomainErrorKind::ConfigurationMissing {
+                    field: "config".to_string(),
+                }))
         }
     }
 
@@ -203,7 +201,7 @@ mod tests {
     #[test]
     fn test_validate_work_hours_success() {
         let use_case = InitManagerUseCase::new(Box::new(MockConfigRepository::new()));
-        
+
         let result = use_case.validate_work_hours("08:00", "18:00");
         assert!(result.is_ok());
     }
@@ -211,10 +209,10 @@ mod tests {
     #[test]
     fn test_validate_work_hours_empty() {
         let use_case = InitManagerUseCase::new(Box::new(MockConfigRepository::new()));
-        
+
         let result = use_case.validate_work_hours("", "18:00");
         assert!(result.is_err());
-        
+
         let result = use_case.validate_work_hours("08:00", "");
         assert!(result.is_err());
     }
@@ -222,7 +220,7 @@ mod tests {
     #[test]
     fn test_is_valid_email() {
         let use_case = InitManagerUseCase::new(Box::new(MockConfigRepository::new()));
-        
+
         assert!(use_case.is_valid_email("test@example.com"));
         assert!(use_case.is_valid_email("user.name@domain.co.uk"));
         assert!(!use_case.is_valid_email("invalid-email"));
@@ -235,7 +233,7 @@ mod tests {
     fn test_init_manager_success() {
         let mock_repo = MockConfigRepository::new();
         let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-        
+
         let init_data = InitManagerData {
             name: "João Silva".to_string(),
             email: "joao.silva@consultoria.com".to_string(),
@@ -247,7 +245,7 @@ mod tests {
 
         let result = use_case.execute(init_data);
         assert!(result.is_ok());
-        
+
         let config = result.unwrap();
         assert_eq!(config.manager_name, "João Silva");
         assert_eq!(config.manager_email, "joao.silva@consultoria.com");

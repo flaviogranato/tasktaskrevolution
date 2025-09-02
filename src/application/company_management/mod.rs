@@ -1,3 +1,3 @@
 pub mod create_company;
 
-pub use create_company::{CreateCompanyUseCase, CreateCompanyArgs};
+pub use create_company::{CreateCompanyArgs, CreateCompanyUseCase};

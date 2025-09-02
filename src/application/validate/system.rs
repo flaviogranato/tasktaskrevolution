@@ -1,15 +1,13 @@
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository,
-    company_management::repository::CompanyRepository,
-    shared::errors::DomainError,
-};
-use super::types::ValidationResult;
-use super::entities::ValidateEntitiesUseCase;
 use super::business_rules::ValidateBusinessRulesUseCase;
 use super::data_integrity::ValidateDataIntegrityUseCase;
+use super::entities::ValidateEntitiesUseCase;
+use super::types::ValidationResult;
+use crate::domain::{
+    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
+    resource_management::repository::ResourceRepository, shared::errors::DomainError,
+};
 
-pub struct ValidateSystemUseCase<P, R, C> 
+pub struct ValidateSystemUseCase<P, R, C>
 where
     P: ProjectRepository,
     R: ResourceRepository,
@@ -86,9 +84,18 @@ where
     }
 
     fn print_summary(&self, results: &[ValidationResult]) {
-        let errors = results.iter().filter(|r| matches!(r.severity, super::types::ValidationSeverity::Error)).count();
-        let warnings = results.iter().filter(|r| matches!(r.severity, super::types::ValidationSeverity::Warning)).count();
-        let info = results.iter().filter(|r| matches!(r.severity, super::types::ValidationSeverity::Info)).count();
+        let errors = results
+            .iter()
+            .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Error))
+            .count();
+        let warnings = results
+            .iter()
+            .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Warning))
+            .count();
+        let info = results
+            .iter()
+            .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Info))
+            .count();
 
         println!("\nVALIDATION SUMMARY:");
         println!("===================");
