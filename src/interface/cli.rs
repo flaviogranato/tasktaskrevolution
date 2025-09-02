@@ -1,4 +1,3 @@
-use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::company_settings::repository::ConfigRepository;
 use crate::{
     application::{
@@ -87,11 +86,6 @@ enum Commands {
         #[clap(subcommand)]
         create_command: CreateCommands,
     },
-    /// Manage companies (list, describe, update, delete)
-    Company {
-        #[clap(subcommand)]
-        company_command: CompanyCommands,
-    },
     /// List entities (projects, resources, tasks)
     #[clap(alias = "l")]
     List {
@@ -130,44 +124,6 @@ enum Commands {
     Task {
         #[clap(subcommand)]
         task_command: TaskCommands,
-    },
-}
-
-#[derive(Subcommand, Debug)]
-pub enum CompanyCommands {
-    /// List all companies
-    #[clap(alias = "l")]
-    List,
-    /// Describe a company's details
-    #[clap(alias = "d")]
-    Describe {
-        code: String,
-    },
-    /// Update a company's details
-    #[clap(alias = "u")]
-    Update {
-        code: String,
-        #[clap(long, value_name = "NAME")]
-        name: Option<String>,
-        #[clap(long, value_name = "DESCRIPTION")]
-        description: Option<String>,
-        #[clap(long, value_name = "TAX_ID")]
-        tax_id: Option<String>,
-        #[clap(long, value_name = "ADDRESS")]
-        address: Option<String>,
-        #[clap(long, value_name = "EMAIL")]
-        email: Option<String>,
-        #[clap(long, value_name = "PHONE")]
-        phone: Option<String>,
-        #[clap(long, value_name = "WEBSITE")]
-        website: Option<String>,
-        #[clap(long, value_name = "INDUSTRY")]
-        industry: Option<String>,
-    },
-    /// Delete a company
-    #[clap(alias = "del")]
-    Delete {
-        code: String,
     },
 }
 
@@ -453,171 +409,6 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             }
             Ok(())
         }
-        Commands::Company { company_command } => match company_command {
-
-            CompanyCommands::List => {
-                let repository = FileCompanyRepository::new(".");
-                match repository.find_all() {
-                    Ok(companies) => {
-                        if companies.is_empty() {
-                            println!("No companies found.");
-                        } else {
-                            println!("Companies found ({}):", companies.len());
-                            println!();
-                            for company in companies {
-                                println!("Code: {}", company.code);
-                                println!("Name: {}", company.name);
-                                if let Some(desc) = &company.description {
-                                    println!("Description: {}", desc);
-                                }
-                                println!("Status: {}", company.status);
-                                println!("Size: {}", company.size);
-                                println!("---");
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("Error listing companies: {}", e);
-                        return Err(e.into());
-                    }
-                }
-                Ok(())
-            }
-            CompanyCommands::Describe { code } => {
-                let repository = FileCompanyRepository::new(".");
-                match repository.find_by_code(code) {
-                    Ok(Some(company)) => {
-                        println!("Name:         {}", company.name);
-                        println!("Code:         {}", company.code);
-                        println!("ID:           {}", company.id);
-                        if let Some(desc) = &company.description {
-                            println!("Description:  {}", desc);
-                        }
-                        if let Some(cnpj) = &company.tax_id {
-                            println!("Tax ID:       {}", cnpj);
-                        }
-                        if let Some(addr) = &company.address {
-                            println!("Address:      {}", addr);
-                        }
-                        if let Some(mail) = &company.email {
-                            println!("Email:        {}", mail);
-                        }
-                        if let Some(tel) = &company.phone {
-                            println!("Phone:        {}", tel);
-                        }
-                        if let Some(site) = &company.website {
-                            println!("Website:      {}", site);
-                        }
-                        if let Some(ind) = &company.industry {
-                            println!("Industry:     {}", ind);
-                        }
-                        println!("Size:         {}", company.size);
-                        println!("Status:       {}", company.status);
-                        println!("Created By:   {}", company.created_by);
-                        println!("Created At:   {}", company.created_at);
-                        println!("Updated At:   {}", company.updated_at);
-                    }
-                    Ok(None) => {
-                        eprintln!("Company with code '{}' not found.", code);
-                        return Err("Company not found".into());
-                    }
-                    Err(e) => {
-                        eprintln!("Error finding company: {}", e);
-                        return Err(e.into());
-                    }
-                }
-                Ok(())
-            }
-            CompanyCommands::Update {
-                code,
-                name,
-                description,
-                tax_id,
-                address,
-                email,
-                phone,
-                website,
-                industry,
-            } => {
-                let repository = FileCompanyRepository::new(".");
-                match repository.find_by_code(code) {
-                    Ok(Some(mut company)) => {
-                        // Update fields if provided
-                        if let Some(new_name) = name {
-                            company.update_name(new_name.clone())?;
-                        }
-                        if let Some(new_description) = description {
-                            company.update_description(Some(new_description.clone()));
-                        }
-                        if let Some(new_tax_id) = tax_id {
-                            company.update_tax_id(Some(new_tax_id.clone()));
-                        }
-                        if let Some(new_address) = address {
-                            company.update_address(Some(new_address.clone()));
-                        }
-                        if let Some(new_email) = email {
-                            company.update_email(Some(new_email.clone()));
-                        }
-                        if let Some(new_phone) = phone {
-                            company.update_phone(Some(new_phone.clone()));
-                        }
-                        if let Some(new_website) = website {
-                            company.update_website(Some(new_website.clone()));
-                        }
-                        if let Some(new_industry) = industry {
-                            company.update_industry(Some(new_industry.clone()));
-                        }
-
-                        // Save updated company
-                        match repository.update(company.clone()) {
-                            Ok(_) => {
-                                println!("Company '{}' updated successfully!", code);
-                                println!("Name: {}", company.name);
-                                if let Some(desc) = &company.description {
-                                    println!("Description: {}", desc);
-                                }
-                            }
-                            Err(e) => {
-                                eprintln!("Error saving updated company: {}", e);
-                                return Err(e.into());
-                            }
-                        }
-                    }
-                    Ok(None) => {
-                        eprintln!("Company with code '{}' not found.", code);
-                        return Err("Company not found".into());
-                    }
-                    Err(e) => {
-                        eprintln!("Error finding company: {}", e);
-                        return Err(e.into());
-                    }
-                }
-                Ok(())
-            }
-            CompanyCommands::Delete { code } => {
-                let repository = FileCompanyRepository::new(".");
-                match repository.find_by_code(code) {
-                    Ok(Some(_)) => match repository.delete(code) {
-                        Ok(_) => {
-                            println!("Company '{}' deleted successfully!", code);
-                        }
-                        Err(e) => {
-                            eprintln!("Error deleting company: {}", e);
-                            return Err(e.into());
-                        }
-                    },
-                    Ok(None) => {
-                        eprintln!("Company with code '{}' not found.", code);
-                        return Err("Company not found".into());
-                    }
-                    Err(e) => {
-                        eprintln!("Error finding company: {}", e);
-                        return Err(e.into());
-                    }
-                }
-                Ok(())
-            }
-        },
         Commands::Create { create_command } => match create_command {
             CreateCommands::Project { name, description } => {
                 let repository = FileProjectRepository::new();
