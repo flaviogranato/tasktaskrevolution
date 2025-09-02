@@ -676,10 +676,10 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         if projects.is_empty() {
                             println!("No projects found.");
                         } else {
-                            println!("{:<15} {:<30}", "CODE", "NAME");
-                            println!("{:-<15} {:-<30}", "", "");
+                            println!("{:<15} {:<15} {:<30}", "CODE", "COMPANY", "NAME");
+                            println!("{:-<15} {:-<15} {:-<30}", "", "", "");
                             for project in projects {
-                                println!("{:<15} {:<30}", project.code(), project.name());
+                                println!("{:<15} {:<15} {:<30}", project.code(), project.company_code(), project.name());
                             }
                         }
                     }

@@ -87,6 +87,92 @@ impl FileProjectRepository {
         self.load_from_path(&project_path)
     }
 
+    /// Extracts company_code from a project manifest path
+    /// Path format: companies/{company_code}/projects/{project_code}/project.yaml
+    fn extract_company_code_from_path(&self, path: &Path) -> Option<String> {
+        let path_str = path.to_string_lossy();
+        if let Some(companies_pos) = path_str.find("companies/") {
+            let after_companies = &path_str[companies_pos + "companies/".len()..];
+            if let Some(slash_pos) = after_companies.find('/') {
+                return Some(after_companies[..slash_pos].to_string());
+            }
+        }
+        None
+    }
+
+    /// Creates a project from manifest with the correct company_code
+    fn create_project_with_company_code(&self, manifest: ProjectManifest, company_code: &str) -> Result<AnyProject, DomainError> {
+        let code = manifest.metadata.code.ok_or_else(|| {
+            DomainError::new(DomainErrorKind::Generic { message: "Project code is missing in manifest".to_string() })
+        })?;
+        let name = manifest.metadata.name;
+        let description = if manifest.metadata.description.is_empty() {
+            None
+        } else {
+            Some(manifest.metadata.description)
+        };
+        let start_date = manifest.spec.start_date;
+        let end_date = manifest.spec.end_date;
+        let vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
+        let timezone = manifest.spec.timezone;
+
+        // Convert status from manifest
+        let status = match manifest.spec.status {
+            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::Planned => {
+                crate::domain::project_management::project::ProjectStatus::Planned
+            }
+            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::InProgress => {
+                crate::domain::project_management::project::ProjectStatus::InProgress
+            }
+            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::Completed => {
+                crate::domain::project_management::project::ProjectStatus::Completed
+            }
+            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::Cancelled => {
+                crate::domain::project_management::project::ProjectStatus::Cancelled
+            }
+            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::OnHold => {
+                crate::domain::project_management::project::ProjectStatus::Planned // Map OnHold to Planned for now
+            }
+        };
+
+        // Use ProjectBuilder to create the project
+        let mut builder = crate::domain::project_management::builder::ProjectBuilder::new()
+            .code(code)
+            .name(name)
+            .company_code(company_code.to_string())
+            .created_by("system".to_string()); // TODO: Get from manifest or context
+
+        if let Some(desc) = description {
+            builder = builder.description(Some(desc));
+        }
+        if let Some(start) = start_date {
+            // Parse start_date from string to NaiveDate
+            if let Ok(parsed_date) = chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d") {
+                builder = builder.start_date(parsed_date);
+            }
+        }
+        if let Some(end) = end_date {
+            // Parse end_date from string to NaiveDate
+            if let Ok(parsed_date) = chrono::NaiveDate::parse_from_str(&end, "%Y-%m-%d") {
+                builder = builder.end_date(parsed_date);
+            }
+        }
+        if let Some(vr) = vacation_rules {
+            // Convert vacation_rules::VacationRules to project::VacationRules
+            let project_vr = crate::domain::project_management::project::VacationRules {
+                allowed_days_per_year: vr.max_concurrent_vacations.unwrap_or(20),
+                carry_over_days: 5, // Default value
+            };
+            builder = builder.vacation_rules(project_vr);
+        }
+        if let Some(tz) = timezone {
+            builder = builder.timezone(tz);
+        }
+
+        let project = builder.build()?;
+        Ok(AnyProject::from(project))
+    }
+
     /// Carrega e deserializa o manifesto de um projeto de um arquivo YAML.
     fn load_manifest(&self, path: &Path) -> Result<ProjectManifest, Box<dyn Error>> {
         let yaml = fs::read_to_string(path)?;
@@ -238,12 +324,16 @@ impl ProjectRepository for FileProjectRepository {
                 if processed_paths.contains(manifest_path) {
                     continue;
                 }
-                if let Ok(manifest) = self.load_manifest(manifest_path)
-                    && let Ok(mut project) = AnyProject::try_from(manifest)
-                    && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
-                {
-                    projects.push(project);
-                    processed_paths.insert(manifest_path.to_path_buf());
+                if let Ok(manifest) = self.load_manifest(manifest_path) {
+                    // Extract company_code from path: companies/{company_code}/projects/{project_code}/project.yaml
+                    if let Some(company_code) = self.extract_company_code_from_path(manifest_path) {
+                        if let Ok(mut project) = self.create_project_with_company_code(manifest, &company_code)
+                            && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
+                        {
+                            projects.push(project);
+                            processed_paths.insert(manifest_path.to_path_buf());
+                        }
+                    }
                 }
             }
         }
