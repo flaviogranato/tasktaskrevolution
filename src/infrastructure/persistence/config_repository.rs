@@ -44,7 +44,7 @@ impl ConfigRepository for FileConfigRepository {
     fn create_repository_dir(&self, path: PathBuf) -> Result<(), DomainError> {
         if !path.exists() {
             fs::create_dir(path).map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
-            println!("Criado o repositório de configurações.");
+            println!("Configuration repository created.");
         }
         Ok(())
     }

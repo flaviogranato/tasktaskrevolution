@@ -5,7 +5,7 @@ use csv::Writer;
 use std::error::Error;
 use std::io;
 
-/// `TaskReportUseCase` gera um relatório em formato CSV com todas as tarefas.
+/// `TaskReportUseCase` generates a CSV report with all tasks.
 pub struct TaskReportUseCase<P: ProjectRepository> {
     project_repository: P,
 }
@@ -32,53 +32,53 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
         let project = self.project_repository.load()?;
         let tasks: Vec<&AnyTask> = project.tasks().values().collect();
 
-        // Iterar sobre as tarefas e escrever os registros
+        // Iterate over tasks and write records
         for any_task in tasks {
-            // Extrair dados comuns e específicos do estado de cada tarefa
+            // Extract common and state-specific data from each task
             let (code, name, start_date, due_date, assigned_resources, status_str, progress_str) = match any_task {
-                // Zero-copy: sem clone!
+                // Zero-copy: no clone!
                 AnyTask::Planned(task) => (
-                    &task.code,               // Referência
-                    &task.name,               // Referência
-                    task.start_date,          // Copy é OK
-                    task.due_date,            // Copy é OK
-                    &task.assigned_resources, // Referência
+                    &task.code,               // Reference
+                    &task.name,               // Reference
+                    task.start_date,          // Copy is OK
+                    task.due_date,            // Copy is OK
+                    &task.assigned_resources, // Reference
                     "Planned",                // &'static str
                     "0",                      // &'static str
                 ),
                 AnyTask::InProgress(task) => (
-                    &task.code,               // Referência
-                    &task.name,               // Referência
-                    task.start_date,          // Copy é OK
-                    task.due_date,            // Copy é OK
-                    &task.assigned_resources, // Referência
+                    &task.code,               // Reference
+                    &task.name,               // Reference
+                    task.start_date,          // Copy is OK
+                    task.due_date,            // Copy is OK
+                    &task.assigned_resources, // Reference
                     "InProgress",             // &'static str
                     "0",                      // &'static str - simplificado para consistência
                 ),
                 AnyTask::Completed(task) => (
-                    &task.code,               // Referência
-                    &task.name,               // Referência
-                    task.start_date,          // Copy é OK
-                    task.due_date,            // Copy é OK
-                    &task.assigned_resources, // Referência
+                    &task.code,               // Reference
+                    &task.name,               // Reference
+                    task.start_date,          // Copy is OK
+                    task.due_date,            // Copy is OK
+                    &task.assigned_resources, // Reference
                     "Completed",              // &'static str
                     "100",                    // &'static str
                 ),
                 AnyTask::Blocked(task) => (
-                    &task.code,               // Referência
-                    &task.name,               // Referência
-                    task.start_date,          // Copy é OK
-                    task.due_date,            // Copy é OK
-                    &task.assigned_resources, // Referência
+                    &task.code,               // Reference
+                    &task.name,               // Reference
+                    task.start_date,          // Copy is OK
+                    task.due_date,            // Copy is OK
+                    &task.assigned_resources, // Reference
                     "Blocked",                // &'static str
                     "N/A",                    // &'static str
                 ),
                 AnyTask::Cancelled(task) => (
-                    &task.code,               // Referência
-                    &task.name,               // Referência
-                    task.start_date,          // Copy é OK
-                    task.due_date,            // Copy é OK
-                    &task.assigned_resources, // Referência
+                    &task.code,               // Reference
+                    &task.name,               // Reference
+                    task.start_date,          // Copy is OK
+                    task.due_date,            // Copy is OK
+                    &task.assigned_resources, // Reference
                     "Cancelled",              // &'static str
                     "N/A",                    // &'static str
                 ),
@@ -214,7 +214,7 @@ mod tests {
     fn test_task_report_with_all_task_states() {
         use crate::domain::task_management::state::{Blocked, Cancelled, Planned};
 
-        // Criar tarefas com todos os estados
+        // Create tasks with all states
         let planned_task: Task<Planned> = Task {
             id: uuid7(),
             project_code: "PROJ".to_string(),
@@ -295,7 +295,7 @@ mod tests {
 
         let lines_set: std::collections::HashSet<&str> = lines.collect();
 
-        // Verificar todas as variantes de tarefas
+        // Verify all task variants
         assert!(lines_set.contains("TSK-PLAN,Planning Phase,Planned,0,2025-01-01,2025-01-15,"));
         assert!(lines_set.contains("TSK-BLOCK,Blocked Task,Blocked,N/A,2025-01-05,2025-01-20,Developer"));
         assert!(lines_set.contains("TSK-CANCEL,Cancelled Task,Cancelled,N/A,2025-01-10,2025-01-25,"));
@@ -376,7 +376,7 @@ mod tests {
             "Code,Name,Status,Progress,StartDate,DueDate,Assignees"
         );
 
-        // Verificar tarefa sem recursos atribuídos
+        // Verify task without assigned resources
         let task_line = lines.next().unwrap();
         assert!(task_line.contains("TSK-NO-RES,No Resources Task,Planned,0,2025-01-01,2025-01-10,"));
     }
@@ -432,7 +432,7 @@ mod tests {
             "Code,Name,Status,Progress,StartDate,DueDate,Assignees"
         );
 
-        // Verificar tarefa com múltiplos recursos
+        // Verify task with multiple resources
         let task_line = lines.next().unwrap();
         assert!(task_line.contains("TSK-MULTI,Multi Resource Task,InProgress,0,2025-01-01,2025-01-15"));
         assert!(task_line.contains("Alice, Bob, Charlie, Diana"));

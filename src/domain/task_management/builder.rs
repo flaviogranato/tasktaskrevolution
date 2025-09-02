@@ -278,7 +278,7 @@ mod tests {
 
         let task = TaskBuilder::new()
             .project_code("PROJ-TEST")
-            .name("Task multi recursos")
+            .name("Multi-resource task")
             .code("task-4".to_string())
             .dates(
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),

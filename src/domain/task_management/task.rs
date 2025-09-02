@@ -205,12 +205,12 @@ pub enum TaskError {
 impl std::fmt::Display for TaskError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TaskError::InvalidDateRange => write!(f, "Data inicial é posterior à data final."),
+            TaskError::InvalidDateRange => write!(f, "Start date is after end date."),
             TaskError::ResourceOnVacation(res) => {
-                write!(f, "Recurso {res} está de férias neste período.")
+                write!(f, "Resource {res} is on vacation during this period.")
             }
             TaskError::MissingField(field) => {
-                write!(f, "Campo obrigatório não informado: {field}")
+                write!(f, "Required field not provided: {field}")
             }
         }
     }
@@ -424,12 +424,12 @@ mod tests {
     #[test]
     fn test_task_error_display_formatting() {
         let invalid_date_err = TaskError::InvalidDateRange;
-        assert_eq!(format!("{invalid_date_err}"), "Data inicial é posterior à data final.");
+        assert_eq!(format!("{invalid_date_err}"), "Start date is after end date.");
 
         let vacation_err = TaskError::ResourceOnVacation("RES-123".to_string());
         assert_eq!(
             format!("{vacation_err}"),
-            "Recurso RES-123 está de férias neste período."
+            "Resource RES-123 is on vacation during this period."
         );
     }
 
