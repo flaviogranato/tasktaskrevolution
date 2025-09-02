@@ -551,6 +551,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         assert!(valid_task.is_name_valid());
@@ -568,6 +569,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         assert!(!invalid_task.is_name_valid());
@@ -588,6 +590,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         assert!(valid_task.is_date_range_valid());
@@ -605,6 +608,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         assert!(!invalid_task.is_date_range_valid());
@@ -624,6 +628,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         let validation_result = valid_task.validate();
@@ -642,6 +647,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         let validation_result = invalid_task.validate();
@@ -667,6 +673,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         // Transition from Planned to InProgress
@@ -686,6 +693,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         let completed_task: Task<Completed> = in_progress_task.transition();
