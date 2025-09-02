@@ -180,6 +180,167 @@ impl AnyTask {
             AnyTask::Cancelled(t) => t.dependencies.as_slice(),
         }
     }
+
+    pub fn add_dependency(&self, dependency_code: String) -> Self {
+        match self {
+            AnyTask::Planned(task) => {
+                let mut new_task = task.clone();
+                if !new_task.dependencies.contains(&dependency_code) {
+                    new_task.dependencies.push(dependency_code);
+                }
+                AnyTask::Planned(new_task)
+            }
+            AnyTask::InProgress(task) => {
+                let mut new_task = task.clone();
+                if !new_task.dependencies.contains(&dependency_code) {
+                    new_task.dependencies.push(dependency_code);
+                }
+                AnyTask::InProgress(new_task)
+            }
+            AnyTask::Blocked(task) => {
+                let mut new_task = task.clone();
+                if !new_task.dependencies.contains(&dependency_code) {
+                    new_task.dependencies.push(dependency_code);
+                }
+                AnyTask::Blocked(new_task)
+            }
+            AnyTask::Completed(task) => {
+                let mut new_task = task.clone();
+                if !new_task.dependencies.contains(&dependency_code) {
+                    new_task.dependencies.push(dependency_code);
+                }
+                AnyTask::Completed(new_task)
+            }
+            AnyTask::Cancelled(task) => {
+                let mut new_task = task.clone();
+                if !new_task.dependencies.contains(&dependency_code) {
+                    new_task.dependencies.push(dependency_code);
+                }
+                AnyTask::Cancelled(new_task)
+            }
+        }
+    }
+
+    pub fn remove_dependency(&self, dependency_code: &str) -> Self {
+        match self {
+            AnyTask::Planned(task) => {
+                let mut new_task = task.clone();
+                new_task.dependencies.retain(|dep| dep != dependency_code);
+                AnyTask::Planned(new_task)
+            }
+            AnyTask::InProgress(task) => {
+                let mut new_task = task.clone();
+                new_task.dependencies.retain(|dep| dep != dependency_code);
+                AnyTask::InProgress(new_task)
+            }
+            AnyTask::Blocked(task) => {
+                let mut new_task = task.clone();
+                new_task.dependencies.retain(|dep| dep != dependency_code);
+                AnyTask::Blocked(new_task)
+            }
+            AnyTask::Completed(task) => {
+                let mut new_task = task.clone();
+                new_task.dependencies.retain(|dep| dep != dependency_code);
+                AnyTask::Completed(new_task)
+            }
+            AnyTask::Cancelled(task) => {
+                let mut new_task = task.clone();
+                new_task.dependencies.retain(|dep| dep != dependency_code);
+                AnyTask::Cancelled(new_task)
+            }
+        }
+    }
+
+    pub fn update_fields(
+        &self,
+        name: Option<String>,
+        description: Option<String>,
+        start_date: Option<NaiveDate>,
+        due_date: Option<NaiveDate>,
+    ) -> Self {
+        match self {
+            AnyTask::Planned(task) => {
+                let mut new_task = task.clone();
+                if let Some(name) = name {
+                    new_task.name = name;
+                }
+                if let Some(description) = description {
+                    new_task.description = Some(description);
+                }
+                if let Some(start_date) = start_date {
+                    new_task.start_date = start_date;
+                }
+                if let Some(due_date) = due_date {
+                    new_task.due_date = due_date;
+                }
+                AnyTask::Planned(new_task)
+            }
+            AnyTask::InProgress(task) => {
+                let mut new_task = task.clone();
+                if let Some(name) = name {
+                    new_task.name = name;
+                }
+                if let Some(description) = description {
+                    new_task.description = Some(description);
+                }
+                if let Some(start_date) = start_date {
+                    new_task.start_date = start_date;
+                }
+                if let Some(due_date) = due_date {
+                    new_task.due_date = due_date;
+                }
+                AnyTask::InProgress(new_task)
+            }
+            AnyTask::Blocked(task) => {
+                let mut new_task = task.clone();
+                if let Some(name) = name {
+                    new_task.name = name;
+                }
+                if let Some(description) = description {
+                    new_task.description = Some(description);
+                }
+                if let Some(start_date) = start_date {
+                    new_task.start_date = start_date;
+                }
+                if let Some(due_date) = due_date {
+                    new_task.due_date = due_date;
+                }
+                AnyTask::Blocked(new_task)
+            }
+            AnyTask::Completed(task) => {
+                let mut new_task = task.clone();
+                if let Some(name) = name {
+                    new_task.name = name;
+                }
+                if let Some(description) = description {
+                    new_task.description = Some(description);
+                }
+                if let Some(start_date) = start_date {
+                    new_task.start_date = start_date;
+                }
+                if let Some(due_date) = due_date {
+                    new_task.due_date = due_date;
+                }
+                AnyTask::Completed(new_task)
+            }
+            AnyTask::Cancelled(task) => {
+                let mut new_task = task.clone();
+                if let Some(name) = name {
+                    new_task.name = name;
+                }
+                if let Some(description) = description {
+                    new_task.description = Some(description);
+                }
+                if let Some(start_date) = start_date {
+                    new_task.start_date = start_date;
+                }
+                if let Some(due_date) = due_date {
+                    new_task.due_date = due_date;
+                }
+                AnyTask::Cancelled(new_task)
+            }
+        }
+    }
 }
 
 // Provide From implementations to easily convert a specific Task<State> into an AnyTask.

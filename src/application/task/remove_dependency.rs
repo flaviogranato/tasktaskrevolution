@@ -96,10 +96,8 @@ where
         }
 
         // 5. Remove the dependency from the task
-        // TODO: Implement remove_dependency_from_task method in AnyProject
-        // For now, we'll just return a placeholder
-        let updated_task = project.tasks().get(task_code).cloned()
-            .ok_or_else(|| RemoveDependencyError::TaskNotFound(task_code.to_string()))?;
+        let updated_task = project.remove_dependency_from_task(task_code, dependency_code)
+            .map_err(|e| RemoveDependencyError::DomainError(e))?;
 
         // 6. Save the updated project
         self.project_repository.save(project.clone())?;

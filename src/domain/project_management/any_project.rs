@@ -1,6 +1,7 @@
 use super::super::task_management::any_task::AnyTask;
 use super::project::{Project, ProjectStatus};
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -51,6 +52,61 @@ impl AnyProject {
                     // Replace the old task with the cancelled one
                     p.tasks.insert(task_code.to_string(), cancelled_task.clone());
                     Ok(cancelled_task)
+                } else {
+                    Err(format!("Task '{}' not found in project", task_code))
+                }
+            }
+        }
+    }
+
+    pub fn add_dependency_to_task(&mut self, task_code: &str, dependency_code: &str) -> Result<AnyTask, String> {
+        match self {
+            AnyProject::Project(p) => {
+                if let Some(task) = p.tasks.get_mut(task_code) {
+                    // Add the dependency to the task
+                    let updated_task = task.add_dependency(dependency_code.to_string());
+                    // Replace the old task with the updated one
+                    p.tasks.insert(task_code.to_string(), updated_task.clone());
+                    Ok(updated_task)
+                } else {
+                    Err(format!("Task '{}' not found in project", task_code))
+                }
+            }
+        }
+    }
+
+    pub fn remove_dependency_from_task(&mut self, task_code: &str, dependency_code: &str) -> Result<AnyTask, String> {
+        match self {
+            AnyProject::Project(p) => {
+                if let Some(task) = p.tasks.get_mut(task_code) {
+                    // Remove the dependency from the task
+                    let updated_task = task.remove_dependency(dependency_code);
+                    // Replace the old task with the updated one
+                    p.tasks.insert(task_code.to_string(), updated_task.clone());
+                    Ok(updated_task)
+                } else {
+                    Err(format!("Task '{}' not found in project", task_code))
+                }
+            }
+        }
+    }
+
+    pub fn update_task(
+        &mut self,
+        task_code: &str,
+        name: Option<String>,
+        description: Option<String>,
+        start_date: Option<NaiveDate>,
+        due_date: Option<NaiveDate>,
+    ) -> Result<AnyTask, String> {
+        match self {
+            AnyProject::Project(p) => {
+                if let Some(task) = p.tasks.get_mut(task_code) {
+                    // Update the task with new values
+                    let updated_task = task.update_fields(name, description, start_date, due_date);
+                    // Replace the old task with the updated one
+                    p.tasks.insert(task_code.to_string(), updated_task.clone());
+                    Ok(updated_task)
                 } else {
                     Err(format!("Task '{}' not found in project", task_code))
                 }
@@ -124,15 +180,7 @@ impl AnyProject {
         }
     }
 
-    pub fn remove_dependency_from_task(&mut self, task_code: &str, dependency_code: &str) -> Result<(), String> {
-        match self {
-            AnyProject::Project(p) => {
-                // TODO: Implementar remoção de dependências
-                // Por enquanto, apenas retornamos sucesso
-                Ok(())
-            }
-        }
-    }
+
 
     pub fn reschedule_dependents_of(&mut self, updated_task_code: &str) -> Result<(), String> {
         match self {
