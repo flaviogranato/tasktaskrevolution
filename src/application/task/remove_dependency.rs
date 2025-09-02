@@ -333,7 +333,7 @@ mod tests {
             due_date: task_a.due_date,
             actual_end_date: task_a.actual_end_date,
             dependencies: task_a.dependencies,
-            assigned_resources: task_a.assigned_resources,
+            assigned_resources: task_a.assigned_resources, priority: task_a.priority,
         };
 
         let project = setup_test_project(vec![blocked_task.into(), task_b.into()]);
@@ -373,7 +373,7 @@ mod tests {
             due_date: task_a.due_date,
             actual_end_date: task_a.actual_end_date,
             dependencies: task_a.dependencies,
-            assigned_resources: task_a.assigned_resources,
+            assigned_resources: task_a.assigned_resources, priority: task_a.priority,
         };
 
         let project = setup_test_project(vec![blocked_task.into(), task_b.into(), task_c.into()]);
