@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 /// que persiste os dados do projeto no sistema de arquivos.
 ///
 /// A estrutura de diretórios esperada é:
-/// /<base_path>/<project_name>/project.yaml
+/// /<base_path>/companies/<company_code>/projects/<project_code>/project.yaml
 pub struct FileProjectRepository {
     base_path: PathBuf,
 }
@@ -33,6 +33,28 @@ impl FileProjectRepository {
     /// Esta função é primariamente para uso em testes.
     pub fn with_base_path(base_path: PathBuf) -> Self {
         Self { base_path }
+    }
+
+    /// Gets the path to a specific project directory
+    fn get_project_path(&self, company_code: &str, project_code: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("projects")
+            .join(project_code)
+    }
+
+    /// Gets the path to the projects directory for a specific company
+    fn get_company_projects_path(&self, company_code: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("projects")
+    }
+
+    /// Gets the path to all companies directory
+    fn get_companies_path(&self) -> PathBuf {
+        self.base_path.join("companies")
     }
 
     /// Loads a single project from a specific project directory path.
@@ -57,6 +79,12 @@ impl FileProjectRepository {
         })?;
         self.load_tasks_for_project(&mut project, &manifest_path)?;
         Ok(project)
+    }
+
+    /// Loads a specific project by company code and project code
+    pub fn load_by_codes(&self, company_code: &str, project_code: &str) -> Result<AnyProject, DomainError> {
+        let project_path = self.get_project_path(company_code, project_code);
+        self.load_from_path(&project_path)
     }
 
     /// Carrega e deserializa o manifesto de um projeto de um arquivo YAML.
@@ -108,7 +136,7 @@ impl ProjectRepository for FileProjectRepository {
     /// Salva um projeto.
     /// Cria um diretório com o nome do projeto e salva um arquivo `project.yaml` dentro dele.
     fn save(&self, project: AnyProject) -> Result<(), DomainError> {
-        let project_dir = self.base_path.join(project.name());
+        let project_dir = self.get_project_path(project.company_code(), project.code());
 
         // Save project manifest
         fs::create_dir_all(&project_dir).map_err(|e| {
@@ -199,8 +227,8 @@ impl ProjectRepository for FileProjectRepository {
         let mut projects = Vec::new();
         let mut processed_paths = std::collections::HashSet::new();
 
-        // Padrão para buscar em subdiretórios
-        let pattern = self.base_path.join("**/project.yaml");
+        // Padrão para buscar projetos na nova estrutura: companies/*/projects/*/project.yaml
+        let pattern = self.base_path.join("companies/*/projects/*/project.yaml");
         if let Ok(walker) = glob(pattern.to_str().unwrap()) {
             for entry in walker.flatten() {
                 let manifest_path = entry.path();
