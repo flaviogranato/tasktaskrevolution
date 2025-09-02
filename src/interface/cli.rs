@@ -137,6 +137,9 @@ pub enum CreateCommands {
         name: String,
         /// Project description
         description: Option<String>,
+        /// Company code (required for new structure)
+        #[clap(long, value_name = "COMPANY_CODE")]
+        company_code: Option<String>,
     },
     /// Create a new resource (person)
     #[clap(alias = "res")]
@@ -412,11 +415,15 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         }
 
         Commands::Create { create_command } => match create_command {
-            CreateCommands::Project { name, description } => {
+            CreateCommands::Project { name, description, company_code } => {
                 let repository = FileProjectRepository::new();
                 let use_case = CreateProjectUseCase::new(repository);
 
-                use_case.execute(name, description.as_deref())?;
+                // For now, use a default company code if not provided
+                // TODO: In the future, we should require company_code or detect from context
+                let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
+                
+                use_case.execute(name, description.as_deref(), company_code)?;
                 Ok(())
             }
             CreateCommands::Resource { name, resource_type } => {

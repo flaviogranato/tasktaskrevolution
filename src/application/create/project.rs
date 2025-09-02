@@ -12,14 +12,14 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self, name: &str, description: Option<&str>) -> Result<(), DomainError> {
+    pub fn execute(&self, name: &str, description: Option<&str>, company_code: String) -> Result<(), DomainError> {
         let code = self.repository.get_next_code()?;
 
         // Use the unified builder
         let mut project = ProjectBuilder::new()
             .name(name.to_string())
             .code(code)
-            .company_code("COMP-001".to_string()) // TODO: Get from config
+            .company_code(company_code)
             .created_by("system".to_string()) // TODO: Get from config
             .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap());
 
