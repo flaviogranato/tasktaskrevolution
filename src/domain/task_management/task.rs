@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use super::category::Category;
 use super::priority::Priority;
 use super::state::{Blocked, Cancelled, Completed, InProgress, Planned, TaskState};
 use chrono::{NaiveDate, Utc};
@@ -21,6 +22,7 @@ pub struct Task<S: TaskState> {
     pub dependencies: Vec<String>,
     pub assigned_resources: Vec<String>,
     pub priority: Priority,
+    pub category: Category,
 }
 
 // Transitions for a Planned task
@@ -41,6 +43,7 @@ impl Task<Planned> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 
@@ -60,6 +63,7 @@ impl Task<Planned> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 }
@@ -89,6 +93,7 @@ impl Task<InProgress> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 
@@ -108,6 +113,7 @@ impl Task<InProgress> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 
@@ -127,6 +133,7 @@ impl Task<InProgress> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 }
@@ -149,6 +156,7 @@ impl Task<Blocked> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 
@@ -168,6 +176,7 @@ impl Task<Blocked> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 }
@@ -318,6 +327,7 @@ impl Transition for Task<Planned> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 }
@@ -339,6 +349,7 @@ impl Transition for Task<InProgress> {
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         }
     }
 }
@@ -363,7 +374,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         }
     }
 
@@ -384,7 +395,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         }
     }
 
@@ -484,7 +495,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         assert_eq!(task.code(), "TASK-001");
@@ -512,7 +523,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         assert!(valid_task.is_code_valid());
@@ -530,7 +541,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         assert!(!invalid_task.is_code_valid());
@@ -551,7 +562,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         assert!(valid_task.is_name_valid());
@@ -569,7 +580,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         assert!(!invalid_task.is_name_valid());
@@ -590,7 +601,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         assert!(valid_task.is_date_range_valid());
@@ -608,7 +619,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         assert!(!invalid_task.is_date_range_valid());
@@ -628,7 +639,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         let validation_result = valid_task.validate();
@@ -647,7 +658,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         let validation_result = invalid_task.validate();
@@ -673,7 +684,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         // Transition from Planned to InProgress
@@ -693,7 +704,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         };
 
         let completed_task: Task<Completed> = in_progress_task.transition();

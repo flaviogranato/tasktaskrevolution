@@ -1,4 +1,4 @@
-use crate::domain::task_management::{AnyTask, Task, state::*, Priority as TaskPriority};
+use crate::domain::task_management::{AnyTask, Task, state::*, Priority as TaskPriority, Category as TaskCategory};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -17,6 +17,8 @@ struct TaskCore {
     actual_end_date: Option<NaiveDate>,
     dependencies: Vec<String>,
     assigned_resources: Vec<String>,
+    priority: TaskPriority,
+    category: TaskCategory,
 }
 
 const API_VERSION: &str = "v1";
@@ -104,6 +106,8 @@ impl From<AnyTask> for TaskManifest {
                     actual_end_date: task.actual_end_date,
                     dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
+                priority: task.priority,
+                category: task.category,
                 },
                 Status::Planned,
                 vec![],
@@ -129,6 +133,8 @@ impl From<AnyTask> for TaskManifest {
                         actual_end_date: task.actual_end_date,
                         dependencies: task.dependencies,
                         assigned_resources: task.assigned_resources,
+                priority: task.priority,
+                category: task.category,
                     },
                     Status::InProgress,
                     comments,
@@ -146,6 +152,8 @@ impl From<AnyTask> for TaskManifest {
                     actual_end_date: task.actual_end_date,
                     dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
+                priority: task.priority,
+                category: task.category,
                 },
                 Status::Done,
                 vec![],
@@ -168,6 +176,8 @@ impl From<AnyTask> for TaskManifest {
                         actual_end_date: task.actual_end_date,
                         dependencies: task.dependencies,
                         assigned_resources: task.assigned_resources,
+                priority: task.priority,
+                category: task.category,
                     },
                     Status::Blocked,
                     comments,
@@ -185,6 +195,8 @@ impl From<AnyTask> for TaskManifest {
                     actual_end_date: task.actual_end_date,
                     dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
+                priority: task.priority,
+                category: task.category,
                 },
                 Status::Cancelled,
                 vec![],
@@ -272,6 +284,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 dependencies: manifest.spec.dependencies,
                 assigned_resources,
                 priority: TaskPriority::default(),
+                category: TaskCategory::default(),
             }),
             Status::InProgress => {
                 let progress = manifest
@@ -299,6 +312,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     dependencies: manifest.spec.dependencies,
                     assigned_resources,
                     priority: TaskPriority::default(),
+                category: TaskCategory::default(),
                 })
             }
             Status::Done => AnyTask::Completed(Task {
@@ -314,6 +328,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 dependencies: manifest.spec.dependencies,
                 assigned_resources,
                 priority: TaskPriority::default(),
+                category: TaskCategory::default(),
             }),
             Status::Blocked => {
                 let reason = manifest
@@ -337,6 +352,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     dependencies: manifest.spec.dependencies,
                     assigned_resources,
                     priority: TaskPriority::default(),
+                category: TaskCategory::default(),
                 })
             }
             Status::Cancelled => AnyTask::Cancelled(Task {
@@ -352,6 +368,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 dependencies: manifest.spec.dependencies,
                 assigned_resources,
                 priority: TaskPriority::default(),
+                category: TaskCategory::default(),
             }),
         };
 
@@ -382,7 +399,9 @@ mod convertable_tests {
             due_date: test_date(2024, 1, 10),
             actual_end_date: None,
             dependencies: vec![],
-            assigned_resources: vec!["res-1".to_string()], priority: TaskPriority::default(),
+            assigned_resources: vec!["res-1".to_string()],
+            priority: TaskPriority::default(),
+            category: TaskCategory::default(),
         }
     }
 
