@@ -232,8 +232,8 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task with same dates".to_string(),
-            start_date, // Use the same date for both
-            due_date: start_date,   // Use the same date for both
+            start_date,           // Use the same date for both
+            due_date: start_date, // Use the same date for both
             assigned_resources: vec![],
         };
         let result = use_case.execute(args);

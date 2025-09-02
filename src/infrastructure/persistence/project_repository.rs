@@ -273,15 +273,11 @@ impl ProjectRepository for FileProjectRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::project_management::{
-        builder::ProjectBuilder,
-        project::Project,
-
-    };
-    use chrono::NaiveDate;
+    use crate::domain::project_management::{builder::ProjectBuilder, project::Project};
     use crate::infrastructure::persistence::manifests::project_manifest::{
         ProjectManifest, ProjectMetadata, ProjectSpec, ProjectStatusManifest, VacationRulesManifest,
     };
+    use chrono::NaiveDate;
     use std::fs;
     use tempfile::tempdir;
 
