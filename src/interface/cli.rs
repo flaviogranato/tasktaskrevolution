@@ -210,6 +210,9 @@ pub enum CreateCommands {
     Task {
         #[arg(long)]
         project_code: Option<String>,
+        /// Company code (required for new structure)
+        #[clap(long, value_name = "COMPANY_CODE")]
+        company_code: Option<String>,
         #[arg(long)]
         code: Option<String>,
         #[arg(long)]
@@ -563,6 +566,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             }
             CreateCommands::Task {
                 project_code,
+                company_code,
                 code: _,
                 name,
                 description,
@@ -610,7 +614,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     }
                 };
 
-                let repository = FileProjectRepository::new();
+                let repository = FileProjectRepository::with_base_path(".".into());
 
                 let start = match NaiveDate::parse_from_str(start_date, "%Y-%m-%d") {
                     Ok(date) => date,
@@ -630,7 +634,12 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
 
                 let use_case = CreateTaskUseCase::new(repository);
 
+                // For now, use default values if not provided
+                // TODO: In the future, we should require company_code or detect from context
+                let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
+                
                 let args = CreateTaskArgs {
+                    company_code,
                     project_code: final_project_code,
                     name: name.clone(),
                     start_date: start,

@@ -1,12 +1,13 @@
 use crate::domain::{
     company_settings::repository::ConfigRepository,
     project_management::AnyProject,
-    // task_management::repository::TaskRepository,
+    task_management::repository::TaskRepository,
 };
 use crate::infrastructure::persistence::{
     config_repository::FileConfigRepository,
     project_repository::FileProjectRepository,
-    resource_repository::FileResourceRepository, // task_repository::FileTaskRepository,
+    resource_repository::FileResourceRepository,
+    task_repository::FileTaskRepository,
 };
 use crate::interface::assets::{StaticAssets, TemplateAssets};
 use crate::application::build_context::BuildContext;
@@ -89,7 +90,14 @@ impl BuildUseCase {
             
             // Load resources using the new hierarchical method
             let resources = resource_repo.find_all_by_project(company_code, project_code)?;
-            let tasks: Vec<_> = project.tasks().values().cloned().collect();
+            
+            // Load tasks from both project aggregate and hierarchical structure
+            let mut tasks: Vec<_> = project.tasks().values().cloned().collect();
+            
+            // Also load tasks from the hierarchical structure
+            let task_repo = FileTaskRepository::new(self.base_path.clone());
+            let hierarchical_tasks = task_repo.find_all_by_project(company_code, project_code)?;
+            tasks.extend(hierarchical_tasks);
 
             let project = if project.timezone().is_none() {
                 // Clone the project and update its timezone

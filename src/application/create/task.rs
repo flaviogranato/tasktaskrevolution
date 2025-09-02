@@ -7,10 +7,9 @@ use crate::domain::{
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {
+    pub company_code: String,
     pub project_code: String,
-
     pub name: String,
-
     pub start_date: NaiveDate,
     pub due_date: NaiveDate,
     pub assigned_resources: Vec<String>,
@@ -27,10 +26,9 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
 
     pub fn execute(&self, args: CreateTaskArgs) -> Result<(), DomainError> {
         let CreateTaskArgs {
+            company_code: _company_code, // TODO: Use this for hierarchical task saving
             project_code,
-
             name,
-
             start_date,
             due_date,
             assigned_resources,
@@ -84,7 +82,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         // 3. Save the entire project aggregate.
         self.repository.save(project)?;
 
-        println!("Task {name} criada com sucesso.");
+        println!("Task {name} created successfully.");
         Ok(())
     }
 }
