@@ -125,28 +125,6 @@ enum Commands {
 
 #[derive(Subcommand, Debug)]
 pub enum CompanyCommands {
-    Create {
-        #[clap(long, value_name = "CODE", default_value = "")]
-        code: String,
-        #[clap(long, value_name = "NAME")]
-        name: String,
-        #[clap(long, value_name = "DESCRIPTION")]
-        description: Option<String>,
-        #[clap(long, value_name = "TAX_ID")]
-        tax_id: Option<String>,
-        #[clap(long, value_name = "ADDRESS")]
-        address: Option<String>,
-        #[clap(long, value_name = "EMAIL")]
-        email: Option<String>,
-        #[clap(long, value_name = "PHONE")]
-        phone: Option<String>,
-        #[clap(long, value_name = "WEBSITE")]
-        website: Option<String>,
-        #[clap(long, value_name = "INDUSTRY")]
-        industry: Option<String>,
-        #[clap(long, value_name = "USER", default_value = "system")]
-        created_by: String,
-    },
     List,
     Describe {
         code: String,
@@ -184,6 +162,28 @@ pub enum CreateCommands {
     Resource {
         name: String,
         resource_type: String,
+    },
+    Company {
+        #[clap(long, value_name = "CODE", default_value = "")]
+        code: String,
+        #[clap(long, value_name = "NAME")]
+        name: String,
+        #[clap(long, value_name = "DESCRIPTION")]
+        description: Option<String>,
+        #[clap(long, value_name = "TAX_ID")]
+        tax_id: Option<String>,
+        #[clap(long, value_name = "ADDRESS")]
+        address: Option<String>,
+        #[clap(long, value_name = "EMAIL")]
+        email: Option<String>,
+        #[clap(long, value_name = "PHONE")]
+        phone: Option<String>,
+        #[clap(long, value_name = "WEBSITE")]
+        website: Option<String>,
+        #[clap(long, value_name = "INDUSTRY")]
+        industry: Option<String>,
+        #[clap(long, value_name = "USER", default_value = "system")]
+        created_by: String,
     },
     Vacation {
         #[arg(long, short)]
@@ -409,78 +409,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
             Ok(())
         }
         Commands::Company { company_command } => match company_command {
-            CompanyCommands::Create {
-                code,
-                name,
-                description,
-                tax_id,
-                address,
-                email,
-                phone,
-                website,
-                industry,
-                created_by,
-            } => {
-                let repository = FileCompanyRepository::new(".");
-                let use_case = CreateCompanyUseCase::new(repository);
 
-                let args = CreateCompanyArgs {
-                    code: code.clone(),
-                    name: name.clone(),
-                    description: description.clone(),
-                    tax_id: tax_id.clone(),
-                    address: address.clone(),
-                    email: email.clone(),
-                    phone: phone.clone(),
-                    website: website.clone(),
-                    industry: industry.clone(),
-                    created_by: created_by.clone(),
-                };
-
-                match use_case.execute(args) {
-                    Ok(company) => {
-                        println!("Company created successfully!");
-                        if code.is_empty() {
-                            println!("Code generated automatically: {}", company.code);
-                        } else {
-                            println!("Code: {}", company.code);
-                        }
-                        println!("Name: {}", company.name);
-                        println!("ID: {}", company.id);
-                        if let Some(desc) = &company.description {
-                            println!("Description: {}", desc);
-                        }
-                        if let Some(cnpj) = &company.tax_id {
-                            println!("Tax ID: {}", cnpj);
-                        }
-                        if let Some(addr) = &company.address {
-                            println!("Address: {}", addr);
-                        }
-                        if let Some(mail) = &company.email {
-                            println!("Email: {}", mail);
-                        }
-                        if let Some(tel) = &company.phone {
-                            println!("Phone: {}", tel);
-                        }
-                        if let Some(site) = &company.website {
-                            println!("Website: {}", site);
-                        }
-                        if let Some(ind) = &company.industry {
-                            println!("Industry: {}", ind);
-                        }
-                        println!("Size: {}", company.size);
-                        println!("Status: {}", company.status);
-                        println!("Created By: {}", company.created_by);
-                        println!("Created At: {}", company.created_at);
-                        println!("File saved to: companies/{}.yaml", company.code);
-                    }
-                    Err(e) => {
-                        eprintln!("Error creating company: {}", e);
-                        return Err(e.into());
-                    }
-                }
-                Ok(())
-            }
             CompanyCommands::List => {
                 let repository = FileCompanyRepository::new(".");
                 match repository.find_all() {
@@ -657,6 +586,74 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 let use_case = CreateResourceUseCase::new(repository);
 
                 let _ = use_case.execute(name, resource_type);
+                Ok(())
+            }
+            CreateCommands::Company {
+                code,
+                name,
+                description,
+                tax_id,
+                address,
+                email,
+                phone,
+                website,
+                industry,
+                created_by,
+            } => {
+                let repository = FileCompanyRepository::new(".");
+                let use_case = CreateCompanyUseCase::new(repository);
+
+                let args = CreateCompanyArgs {
+                    code: code.clone(),
+                    name: name.clone(),
+                    description: description.clone(),
+                    tax_id: tax_id.clone(),
+                    address: address.clone(),
+                    email: email.clone(),
+                    phone: phone.clone(),
+                    website: website.clone(),
+                    industry: industry.clone(),
+                    created_by: created_by.clone(),
+                };
+
+                match use_case.execute(args) {
+                    Ok(company) => {
+                        println!("Company created successfully!");
+                        if code.is_empty() {
+                            println!("Code generated automatically: {}", company.code);
+                        } else {
+                            println!("Code: {}", company.code);
+                        }
+                        println!("Name: {}", company.name);
+                        println!("ID: {}", company.id);
+                        if let Some(desc) = &company.description {
+                            println!("Description: {}", desc);
+                        }
+                        if let Some(cnpj) = &company.tax_id {
+                            println!("Tax ID: {}", cnpj);
+                        }
+                        if let Some(addr) = &company.address {
+                            println!("Address: {}", addr);
+                        }
+                        if let Some(mail) = &company.email {
+                            println!("Email: {}", mail);
+                        }
+                        if let Some(tel) = &company.phone {
+                            println!("Phone: {}", tel);
+                        }
+                        if let Some(site) = &company.website {
+                            println!("Website: {}", site);
+                        }
+                        if let Some(ind) = &company.industry {
+                            println!("Industry: {}", ind);
+                        }
+                        println!("Created by: {}", company.created_by);
+                    }
+                    Err(e) => {
+                        println!("Error creating company: {:?}", e);
+                        return Err(Box::new(e));
+                    }
+                }
                 Ok(())
             }
             CreateCommands::Vacation {
