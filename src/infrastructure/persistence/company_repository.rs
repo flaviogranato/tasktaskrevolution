@@ -22,11 +22,15 @@ impl FileCompanyRepository {
     }
 
     fn get_company_path(&self, code: &str) -> PathBuf {
-        self.base_path.join("companies").join(format!("{}.yaml", code))
+        self.base_path.join("companies").join(code).join("company.yaml")
     }
 
     fn get_companies_dir(&self) -> PathBuf {
         self.base_path.join("companies")
+    }
+
+    fn get_company_dir(&self, code: &str) -> PathBuf {
+        self.base_path.join("companies").join(code)
     }
 
     fn load_companies_from_disk(&self) -> Result<(), DomainError> {
@@ -58,23 +62,26 @@ impl FileCompanyRepository {
             })?;
 
             let path = entry.path();
-            if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                let content = fs::read_to_string(&path).map_err(|e| {
-                    DomainError::new(DomainErrorKind::RepositoryError {
-                        operation: "read_company_file".to_string(),
-                        details: format!("Failed to read company file {}: {}", path.display(), e),
-                    })
+            if path.is_dir() {
+                let company_yaml_path = path.join("company.yaml");
+                if company_yaml_path.exists() {
+                    let content = fs::read_to_string(&company_yaml_path).map_err(|e| {
+                        DomainError::new(DomainErrorKind::RepositoryError {
+                            operation: "read_company_file".to_string(),
+                            details: format!("Failed to read company file {}: {}", company_yaml_path.display(), e),
+                        })
                 })?;
 
                 let manifest: CompanyManifest = serde_yaml::from_str(&content).map_err(|e| {
                     DomainError::new(DomainErrorKind::Serialization {
                         format: "YAML".to_string(),
-                        details: format!("Failed to parse company file {}: {}", path.display(), e),
+                        details: format!("Failed to parse company file {}: {}", company_yaml_path.display(), e),
                     })
                 })?;
 
                 let company = manifest.to();
                 companies.insert(company.code.clone(), company);
+                }
             }
         }
 
@@ -86,12 +93,24 @@ impl FileCompanyRepository {
 
     fn save_company_to_disk(&self, company: &Company) -> Result<(), DomainError> {
         let companies_dir = self.get_companies_dir();
+        let company_dir = self.get_company_dir(&company.code);
 
+        // Create companies directory if it doesn't exist
         if !companies_dir.exists() {
             fs::create_dir_all(&companies_dir).map_err(|e| {
                 DomainError::new(DomainErrorKind::RepositoryError {
                     operation: "create_companies_directory".to_string(),
                     details: format!("Failed to create companies directory: {}", e),
+                })
+            })?;
+        }
+
+        // Create company directory if it doesn't exist
+        if !company_dir.exists() {
+            fs::create_dir_all(&company_dir).map_err(|e| {
+                DomainError::new(DomainErrorKind::RepositoryError {
+                    operation: "create_company_directory".to_string(),
+                    details: format!("Failed to create company directory: {}", e),
                 })
             })?;
         }
@@ -117,13 +136,13 @@ impl FileCompanyRepository {
 
     #[allow(dead_code)]
     fn delete_company_from_disk(&self, code: &str) -> Result<(), DomainError> {
-        let file_path = self.get_company_path(code);
+        let company_dir = self.get_company_dir(code);
 
-        if file_path.exists() {
-            fs::remove_file(&file_path).map_err(|e| {
+        if company_dir.exists() {
+            fs::remove_dir_all(&company_dir).map_err(|e| {
                 DomainError::new(DomainErrorKind::RepositoryError {
-                    operation: "delete_company_file".to_string(),
-                    details: format!("Failed to delete company file {}: {}", file_path.display(), e),
+                    operation: "delete_company_directory".to_string(),
+                    details: format!("Failed to delete company directory {}: {}", company_dir.display(), e),
                 })
             })?;
         }
