@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::{any_task::AnyTask, Priority},
 };
 use chrono::NaiveDate;
 use std::fmt;
@@ -141,6 +141,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
+            priority: Priority::default(),
         }
         .into()
     }
@@ -213,6 +214,7 @@ mod tests {
             actual_end_date: None,
             dependencies: deps.into_iter().map(String::from).collect(),
             assigned_resources: vec![],
+            priority: Priority::default(),
         }
         .into()
     }

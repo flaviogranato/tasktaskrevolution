@@ -1,3 +1,4 @@
+use crate::domain::task_management::Priority;
 use crate::domain::{
     project_management::repository::ProjectRepository,
     shared::errors::{DomainError, DomainErrorKind},
@@ -190,6 +191,7 @@ mod test {
             start_date,
             due_date,
             assigned_resources: vec![],
+            priority: Priority::default(),
         };
         let result = use_case.execute(args);
 
@@ -210,6 +212,7 @@ mod test {
             start_date: due_date + chrono::Duration::days(1), // start_date > due_date
             due_date,
             assigned_resources: vec![],
+            priority: Priority::default(),
         };
         let result = use_case.execute(args);
 
@@ -235,6 +238,7 @@ mod test {
             start_date,           // Use the same date for both
             due_date: start_date, // Use the same date for both
             assigned_resources: vec![],
+            priority: Priority::default(),
         };
         let result = use_case.execute(args);
 
