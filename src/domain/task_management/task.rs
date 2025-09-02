@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use super::priority::Priority;
 use super::state::{Blocked, Cancelled, Completed, InProgress, Planned, TaskState};
 use chrono::{NaiveDate, Utc};
 use serde::Serialize;
@@ -19,6 +20,7 @@ pub struct Task<S: TaskState> {
     pub actual_end_date: Option<NaiveDate>,
     pub dependencies: Vec<String>,
     pub assigned_resources: Vec<String>,
+    pub priority: Priority,
 }
 
 // Transitions for a Planned task
@@ -38,6 +40,7 @@ impl Task<Planned> {
             actual_end_date: None,
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 
@@ -56,6 +59,7 @@ impl Task<Planned> {
             actual_end_date: None,
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 }
@@ -84,6 +88,7 @@ impl Task<InProgress> {
             actual_end_date: None,
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 
@@ -102,6 +107,7 @@ impl Task<InProgress> {
             actual_end_date: Some(Utc::now().date_naive()),
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 
@@ -120,6 +126,7 @@ impl Task<InProgress> {
             actual_end_date: None,
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 }
@@ -141,6 +148,7 @@ impl Task<Blocked> {
             actual_end_date: None,
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 
@@ -159,6 +167,7 @@ impl Task<Blocked> {
             actual_end_date: None,
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 }
@@ -308,6 +317,7 @@ impl Transition for Task<Planned> {
             actual_end_date: self.actual_end_date,
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 }
@@ -328,6 +338,7 @@ impl Transition for Task<InProgress> {
             actual_end_date: Some(chrono::Utc::now().date_naive()),
             dependencies: self.dependencies,
             assigned_resources: self.assigned_resources,
+            priority: self.priority,
         }
     }
 }
@@ -337,6 +348,24 @@ mod tests {
     use super::*;
     use chrono::NaiveDate;
     use uuid7::uuid7;
+
+    /// Helper function to create a test task with default priority
+    fn create_test_task<S: TaskState>(state: S) -> Task<S> {
+        Task {
+            id: uuid7(),
+            project_code: "PROJ-1".to_string(),
+            code: "TASK-1".to_string(),
+            name: "Test Task".to_string(),
+            description: None,
+            state,
+            start_date: NaiveDate::from_ymd_opt(2023, 1, 1).unwrap(),
+            due_date: NaiveDate::from_ymd_opt(2023, 1, 31).unwrap(),
+            actual_end_date: None,
+            dependencies: vec![],
+            assigned_resources: vec![],
+            priority: Priority::default(),
+        }
+    }
 
     fn d(year: i32, month: u32, day: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(year, month, day).unwrap()
@@ -355,6 +384,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
+            priority: Priority::default(),
         }
     }
 
@@ -454,6 +484,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         assert_eq!(task.code(), "TASK-001");
@@ -481,6 +512,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         assert!(valid_task.is_code_valid());
@@ -498,6 +530,7 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
+            priority: Priority::default(),
         };
 
         assert!(!invalid_task.is_code_valid());
