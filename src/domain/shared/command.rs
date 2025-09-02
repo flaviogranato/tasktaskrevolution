@@ -4,7 +4,6 @@ use crate::domain::shared::errors::DomainError;
 #[allow(unused_imports)]
 use std::collections::HashMap;
 
-
 /// A command that can be executed
 pub trait Command {
     /// Execute the command

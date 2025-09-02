@@ -6,7 +6,6 @@ use crate::domain::company_settings::{
 };
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 
-
 #[allow(dead_code)]
 pub struct UpdateCompanyConfigUseCase<R>
 where

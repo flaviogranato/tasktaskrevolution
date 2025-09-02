@@ -677,7 +677,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     *compensated_hours,
                 ) {
                     Ok(result) => {
-                                                println!("{}", result.message);
+                        println!("{}", result.message);
                     }
                     Err(e) => println!("Unexpected error: {e}"),
                 };
