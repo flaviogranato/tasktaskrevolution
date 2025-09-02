@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 use super::types::ValidationResult;
+
 use crate::domain::{
     company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
     resource_management::repository::ResourceRepository, resource_management::resource::Period,

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::DomainError;
 
 /// A trait for objects that can validate themselves

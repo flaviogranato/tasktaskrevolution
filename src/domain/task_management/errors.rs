@@ -1,9 +1,11 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use std::error::Error as StdError;
 use std::fmt;
 
 /// Task-specific error types
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TaskError {
     NotFound { code: String },
     AlreadyExists { code: String },
@@ -439,7 +441,7 @@ mod tests {
     fn test_task_result_success() {
         let result: TaskResult<String> = Ok("Success".to_string());
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Success");
+        assert_eq!(result, Ok("Success".to_string()));
     }
 
     #[test]
@@ -504,7 +506,7 @@ mod tests {
 
         for error in errors {
             let domain_error: DomainError = error.into();
-            assert!(domain_error.to_string().len() > 0);
+            assert!(!domain_error.to_string().is_empty());
         }
     }
 }

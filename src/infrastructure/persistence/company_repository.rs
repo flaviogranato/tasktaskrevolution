@@ -248,7 +248,7 @@ impl CompanyRepository for FileCompanyRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::company_management::company::{Company, CompanySize, CompanyStatus};
+    use crate::domain::company_management::company::Company;
     use tempfile::TempDir;
 
     fn create_test_company(code: &str, name: &str) -> Company {

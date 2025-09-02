@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::company_settings::Config;
 use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};

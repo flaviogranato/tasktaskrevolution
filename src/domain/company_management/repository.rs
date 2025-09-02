@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::company_management::Company;
 use crate::domain::shared::errors::DomainError;
 

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub(crate) use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,6 +41,7 @@ impl WorkDay {
         }
     }
 
+    #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         match self {
             WorkDay::Monday => "Monday".to_string(),

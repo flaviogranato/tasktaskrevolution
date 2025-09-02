@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::{
     project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
 };
@@ -410,7 +412,9 @@ mod tests {
     #[test]
     fn test_remove_dependency_repository_error() {
         // Arrange
+        #[allow(unused_variables)]
         let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
+        #[allow(unused_variables)]
         let task_b = create_test_task("TASK-B", vec![]);
 
         // Create a mock repository that fails on save

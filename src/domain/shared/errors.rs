@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::error::Error as StdError;
 use std::fmt;
 
@@ -763,7 +765,7 @@ mod tests {
         for variant in variants {
             let debug_str = format!("{:?}", variant);
             assert!(!debug_str.is_empty());
-            assert!(debug_str.len() > 0);
+            assert!(!debug_str.is_empty());
         }
     }
 

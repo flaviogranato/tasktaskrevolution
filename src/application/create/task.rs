@@ -200,6 +200,7 @@ mod test {
     fn test_create_task_fails_if_start_date_after_due_date() {
         let mock_repo = MockProjectRepository::new(false);
         let use_case = CreateTaskUseCase::new(mock_repo);
+        #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
         // Test with start_date > due_date
@@ -225,12 +226,13 @@ mod test {
     fn test_create_task_with_same_start_and_due_date() {
         let mock_repo = MockProjectRepository::new(false);
         let use_case = CreateTaskUseCase::new(mock_repo);
+        #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task with same dates".to_string(),
-            start_date: start_date, // Use the same date for both
+            start_date, // Use the same date for both
             due_date: start_date,   // Use the same date for both
             assigned_resources: vec![],
         };

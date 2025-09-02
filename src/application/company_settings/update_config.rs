@@ -1,10 +1,13 @@
+#![allow(dead_code)]
+
 use crate::domain::company_settings::{
     config::{Config, WorkDay},
     repository::ConfigRepository,
 };
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
-use std::str::FromStr;
 
+
+#[allow(dead_code)]
 pub struct UpdateCompanyConfigUseCase<R>
 where
     R: ConfigRepository,
@@ -259,6 +262,7 @@ where
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct CompanyConfigUpdates {
     pub company_name: Option<String>,
     pub manager_name: Option<String>,
@@ -271,6 +275,7 @@ pub struct CompanyConfigUpdates {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum UpdateSource {
     Cli,
     YamlEdit,
@@ -335,7 +340,7 @@ impl CompanyConfigUpdates {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::company_settings::config::{Config, WorkDay};
+    use crate::domain::company_settings::config::Config;
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::PathBuf;

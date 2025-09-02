@@ -1,9 +1,11 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use std::error::Error as StdError;
 use std::fmt;
 
 /// Infrastructure-specific error types
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum InfrastructureError {
     FileNotFound {
         path: String,
@@ -503,7 +505,7 @@ mod tests {
     fn test_infrastructure_result_success() {
         let result: InfrastructureResult<String> = Ok("success".to_string());
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "success");
+        assert_eq!(result, Ok("success".to_string()));
     }
 
     #[test]

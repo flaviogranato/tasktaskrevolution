@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use uuid7::Uuid;
@@ -701,7 +703,7 @@ mod tests {
         let _replayer = EventReplayer::new(event_store, event_bus);
 
         // Just test that it can be created without errors
-        assert!(true);
+        // Test passes
     }
 
     #[test]

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 /// A trait for objects that can be converted to and from other types
 pub trait Convertible<T> {
     /// Convert self to the target type
@@ -190,7 +192,7 @@ mod tests {
     // Tests for complex conversion scenarios
     #[test]
     fn test_complex_conversion_scenarios() {
-        let sources = vec![
+        let sources = [
             SourceType {
                 value: "first".to_string(),
             },
@@ -213,7 +215,7 @@ mod tests {
         // Convert all targets back to sources
         let new_sources: Vec<SourceType> = targets
             .into_iter()
-            .map(|t| <SourceType as Convertible<TargetType>>::from(t))
+            .map(<SourceType as Convertible<TargetType>>::from)
             .collect();
 
         assert_eq!(new_sources.len(), 3);
@@ -290,7 +292,7 @@ mod tests {
 
         // Test that SourceType implements BidirectionalConvertible<TargetType>
         // This test verifies that the trait can be used as a bound
-        assert!(true);
+        // Test passes if we reach here
     }
 
     // Additional comprehensive tests for better coverage
@@ -363,7 +365,7 @@ mod tests {
         assert_eq!(target.data, "true");
 
         let new_source = <BoolSource as Convertible<BoolTarget>>::from(target);
-        assert_eq!(new_source.value, true);
+        assert!(new_source.value);
     }
 
     #[test]
@@ -938,6 +940,6 @@ mod tests {
 
         // Verify that BidirectionalConvertible is automatically implemented
         // This tests the blanket implementation without conflicts
-        assert!(true); // Placeholder assertion
+        // Test passes if we reach here // Placeholder assertion
     }
 }

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::state::{Blocked, Cancelled, Completed, InProgress, Planned, TaskState};
 use chrono::{NaiveDate, Utc};
 use serde::Serialize;

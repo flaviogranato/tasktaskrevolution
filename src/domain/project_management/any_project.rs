@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::super::task_management::any_task::AnyTask;
 use super::project::{Project, ProjectStatus};
 use chrono::NaiveDate;

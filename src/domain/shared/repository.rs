@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::DomainError;
+
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -562,14 +565,11 @@ mod tests {
 
             // Apply filters
             for (key, value) in &criteria.filters {
-                filtered_entities = filtered_entities
-                    .into_iter()
-                    .filter(|entity| match key.as_str() {
-                        "name" => entity.name.contains(value),
-                        "value" => entity.value.to_string() == *value,
-                        _ => true,
-                    })
-                    .collect();
+                filtered_entities.retain(|entity| match key.as_str() {
+                    "name" => entity.name.contains(value),
+                    "value" => entity.value.to_string() == *value,
+                    _ => true,
+                });
             }
 
             // Apply sorting
@@ -1098,7 +1098,7 @@ mod tests {
         let _transaction = repo.begin_transaction().unwrap();
 
         // Just test that we can create a transaction
-        assert!(true);
+        // Test passes
     }
 
     #[test]
@@ -1198,7 +1198,7 @@ mod tests {
         let _decorator = LoggingRepositoryDecorator::new(base_repo);
 
         // Just test that we can create the decorator
-        assert!(true);
+        // Test passes
     }
 
     #[test]

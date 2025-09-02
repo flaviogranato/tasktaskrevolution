@@ -78,9 +78,8 @@ impl BuildUseCase {
             let project = if project.timezone().is_none() {
                 // Clone the project and update its timezone
                 let mut project_clone = project.clone();
-                if let AnyProject::Project(ref mut p) = project_clone {
-                    p.settings.timezone = Some(config.default_timezone.clone());
-                }
+                let AnyProject::Project(ref mut p) = project_clone;
+                p.settings.timezone = Some(config.default_timezone.clone());
                 project_clone
             } else {
                 project

@@ -137,10 +137,10 @@ impl TryFrom<ProjectManifest> for AnyProject {
         } else {
             Some(manifest.metadata.description)
         };
-        let start_date = manifest.spec.start_date;
-        let end_date = manifest.spec.end_date;
-        let vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
-        let timezone = manifest.spec.timezone;
+        let _start_date = manifest.spec.start_date;
+        let _end_date = manifest.spec.end_date;
+        let _vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
+        let _timezone = manifest.spec.timezone;
 
         // TODO: Implement proper conversion from manifest to Project
         // For now, we'll create a basic project
@@ -229,9 +229,8 @@ mod tests {
         let converted_any = AnyProject::try_from(manifest).unwrap();
         assert!(matches!(converted_any, AnyProject::Project(_)));
 
-        if let AnyProject::Project(converted) = converted_any {
-            assert_eq!(original_project.name, converted.name);
-            assert_eq!(original_project.id, converted.id);
-        }
+        let AnyProject::Project(converted) = converted_any;
+        assert_eq!(original_project.name, converted.name);
+        assert_eq!(original_project.id, converted.id);
     }
 }

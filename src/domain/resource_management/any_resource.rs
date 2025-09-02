@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::{
     resource::{Period, Resource, TimeOffEntry},
     state::{Assigned, Available, Inactive},

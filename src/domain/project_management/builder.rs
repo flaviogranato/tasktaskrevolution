@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::project::{Project, ProjectSettings, VacationRules, WorkHours};
 use crate::domain::shared::errors::DomainErrorKind::ProjectInvalidState;
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};

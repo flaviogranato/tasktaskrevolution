@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::super::task_management::any_task::AnyTask;
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use chrono::{DateTime, NaiveDate, Utc};
@@ -283,7 +285,7 @@ impl Project {
     }
 
     pub fn remove_task(&mut self, task_id: &str) -> Result<(), DomainError> {
-        if let Some(task) = self.tasks.get(task_id) {
+        if let Some(_task) = self.tasks.get(task_id) {
             // Verificar se a tarefa pode ser removida
             // Implementar quando tivermos acesso ao AnyTask
         }
@@ -313,7 +315,7 @@ impl Project {
     pub fn remove_resource_assignment(&mut self, resource_id: &str, task_id: &str) -> Result<(), DomainError> {
         let key = format!("{}_{}", resource_id, task_id);
 
-        if let Some(assignment) = self.resources.get(&key) {
+        if let Some(_assignment) = self.resources.get(&key) {
             // Verificar se a alocação pode ser removida
             // Implementar quando necessário
         }
@@ -349,7 +351,7 @@ impl Project {
         let completed_tasks = self
             .tasks
             .values()
-            .filter(|task| {
+            .filter(|_task| {
                 // Assumindo que AnyTask tem um método is_completed
                 // Se não tiver, podemos implementar uma verificação diferente
                 false // Placeholder - implementar quando tivermos acesso ao AnyTask

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::DomainError;
 use crate::domain::task_management::AnyTask;
 
