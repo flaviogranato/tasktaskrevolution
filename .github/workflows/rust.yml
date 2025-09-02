@@ -91,21 +91,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for git-cliff
 
       - name: Download binary artifact
         uses: actions/download-artifact@v4
         with:
           name: ttr-linux-amd64
-
-      - name: Install git-cliff
-        run: |
-          curl -L https://github.com/orhun/git-cliff/releases/latest/download/git-cliff-1.4.1-x86_64-unknown-linux-gnu.tar.gz | tar xz
-          sudo mv git-cliff /usr/local/bin/
-
-      - name: Generate changelog
-        run: git-cliff --output CHANGELOG.md
 
       - name: Create Release and Upload Asset
         uses: softprops/action-gh-release@v2
@@ -113,6 +103,5 @@ jobs:
           files: ttr
           fail_on_unmatched_files: true
           generate_release_notes: true
-          body_path: CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
