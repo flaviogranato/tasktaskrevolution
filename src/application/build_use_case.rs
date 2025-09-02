@@ -10,6 +10,7 @@ use crate::infrastructure::persistence::{
     resource_repository::FileResourceRepository, // task_repository::FileTaskRepository,
 };
 use crate::interface::assets::{StaticAssets, TemplateAssets};
+use crate::application::build_context::BuildContext;
 
 use glob::glob;
 
@@ -23,10 +24,18 @@ pub struct BuildUseCase {
     base_path: PathBuf,
     tera: Tera,
     output_dir: PathBuf,
+    #[allow(dead_code)]
+    context: BuildContext,
 }
 
 impl BuildUseCase {
     pub fn new(base_path: PathBuf, output_dir: &str) -> Result<Self, Box<dyn Error>> {
+        // Detect build context
+        let context = BuildContext::detect(&base_path)
+            .map_err(|e| format!("Failed to detect build context: {}", e))?;
+        
+        println!("[INFO] Detected build context: {}", context.display_name());
+        
         let mut tera = Tera::default();
         for filename in TemplateAssets::iter() {
             let file = TemplateAssets::get(filename.as_ref()).unwrap();
@@ -38,6 +47,7 @@ impl BuildUseCase {
             base_path,
             tera,
             output_dir: PathBuf::from(output_dir),
+            context,
         })
     }
 

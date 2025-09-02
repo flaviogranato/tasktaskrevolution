@@ -80,6 +80,12 @@ enum Commands {
         /// Se não for fornecido, usa o diretório atual.
         path: Option<PathBuf>,
     },
+    /// Migrate to new directory structure (companies/projects/resources)
+    Migrate {
+        /// Opcional: Caminho para o diretório raiz.
+        /// Se não for fornecido, usa o diretório atual.
+        path: Option<PathBuf>,
+    },
     /// Create new entities (projects, resources, companies, tasks, etc.)
     #[clap(alias = "c")]
     Create {
@@ -407,6 +413,17 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     println!("Erro ao inicializar o builder: {e}");
                 }
             }
+            Ok(())
+        }
+        Commands::Migrate { path } => {
+            let root_path = path.clone().unwrap_or_else(|| PathBuf::from("."));
+            
+            println!("🚀 Iniciando migração para nova estrutura de diretórios...");
+            println!("📁 Diretório raiz: {}", root_path.display());
+            
+            // TODO: Implementar lógica de migração
+            println!("⚠️  Migração ainda não implementada. Em desenvolvimento...");
+            
             Ok(())
         }
         Commands::Create { create_command } => match create_command {

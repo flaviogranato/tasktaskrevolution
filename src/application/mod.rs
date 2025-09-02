@@ -1,3 +1,4 @@
+pub mod build_context;
 pub mod build_use_case;
 pub mod initialize_repository_use_case;
 
