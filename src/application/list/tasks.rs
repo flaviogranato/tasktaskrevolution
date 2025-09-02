@@ -1,6 +1,7 @@
+#![allow(unused_imports)]
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::shared::errors::DomainError;
-use crate::domain::task_management::{any_task::AnyTask, Priority, Category};
+use crate::domain::task_management::{any_task::AnyTask, Category, Priority};
 
 pub struct ListTasksUseCase<R: ProjectRepository> {
     repository: R,
@@ -66,7 +67,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         }
         .into()
     }

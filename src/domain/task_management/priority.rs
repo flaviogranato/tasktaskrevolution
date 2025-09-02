@@ -4,11 +4,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Represents the priority level of a task
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum Priority {
     /// Low priority - can be done when there's time
     Low,
     /// Medium priority - normal priority
+    #[default]
     Medium,
     /// High priority - should be done soon
     High,
@@ -70,12 +71,7 @@ impl Priority {
 
     /// Returns all available priorities in order of importance
     pub fn all() -> Vec<Priority> {
-        vec![
-            Priority::Low,
-            Priority::Medium,
-            Priority::High,
-            Priority::Critical,
-        ]
+        vec![Priority::Low, Priority::Medium, Priority::High, Priority::Critical]
     }
 }
 
@@ -85,11 +81,7 @@ impl fmt::Display for Priority {
     }
 }
 
-impl Default for Priority {
-    fn default() -> Self {
-        Priority::Medium
-    }
-}
+
 
 #[cfg(test)]
 mod tests {
@@ -183,7 +175,7 @@ mod tests {
         let priority = Priority::High;
         let serialized = serde_yaml::to_string(&priority).unwrap();
         assert_eq!(serialized.trim(), "High");
-        
+
         let deserialized: Priority = serde_yaml::from_str(&serialized).unwrap();
         assert_eq!(deserialized, Priority::High);
     }
@@ -197,7 +189,7 @@ mod tests {
     #[test]
     fn test_priority_clone() {
         let priority = Priority::Critical;
-        let cloned = priority.clone();
+        let cloned = priority;
         assert_eq!(priority, cloned);
     }
 }

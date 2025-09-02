@@ -1,10 +1,11 @@
 #![allow(dead_code)]
+#![allow(unused_imports)]
 
 use crate::domain::{
     project_management::{any_project::AnyProject, repository::ProjectRepository},
     resource_management::repository::ResourceRepository,
     shared::errors::DomainError,
-    task_management::{Priority, Category},
+    task_management::{Category, Priority},
 };
 use std::fmt;
 
@@ -198,7 +199,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: assignees.iter().map(|&s| s.to_string()).collect(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         }
     }
 

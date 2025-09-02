@@ -1,4 +1,5 @@
-use crate::domain::task_management::{Priority, Category};
+#![allow(unused_imports)]
+use crate::domain::task_management::{Category, Priority};
 use crate::domain::{project_management::repository::ProjectRepository, task_management::AnyTask};
 use csv::Writer;
 use std::error::Error;
@@ -158,7 +159,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec!["Alice".to_string()],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
         let task2: Task<Completed> = Task {
             id: uuid7(),
@@ -172,7 +174,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec!["Bob".to_string(), "Charlie".to_string()],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
@@ -224,7 +227,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let blocked_task: Task<Blocked> = Task {
@@ -241,7 +245,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec!["Developer".to_string()],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let cancelled_task: Task<Cancelled> = Task {
@@ -256,7 +261,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
@@ -340,7 +346,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
@@ -395,7 +402,8 @@ mod tests {
                 "Charlie".to_string(),
                 "Diana".to_string(),
             ],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
@@ -446,7 +454,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec!["John \"The Developer\"".to_string()],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
@@ -538,7 +547,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()

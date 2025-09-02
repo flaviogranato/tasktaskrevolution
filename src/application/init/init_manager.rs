@@ -41,10 +41,11 @@ impl InitManagerUseCase {
         config = config.with_work_hours(data.work_hours_start.clone(), data.work_hours_end.clone());
 
         // Save to repository
-        use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
         use crate::domain::shared::convertable::Convertible;
+        use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
         let config_manifest = <ConfigManifest as Convertible<Config>>::from(config.clone());
-        let current_dir = std::env::current_dir().map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+        let current_dir = std::env::current_dir()
+            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
         self.repository.save(config_manifest, current_dir)?;
 
         Ok(config)

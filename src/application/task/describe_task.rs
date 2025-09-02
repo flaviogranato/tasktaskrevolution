@@ -1,5 +1,8 @@
+#![allow(unused_imports)]
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::{any_task::AnyTask, Priority, Category},
+    project_management::repository::ProjectRepository,
+    shared::errors::DomainError,
+    task_management::{Category, Priority, any_task::AnyTask},
 };
 use std::fmt;
 
@@ -108,7 +111,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec!["dev-1".to_string()],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         }
         .into()
     }

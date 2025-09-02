@@ -115,6 +115,7 @@ impl FileCompanyRepository {
         Ok(())
     }
 
+    #[allow(dead_code)]
     fn delete_company_from_disk(&self, code: &str) -> Result<(), DomainError> {
         let file_path = self.get_company_path(code);
 

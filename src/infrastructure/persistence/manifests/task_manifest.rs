@@ -1,4 +1,4 @@
-use crate::domain::task_management::{AnyTask, Task, state::*, Priority as TaskPriority, Category as TaskCategory};
+use crate::domain::task_management::{AnyTask, Category as TaskCategory, Priority as TaskPriority, Task, state::*};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -106,8 +106,8 @@ impl From<AnyTask> for TaskManifest {
                     actual_end_date: task.actual_end_date,
                     dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
-                priority: task.priority,
-                category: task.category,
+                    priority: task.priority,
+                    category: task.category,
                 },
                 Status::Planned,
                 vec![],
@@ -133,8 +133,8 @@ impl From<AnyTask> for TaskManifest {
                         actual_end_date: task.actual_end_date,
                         dependencies: task.dependencies,
                         assigned_resources: task.assigned_resources,
-                priority: task.priority,
-                category: task.category,
+                        priority: task.priority,
+                        category: task.category,
                     },
                     Status::InProgress,
                     comments,
@@ -152,8 +152,8 @@ impl From<AnyTask> for TaskManifest {
                     actual_end_date: task.actual_end_date,
                     dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
-                priority: task.priority,
-                category: task.category,
+                    priority: task.priority,
+                    category: task.category,
                 },
                 Status::Done,
                 vec![],
@@ -176,8 +176,8 @@ impl From<AnyTask> for TaskManifest {
                         actual_end_date: task.actual_end_date,
                         dependencies: task.dependencies,
                         assigned_resources: task.assigned_resources,
-                priority: task.priority,
-                category: task.category,
+                        priority: task.priority,
+                        category: task.category,
                     },
                     Status::Blocked,
                     comments,
@@ -195,8 +195,8 @@ impl From<AnyTask> for TaskManifest {
                     actual_end_date: task.actual_end_date,
                     dependencies: task.dependencies,
                     assigned_resources: task.assigned_resources,
-                priority: task.priority,
-                category: task.category,
+                    priority: task.priority,
+                    category: task.category,
                 },
                 Status::Cancelled,
                 vec![],
@@ -312,7 +312,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     dependencies: manifest.spec.dependencies,
                     assigned_resources,
                     priority: TaskPriority::default(),
-                category: TaskCategory::default(),
+                    category: TaskCategory::default(),
                 })
             }
             Status::Done => AnyTask::Completed(Task {
@@ -352,7 +352,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     dependencies: manifest.spec.dependencies,
                     assigned_resources,
                     priority: TaskPriority::default(),
-                category: TaskCategory::default(),
+                    category: TaskCategory::default(),
                 })
             }
             Status::Cancelled => AnyTask::Cancelled(Task {
