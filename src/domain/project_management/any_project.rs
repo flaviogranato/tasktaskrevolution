@@ -1,9 +1,9 @@
-use super::super::task_management::any_task::AnyTask;
-use super::project::{Project, ProjectStatus};
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
-use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+    use super::super::task_management::{any_task::AnyTask, task::Task};
+    use super::project::{Project, ProjectStatus};
+    use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+    use chrono::NaiveDate;
+    use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
 
 /// An enum to represent a Project in any of its possible states.
 /// This is now a wrapper around the unified Project entity for backward compatibility.
@@ -185,9 +185,72 @@ impl AnyProject {
     pub fn reschedule_dependents_of(&mut self, updated_task_code: &str) -> Result<(), String> {
         match self {
             AnyProject::Project(p) => {
-                // TODO: Implementar reagendamento de dependentes
-                // Por enquanto, apenas retornamos sucesso
+                // Use a queue-based approach to handle cascading dependencies
+                let mut to_process = vec![updated_task_code.to_string()];
+                let mut processed = std::collections::HashSet::new();
+                
+                while let Some(current_task_code) = to_process.pop() {
+                    if processed.contains(&current_task_code) {
+                        continue;
+                    }
+                    processed.insert(current_task_code.clone());
+                    
+                    // Find the current task to get its due date
+                    let current_due_date = {
+                        let current_task = p.tasks.get(&current_task_code)
+                            .ok_or_else(|| format!("Task '{}' not found", current_task_code))?;
+                        *current_task.due_date()
+                    };
+
+                    // Find all tasks that depend on the current task
+                    let mut dependent_tasks = Vec::new();
+                    for (task_code, task) in &p.tasks {
+                        if task.dependencies().contains(&current_task_code) {
+                            dependent_tasks.push(task_code.clone());
+                        }
+                    }
+
+                    // Reschedule each dependent task
+                    for task_code in dependent_tasks {
+                        if let Some(task) = p.tasks.get_mut(&task_code) {
+                            // Calculate new start date (day after the current task ends)
+                            let new_start_date = current_due_date + chrono::Duration::days(1);
+                            
+                            // Calculate duration of the task
+                            let duration = *task.due_date() - *task.start_date();
+                            
+                            // Update the task with new dates
+                            let updated_task = task.update_fields(
+                                None, // name
+                                None, // description
+                                Some(new_start_date), // start_date
+                                Some(new_start_date + duration), // due_date
+                            );
+                            
+                            // Replace the task in the project
+                            p.tasks.insert(task_code.clone(), updated_task);
+                            
+                            // Add this task to the queue for further processing
+                            to_process.push(task_code);
+                        }
+                    }
+                }
+
                 Ok(())
+            }
+        }
+    }
+
+    pub fn complete_task(mut self, task_code: &str) -> Result<AnyProject, String> {
+        match self {
+            AnyProject::Project(mut p) => {
+                if let Some(task) = p.tasks.remove(task_code) {
+                    let completed_task = task.complete();
+                    p.tasks.insert(task_code.to_string(), completed_task);
+                    Ok(AnyProject::Project(p))
+                } else {
+                    Err(format!("Task '{}' not found", task_code))
+                }
             }
         }
     }
@@ -447,12 +510,30 @@ mod tests {
 
     #[test]
     fn test_any_project_status_transitions() {
-        let project = Project::new(
+        let mut project = Project::new(
             "PROJ-001".to_string(),
             "Test Project".to_string(),
             "COMP-001".to_string(),
             "user@example.com".to_string(),
         ).unwrap();
+
+        // Add a task to the project so it can be started
+        let task = AnyTask::Planned(
+            crate::domain::task_management::builder::TaskBuilder::new()
+                .project_code("PROJ-001".to_string())
+                .name("Test Task".to_string())
+                .code("TASK-001".to_string())
+                .dates(
+                    chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+                    chrono::NaiveDate::from_ymd_opt(2025, 1, 5).unwrap()
+                )
+                .unwrap()
+                .validate_vacations(&[])
+                .unwrap()
+                .build()
+                .unwrap()
+        );
+        project.add_task(task).unwrap();
 
         let any_project = AnyProject::from(project);
         
@@ -460,8 +541,18 @@ mod tests {
         let started_project = any_project.start().unwrap();
         assert!(started_project.is_in_progress());
         
-        // Complete project
-        let completed_project = started_project.complete().unwrap();
+        // Get the task code from the started project to ensure it exists
+        let task_code = started_project.tasks().keys().next().unwrap().clone();
+        
+        // Complete the task first
+        let project_with_completed_task = started_project.complete_task(&task_code).unwrap();
+        
+        // Verify the task is actually completed
+        let task_after_completion = project_with_completed_task.tasks().get(&task_code).unwrap();
+        assert_eq!(task_after_completion.status(), "Completed", "Task should be completed");
+        
+        // Now complete project
+        let completed_project = project_with_completed_task.complete().unwrap();
         assert!(completed_project.is_completed());
     }
 

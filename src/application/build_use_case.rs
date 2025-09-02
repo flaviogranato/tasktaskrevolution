@@ -96,8 +96,16 @@ impl BuildUseCase {
         let project_values: Vec<_> = all_projects_data
             .iter()
             .map(|(project, tasks, resources)| {
+                let mut project_map = tera::Map::new();
+                project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
+                project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+                project_map.insert("description".to_string(), tera::Value::String(project.description().map_or("No description available.".to_string(), |d| d.to_string())));
+                project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
+                project_map.insert("start_date".to_string(), 
+                    project.start_date().map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())));
+
                 let mut map = tera::Map::new();
-                map.insert("project".to_string(), tera::to_value(project).unwrap());
+                map.insert("project".to_string(), tera::Value::Object(project_map));
                 map.insert("tasks".to_string(), tera::to_value(tasks).unwrap());
                 map.insert("resources".to_string(), tera::to_value(resources).unwrap());
                 tera::Value::Object(map)
@@ -106,6 +114,7 @@ impl BuildUseCase {
 
         context.insert("projects", &project_values);
         context.insert("relative_path_prefix", "");
+        context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 
         // Create a dummy project for the base template header, which expects a `project` object.
         let dummy_project: AnyProject =
@@ -120,7 +129,13 @@ impl BuildUseCase {
                 .into();
         context.insert("project", &dummy_project);
 
-        let index_html = self.tera.render("index.html", &context)?;
+        let index_html = match self.tera.render("index.html", &context) {
+            Ok(html) => html,
+            Err(e) => {
+                eprintln!("Template render error: {:?}", e);
+                return Err(format!("Template error: {}", e).into());
+            }
+        };
         fs::write(self.output_dir.join("index.html"), index_html)?;
         println!("✅ Global index page generated successfully.");
 
@@ -137,13 +152,29 @@ impl BuildUseCase {
             fs::create_dir_all(&project_output_dir)?;
 
             let mut context = Context::new();
-            context.insert("project", project);
+            // Create a simplified project object for the template
+            let mut project_map = tera::Map::new();
+            project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
+            project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+            project_map.insert("description".to_string(), tera::Value::String(project.description().map_or("No description available.".to_string(), |d| d.to_string())));
+            project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
+            project_map.insert("start_date".to_string(), 
+                project.start_date().map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())));
+
+            context.insert("project", &tera::Value::Object(project_map));
             context.insert("tasks", tasks);
             context.insert("resources", resources);
             context.insert("relative_path_prefix", "../../");
+            context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 
             // Render project detail page (e.g., project.html)
-            let project_html = self.tera.render("project.html", &context)?;
+            let project_html = match self.tera.render("project.html", &context) {
+                Ok(html) => html,
+                Err(e) => {
+                    eprintln!("Template render error for project.html: {:?}", e);
+                    return Err(format!("Template error: {}", e).into());
+                }
+            };
             let project_page_path = project_output_dir.join("index.html");
             fs::write(project_page_path, project_html)?;
 
