@@ -137,11 +137,10 @@ Backstage é uma plataforma de portal de desenvolvedores que fornece várias fun
 2. **Média Prioridade**: RBAC, Visualização de Dependências, Log de Auditoria
 3. **Baixa Prioridade**: Verificações de Saúde, Integração TechDocs
 
-#### **Esforço de Desenvolvimento Estimado:**
-- **Funcionalidades de Alta Prioridade**: 3-4 meses
-- **Funcionalidades de Média Prioridade**: 2-3 meses  
-- **Funcionalidades de Baixa Prioridade**: 1-2 meses
-- **Total**: 6-9 meses para conjunto completo de funcionalidades inspiradas no Backstage
+#### **Priorização por Interesse:**
+- **Funcionalidades de Alta Prioridade**: Funcionalidades que agregam valor imediato
+- **Funcionalidades de Média Prioridade**: Melhorias na experiência do usuário
+- **Funcionalidades de Baixa Prioridade**: Funcionalidades avançadas para implementar quando houver interesse
 
 ---
 
@@ -204,11 +203,10 @@ Kubernetes é uma plataforma de orquestração de containers que fornece vários
 2. **Média Prioridade**: Gerenciamento de Config, Descoberta de Serviços, Auto-scaling
 3. **Baixa Prioridade**: Funcionalidades avançadas de rede
 
-#### **Esforço de Desenvolvimento Estimado:**
-- **Funcionalidades de Alta Prioridade**: 4-5 meses
-- **Funcionalidades de Média Prioridade**: 2-3 meses
-- **Funcionalidades de Baixa Prioridade**: 1-2 meses
-- **Total**: 7-10 meses para conjunto completo de funcionalidades inspiradas no Kubernetes
+#### **Priorização por Interesse:**
+- **Funcionalidades de Alta Prioridade**: Funcionalidades core que melhoram o gerenciamento
+- **Funcionalidades de Média Prioridade**: Melhorias na operação e monitoramento
+- **Funcionalidades de Baixa Prioridade**: Funcionalidades avançadas para implementar quando houver interesse
 
 ---
 
@@ -271,11 +269,10 @@ Hugo é um gerador de sites estáticos rápido que fornece várias funcionalidad
 2. **Média Prioridade**: Shortcodes, Asset Pipeline, Opções de Deploy
 3. **Baixa Prioridade**: Funcionalidades de blog, integração social
 
-#### **Esforço de Desenvolvimento Estimado:**
-- **Funcionalidades de Alta Prioridade**: 2-3 meses
-- **Funcionalidades de Média Prioridade**: 1-2 meses
-- **Funcionalidades de Baixa Prioridade**: 1 mês
-- **Total**: 4-6 meses para conjunto completo de funcionalidades inspiradas no Hugo
+#### **Priorização por Interesse:**
+- **Funcionalidades de Alta Prioridade**: Funcionalidades que melhoram a documentação e relatórios
+- **Funcionalidades de Média Prioridade**: Melhorias na apresentação e organização
+- **Funcionalidades de Baixa Prioridade**: Funcionalidades avançadas para implementar quando houver interesse
 
 ---
 
@@ -452,11 +449,10 @@ Baseado na análise dos exemplos [Project Template](https://taskjuggler.org/tj3/
 2. **Média Prioridade**: Sistema de Flags/Tags Hierárquico, Tarefas Shadow/Ancora, Sistema de Cenários Avançado, Sistema de Contas e Orçamento, Sistema de Prioridades, Sistema de Categorização
 3. **Baixa Prioridade**: Sistema de Sprints e Backlog, Sistema de Burndown Charts, Sistema de Story Points, Sistema de Journal/Log, Sistema de Feriados, Interface web, funcionalidades em tempo real
 
-#### **Esforço de Desenvolvimento Estimado:**
-- **Funcionalidades de Alta Prioridade**: 8-10 meses
-- **Funcionalidades de Média Prioridade**: 6-8 meses
-- **Funcionalidades de Baixa Prioridade**: 4-5 meses
-- **Total**: 18-23 meses para conjunto completo de funcionalidades inspiradas no TaskJuggler (incluindo todos os exemplos analisados)
+#### **Priorização por Interesse e Complexidade:**
+- **Funcionalidades de Alta Prioridade**: Funcionalidades core que agregam valor imediato
+- **Funcionalidades de Média Prioridade**: Funcionalidades que melhoram a experiência do usuário
+- **Funcionalidades de Baixa Prioridade**: Funcionalidades avançadas para quando houver tempo e interesse
 
 ---
 
@@ -519,17 +515,16 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 2. **Média Prioridade**: Pools de Recursos, Templates, Relatórios
 3. **Baixa Prioridade**: Funcionalidades web, funcionalidades enterprise
 
-#### **Esforço de Desenvolvimento Estimado:**
-- **Funcionalidades de Alta Prioridade**: 4-5 meses
-- **Funcionalidades de Média Prioridade**: 2-3 meses
-- **Funcionalidades de Baixa Prioridade**: 1-2 meses
-- **Total**: 7-10 meses para conjunto completo de funcionalidades inspiradas no MS Project
+#### **Priorização por Interesse:**
+- **Funcionalidades de Alta Prioridade**: Funcionalidades que melhoram o planejamento e visualização
+- **Funcionalidades de Média Prioridade**: Melhorias na análise e relatórios
+- **Funcionalidades de Baixa Prioridade**: Funcionalidades avançadas para implementar quando houver interesse
 
 ---
 
 ## Recomendações Consolidadas de Funcionalidades
 
-### **Fase 1: Melhorias Core (5-6 meses)**
+### **Fase 1: Melhorias Core**
 1. **Sistema de Dependências Avançado** (inspirado no TaskJuggler Fedora 20)
 2. **Cálculo Automático de Datas** (inspirado no TaskJuggler Fedora 20)
 3. **Sistema de Templates de Projeto** (inspirado no TaskJuggler Template)
@@ -537,7 +532,7 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 5. **Motor de Agendamento de Recursos** (inspirado no Kubernetes)
 6. **Geração de Gráficos Gantt** (inspirado no MS Project)
 
-### **Fase 2: Funcionalidades Avançadas (6-7 meses)**
+### **Fase 2: Funcionalidades Avançadas**
 1. **Sistema de Recursos com Capacidade** (inspirado no TaskJuggler Fedora 20)
 2. **Sistema de Cenários Avançado** (inspirado no TaskJuggler Tutorial)
 3. **Sistema de Contas e Orçamento** (inspirado no TaskJuggler Template)
@@ -547,7 +542,7 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 7. **Gerenciamento de Riscos** (inspirado no TaskJuggler)
 8. **Análise de Caminho Crítico** (inspirado no MS Project)
 
-### **Fase 3: Integração & Polimento (4-5 meses)**
+### **Fase 3: Integração & Polimento**
 1. **Sistema de Flags/Tags Hierárquico** (inspirado no TaskJuggler Fedora 20)
 2. **Tarefas Shadow/Ancora** (inspirado no TaskJuggler Fedora 20)
 3. **Sistema de Categorização de Tarefas** (inspirado no TaskJuggler ToDo-List)
@@ -557,13 +552,11 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 7. **Relatórios Avançados** (inspirado no MS Project)
 8. **Integração com Calendário** (inspirado no TaskJuggler)
 
-### **Fase 4: Metodologias Ágeis (3-4 meses)**
+### **Fase 4: Metodologias Ágeis**
 1. **Sistema de Sprints e Backlog** (inspirado no TaskJuggler Scrum)
 2. **Sistema de Burndown Charts** (inspirado no TaskJuggler Scrum)
 3. **Sistema de Story Points** (inspirado no TaskJuggler Scrum)
 4. **Sistema de Feriados e Disponibilidade** (inspirado no TaskJuggler Template)
-
-### **Total Estimado: 18-22 meses**
 
 ### **Matriz de Prioridade:**
 - **Alto Impacto, Baixo Esforço**: Sistema de Templates de Projeto, Sistema de Prioridades, Sistema de Categorização, Gráficos Gantt, Relatórios Dinâmicos
@@ -603,7 +596,7 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 
 - **Status**: Adicionado ao roadmap principal
 - **Prioridade**: Alta, Média e Baixa (Fases 1-4)
-- **Esforço Estimado**: 18-22 meses
+- **Implementação**: Conforme interesse e disponibilidade de tempo
 
 ### Grupos de Recursos (Sugestão do Usuário)
 - Implementar grupos de recursos como uma forma de alocação de recursos
@@ -611,7 +604,7 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 - Gerenciamento e balanceamento de recursos baseado em grupos
 - **Status**: Adicionado ao backlog para análise futura
 - **Prioridade**: Média
-- **Esforço Estimado**: 2-3 semanas
+- **Implementação**: Quando houver interesse
 
 ### Regras de Validação Adicionais
 - Validação de custos e orçamento
@@ -619,7 +612,7 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 - Validação de disponibilidade de recursos
 - **Status**: Planejado
 - **Prioridade**: Alta
-- **Esforço Estimado**: 1-2 semanas
+- **Implementação**: Quando houver tempo
 
 ### Otimizações de Performance
 - Implementar camada de cache
@@ -627,7 +620,7 @@ Microsoft Project é uma ferramenta abrangente de gerenciamento de projetos que 
 - Adicionar opção de backend de banco de dados
 - **Status**: Planejado
 - **Prioridade**: Média
-- **Esforço Estimado**: 3-4 semanas
+- **Implementação**: Quando necessário
 
 ## Histórico de Versões
 
