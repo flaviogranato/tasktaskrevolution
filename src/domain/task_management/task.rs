@@ -374,7 +374,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         }
     }
 
@@ -395,7 +396,8 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         }
     }
 
@@ -495,7 +497,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         assert_eq!(task.code(), "TASK-001");
@@ -523,7 +526,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         assert!(valid_task.is_code_valid());
@@ -541,7 +545,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         assert!(!invalid_task.is_code_valid());
@@ -562,7 +567,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         assert!(valid_task.is_name_valid());
@@ -580,7 +586,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         assert!(!invalid_task.is_name_valid());
@@ -601,7 +608,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         assert!(valid_task.is_date_range_valid());
@@ -619,7 +627,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         assert!(!invalid_task.is_date_range_valid());
@@ -639,7 +648,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let validation_result = valid_task.validate();
@@ -658,7 +668,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let validation_result = invalid_task.validate();
@@ -684,7 +695,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         // Transition from Planned to InProgress
@@ -704,7 +716,8 @@ mod tests {
             actual_end_date: None,
             dependencies: Vec::new(),
             assigned_resources: Vec::new(),
-            priority: Priority::default(), category: Category::default(),
+            priority: Priority::default(),
+            category: Category::default(),
         };
 
         let completed_task: Task<Completed> = in_progress_task.transition();

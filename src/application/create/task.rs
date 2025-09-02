@@ -1,4 +1,4 @@
-use crate::domain::task_management::{Priority, Category};
+// Priority and Category are used in Task initializations
 use crate::domain::{
     project_management::repository::ProjectRepository,
     shared::errors::{DomainError, DomainErrorKind},

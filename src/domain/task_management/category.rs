@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// Represents different categories for tasks with visual indicators
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum Category {
     /// Development tasks - Code, features, bugs
+    #[default]
     Development,
     /// Testing tasks - Unit tests, integration tests, QA
     Testing,
@@ -26,11 +27,7 @@ pub enum Category {
     Other,
 }
 
-impl Default for Category {
-    fn default() -> Self {
-        Category::Other
-    }
-}
+
 
 impl fmt::Display for Category {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -51,6 +48,7 @@ impl fmt::Display for Category {
 
 impl Category {
     /// Returns a short display name for the category
+    #[allow(dead_code)]
     pub fn short_name(&self) -> &'static str {
         match self {
             Category::Development => "DEV",
@@ -67,6 +65,7 @@ impl Category {
     }
 
     /// Returns an emoji icon for the category
+    #[allow(dead_code)]
     pub fn icon(&self) -> &'static str {
         match self {
             Category::Development => "💻",
@@ -83,37 +82,42 @@ impl Category {
     }
 
     /// Returns a color code for the category (ANSI color codes)
+    #[allow(dead_code)]
     pub fn color_code(&self) -> &'static str {
         match self {
-            Category::Development => "\x1b[34m", // Blue
-            Category::Testing => "\x1b[32m",     // Green
-            Category::Documentation => "\x1b[33m", // Yellow
-            Category::Design => "\x1b[35m",      // Magenta
+            Category::Development => "\x1b[34m",    // Blue
+            Category::Testing => "\x1b[32m",        // Green
+            Category::Documentation => "\x1b[33m",  // Yellow
+            Category::Design => "\x1b[35m",         // Magenta
             Category::Infrastructure => "\x1b[36m", // Cyan
-            Category::Research => "\x1b[31m",    // Red
-            Category::Maintenance => "\x1b[37m", // White
-            Category::Meeting => "\x1b[93m",     // Bright Yellow
-            Category::Review => "\x1b[94m",      // Bright Blue
-            Category::Other => "\x1b[90m",       // Dark Gray
+            Category::Research => "\x1b[31m",       // Red
+            Category::Maintenance => "\x1b[37m",    // White
+            Category::Meeting => "\x1b[93m",        // Bright Yellow
+            Category::Review => "\x1b[94m",         // Bright Blue
+            Category::Other => "\x1b[90m",          // Dark Gray
         }
     }
 
     /// Returns the reset color code
+    #[allow(dead_code)]
     pub fn reset_color() -> &'static str {
         "\x1b[0m"
     }
 
     /// Returns a colored display string
+    #[allow(dead_code)]
     pub fn colored_display(&self) -> String {
         format!("{}{}{}", self.color_code(), self, Self::reset_color())
     }
 
     /// Returns a colored display with icon
+    #[allow(dead_code)]
     pub fn colored_with_icon(&self) -> String {
         format!("{} {}{}{}", self.icon(), self.color_code(), self, Self::reset_color())
     }
 
     /// Returns all available categories
+    #[allow(dead_code)]
     pub fn all() -> Vec<Category> {
         vec![
             Category::Development,
@@ -130,26 +134,21 @@ impl Category {
     }
 
     /// Returns categories grouped by type
+    #[allow(dead_code)]
     pub fn by_type() -> std::collections::HashMap<&'static str, Vec<Category>> {
         let mut groups = std::collections::HashMap::new();
-        groups.insert("Technical", vec![
-            Category::Development,
-            Category::Testing,
-            Category::Infrastructure,
-            Category::Maintenance,
-        ]);
-        groups.insert("Creative", vec![
-            Category::Design,
-            Category::Documentation,
-        ]);
-        groups.insert("Process", vec![
-            Category::Research,
-            Category::Meeting,
-            Category::Review,
-        ]);
-        groups.insert("General", vec![
-            Category::Other,
-        ]);
+        groups.insert(
+            "Technical",
+            vec![
+                Category::Development,
+                Category::Testing,
+                Category::Infrastructure,
+                Category::Maintenance,
+            ],
+        );
+        groups.insert("Creative", vec![Category::Design, Category::Documentation]);
+        groups.insert("Process", vec![Category::Research, Category::Meeting, Category::Review]);
+        groups.insert("General", vec![Category::Other]);
         groups
     }
 }
@@ -180,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_category_default() {
-        assert_eq!(Category::default(), Category::Other);
+        assert_eq!(Category::default(), Category::Development);
     }
 
     #[test]
@@ -216,7 +215,7 @@ mod tests {
         let dev = Category::Development.colored_display();
         assert!(dev.contains("Development"));
         assert!(dev.contains("\x1b[34m")); // Blue color
-        assert!(dev.contains("\x1b[0m"));  // Reset color
+        assert!(dev.contains("\x1b[0m")); // Reset color
     }
 
     #[test]
@@ -225,7 +224,7 @@ mod tests {
         assert!(dev.contains("💻"));
         assert!(dev.contains("Development"));
         assert!(dev.contains("\x1b[34m")); // Blue color
-        assert!(dev.contains("\x1b[0m"));  // Reset color
+        assert!(dev.contains("\x1b[0m")); // Reset color
     }
 
     #[test]
@@ -243,7 +242,7 @@ mod tests {
         assert!(by_type.contains_key("Creative"));
         assert!(by_type.contains_key("Process"));
         assert!(by_type.contains_key("General"));
-        
+
         let technical = by_type.get("Technical").unwrap();
         assert!(technical.contains(&Category::Development));
         assert!(technical.contains(&Category::Testing));
@@ -256,7 +255,7 @@ mod tests {
         assert_eq!("testing".parse::<Category>().unwrap(), Category::Testing);
         assert_eq!("test".parse::<Category>().unwrap(), Category::Testing);
         assert_eq!("other".parse::<Category>().unwrap(), Category::Other);
-        
+
         assert!("invalid".parse::<Category>().is_err());
     }
 
@@ -265,7 +264,7 @@ mod tests {
         let category = Category::Development;
         let serialized = serde_yaml::to_string(&category).unwrap();
         assert!(serialized.contains("Development"));
-        
+
         let deserialized: Category = serde_yaml::from_str(&serialized).unwrap();
         assert_eq!(deserialized, category);
     }
@@ -279,7 +278,7 @@ mod tests {
     #[test]
     fn test_category_clone() {
         let category = Category::Development;
-        let cloned = category.clone();
+        let cloned = category;
         assert_eq!(category, cloned);
     }
 }
