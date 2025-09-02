@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::company_settings::errors::CompanySettingsError;
 
 /// Validações de domínio para configurações da empresa

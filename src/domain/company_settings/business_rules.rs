@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::company_settings::config::Config;
 use crate::domain::company_settings::errors::CompanySettingsError;
 use crate::domain::company_settings::validations::CompanySettingsValidator;

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::{
     project_management::{any_project::AnyProject, repository::ProjectRepository},
     resource_management::repository::ResourceRepository,
@@ -72,7 +74,7 @@ where
             .ok_or_else(|| AssignResourceToTaskError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Find the resource
-        let resource = self
+        let _resource = self
             .resource_repository
             .find_by_code(resource_code)?
             .ok_or_else(|| AssignResourceToTaskError::ResourceNotFound(resource_code.to_string()))?;

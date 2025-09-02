@@ -112,7 +112,7 @@ mod tests {
         shared::errors::{DomainError, DomainErrorKind},
         task_management::{
             Task,
-            state::{Blocked, Cancelled, Completed, InProgress, Planned},
+            state::{Completed, InProgress},
         },
     };
     use chrono::NaiveDate;

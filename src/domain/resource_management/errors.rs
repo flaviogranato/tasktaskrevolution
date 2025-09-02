@@ -1,9 +1,11 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use std::error::Error as StdError;
 use std::fmt;
 
 /// Resource-specific error types
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ResourceError {
     NotFound { code: String },
     AlreadyExists { code: String },
@@ -343,7 +345,7 @@ mod tests {
     fn test_resource_result_success() {
         let result: ResourceResult<String> = Ok("Success".to_string());
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Success");
+        assert_eq!(result, Ok("Success".to_string()));
     }
 
     #[test]
@@ -400,7 +402,7 @@ mod tests {
 
         for error in errors {
             let domain_error: DomainError = error.into();
-            assert!(domain_error.to_string().len() > 0);
+            assert!(!domain_error.to_string().is_empty());
         }
     }
 }

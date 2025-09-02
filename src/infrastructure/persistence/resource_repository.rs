@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::{
     domain::{
         project_management::repository::ProjectRepository,
@@ -279,11 +281,11 @@ impl ResourceRepository for FileResourceRepository {
         self.save(updated_resource)
     }
 
-    fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool {
+    fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
         let project_repo = FileProjectRepository::new();
 
         if let Ok(project) = project_repo.load()
-            && let Some(vacation_rules) = project.vacation_rules()
+            && let Some(_vacation_rules) = project.vacation_rules()
         // TODO: Implement layoff_periods in the new VacationRules
         // && let Some(layoff_periods) = &vacation_rules.layoff_periods
         {

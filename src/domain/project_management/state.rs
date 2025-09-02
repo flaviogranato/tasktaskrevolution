@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use serde::Serialize;
 
 /// A marker trait for all project states.

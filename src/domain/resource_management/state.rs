@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::resource::ProjectAssignment;
 use serde::{Deserialize, Serialize};
 

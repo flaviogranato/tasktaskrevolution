@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::state::{Assigned, Available, Inactive, ResourceState};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};

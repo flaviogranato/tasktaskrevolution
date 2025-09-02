@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use chrono::NaiveDate;
 
 #[derive(Debug, Clone, PartialEq)]

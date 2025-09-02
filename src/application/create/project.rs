@@ -141,9 +141,9 @@ mod test {
         let any_project = saved_config.as_ref().unwrap();
         assert_eq!(any_project.name(), name);
         // AnyProject is no longer an enum with variants, so we can access the project directly
-        assert_eq!(
-            any_project.description().as_deref().map(|s| s.as_str()),
-            description.as_deref()
-        );
+        // Compare descriptions by converting both to Option<String>
+        let expected_desc = description.as_ref().map(|s| s.to_string());
+        let actual_desc = any_project.description().map(|s| s.to_string());
+        assert_eq!(actual_desc, expected_desc);
     }
 }

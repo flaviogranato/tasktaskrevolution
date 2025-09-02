@@ -1,9 +1,11 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use std::error::Error as StdError;
 use std::fmt;
 
 /// Company settings specific error types
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum CompanySettingsError {
     ConfigurationNotFound {
         path: String,
@@ -330,7 +332,7 @@ mod tests {
     fn test_company_settings_result_success() {
         let result: CompanySettingsResult<String> = Ok("success".to_string());
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "success");
+        assert_eq!(result, Ok("success".to_string()));
     }
 
     #[test]

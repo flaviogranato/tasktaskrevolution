@@ -677,11 +677,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     *compensated_hours,
                 ) {
                     Ok(result) => {
-                        if result.success {
-                            println!("{}", result.message);
-                        } else {
-                            println!("{}", result.message);
-                        }
+                                                println!("{}", result.message);
                     }
                     Err(e) => println!("Unexpected error: {e}"),
                 };
@@ -1709,7 +1705,7 @@ mod tests {
                 assert_eq!(resource, "RES-001");
                 assert_eq!(start_date, "2024-01-01");
                 assert_eq!(end_date, "2024-01-05");
-                assert_eq!(is_time_off_compensation, false);
+                assert!(!is_time_off_compensation);
                 assert_eq!(compensated_hours, None);
             } else {
                 panic!("Expected CreateCommands::Vacation");
@@ -1749,7 +1745,7 @@ mod tests {
                 assert_eq!(resource, "RES-001");
                 assert_eq!(start_date, "2024-01-01");
                 assert_eq!(end_date, "2024-01-05");
-                assert_eq!(is_time_off_compensation, true);
+                assert!(is_time_off_compensation);
                 assert_eq!(compensated_hours, Some(40));
             } else {
                 panic!("Expected CreateCommands::Vacation");
@@ -2049,10 +2045,10 @@ mod tests {
     #[test]
     fn test_cli_long_about() {
         let cli = Cli::command();
-        let long_about = cli.get_long_about();
+        let _long_about = cli.get_long_about();
         // long_about pode ser None, então não podemos fazer assert direto
         // mas podemos verificar que não quebra
-        assert!(true); // Placeholder assertion
+        // Placeholder assertion - test passes if we reach here
     }
 
     #[test]

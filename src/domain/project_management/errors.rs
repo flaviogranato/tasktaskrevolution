@@ -1,9 +1,11 @@
+#![allow(dead_code)]
+
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use std::error::Error as StdError;
 use std::fmt;
 
 /// Project-specific error types
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ProjectError {
     NotFound { code: String },
     AlreadyExists { code: String },
@@ -270,7 +272,7 @@ mod tests {
     fn test_project_result_success() {
         let result: ProjectResult<String> = Ok("Success".to_string());
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), "Success");
+        assert_eq!(result, Ok("Success".to_string()));
     }
 
     #[test]
@@ -319,7 +321,7 @@ mod tests {
 
         for error in errors {
             let domain_error: DomainError = error.into();
-            assert!(domain_error.to_string().len() > 0);
+            assert!(!domain_error.to_string().is_empty());
         }
     }
 }

@@ -1,5 +1,8 @@
+#![allow(dead_code)]
+
 use crate::domain::company_settings::config::Config;
 
+#[allow(dead_code)]
 pub struct ValidateCompanyConfigUseCase;
 
 impl ValidateCompanyConfigUseCase {

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::domain::{
     project_management::{any_project::AnyProject, repository::ProjectRepository},
     shared::errors::DomainError,
