@@ -81,7 +81,11 @@ where
         // 4. Assign the resource to the task
         let updated_task = self.assign_resource_to_task(task, resource)?;
 
-        Ok(updated_task)
+        // 5. Save the updated task
+        let saved_task = self.task_repository.save(updated_task)
+            .map_err(|e| AssignResourceToTaskError::RepositoryError(e))?;
+
+        Ok(saved_task)
     }
 
     fn is_resource_available(&self, _resource: &AnyResource) -> bool {
