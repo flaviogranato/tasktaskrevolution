@@ -549,6 +549,7 @@ mod tests {
         
         // Verify the task is actually completed
         let task_after_completion = project_with_completed_task.tasks().get(&task_code).unwrap();
+        println!("Task status after completion: {}", task_after_completion.status());
         assert_eq!(task_after_completion.status(), "Completed", "Task should be completed");
         
         // Now complete project

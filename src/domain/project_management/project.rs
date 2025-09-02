@@ -260,9 +260,7 @@ impl Project {
 
     fn validate_can_complete(&self) -> Result<(), DomainError> {
         let all_tasks_completed = self.tasks.values().all(|task| {
-            // Assumindo que AnyTask tem um método is_completed
-            // Se não tiver, podemos implementar uma verificação diferente
-            false // Placeholder - implementar quando tivermos acesso ao AnyTask
+            task.status() == "Completed"
         });
         
         if !all_tasks_completed {
@@ -275,9 +273,8 @@ impl Project {
     }
 
     pub fn add_task(&mut self, task: AnyTask) -> Result<(), DomainError> {
-        // Aqui precisamos de um ID único para a tarefa
-        // Por enquanto, vamos usar um placeholder
-        let task_id = "task_placeholder".to_string();
+        // Use the task code as the ID
+        let task_id = task.code().to_string();
         
         if self.tasks.contains_key(&task_id) {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -490,9 +487,34 @@ mod tests {
             "user@example.com".to_string(),
         ).unwrap();
 
+        // Add a task to the project so it can be started
+        let task = crate::domain::task_management::any_task::AnyTask::Planned(
+            crate::domain::task_management::builder::TaskBuilder::new()
+                .project_code("PROJ-001".to_string())
+                .name("Test Task".to_string())
+                .code("TASK-001".to_string())
+                .dates(
+                    chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+                    chrono::NaiveDate::from_ymd_opt(2025, 1, 5).unwrap()
+                )
+                .unwrap()
+                .validate_vacations(&[])
+                .unwrap()
+                .build()
+                .unwrap()
+        );
+        project.add_task(task).unwrap();
+
         // Planned -> InProgress
         assert!(project.change_status(ProjectStatus::InProgress).is_ok());
         assert_eq!(project.status(), ProjectStatus::InProgress);
+
+        // Complete the task first so the project can be completed
+        let task_code = "TASK-001".to_string();
+        if let Some(task) = project.tasks.get_mut(&task_code) {
+            let completed_task = task.clone().complete();
+            project.tasks.insert(task_code, completed_task);
+        }
 
         // InProgress -> Completed
         assert!(project.change_status(ProjectStatus::Completed).is_ok());
