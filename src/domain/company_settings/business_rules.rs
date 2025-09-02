@@ -1,7 +1,6 @@
-use crate::domain::shared::errors::DomainError;
+use crate::domain::company_settings::config::Config;
 use crate::domain::company_settings::errors::CompanySettingsError;
 use crate::domain::company_settings::validations::CompanySettingsValidator;
-use crate::domain::company_settings::config::Config;
 
 /// Regras de negócio para configurações da empresa
 pub struct CompanySettingsBusinessRules;
@@ -19,11 +18,7 @@ impl CompanySettingsBusinessRules {
         Self::apply_timezone_business_rules(default_timezone)?;
 
         // 2. Validar dados de entrada
-        CompanySettingsValidator::validate_all_config(
-            manager_name,
-            manager_email,
-            default_timezone,
-        )?;
+        CompanySettingsValidator::validate_all_config(manager_name, manager_email, default_timezone)?;
 
         // 3. Criar e retornar a configuração
         Ok(Config::new(
@@ -47,7 +42,7 @@ impl CompanySettingsBusinessRules {
         // Regra: Nome deve ter pelo menos uma palavra com 2+ caracteres
         let words: Vec<&str> = name.split_whitespace().collect();
         let has_valid_word = words.iter().any(|word| word.len() >= 2);
-        
+
         if !has_valid_word {
             return Err(CompanySettingsError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
@@ -57,8 +52,7 @@ impl CompanySettingsBusinessRules {
         }
 
         // Regra: Nome não pode começar ou terminar com hífen ou apóstrofo
-        if name.starts_with('-') || name.starts_with('\'') || 
-           name.ends_with('-') || name.ends_with('\'') {
+        if name.starts_with('-') || name.starts_with('\'') || name.ends_with('-') || name.ends_with('\'') {
             return Err(CompanySettingsError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
@@ -92,14 +86,14 @@ impl CompanySettingsBusinessRules {
 
         // Regra: Email deve ter domínio válido (não pode ser localhost, etc.)
         let invalid_domains = ["localhost", "127.0.0.1", "::1", "0.0.0.0"];
-        if let Some(domain) = email.split('@').nth(1) {
-            if invalid_domains.contains(&domain) {
-                return Err(CompanySettingsError::ConfigurationInvalid {
-                    field: "manager_email".to_string(),
-                    value: email.to_string(),
-                    reason: "Domínio de email inválido".to_string(),
-                });
-            }
+        if let Some(domain) = email.split('@').nth(1)
+            && invalid_domains.contains(&domain)
+        {
+            return Err(CompanySettingsError::ConfigurationInvalid {
+                field: "manager_email".to_string(),
+                value: email.to_string(),
+                reason: "Domínio de email inválido".to_string(),
+            });
         }
 
         Ok(())
@@ -108,9 +102,7 @@ impl CompanySettingsBusinessRules {
     /// Aplica regras de negócio específicas para o fuso horário
     fn apply_timezone_business_rules(timezone: &str) -> Result<(), CompanySettingsError> {
         // Regra: Fuso horário deve ser apropriado para o contexto da empresa
-        let recommended_timezones = [
-            "America/Sao_Paulo", "America/New_York", "Europe/London", "UTC"
-        ];
+        let recommended_timezones = ["America/Sao_Paulo", "America/New_York", "Europe/London", "UTC"];
 
         if !recommended_timezones.contains(&timezone) {
             // Apenas um warning, não um erro
@@ -160,14 +152,11 @@ impl CompanySettingsBusinessRules {
     }
 
     /// Aplica regras de negócio para migração de configurações
-    pub fn apply_migration_rules(
-        old_config: &Config,
-        new_config: &Config,
-    ) -> Result<(), CompanySettingsError> {
+    pub fn apply_migration_rules(old_config: &Config, new_config: &Config) -> Result<(), CompanySettingsError> {
         // Regra: Migração só pode ser feita em horário de baixa atividade
         // Simulado - em produção seria verificado o horário atual
         let current_hour = 14; // Simulado
-        if current_hour >= 9 && current_hour <= 18 {
+        if (9..=18).contains(&current_hour) {
             return Err(CompanySettingsError::OperationNotAllowed {
                 operation: "migration".to_string(),
                 reason: "Migração só pode ser feita fora do horário comercial".to_string(),
@@ -177,10 +166,7 @@ impl CompanySettingsBusinessRules {
         // Regra: Configuração deve manter compatibilidade
         if old_config.default_timezone != new_config.default_timezone {
             // Verificar se a mudança é compatível
-            if !Self::is_timezone_change_compatible(
-                &old_config.default_timezone,
-                &new_config.default_timezone,
-            ) {
+            if !Self::is_timezone_change_compatible(&old_config.default_timezone, &new_config.default_timezone) {
                 return Err(CompanySettingsError::ConfigurationInvalid {
                     field: "default_timezone".to_string(),
                     value: new_config.default_timezone.clone(),
@@ -217,67 +203,55 @@ mod tests {
 
     #[test]
     fn test_apply_creation_rules_success() {
-        let result = CompanySettingsBusinessRules::apply_creation_rules(
-            "John Doe",
-            "john@company.com",
-            "America/Sao_Paulo"
-        );
+        let result =
+            CompanySettingsBusinessRules::apply_creation_rules("John Doe", "john@company.com", "America/Sao_Paulo");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_apply_creation_rules_name_with_spaces_only() {
-        let result = CompanySettingsBusinessRules::apply_creation_rules(
-            "   ",
-            "john@company.com",
-            "UTC"
+        let result = CompanySettingsBusinessRules::apply_creation_rules("   ", "john@company.com", "UTC");
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_name" && reason.contains("espaços"))
         );
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_name" && reason.contains("espaços")));
     }
 
     #[test]
     fn test_apply_creation_rules_name_starts_with_hyphen() {
-        let result = CompanySettingsBusinessRules::apply_creation_rules(
-            "-John Doe",
-            "john@company.com",
-            "UTC"
+        let result = CompanySettingsBusinessRules::apply_creation_rules("-John Doe", "john@company.com", "UTC");
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_name" && reason.contains("hífen"))
         );
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_name" && reason.contains("hífen")));
     }
 
     #[test]
     fn test_apply_creation_rules_reserved_email() {
-        let result = CompanySettingsBusinessRules::apply_creation_rules(
-            "Admin User",
-            "admin@system.local",
-            "UTC"
+        let result = CompanySettingsBusinessRules::apply_creation_rules("Admin User", "admin@system.local", "UTC");
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_email" && reason.contains("reservado"))
         );
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_email" && reason.contains("reservado")));
     }
 
     #[test]
     fn test_apply_creation_rules_generic_email() {
-        let result = CompanySettingsBusinessRules::apply_creation_rules(
-            "Admin User",
-            "admin@company.com",
-            "UTC"
+        let result = CompanySettingsBusinessRules::apply_creation_rules("Admin User", "admin@company.com", "UTC");
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_email" && reason.contains("genérico"))
         );
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_email" && reason.contains("genérico")));
     }
 
     #[test]
     fn test_apply_creation_rules_extreme_timezone() {
-        let result = CompanySettingsBusinessRules::apply_creation_rules(
-            "Admin User",
-            "admin@specificcompany.com",
-            "Asia/Tokyo"
+        let result =
+            CompanySettingsBusinessRules::apply_creation_rules("Admin User", "admin@specificcompany.com", "Asia/Tokyo");
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "default_timezone" && reason.contains("muito extremo"))
         );
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "default_timezone" && reason.contains("muito extremo")));
     }
 
     #[test]
@@ -288,14 +262,24 @@ mod tests {
             "UTC".to_string(),
         );
         let result = CompanySettingsBusinessRules::can_remove_config(&config);
-        assert!(matches!(result, Err(CompanySettingsError::OperationNotAllowed { operation, reason }) 
-            if operation == "remove" && reason.contains("sistema")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::OperationNotAllowed { operation, reason })
+            if operation == "remove" && reason.contains("sistema"))
+        );
     }
 
     #[test]
     fn test_is_timezone_change_compatible() {
-        assert!(CompanySettingsBusinessRules::is_timezone_change_compatible("UTC", "GMT"));
-        assert!(CompanySettingsBusinessRules::is_timezone_change_compatible("Europe/London", "Europe/Paris"));
-        assert!(!CompanySettingsBusinessRules::is_timezone_change_compatible("UTC", "America/Sao_Paulo"));
+        assert!(CompanySettingsBusinessRules::is_timezone_change_compatible(
+            "UTC", "GMT"
+        ));
+        assert!(CompanySettingsBusinessRules::is_timezone_change_compatible(
+            "Europe/London",
+            "Europe/Paris"
+        ));
+        assert!(!CompanySettingsBusinessRules::is_timezone_change_compatible(
+            "UTC",
+            "America/Sao_Paulo"
+        ));
     }
 }

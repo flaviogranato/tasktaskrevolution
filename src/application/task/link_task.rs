@@ -1,7 +1,5 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository,
-    shared::errors::DomainError,
-    task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
 };
 use std::fmt;
 
@@ -61,7 +59,9 @@ where
         dependency_code: &str,
     ) -> Result<AnyTask, LinkTaskError> {
         if task_code == dependency_code {
-            return Err(LinkTaskError::DomainError("A task cannot depend on itself.".to_string()));
+            return Err(LinkTaskError::DomainError(
+                "A task cannot depend on itself.".to_string(),
+            ));
         }
 
         // 1. Load the project aggregate that contains the tasks.
@@ -111,12 +111,13 @@ where
         }
 
         // 4. Add the dependency to the task.
-        let updated_task = project.add_dependency_to_task(task_code, dependency_code)
-            .map_err(|e| LinkTaskError::DomainError(e))?;
+        let updated_task = project
+            .add_dependency_to_task(task_code, dependency_code)
+            .map_err(LinkTaskError::DomainError)?;
 
         // 5. Save the entire project aggregate with the modified task.
         self.project_repository.save(project.clone())?;
-        
+
         Ok(updated_task)
     }
 }
@@ -141,9 +142,11 @@ mod tests {
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), DomainError> {
             if self.should_fail_save {
-                Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
-                    message: "Simulated save failure".to_string(),
-                }))
+                Err(DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: "Simulated save failure".to_string(),
+                    },
+                ))
             } else {
                 self.projects.borrow_mut().insert(project.code().to_string(), project);
                 Ok(())
@@ -279,8 +282,6 @@ mod tests {
         assert!(matches!(result, Err(LinkTaskError::CircularDependencyDetected(_))));
     }
 
-
-
     #[test]
     fn test_link_task_with_different_task_states() {
         // Create tasks with different states to test the match statement
@@ -336,39 +337,41 @@ mod tests {
         let task_a = create_test_task("A");
         let task_b = create_test_task("B");
         let project = setup_test_project(vec![task_a, task_b]);
-        
+
         // Create a mock repository that fails on save
         struct FailingMockProjectRepository {
             project: AnyProject,
         }
-        
+
         impl ProjectRepository for FailingMockProjectRepository {
             fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
                 Ok(Some(self.project.clone()))
             }
-            
+
             fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
-                Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
-                    message: "Repository save failed".to_string(),
-                }))
+                Err(DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: "Repository save failed".to_string(),
+                    },
+                ))
             }
-            
+
             fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
                 Ok(vec![self.project.clone()])
             }
-            
+
             fn load(&self) -> Result<AnyProject, DomainError> {
                 Ok(self.project.clone())
             }
-            
+
             fn get_next_code(&self) -> Result<String, DomainError> {
                 Ok("PROJ-1".to_string())
             }
         }
-        
+
         let project_repo = FailingMockProjectRepository { project };
         let use_case = LinkTaskUseCase::new(project_repo);
-        
+
         let result = use_case.execute("PROJ-1", "A", "B");
         assert!(result.is_err());
     }

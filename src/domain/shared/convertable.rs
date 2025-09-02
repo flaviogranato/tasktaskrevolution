@@ -95,9 +95,7 @@ mod tests {
         }
 
         fn from(source: TargetType) -> Self {
-            Self {
-                value: source.data,
-            }
+            Self { value: source.data }
         }
     }
 
@@ -138,7 +136,7 @@ mod tests {
             value: "test_value".to_string(),
         };
         let target = source.to();
-        
+
         assert_eq!(target.data, "test_value");
     }
 
@@ -148,7 +146,7 @@ mod tests {
             data: "test_data".to_string(),
         };
         let source = <SourceType as Convertible<TargetType>>::from(target);
-        
+
         assert_eq!(source.value, "test_data");
     }
 
@@ -157,15 +155,15 @@ mod tests {
         let original_source = SourceType {
             value: "original_value".to_string(),
         };
-        
+
         // Convert to target
         let target = original_source.to();
         assert_eq!(target.data, "original_value");
-        
+
         // Convert back to source
         let new_source = <SourceType as Convertible<TargetType>>::from(target);
         assert_eq!(new_source.value, "original_value");
-        
+
         // Verify they are equal
         assert_eq!(original_source, new_source);
     }
@@ -177,12 +175,12 @@ mod tests {
             id: 42,
             name: "Simple Test".to_string(),
         };
-        
+
         // Test Convertible::to
         let target = source.to();
         assert_eq!(target.identifier, 42);
         assert_eq!(target.title, "Simple Test");
-        
+
         // Test Convertible::from
         let new_source = <SimpleSource as Convertible<SimpleTarget>>::from(target);
         assert_eq!(new_source.id, 42);
@@ -193,22 +191,31 @@ mod tests {
     #[test]
     fn test_complex_conversion_scenarios() {
         let sources = vec![
-            SourceType { value: "first".to_string() },
-            SourceType { value: "second".to_string() },
-            SourceType { value: "third".to_string() },
+            SourceType {
+                value: "first".to_string(),
+            },
+            SourceType {
+                value: "second".to_string(),
+            },
+            SourceType {
+                value: "third".to_string(),
+            },
         ];
-        
+
         // Convert all sources to targets
         let targets: Vec<TargetType> = sources.iter().map(|s| s.to()).collect();
-        
+
         assert_eq!(targets.len(), 3);
         assert_eq!(targets[0].data, "first");
         assert_eq!(targets[1].data, "second");
         assert_eq!(targets[2].data, "third");
-        
+
         // Convert all targets back to sources
-        let new_sources: Vec<SourceType> = targets.into_iter().map(|t| <SourceType as Convertible<TargetType>>::from(t)).collect();
-        
+        let new_sources: Vec<SourceType> = targets
+            .into_iter()
+            .map(|t| <SourceType as Convertible<TargetType>>::from(t))
+            .collect();
+
         assert_eq!(new_sources.len(), 3);
         assert_eq!(new_sources[0].value, "first");
         assert_eq!(new_sources[1].value, "second");
@@ -225,23 +232,21 @@ mod tests {
         {
             source.to()
         }
-        
+
         let source = SourceType {
             value: "trait_bound".to_string(),
         };
         let target = convert_anything(&source);
-        
+
         assert_eq!(target.data, "trait_bound");
     }
 
     // Tests for edge cases
     #[test]
     fn test_empty_string_conversion() {
-        let source = SourceType {
-            value: "".to_string(),
-        };
+        let source = SourceType { value: "".to_string() };
         let target = source.to();
-        
+
         assert_eq!(target.data, "");
     }
 
@@ -251,7 +256,7 @@ mod tests {
             value: "🚀 🎯 💪".to_string(),
         };
         let target = source.to();
-        
+
         assert_eq!(target.data, "🚀 🎯 💪");
     }
 
@@ -262,7 +267,7 @@ mod tests {
             value: "ext_to".to_string(),
         };
         let target = source.convert_to();
-        
+
         assert_eq!(target.data, "ext_to");
     }
 
@@ -272,7 +277,7 @@ mod tests {
             data: "ext_from".to_string(),
         };
         let source = SourceType::convert_from(target);
-        
+
         assert_eq!(source.value, "ext_from");
     }
 
@@ -282,7 +287,7 @@ mod tests {
         let _source = SourceType {
             value: "bidirectional".to_string(),
         };
-        
+
         // Test that SourceType implements BidirectionalConvertible<TargetType>
         // This test verifies that the trait can be used as a bound
         assert!(true);
@@ -338,7 +343,11 @@ mod tests {
         impl Convertible<BoolTarget> for BoolSource {
             fn to(&self) -> BoolTarget {
                 BoolTarget {
-                    data: if self.value { "true".to_string() } else { "false".to_string() },
+                    data: if self.value {
+                        "true".to_string()
+                    } else {
+                        "false".to_string()
+                    },
                 }
             }
 
@@ -383,7 +392,9 @@ mod tests {
             }
         }
 
-        let source = OptionSource { value: Some("test".to_string()) };
+        let source = OptionSource {
+            value: Some("test".to_string()),
+        };
         let target = source.to();
         assert_eq!(target.data, "test");
 
@@ -457,7 +468,9 @@ mod tests {
             }
         }
 
-        let source = ErrorSource { value: "valid".to_string() };
+        let source = ErrorSource {
+            value: "valid".to_string(),
+        };
         let target = source.to();
         assert_eq!(target.data, Ok("valid".to_string()));
 
@@ -524,7 +537,9 @@ mod tests {
             }
         }
 
-        let source = AssociatedSource { value: "associated".to_string() };
+        let source = AssociatedSource {
+            value: "associated".to_string(),
+        };
         let target = source.convert();
         assert_eq!(target.data, "associated");
     }
@@ -597,13 +612,13 @@ mod tests {
                 if source.data.len() < 3 {
                     panic!("Data too short");
                 }
-                Self {
-                    value: source.data,
-                }
+                Self { value: source.data }
             }
         }
 
-        let source = ValidatedSource { value: "valid".to_string() };
+        let source = ValidatedSource {
+            value: "valid".to_string(),
+        };
         let target = source.to();
         assert_eq!(target.data, "valid");
 
@@ -652,11 +667,13 @@ mod tests {
         }
 
         let converter = CachedConverter::new();
-        let source = CachedSource { value: "cached".to_string() };
-        
+        let source = CachedSource {
+            value: "cached".to_string(),
+        };
+
         let target1 = converter.convert(&source);
         let target2 = converter.convert(&source);
-        
+
         assert_eq!(target1, target2);
         assert_eq!(target1.data, "cached");
     }
@@ -681,14 +698,14 @@ mod tests {
             }
 
             fn from(source: AsyncTarget) -> Self {
-                Self {
-                    value: source.data,
-                }
+                Self { value: source.data }
             }
         }
 
         // Simulate async conversion
-        let source = AsyncSource { value: "async".to_string() };
+        let source = AsyncSource {
+            value: "async".to_string(),
+        };
         let target = source.to();
         assert_eq!(target.data, "async");
 
@@ -733,8 +750,10 @@ mod tests {
         }
 
         let converter = MetricsConverter::new();
-        let source = MetricsSource { value: "metrics".to_string() };
-        
+        let source = MetricsSource {
+            value: "metrics".to_string(),
+        };
+
         assert_eq!(converter.get_count(), 0);
         let target = converter.convert(&source);
         assert_eq!(converter.get_count(), 1);
@@ -883,7 +902,7 @@ mod tests {
     fn test_blanket_implementations_execution() {
         // Test that our blanket implementations don't cause compilation errors
         // and that basic conversion works through our custom traits
-        
+
         #[derive(Debug, Clone, PartialEq)]
         struct TestSource {
             value: String,
@@ -902,23 +921,21 @@ mod tests {
             }
 
             fn from(source: TestTarget) -> Self {
-                Self {
-                    value: source.data,
-                }
+                Self { value: source.data }
             }
         }
 
         let source = TestSource {
             value: "blanket_test".to_string(),
         };
-        
+
         // Test our Convertible implementation works
         let target = source.to();
         let new_source = <TestSource as Convertible<TestTarget>>::from(target.clone());
-        
+
         assert_eq!(target.data, "blanket_test");
         assert_eq!(new_source.value, "blanket_test");
-        
+
         // Verify that BidirectionalConvertible is automatically implemented
         // This tests the blanket implementation without conflicts
         assert!(true); // Placeholder assertion

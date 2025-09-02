@@ -196,23 +196,23 @@ impl Resource {
                 message: "Resource code cannot be empty".to_string(),
             }));
         }
-        
+
         if name.trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "name".to_string(),
                 message: "Resource name cannot be empty".to_string(),
             }));
         }
-        
+
         if company_code.trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "company_code".to_string(),
                 message: "Company code cannot be empty".to_string(),
             }));
         }
-        
+
         let now = Utc::now();
-        
+
         Ok(Self {
             id: Uuid::new_v7().to_string(),
             code,
@@ -228,7 +228,7 @@ impl Resource {
             created_by,
         })
     }
-    
+
     pub fn add_skill(&mut self, skill: Skill) -> Result<(), DomainError> {
         if self.skills.iter().any(|s| s.name == skill.name) {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -236,48 +236,48 @@ impl Resource {
                 message: "Skill already exists for this resource".to_string(),
             }));
         }
-        
+
         self.skills.push(skill);
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     pub fn remove_skill(&mut self, skill_name: &str) -> Result<(), DomainError> {
         let initial_count = self.skills.len();
         self.skills.retain(|s| s.name != skill_name);
-        
+
         if self.skills.len() == initial_count {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "skill".to_string(),
                 message: "Skill not found for this resource".to_string(),
             }));
         }
-        
+
         self.updated_at = Utc::now();
         Ok(())
     }
-    
+
     pub fn has_skill(&self, skill_name: &str, min_level: Option<SkillLevel>) -> bool {
         self.skills.iter().any(|skill| {
-            skill.name == skill_name && 
+            skill.name == skill_name &&
             min_level.map_or(true, |min| skill.level as u8 >= min as u8)
         })
     }
-    
+
     pub fn is_available_on_date(&self, date: NaiveDate) -> bool {
         // Verificar se é feriado
         if self.availability.holidays.contains(&date) {
             return false;
         }
-        
+
         // Verificar se está de férias
         for leave in &self.availability.leaves {
             if date >= leave.start_date && date <= leave.end_date {
                 return false;
             }
         }
-        
+
         // Verificar se é dia útil
         let weekday = date.weekday();
         let work_day = match weekday {
@@ -289,15 +289,15 @@ impl Resource {
             chrono::Weekday::Sat => &self.availability.working_hours.saturday,
             chrono::Weekday::Sun => &self.availability.working_hours.sunday,
         };
-        
+
         work_day.is_working_day
     }
-    
+
     pub fn get_working_hours_on_date(&self, date: NaiveDate) -> Option<WorkDay> {
         if !self.is_available_on_date(date) {
             return None;
         }
-        
+
         let weekday = date.weekday();
         let work_day = match weekday {
             chrono::Weekday::Mon => &self.availability.working_hours.monday,
@@ -308,10 +308,10 @@ impl Resource {
             chrono::Weekday::Sat => &self.availability.working_hours.saturday,
             chrono::Weekday::Sun => &self.availability.working_hours.sunday,
         };
-        
+
         Some(work_day.clone())
     }
-    
+
     pub fn can_allocate_percentage(&self, percentage: u8) -> bool {
         percentage <= self.availability.max_allocation_percentage
     }
@@ -334,16 +334,16 @@ impl ResourceAllocation {
                 message: "Allocation percentage must be between 1 and 100".to_string(),
             }));
         }
-        
+
         if role.trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "role".to_string(),
                 message: "Role cannot be empty".to_string(),
             }));
         }
-        
+
         let now = Utc::now();
-        
+
         Ok(Self {
             id: Uuid::new_v7().to_string(),
             resource_id,
@@ -361,7 +361,7 @@ impl ResourceAllocation {
             created_by,
         })
     }
-    
+
     pub fn activate(&mut self) -> Result<(), DomainError> {
         if self.status != AllocationStatus::Planned {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -369,13 +369,13 @@ impl ResourceAllocation {
                 message: "Can only activate planned allocations".to_string(),
             }));
         }
-        
+
         self.status = AllocationStatus::Active;
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     pub fn complete(&mut self) -> Result<(), DomainError> {
         if self.status != AllocationStatus::Active {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -383,13 +383,13 @@ impl ResourceAllocation {
                 message: "Can only complete active allocations".to_string(),
             }));
         }
-        
+
         self.status = AllocationStatus::Completed;
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     pub fn cancel(&mut self) -> Result<(), DomainError> {
         if self.status == AllocationStatus::Completed {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -397,13 +397,13 @@ impl ResourceAllocation {
                 message: "Cannot cancel completed allocations".to_string(),
             }));
         }
-        
+
         self.status = AllocationStatus::Cancelled;
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     pub fn update_hours(&mut self, actual_hours: f64, estimated_hours: Option<f64>) -> Result<(), DomainError> {
         if actual_hours < 0.0 {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -411,7 +411,7 @@ impl ResourceAllocation {
                 message: "Actual hours cannot be negative".to_string(),
             }));
         }
-        
+
         if let Some(est_hours) = estimated_hours {
             if est_hours < 0.0 {
                 return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -420,45 +420,45 @@ impl ResourceAllocation {
                 }));
             }
         }
-        
+
         self.actual_hours = Some(actual_hours);
         self.estimated_hours = estimated_hours;
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
-    
+
     pub fn is_active(&self) -> bool {
         self.status == AllocationStatus::Active
     }
-    
+
     pub fn is_overlapping(&self, other: &ResourceAllocation) -> bool {
         if self.resource_id != other.resource_id {
             return false;
         }
-        
+
         let self_start = self.start_date;
         let self_end = self.end_date.unwrap_or_else(|| self_start + Duration::days(365));
-        
+
         let other_start = other.start_date;
         let other_end = other.end_date.unwrap_or_else(|| other_start + Duration::days(365));
-        
+
         // Verificar sobreposição
         self_start < other_end && other_start < self_end
     }
-    
+
     pub fn get_total_allocation_percentage(&self, other_allocations: &[ResourceAllocation]) -> u8 {
         let mut total = self.allocation_percentage;
-        
+
         for allocation in other_allocations {
-            if allocation.id != self.id && 
+            if allocation.id != self.id &&
                allocation.resource_id == self.resource_id &&
                allocation.is_active() &&
                self.is_overlapping(allocation) {
                 total += allocation.allocation_percentage;
             }
         }
-        
+
         total
     }
 }
@@ -483,15 +483,15 @@ impl AllocationConflict {
             detected_at: Utc::now(),
         }
     }
-    
+
     pub fn add_resolution(&mut self, resolution: Resolution) {
         self.suggested_resolutions.push(resolution);
     }
-    
+
     pub fn is_critical(&self) -> bool {
         self.severity == ConflictSeverity::Critical
     }
-    
+
     pub fn requires_immediate_action(&self) -> bool {
         matches!(self.severity, ConflictSeverity::High | ConflictSeverity::Critical)
     }
@@ -546,14 +546,14 @@ impl Default for WorkingHours {
                 }
             ],
         };
-        
+
         let weekend = WorkDay {
             is_working_day: false,
             start_time: None,
             end_time: None,
             break_times: Vec::new(),
         };
-        
+
         Self {
             monday: standard_workday.clone(),
             tuesday: standard_workday.clone(),
@@ -584,7 +584,7 @@ impl Clone for WorkDay {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_resource_creation() {
         let resource = Resource::new(
@@ -594,9 +594,9 @@ mod tests {
             "COMP-001".to_string(),
             "user-001".to_string(),
         );
-        
+
         assert!(resource.is_ok());
-        
+
         let resource = resource.unwrap();
         assert_eq!(resource.code, "RES-001");
         assert_eq!(resource.name, "John Doe");
@@ -605,7 +605,7 @@ mod tests {
         assert_eq!(resource.status, ResourceStatus::Active);
         assert!(resource.skills.is_empty());
     }
-    
+
     #[test]
     fn test_resource_creation_with_empty_code() {
         let result = Resource::new(
@@ -615,10 +615,10 @@ mod tests {
             "COMP-001".to_string(),
             "user-001".to_string(),
         );
-        
+
         assert!(result.is_err());
     }
-    
+
     #[test]
     fn test_resource_skill_management() {
         let mut resource = Resource::new(
@@ -628,7 +628,7 @@ mod tests {
             "COMP-001".to_string(),
             "user-001".to_string(),
         ).unwrap();
-        
+
         // Adicionar skill
         let skill = Skill {
             id: "SKILL-001".to_string(),
@@ -637,22 +637,22 @@ mod tests {
             years_experience: Some(3),
             certified: true,
         };
-        
+
         let result = resource.add_skill(skill);
         assert!(result.is_ok());
         assert_eq!(resource.skills.len(), 1);
-        
+
         // Verificar se tem a skill
         assert!(resource.has_skill("Rust Programming", None));
         assert!(resource.has_skill("Rust Programming", Some(SkillLevel::Intermediate)));
         assert!(!resource.has_skill("Rust Programming", Some(SkillLevel::Expert)));
-        
+
         // Remover skill
         let result = resource.remove_skill("Rust Programming");
         assert!(result.is_ok());
         assert_eq!(resource.skills.len(), 0);
     }
-    
+
     #[test]
     fn test_resource_availability() {
         let resource = Resource::new(
@@ -662,20 +662,20 @@ mod tests {
             "COMP-001".to_string(),
             "user-001".to_string(),
         ).unwrap();
-        
+
         let today = Utc::now().date_naive();
         let weekday = today.weekday();
-        
+
         // Verificar disponibilidade padrão (segunda a sexta)
         let is_available = match weekday {
-            chrono::Weekday::Mon | chrono::Weekday::Tue | chrono::Weekday::Wed | 
+            chrono::Weekday::Mon | chrono::Weekday::Tue | chrono::Weekday::Wed |
             chrono::Weekday::Thu | chrono::Weekday::Fri => true,
             _ => false,
         };
-        
+
         assert_eq!(resource.is_available_on_date(today), is_available);
     }
-    
+
     #[test]
     fn test_resource_allocation_creation() {
         let allocation = ResourceAllocation::new(
@@ -688,16 +688,16 @@ mod tests {
             "Developer".to_string(),
             "user-001".to_string(),
         );
-        
+
         assert!(allocation.is_ok());
-        
+
         let allocation = allocation.unwrap();
         assert_eq!(allocation.resource_id, "RES-001");
         assert_eq!(allocation.task_id, "TASK-001");
         assert_eq!(allocation.allocation_percentage, 80);
         assert_eq!(allocation.status, AllocationStatus::Planned);
     }
-    
+
     #[test]
     fn test_resource_allocation_invalid_percentage() {
         let result = ResourceAllocation::new(
@@ -710,9 +710,9 @@ mod tests {
             "Developer".to_string(),
             "user-001".to_string(),
         );
-        
+
         assert!(result.is_err());
-        
+
         let result = ResourceAllocation::new(
             "RES-001".to_string(),
             "TASK-001".to_string(),
@@ -723,10 +723,10 @@ mod tests {
             "Developer".to_string(),
             "user-001".to_string(),
         );
-        
+
         assert!(result.is_err());
     }
-    
+
     #[test]
     fn test_resource_allocation_lifecycle() {
         let mut allocation = ResourceAllocation::new(
@@ -739,22 +739,22 @@ mod tests {
             "Developer".to_string(),
             "user-001".to_string(),
         ).unwrap();
-        
+
         // Ativar
         let result = allocation.activate();
         assert!(result.is_ok());
         assert_eq!(allocation.status, AllocationStatus::Active);
-        
+
         // Completar
         let result = allocation.complete();
         assert!(result.is_ok());
         assert_eq!(allocation.status, AllocationStatus::Completed);
-        
+
         // Não pode cancelar após completar
         let result = allocation.cancel();
         assert!(result.is_err());
     }
-    
+
     #[test]
     fn test_allocation_overlap_detection() {
         let allocation1 = ResourceAllocation::new(
@@ -767,7 +767,7 @@ mod tests {
             "Developer".to_string(),
             "user-001".to_string(),
         ).unwrap();
-        
+
         let allocation2 = ResourceAllocation::new(
             "RES-001".to_string(),
             "TASK-002".to_string(),
@@ -778,10 +778,10 @@ mod tests {
             "Developer".to_string(),
             "user-001".to_string(),
         ).unwrap();
-        
+
         // Deve detectar sobreposição
         assert!(allocation1.is_overlapping(&allocation2));
-        
+
         let allocation3 = ResourceAllocation::new(
             "RES-002".to_string(), // Diferente recurso
             "TASK-003".to_string(),
@@ -792,11 +792,11 @@ mod tests {
             "Developer".to_string(),
             "user-001".to_string(),
         ).unwrap();
-        
+
         // Não deve detectar sobreposição para recursos diferentes
         assert!(!allocation1.is_overlapping(&allocation3));
     }
-    
+
     #[test]
     fn test_allocation_conflict_detection() {
         let conflict = AllocationConflict::new(
@@ -807,10 +807,10 @@ mod tests {
             vec!["ALLOC-001".to_string(), "ALLOC-002".to_string()],
             Vec::new(),
         );
-        
+
         assert!(conflict.requires_immediate_action());
         assert!(!conflict.is_critical());
-        
+
         let resolution = Resolution::new(
             "Reduce allocation percentage".to_string(),
             "Adjust allocation percentages to stay within 100%".to_string(),
@@ -818,7 +818,7 @@ mod tests {
             Some(0.0),
             Some(Duration::days(1)),
         );
-        
+
         conflict.add_resolution(resolution);
         assert_eq!(conflict.suggested_resolutions.len(), 1);
     }

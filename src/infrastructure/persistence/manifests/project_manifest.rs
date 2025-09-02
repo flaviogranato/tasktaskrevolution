@@ -1,9 +1,4 @@
-use crate::domain::project_management::{
-    AnyProject,
-    layoff_period::LayoffPeriod,
-    project::Project,
-    vacation_rules::VacationRules,
-};
+use crate::domain::project_management::{AnyProject, layoff_period::LayoffPeriod, vacation_rules::VacationRules};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
@@ -153,13 +148,14 @@ impl TryFrom<ProjectManifest> for AnyProject {
             code,
             name,
             "COMP-001".to_string(), // TODO: Get from manifest
-            "system".to_string(), // TODO: Get from manifest
-        ).map_err(|e| e.to_string())?;
-        
+            "system".to_string(),   // TODO: Get from manifest
+        )
+        .map_err(|e| e.to_string())?;
+
         // Set the ID and description from the manifest to preserve them during conversion
         project.id = id.to_string();
         project.description = description;
-        
+
         Ok(AnyProject::Project(project))
     }
 }
@@ -168,9 +164,9 @@ impl From<&crate::domain::project_management::project::VacationRules> for Vacati
     fn from(source: &crate::domain::project_management::project::VacationRules) -> Self {
         VacationRulesManifest {
             max_concurrent_vacations: Some(source.allowed_days_per_year),
-            allow_layoff_vacations: Some(true), // Default value
+            allow_layoff_vacations: Some(true),          // Default value
             require_layoff_vacation_period: Some(false), // Default value
-            layoff_periods: None, // Not implemented in the new VacationRules
+            layoff_periods: None,                        // Not implemented in the new VacationRules
         }
     }
 }

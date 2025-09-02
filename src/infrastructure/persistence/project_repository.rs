@@ -11,7 +11,6 @@ use serde_yaml;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
-use chrono::NaiveDate;
 
 /// `FileProjectRepository` é uma implementação da trait `ProjectRepository`
 /// que persiste os dados do projeto no sistema de arquivos.
@@ -279,6 +278,7 @@ mod tests {
         project::Project,
         state::{InProgress, Planned},
     };
+    use chrono::NaiveDate;
     use crate::infrastructure::persistence::manifests::project_manifest::{
         ProjectManifest, ProjectMetadata, ProjectSpec, ProjectStatusManifest, VacationRulesManifest,
     };

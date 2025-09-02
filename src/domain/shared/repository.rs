@@ -2,7 +2,6 @@ use crate::domain::shared::errors::DomainError;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-
 /// A generic repository trait for domain entities
 pub trait Repository<T, ID> {
     /// Find an entity by ID
@@ -130,7 +129,11 @@ pub struct PaginatedResult<T> {
 impl<T> PaginatedResult<T> {
     /// Create a new paginated result
     pub fn new(items: Vec<T>, page: usize, size: usize, total: usize) -> Self {
-        let total_pages = if total == 0 || size == 0 { 0 } else { total.div_ceil(size) };
+        let total_pages = if total == 0 || size == 0 {
+            0
+        } else {
+            total.div_ceil(size)
+        };
 
         Self {
             items,
@@ -219,14 +222,14 @@ where
         // Extract ID from entity - this is a simplified approach
         // In a real implementation, you'd have a way to get the ID from the entity
         let mut entities = self.entities_mut();
-        
+
         // For now, we'll use a placeholder ID based on the entity's content
         // This is just for demonstration - in practice you'd extract the real ID
         let id = format!("entity_{}", entities.len());
-        
+
         // Insert the entity with the generated ID
         entities.insert(id, entity.clone());
-        
+
         Ok(entity)
     }
 
@@ -426,7 +429,9 @@ mod tests {
                 Ok(entity)
             } else {
                 Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic { message: "Entity not found for update".to_string() }
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: "Entity not found for update".to_string(),
+                    },
                 ))
             }
         }
@@ -496,13 +501,13 @@ mod tests {
             let total = all_entities.len();
             let start = (page - 1) * size;
             let _end = start + size;
-            
+
             let items = if start < total {
                 all_entities.into_iter().skip(start).take(size).collect()
             } else {
                 Vec::new()
             };
-            
+
             Ok(PaginatedResult::new(items, page, size, total))
         }
     }
@@ -554,44 +559,38 @@ mod tests {
         fn search(&self, criteria: &SearchCriteria) -> Result<Vec<MockEntity>, DomainError> {
             let all_entities = self.find_all()?;
             let mut filtered_entities = all_entities;
-            
+
             // Apply filters
             for (key, value) in &criteria.filters {
                 filtered_entities = filtered_entities
                     .into_iter()
-                    .filter(|entity| {
-                        match key.as_str() {
-                            "name" => entity.name.contains(value),
-                            "value" => entity.value.to_string() == *value,
-                            _ => true,
-                        }
+                    .filter(|entity| match key.as_str() {
+                        "name" => entity.name.contains(value),
+                        "value" => entity.value.to_string() == *value,
+                        _ => true,
                     })
                     .collect();
             }
-            
+
             // Apply sorting
             if let Some(sort_field) = &criteria.sort_by {
                 match sort_field.as_str() {
                     "name" => {
-                        filtered_entities.sort_by(|a, b| {
-                            match criteria.sort_order {
-                                SortOrder::Ascending => a.name.cmp(&b.name),
-                                SortOrder::Descending => b.name.cmp(&a.name),
-                            }
+                        filtered_entities.sort_by(|a, b| match criteria.sort_order {
+                            SortOrder::Ascending => a.name.cmp(&b.name),
+                            SortOrder::Descending => b.name.cmp(&a.name),
                         });
                     }
                     "value" => {
-                        filtered_entities.sort_by(|a, b| {
-                            match criteria.sort_order {
-                                SortOrder::Ascending => a.value.cmp(&b.value),
-                                SortOrder::Descending => b.value.cmp(&a.value),
-                            }
+                        filtered_entities.sort_by(|a, b| match criteria.sort_order {
+                            SortOrder::Ascending => a.value.cmp(&b.value),
+                            SortOrder::Descending => b.value.cmp(&a.value),
                         });
                     }
                     _ => {}
                 }
             }
-            
+
             Ok(filtered_entities)
         }
 
@@ -605,13 +604,13 @@ mod tests {
             let total = filtered_entities.len();
             let start = (page - 1) * size;
             let _end = start + size;
-            
+
             let items = if start < total {
                 filtered_entities.into_iter().skip(start).take(size).collect()
             } else {
                 Vec::new()
             };
-            
+
             Ok(PaginatedResult::new(items, page, size, total))
         }
     }
@@ -725,11 +724,11 @@ mod tests {
                 let cache = self.cache.lock().unwrap();
                 cache.get(&cache_key).cloned()
             };
-            
+
             if let Some(entity) = cached_entity {
                 return Ok(Some(entity));
             }
-            
+
             // If not in cache, get from base repository
             let entity = self.base_repository.find_by_id(id)?;
             if let Some(ref entity) = entity {
@@ -737,7 +736,7 @@ mod tests {
                 let mut cache = self.cache.lock().unwrap();
                 cache.insert(cache_key, entity.clone());
             }
-            
+
             Ok(entity)
         }
 
@@ -818,7 +817,7 @@ mod tests {
         let criteria = SearchCriteria::new()
             .with_filter("name", "test")
             .with_filter("value", "42");
-        
+
         assert_eq!(criteria.filters.len(), 2);
         assert_eq!(criteria.filters.get("name"), Some(&"test".to_string()));
         assert_eq!(criteria.filters.get("value"), Some(&"42".to_string()));
@@ -854,7 +853,7 @@ mod tests {
     fn test_paginated_result_new() {
         let items = vec![MockEntity::new("1", "test1", 10), MockEntity::new("2", "test2", 20)];
         let result = PaginatedResult::new(items.clone(), 1, 10, 2);
-        
+
         assert_eq!(result.items, items);
         assert_eq!(result.page, 1);
         assert_eq!(result.size, 10);
@@ -866,7 +865,7 @@ mod tests {
     fn test_paginated_result_total_pages_calculation() {
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 1, 10, 25);
         assert_eq!(result.total_pages, 3); // 25 items / 10 per page = 3 pages
-        
+
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 1, 10, 0);
         assert_eq!(result.total_pages, 0); // 0 items = 0 pages
     }
@@ -875,7 +874,7 @@ mod tests {
     fn test_paginated_result_has_next() {
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 1, 10, 25);
         assert!(result.has_next());
-        
+
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 3, 10, 25);
         assert!(!result.has_next());
     }
@@ -884,7 +883,7 @@ mod tests {
     fn test_paginated_result_has_previous() {
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 1, 10, 25);
         assert!(!result.has_previous());
-        
+
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 2, 10, 25);
         assert!(result.has_previous());
     }
@@ -893,7 +892,7 @@ mod tests {
     fn test_paginated_result_next_page() {
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 1, 10, 25);
         assert_eq!(result.next_page(), Some(2));
-        
+
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 3, 10, 25);
         assert_eq!(result.next_page(), None);
     }
@@ -902,7 +901,7 @@ mod tests {
     fn test_paginated_result_previous_page() {
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 1, 10, 25);
         assert_eq!(result.previous_page(), None);
-        
+
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 2, 10, 25);
         assert_eq!(result.previous_page(), Some(1));
     }
@@ -924,10 +923,10 @@ mod tests {
     fn test_in_memory_repository_save_and_find() {
         let repo = InMemoryRepository::<MockEntity>::new();
         let entity = MockEntity::new("1", "test", 42);
-        
+
         let saved_entity = repo.save(entity.clone()).unwrap();
         assert_eq!(saved_entity, entity);
-        
+
         // Now the repository should actually persist the entity
         let found_entity = repo.find_by_id(&"entity_0".to_string()).unwrap();
         assert_eq!(found_entity, Some(entity));
@@ -937,15 +936,15 @@ mod tests {
     fn test_in_memory_repository_update() {
         let repo = InMemoryRepository::<MockEntity>::new();
         let entity = MockEntity::new("1", "test", 42);
-        
+
         // Save the entity first
         repo.save(entity).unwrap();
-        
+
         // Now update it (this will create a new entity with a new ID)
         let updated_entity = MockEntity::new("1", "updated", 100);
         let result = repo.update(updated_entity.clone()).unwrap();
         assert_eq!(result, updated_entity);
-        
+
         // Verify both entities exist (original and "updated")
         let found_entity1 = repo.find_by_id(&"entity_0".to_string()).unwrap();
         let found_entity2 = repo.find_by_id(&"entity_1".to_string()).unwrap();
@@ -958,11 +957,11 @@ mod tests {
     fn test_in_memory_repository_delete() {
         let repo = InMemoryRepository::<MockEntity>::new();
         let entity = MockEntity::new("1", "test", 42);
-        
+
         // Save the entity first
         repo.save(entity).unwrap();
         assert_eq!(repo.count().unwrap(), 1);
-        
+
         // Delete the entity
         let deleted = repo.delete(&"entity_0".to_string()).unwrap();
         assert!(deleted);
@@ -973,7 +972,7 @@ mod tests {
     fn test_in_memory_repository_exists() {
         let repo = InMemoryRepository::<MockEntity>::new();
         let entity = MockEntity::new("1", "test", 42);
-        
+
         assert!(!repo.exists(&"entity_0".to_string()).unwrap());
         repo.save(entity).unwrap();
         assert!(repo.exists(&"entity_0".to_string()).unwrap()); // Now it should exist
@@ -984,10 +983,10 @@ mod tests {
         let repo = InMemoryRepository::<MockEntity>::new();
         let entity1 = MockEntity::new("1", "test1", 10);
         let entity2 = MockEntity::new("2", "test2", 20);
-        
+
         repo.save(entity1.clone()).unwrap();
         repo.save(entity2.clone()).unwrap();
-        
+
         let all_entities = repo.find_all().unwrap();
         assert_eq!(all_entities.len(), 2); // Now both entities should be persisted
         assert!(all_entities.contains(&entity1));
@@ -1000,7 +999,7 @@ mod tests {
         let repo1 = InMemoryRepository::<MockEntity>::new();
         let entity = MockEntity::new("1", "test", 42);
         repo1.save(entity.clone()).unwrap();
-        
+
         // Create second repository instance - should be empty (no file persistence)
         let repo2 = InMemoryRepository::<MockEntity>::new();
         let found_entity = repo2.find_by_id(&"entity_0".to_string()).unwrap();
@@ -1012,12 +1011,12 @@ mod tests {
     #[test]
     fn test_paginated_repository_find_with_pagination() {
         let repo = MockPaginatedRepository::new();
-        
+
         // Add some test entities
         repo.save(MockEntity::new("1", "test1", 10)).unwrap();
         repo.save(MockEntity::new("2", "test2", 20)).unwrap();
         repo.save(MockEntity::new("3", "test3", 30)).unwrap();
-        
+
         let result = repo.find_with_pagination(1, 2).unwrap();
         assert_eq!(result.items.len(), 2);
         assert_eq!(result.page, 1);
@@ -1029,7 +1028,7 @@ mod tests {
     #[test]
     fn test_paginated_repository_empty_page() {
         let repo = MockPaginatedRepository::new();
-        
+
         let result = repo.find_with_pagination(2, 10).unwrap();
         assert_eq!(result.items.len(), 0);
         assert_eq!(result.page, 2);
@@ -1040,15 +1039,15 @@ mod tests {
     #[test]
     fn test_searchable_repository_search() {
         let repo = MockSearchableRepository::new();
-        
+
         // Add some test entities
         repo.save(MockEntity::new("1", "alice", 10)).unwrap();
         repo.save(MockEntity::new("2", "bob", 20)).unwrap();
         repo.save(MockEntity::new("3", "alice", 30)).unwrap();
-        
+
         let criteria = SearchCriteria::new().with_filter("name", "alice");
         let results = repo.search(&criteria).unwrap();
-        
+
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].name, "alice");
         assert_eq!(results[1].name, "alice");
@@ -1057,16 +1056,14 @@ mod tests {
     #[test]
     fn test_searchable_repository_search_with_sorting() {
         let repo = MockSearchableRepository::new();
-        
+
         // Add some test entities
         repo.save(MockEntity::new("1", "alice", 30)).unwrap();
         repo.save(MockEntity::new("2", "bob", 10)).unwrap();
         repo.save(MockEntity::new("3", "charlie", 20)).unwrap();
-        
-        let criteria = SearchCriteria::new()
-            .sort_by("value")
-            .sort_order(SortOrder::Ascending);
-        
+
+        let criteria = SearchCriteria::new().sort_by("value").sort_order(SortOrder::Ascending);
+
         let results = repo.search(&criteria).unwrap();
         assert_eq!(results.len(), 3);
         assert_eq!(results[0].value, 10);
@@ -1077,15 +1074,16 @@ mod tests {
     #[test]
     fn test_searchable_repository_search_with_pagination() {
         let repo = MockSearchableRepository::new();
-        
+
         // Add some test entities
         for i in 1..=5 {
-            repo.save(MockEntity::new(&i.to_string(), &format!("test{}", i), i * 10)).unwrap();
+            repo.save(MockEntity::new(&i.to_string(), &format!("test{}", i), i * 10))
+                .unwrap();
         }
-        
+
         let criteria = SearchCriteria::new();
         let result = repo.search_with_pagination(&criteria, 1, 2).unwrap();
-        
+
         assert_eq!(result.items.len(), 2);
         assert_eq!(result.page, 1);
         assert_eq!(result.size, 2);
@@ -1098,7 +1096,7 @@ mod tests {
     fn test_transactional_repository_begin_transaction() {
         let repo = MockTransactionalRepository::new();
         let _transaction = repo.begin_transaction().unwrap();
-        
+
         // Just test that we can create a transaction
         assert!(true);
     }
@@ -1106,11 +1104,11 @@ mod tests {
     #[test]
     fn test_transactional_repository_with_transaction() {
         let repo = MockTransactionalRepository::new();
-        
-        let result = repo.with_transaction(|_transaction| {
-            Ok::<String, DomainError>("transaction_result".to_string())
-        }).unwrap();
-        
+
+        let result = repo
+            .with_transaction(|_transaction| Ok::<String, DomainError>("transaction_result".to_string()))
+            .unwrap();
+
         assert_eq!(result, "transaction_result");
     }
 
@@ -1119,7 +1117,7 @@ mod tests {
     fn test_mock_transaction_commit() {
         let transaction = MockTransaction::new();
         let boxed_transaction = Box::new(transaction);
-        
+
         let result = boxed_transaction.commit();
         assert!(result.is_ok());
     }
@@ -1128,7 +1126,7 @@ mod tests {
     fn test_mock_transaction_rollback() {
         let transaction = MockTransaction::new();
         let boxed_transaction = Box::new(transaction);
-        
+
         let result = boxed_transaction.rollback();
         assert!(result.is_ok());
     }
@@ -1145,14 +1143,14 @@ mod tests {
     fn test_cached_repository_find_by_id_with_cache() {
         let repo = MockCachedRepository::new();
         let entity = MockEntity::new("1", "test", 42);
-        
+
         // First find should populate cache
         let found_entity = repo.find_by_id(&"1".to_string()).unwrap();
         assert_eq!(found_entity, None);
-        
+
         // Save entity
         repo.save(entity.clone()).unwrap();
-        
+
         // Find again should use cache
         let found_entity = repo.find_by_id(&"1".to_string()).unwrap();
         assert_eq!(found_entity, Some(entity));
@@ -1162,13 +1160,13 @@ mod tests {
     fn test_cached_repository_invalidate_cache() {
         let repo = MockCachedRepository::new();
         let entity = MockEntity::new("1", "test", 42);
-        
+
         repo.save(entity.clone()).unwrap();
         repo.find_by_id(&"1".to_string()).unwrap(); // Populate cache
-        
+
         // Invalidate cache
         repo.invalidate_cache(&"1".to_string()).unwrap();
-        
+
         // Cache should be cleared
         let found_entity = repo.find_by_id(&"1".to_string()).unwrap();
         assert_eq!(found_entity, Some(entity)); // Should still find from base repo
@@ -1179,15 +1177,15 @@ mod tests {
         let repo = MockCachedRepository::new();
         let entity1 = MockEntity::new("1", "test1", 10);
         let entity2 = MockEntity::new("2", "test2", 20);
-        
+
         repo.save(entity1.clone()).unwrap();
         repo.save(entity2.clone()).unwrap();
         repo.find_by_id(&"1".to_string()).unwrap(); // Populate cache
         repo.find_by_id(&"2".to_string()).unwrap(); // Populate cache
-        
+
         // Clear all cache
         repo.clear_cache().unwrap();
-        
+
         // Should still work but without cache
         let found_entity = repo.find_by_id(&"1".to_string()).unwrap();
         assert_eq!(found_entity, Some(entity1));
@@ -1198,7 +1196,7 @@ mod tests {
     fn test_logging_repository_decorator_new() {
         let base_repo = MockRepository::new();
         let _decorator = LoggingRepositoryDecorator::new(base_repo);
-        
+
         // Just test that we can create the decorator
         assert!(true);
     }
@@ -1207,7 +1205,7 @@ mod tests {
     fn test_logging_repository_decorator_find_by_id() {
         let base_repo = MockRepository::new();
         let decorator = LoggingRepositoryDecorator::new(base_repo);
-        
+
         let result = decorator.find_by_id(&"nonexistent".to_string());
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), None);
@@ -1217,7 +1215,7 @@ mod tests {
     fn test_logging_repository_decorator_save() {
         let base_repo = MockRepository::new();
         let decorator = LoggingRepositoryDecorator::new(base_repo);
-        
+
         let entity = MockEntity::new("1", "test", 42);
         let result = decorator.save(entity.clone());
         assert!(result.is_ok());
@@ -1228,37 +1226,37 @@ mod tests {
     #[test]
     fn test_repository_complex_workflow() {
         let repo = MockRepository::new();
-        
+
         // Create entities
         let entity1 = MockEntity::new("1", "alice", 25);
         let entity2 = MockEntity::new("2", "bob", 30);
         let entity3 = MockEntity::new("3", "charlie", 35);
-        
+
         // Save entities
         repo.save(entity1.clone()).unwrap();
         repo.save(entity2.clone()).unwrap();
         repo.save(entity3.clone()).unwrap();
-        
+
         // Verify count
         assert_eq!(repo.count().unwrap(), 3);
-        
+
         // Find specific entity
         let found = repo.find_by_id(&"2".to_string()).unwrap();
         assert_eq!(found, Some(entity2.clone()));
-        
+
         // Update entity
         let updated_entity = MockEntity::new("2", "robert", 31);
         let updated = repo.update(updated_entity.clone()).unwrap();
         assert_eq!(updated, updated_entity);
-        
+
         // Verify update
         let found = repo.find_by_id(&"2".to_string()).unwrap();
         assert_eq!(found, Some(updated_entity));
-        
+
         // Delete entity
         let deleted = repo.delete(&"1".to_string()).unwrap();
         assert!(deleted);
-        
+
         // Verify deletion
         assert_eq!(repo.count().unwrap(), 2);
         assert!(!repo.exists(&"1".to_string()).unwrap());
@@ -1267,7 +1265,7 @@ mod tests {
     #[test]
     fn test_searchable_repository_complex_search() {
         let repo = MockSearchableRepository::new();
-        
+
         // Add test entities with various values
         let entities = vec![
             MockEntity::new("1", "alice", 25),
@@ -1276,17 +1274,17 @@ mod tests {
             MockEntity::new("4", "charlie", 20),
             MockEntity::new("5", "alice", 40),
         ];
-        
+
         for entity in entities {
             repo.save(entity).unwrap();
         }
-        
+
         // Search for alice with value > 30, sorted by value descending
         let criteria = SearchCriteria::new()
             .with_filter("name", "alice")
             .sort_by("value")
             .sort_order(SortOrder::Descending);
-        
+
         let results = repo.search(&criteria).unwrap();
         assert_eq!(results.len(), 3);
         assert_eq!(results[0].value, 40);
@@ -1298,7 +1296,7 @@ mod tests {
     #[test]
     fn test_repository_empty_operations() {
         let repo = MockRepository::new();
-        
+
         // Test operations on empty repository
         assert_eq!(repo.count().unwrap(), 0);
         assert_eq!(repo.find_all().unwrap().len(), 0);
@@ -1312,7 +1310,7 @@ mod tests {
         // Test with size 0
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 1, 0, 10);
         assert_eq!(result.total_pages, 0);
-        
+
         // Test with page 0 (edge case)
         let result: PaginatedResult<MockEntity> = PaginatedResult::new(Vec::new(), 0, 10, 10);
         assert_eq!(result.page, 0);
@@ -1325,7 +1323,7 @@ mod tests {
         let criteria = SearchCriteria::new()
             .with_filter("empty", "")
             .with_filter("whitespace", "   ");
-        
+
         assert_eq!(criteria.filters.get("empty"), Some(&"".to_string()));
         assert_eq!(criteria.filters.get("whitespace"), Some(&"   ".to_string()));
     }

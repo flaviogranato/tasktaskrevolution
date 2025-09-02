@@ -325,8 +325,12 @@ mod tests {
             Ok(())
         }
 
-        fn get_events(&self, aggregate_id: &str) -> Result<Vec<Box<dyn DomainEvent + Send>>, Box<dyn std::error::Error + Send + Sync>> {
-            let filtered_events: Vec<Box<dyn DomainEvent + Send>> = self.events
+        fn get_events(
+            &self,
+            aggregate_id: &str,
+        ) -> Result<Vec<Box<dyn DomainEvent + Send>>, Box<dyn std::error::Error + Send + Sync>> {
+            let filtered_events: Vec<Box<dyn DomainEvent + Send>> = self
+                .events
                 .iter()
                 .filter(|event| event.aggregate_id() == aggregate_id)
                 .map(|event| {
@@ -345,8 +349,12 @@ mod tests {
             Ok(filtered_events)
         }
 
-        fn get_events_by_type(&self, event_type: &str) -> Result<Vec<Box<dyn DomainEvent + Send>>, Box<dyn std::error::Error + Send + Sync>> {
-            let filtered_events: Vec<Box<dyn DomainEvent + Send>> = self.events
+        fn get_events_by_type(
+            &self,
+            event_type: &str,
+        ) -> Result<Vec<Box<dyn DomainEvent + Send>>, Box<dyn std::error::Error + Send + Sync>> {
+            let filtered_events: Vec<Box<dyn DomainEvent + Send>> = self
+                .events
                 .iter()
                 .filter(|event| event.event_type() == event_type)
                 .map(|event| {
@@ -418,7 +426,7 @@ mod tests {
     fn test_domain_event_trait_methods() {
         let data = serde_yaml::to_value("test data").unwrap();
         let event = SimpleDomainEvent::new("test_event", "agg_001", data.clone());
-        
+
         assert_eq!(event.event_type(), "test_event");
         assert_eq!(event.aggregate_id(), "agg_001");
         assert_eq!(event.version(), 1);
@@ -431,7 +439,7 @@ mod tests {
     fn test_simple_domain_event_new() {
         let data = serde_yaml::to_value("event data").unwrap();
         let event = SimpleDomainEvent::new("user_created", "user_123", data.clone());
-        
+
         assert_eq!(event.event_type, "user_created");
         assert_eq!(event.aggregate_id, "user_123");
         assert_eq!(event.data, data);
@@ -441,9 +449,8 @@ mod tests {
     #[test]
     fn test_simple_domain_event_with_version() {
         let data = serde_yaml::to_value("versioned data").unwrap();
-        let event = SimpleDomainEvent::new("versioned_event", "agg_002", data)
-            .with_version(5);
-        
+        let event = SimpleDomainEvent::new("versioned_event", "agg_002", data).with_version(5);
+
         assert_eq!(event.version, 5);
     }
 
@@ -451,9 +458,8 @@ mod tests {
     fn test_simple_domain_event_with_timestamp() {
         let data = serde_yaml::to_value("timestamped data").unwrap();
         let timestamp = chrono::Utc::now();
-        let event = SimpleDomainEvent::new("timestamped_event", "agg_003", data)
-            .with_timestamp(timestamp);
-        
+        let event = SimpleDomainEvent::new("timestamped_event", "agg_003", data).with_timestamp(timestamp);
+
         assert_eq!(event.timestamp, timestamp);
     }
 
@@ -461,7 +467,7 @@ mod tests {
     #[test]
     fn test_event_observer_trait_methods() {
         let observer = MockEventObserver::new("test_observer", vec!["test_event".to_string()]);
-        
+
         assert_eq!(observer.name(), "test_observer");
         assert!(observer.is_interested_in("test_event"));
         assert!(!observer.is_interested_in("other_event"));
@@ -470,7 +476,7 @@ mod tests {
     #[test]
     fn test_event_observer_universal() {
         let observer = MockEventObserver::new("universal_observer", vec![]);
-        
+
         assert!(observer.is_interested_in("any_event"));
         assert!(observer.is_interested_in("another_event"));
     }
@@ -483,7 +489,7 @@ mod tests {
             vec!["user_created".to_string(), "user_updated".to_string()],
             |_event| Ok(()),
         );
-        
+
         assert_eq!(observer.name(), "simple_observer");
         assert!(observer.is_interested_in("user_created"));
         assert!(observer.is_interested_in("user_updated"));
@@ -492,11 +498,8 @@ mod tests {
 
     #[test]
     fn test_simple_event_observer_new_universal() {
-        let observer = SimpleEventObserver::new_universal(
-            "universal_observer",
-            |_event| Ok(()),
-        );
-        
+        let observer = SimpleEventObserver::new_universal("universal_observer", |_event| Ok(()));
+
         assert_eq!(observer.name(), "universal_observer");
         assert!(observer.is_interested_in("any_event"));
         assert!(observer.is_interested_in("another_event"));
@@ -506,23 +509,19 @@ mod tests {
     fn test_simple_event_observer_handle_event() {
         let handled_events = Arc::new(Mutex::new(Vec::new()));
         let events_clone = Arc::clone(&handled_events);
-        
-        let observer = SimpleEventObserver::new(
-            "handler_observer",
-            vec!["test_event".to_string()],
-            move |event| {
-                let mut events = events_clone.lock().unwrap();
-                events.push(event.event_type().to_string());
-                Ok(())
-            },
-        );
-        
+
+        let observer = SimpleEventObserver::new("handler_observer", vec!["test_event".to_string()], move |event| {
+            let mut events = events_clone.lock().unwrap();
+            events.push(event.event_type().to_string());
+            Ok(())
+        });
+
         let data = serde_yaml::to_value("test").unwrap();
         let event = SimpleDomainEvent::new("test_event", "agg_004", data);
-        
+
         let result = observer.handle_event(&event);
         assert!(result.is_ok());
-        
+
         let events = handled_events.lock().unwrap();
         assert_eq!(events.len(), 1);
         assert_eq!(events[0], "test_event");
@@ -545,7 +544,7 @@ mod tests {
     fn test_event_bus_clone() {
         let event_bus = EventBus::new();
         let cloned_bus = event_bus.clone();
-        
+
         assert_eq!(event_bus.observer_count("any_event"), 0);
         assert_eq!(cloned_bus.observer_count("any_event"), 0);
     }
@@ -554,7 +553,7 @@ mod tests {
     fn test_event_bus_subscribe() {
         let event_bus = EventBus::new();
         let observer = Arc::new(MockEventObserver::new("test_observer", vec!["test_event".to_string()]));
-        
+
         event_bus.subscribe("test_event", observer);
         assert_eq!(event_bus.observer_count("test_event"), 1);
         assert_eq!(event_bus.observer_count("other_event"), 0);
@@ -565,10 +564,10 @@ mod tests {
         let event_bus = EventBus::new();
         let observer1 = Arc::new(MockEventObserver::new("observer1", vec!["test_event".to_string()]));
         let observer2 = Arc::new(MockEventObserver::new("observer2", vec!["test_event".to_string()]));
-        
+
         event_bus.subscribe("test_event", observer1);
         event_bus.subscribe("test_event", observer2);
-        
+
         assert_eq!(event_bus.observer_count("test_event"), 2);
     }
 
@@ -577,10 +576,10 @@ mod tests {
         let event_bus = EventBus::new();
         let observer1 = Arc::new(MockEventObserver::new("observer1", vec!["event_type_1".to_string()]));
         let observer2 = Arc::new(MockEventObserver::new("observer2", vec!["event_type_2".to_string()]));
-        
+
         event_bus.subscribe("event_type_1", observer1);
         event_bus.subscribe("event_type_2", observer2);
-        
+
         assert_eq!(event_bus.observer_count("event_type_1"), 1);
         assert_eq!(event_bus.observer_count("event_type_2"), 1);
     }
@@ -589,10 +588,10 @@ mod tests {
     fn test_event_bus_unsubscribe() {
         let event_bus = EventBus::new();
         let observer = Arc::new(MockEventObserver::new("test_observer", vec!["test_event".to_string()]));
-        
+
         event_bus.subscribe("test_event", observer.clone());
         assert_eq!(event_bus.observer_count("test_event"), 1);
-        
+
         event_bus.unsubscribe("test_event", "test_observer");
         assert_eq!(event_bus.observer_count("test_event"), 0);
     }
@@ -608,12 +607,12 @@ mod tests {
     fn test_event_bus_publish() {
         let event_bus = EventBus::new();
         let observer = Arc::new(MockEventObserver::new("test_observer", vec!["test_event".to_string()]));
-        
+
         event_bus.subscribe("test_event", observer);
-        
+
         let data = serde_yaml::to_value("publish test").unwrap();
         let event = SimpleDomainEvent::new("test_event", "agg_005", data);
-        
+
         let result = event_bus.publish(&event);
         assert!(result.is_ok());
     }
@@ -623,7 +622,7 @@ mod tests {
         let event_bus = EventBus::new();
         let data = serde_yaml::to_value("no observers").unwrap();
         let event = SimpleDomainEvent::new("test_event", "agg_006", data);
-        
+
         let result = event_bus.publish(&event);
         assert!(result.is_ok());
     }
@@ -631,16 +630,14 @@ mod tests {
     #[test]
     fn test_event_bus_publish_observer_failure() {
         let event_bus = EventBus::new();
-        let observer = Arc::new(
-            MockEventObserver::new("failing_observer", vec!["test_event".to_string()])
-                .with_failure(true)
-        );
-        
+        let observer =
+            Arc::new(MockEventObserver::new("failing_observer", vec!["test_event".to_string()]).with_failure(true));
+
         event_bus.subscribe("test_event", observer);
-        
+
         let data = serde_yaml::to_value("failing test").unwrap();
         let event = SimpleDomainEvent::new("test_event", "agg_007", data);
-        
+
         // Should not panic, should handle the error gracefully
         let result = event_bus.publish(&event);
         assert!(result.is_ok());
@@ -649,16 +646,19 @@ mod tests {
     #[test]
     fn test_event_bus_publish_async() {
         let event_bus = EventBus::new();
-        let observer = Arc::new(MockEventObserver::new("async_observer", vec!["async_event".to_string()]));
-        
+        let observer = Arc::new(MockEventObserver::new(
+            "async_observer",
+            vec!["async_event".to_string()],
+        ));
+
         event_bus.subscribe("async_event", observer);
-        
+
         let data = serde_yaml::to_value("async test").unwrap();
         let event = Box::new(SimpleDomainEvent::new("async_event", "agg_008", data));
-        
+
         // Should not panic
         event_bus.publish_async(event);
-        
+
         // Give some time for the async operation to complete
         std::thread::sleep(std::time::Duration::from_millis(10));
     }
@@ -668,12 +668,12 @@ mod tests {
         let event_bus = EventBus::new();
         let observer1 = Arc::new(MockEventObserver::new("observer1", vec!["test_event".to_string()]));
         let observer2 = Arc::new(MockEventObserver::new("observer2", vec!["test_event".to_string()]));
-        
+
         assert_eq!(event_bus.observer_count("test_event"), 0);
-        
+
         event_bus.subscribe("test_event", observer1);
         assert_eq!(event_bus.observer_count("test_event"), 1);
-        
+
         event_bus.subscribe("test_event", observer2);
         assert_eq!(event_bus.observer_count("test_event"), 2);
     }
@@ -683,10 +683,10 @@ mod tests {
         let event_bus = EventBus::new();
         let observer1 = Arc::new(MockEventObserver::new("observer1", vec!["event_type_1".to_string()]));
         let observer2 = Arc::new(MockEventObserver::new("observer2", vec!["event_type_2".to_string()]));
-        
+
         event_bus.subscribe("event_type_1", observer1);
         event_bus.subscribe("event_type_2", observer2);
-        
+
         let event_types = event_bus.event_types();
         assert_eq!(event_types.len(), 2);
         assert!(event_types.contains(&"event_type_1".to_string()));
@@ -699,7 +699,7 @@ mod tests {
         let event_store = Box::new(MockEventStore::new());
         let event_bus = EventBus::new();
         let _replayer = EventReplayer::new(event_store, event_bus);
-        
+
         // Just test that it can be created without errors
         assert!(true);
     }
@@ -709,7 +709,7 @@ mod tests {
         let event_store = MockEventStore::new();
         let event_bus = EventBus::new();
         let replayer = EventReplayer::new(Box::new(event_store), event_bus);
-        
+
         // Test that it can be called without errors
         let result = replayer.replay_aggregate_events("test_aggregate");
         assert!(result.is_ok());
@@ -720,7 +720,7 @@ mod tests {
         let event_store = MockEventStore::new();
         let event_bus = EventBus::new();
         let replayer = EventReplayer::new(Box::new(event_store), event_bus);
-        
+
         // Test that it can be called without errors
         let result = replayer.replay_events_by_type("test_event_type");
         assert!(result.is_ok());
@@ -730,21 +730,24 @@ mod tests {
     #[test]
     fn test_event_bus_complex_scenario() {
         let event_bus = EventBus::new();
-        
+
         // Subscribe multiple observers to different event types
         let observer1 = Arc::new(MockEventObserver::new("observer1", vec!["user_created".to_string()]));
         let observer2 = Arc::new(MockEventObserver::new("observer2", vec!["user_updated".to_string()]));
-        let observer3 = Arc::new(MockEventObserver::new("observer3", vec!["user_created".to_string(), "user_updated".to_string()]));
-        
+        let observer3 = Arc::new(MockEventObserver::new(
+            "observer3",
+            vec!["user_created".to_string(), "user_updated".to_string()],
+        ));
+
         event_bus.subscribe("user_created", observer1);
         event_bus.subscribe("user_updated", observer2);
         event_bus.subscribe("user_created", observer3.clone());
         event_bus.subscribe("user_updated", observer3);
-        
+
         // Verify observer counts
         assert_eq!(event_bus.observer_count("user_created"), 2);
         assert_eq!(event_bus.observer_count("user_updated"), 2);
-        
+
         // Verify event types
         let event_types = event_bus.event_types();
         assert_eq!(event_types.len(), 2);
@@ -755,16 +758,22 @@ mod tests {
     #[test]
     fn test_event_bus_observer_interest_filtering() {
         let event_bus = EventBus::new();
-        
+
         // Create observers with specific interests
-        let user_observer = Arc::new(MockEventObserver::new("user_observer", vec!["user_created".to_string()]));
-        let project_observer = Arc::new(MockEventObserver::new("project_observer", vec!["project_created".to_string()]));
+        let user_observer = Arc::new(MockEventObserver::new(
+            "user_observer",
+            vec!["user_created".to_string()],
+        ));
+        let project_observer = Arc::new(MockEventObserver::new(
+            "project_observer",
+            vec!["project_created".to_string()],
+        ));
         let universal_observer = Arc::new(MockEventObserver::new("universal_observer", vec![]));
-        
+
         event_bus.subscribe("user_created", user_observer);
         event_bus.subscribe("project_created", project_observer);
         event_bus.subscribe("any_event", universal_observer);
-        
+
         // Verify that observers are only interested in their specific events
         assert_eq!(event_bus.observer_count("user_created"), 1);
         assert_eq!(event_bus.observer_count("project_created"), 1);
@@ -777,7 +786,7 @@ mod tests {
     fn test_event_bus_empty_event_type() {
         let event_bus = EventBus::new();
         let observer = Arc::new(MockEventObserver::new("empty_observer", vec!["".to_string()]));
-        
+
         event_bus.subscribe("", observer);
         assert_eq!(event_bus.observer_count(""), 1);
     }
@@ -785,8 +794,11 @@ mod tests {
     #[test]
     fn test_event_bus_special_characters_in_event_type() {
         let event_bus = EventBus::new();
-        let observer = Arc::new(MockEventObserver::new("special_observer", vec!["event-with-dashes".to_string()]));
-        
+        let observer = Arc::new(MockEventObserver::new(
+            "special_observer",
+            vec!["event-with-dashes".to_string()],
+        ));
+
         event_bus.subscribe("event-with-dashes", observer);
         assert_eq!(event_bus.observer_count("event-with-dashes"), 1);
     }
@@ -794,8 +806,11 @@ mod tests {
     #[test]
     fn test_event_bus_unicode_event_type() {
         let event_bus = EventBus::new();
-        let observer = Arc::new(MockEventObserver::new("unicode_observer", vec!["événement_événement".to_string()]));
-        
+        let observer = Arc::new(MockEventObserver::new(
+            "unicode_observer",
+            vec!["événement_événement".to_string()],
+        ));
+
         event_bus.subscribe("événement_événement", observer);
         assert_eq!(event_bus.observer_count("événement_événement"), 1);
     }

@@ -21,27 +21,27 @@ impl ProjectStatus {
     pub fn is_active(&self) -> bool {
         matches!(self, ProjectStatus::InProgress | ProjectStatus::OnHold)
     }
-    
+
     pub fn can_transition_to(&self, new_status: &ProjectStatus) -> bool {
         match (self, new_status) {
             // Planned -> InProgress, Cancelled
             (ProjectStatus::Planned, ProjectStatus::InProgress) => true,
             (ProjectStatus::Planned, ProjectStatus::Cancelled) => true,
-            
+
             // InProgress -> OnHold, Completed
             (ProjectStatus::InProgress, ProjectStatus::OnHold) => true,
             (ProjectStatus::InProgress, ProjectStatus::Completed) => true,
-            
+
             // OnHold -> InProgress, Cancelled
             (ProjectStatus::OnHold, ProjectStatus::InProgress) => true,
             (ProjectStatus::OnHold, ProjectStatus::Cancelled) => true,
-            
+
             // Completed -> (não pode mudar)
             (ProjectStatus::Completed, _) => false,
-            
+
             // Cancelled -> (não pode mudar)
             (ProjectStatus::Cancelled, _) => false,
-            
+
             // Outras transições não são permitidas
             _ => false,
         }
@@ -91,24 +91,24 @@ pub struct Project {
     pub description: Option<String>,
     pub status: ProjectStatus,
     pub priority: ProjectPriority,
-    
+
     // Datas
     pub start_date: Option<NaiveDate>,
     pub end_date: Option<NaiveDate>,
     pub actual_start_date: Option<NaiveDate>,
     pub actual_end_date: Option<NaiveDate>,
-    
+
     // Metadados
     pub company_code: String,
     pub manager_id: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub created_by: String,
-    
+
     // Relacionamentos
     pub tasks: HashMap<String, AnyTask>,
     pub resources: HashMap<String, ResourceAssignment>,
-    
+
     // Configurações
     pub settings: ProjectSettings,
     pub metadata: HashMap<String, String>,
@@ -177,12 +177,7 @@ impl Default for WorkHours {
 }
 
 impl Project {
-    pub fn new(
-        code: String,
-        name: String,
-        company_code: String,
-        created_by: String,
-    ) -> Result<Self, DomainError> {
+    pub fn new(code: String, name: String, company_code: String, created_by: String) -> Result<Self, DomainError> {
         if code.trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "code".to_string(),
@@ -198,7 +193,7 @@ impl Project {
         }
 
         let now = Utc::now();
-        
+
         Ok(Self {
             id: uuid7::uuid7().to_string(),
             code,
@@ -228,7 +223,7 @@ impl Project {
                 message: format!("Cannot transition from {:?} to {:?}", self.status, new_status),
             }));
         }
-        
+
         // Validações específicas por status
         match new_status {
             ProjectStatus::InProgress => {
@@ -241,10 +236,10 @@ impl Project {
             }
             _ => {}
         }
-        
+
         self.status = new_status;
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
 
@@ -259,10 +254,8 @@ impl Project {
     }
 
     fn validate_can_complete(&self) -> Result<(), DomainError> {
-        let all_tasks_completed = self.tasks.values().all(|task| {
-            task.status() == "Completed"
-        });
-        
+        let all_tasks_completed = self.tasks.values().all(|task| task.status() == "Completed");
+
         if !all_tasks_completed {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "tasks".to_string(),
@@ -275,17 +268,17 @@ impl Project {
     pub fn add_task(&mut self, task: AnyTask) -> Result<(), DomainError> {
         // Use the task code as the ID
         let task_id = task.code().to_string();
-        
+
         if self.tasks.contains_key(&task_id) {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "task_id".to_string(),
                 message: "Task with this ID already exists".to_string(),
             }));
         }
-        
+
         self.tasks.insert(task_id, task);
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
 
@@ -294,40 +287,40 @@ impl Project {
             // Verificar se a tarefa pode ser removida
             // Implementar quando tivermos acesso ao AnyTask
         }
-        
+
         self.tasks.remove(task_id);
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
 
     pub fn assign_resource(&mut self, assignment: ResourceAssignment) -> Result<(), DomainError> {
         let key = format!("{}_{}", assignment.resource_id, assignment.task_id);
-        
+
         if self.resources.contains_key(&key) {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "resource_assignment".to_string(),
                 message: "Resource is already assigned to this task".to_string(),
             }));
         }
-        
+
         self.resources.insert(key, assignment);
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
 
     pub fn remove_resource_assignment(&mut self, resource_id: &str, task_id: &str) -> Result<(), DomainError> {
         let key = format!("{}_{}", resource_id, task_id);
-        
+
         if let Some(assignment) = self.resources.get(&key) {
             // Verificar se a alocação pode ser removida
             // Implementar quando necessário
         }
-        
+
         self.resources.remove(&key);
         self.updated_at = Utc::now();
-        
+
         Ok(())
     }
 
@@ -352,13 +345,17 @@ impl Project {
         if self.tasks.is_empty() {
             return 0.0;
         }
-        
-        let completed_tasks = self.tasks.values().filter(|task| {
-            // Assumindo que AnyTask tem um método is_completed
-            // Se não tiver, podemos implementar uma verificação diferente
-            false // Placeholder - implementar quando tivermos acesso ao AnyTask
-        }).count();
-        
+
+        let completed_tasks = self
+            .tasks
+            .values()
+            .filter(|task| {
+                // Assumindo que AnyTask tem um método is_completed
+                // Se não tiver, podemos implementar uma verificação diferente
+                false // Placeholder - implementar quando tivermos acesso ao AnyTask
+            })
+            .count();
+
         (completed_tasks as f64 / self.tasks.len() as f64) * 100.0
     }
 
@@ -446,7 +443,8 @@ mod tests {
             "Test Project".to_string(),
             "COMP-001".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(project.code(), "PROJ-001");
         assert_eq!(project.name(), "Test Project");
@@ -485,7 +483,8 @@ mod tests {
             "Test Project".to_string(),
             "COMP-001".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Add a task to the project so it can be started
         let task = crate::domain::task_management::any_task::AnyTask::Planned(
@@ -495,13 +494,13 @@ mod tests {
                 .code("TASK-001".to_string())
                 .dates(
                     chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
-                    chrono::NaiveDate::from_ymd_opt(2025, 1, 5).unwrap()
+                    chrono::NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(),
                 )
                 .unwrap()
                 .validate_vacations(&[])
                 .unwrap()
                 .build()
-                .unwrap()
+                .unwrap(),
         );
         project.add_task(task).unwrap();
 
@@ -532,7 +531,8 @@ mod tests {
             "Test Project".to_string(),
             "COMP-001".to_string(),
             "user@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let errors = project.validate().unwrap();
         assert!(errors.is_empty());

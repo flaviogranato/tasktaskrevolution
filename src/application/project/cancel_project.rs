@@ -67,8 +67,8 @@ where
 mod tests {
     use super::*;
     use crate::domain::project_management::builder::ProjectBuilder;
-    use std::{cell::RefCell, collections::HashMap};
     use crate::domain::project_management::project::ProjectStatus;
+    use std::{cell::RefCell, collections::HashMap};
 
     // --- Mocks ---
     #[derive(Clone)]

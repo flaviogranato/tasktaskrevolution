@@ -503,7 +503,7 @@ mod tests {
         let command = MockCommand::new("test", "Test command").with_can_execute(false);
         let result = command.execute();
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Command cannot be executed"));
         }
@@ -517,16 +517,15 @@ mod tests {
 
     #[test]
     fn test_mock_command_validation_failure() {
-        let command = MockCommand::new("test", "Test command")
-            .with_validation_result(Err(DomainError::new(
-                crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                    field: "test".to_string(),
-                    message: "Validation failed".to_string(),
-                },
-            )));
+        let command = MockCommand::new("test", "Test command").with_validation_result(Err(DomainError::new(
+            crate::domain::shared::errors::DomainErrorKind::ValidationError {
+                field: "test".to_string(),
+                message: "Validation failed".to_string(),
+            },
+        )));
         let result = command.validate();
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Validation failed"));
         }
@@ -552,7 +551,7 @@ mod tests {
         let command = MockUndoableCommand::new("test", "Test command").with_can_undo(false);
         let result = command.undo();
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Command cannot be undone"));
         }
@@ -569,8 +568,7 @@ mod tests {
 
     #[test]
     fn test_retryable_command_retry_count() {
-        let command = MockRetryableCommand::new("test", "Test command")
-            .with_retry_count(2);
+        let command = MockRetryableCommand::new("test", "Test command").with_retry_count(2);
         assert_eq!(command.retry_count(), 2);
         assert!(command.can_retry());
     }
@@ -587,8 +585,7 @@ mod tests {
 
     #[test]
     fn test_retryable_command_cannot_retry() {
-        let mut command = MockRetryableCommand::new("test", "Test command")
-            .with_retry_count(3);
+        let mut command = MockRetryableCommand::new("test", "Test command").with_retry_count(3);
         assert!(!command.can_retry());
         command.increment_retry_count();
         assert!(!command.can_retry());
@@ -604,16 +601,14 @@ mod tests {
     #[test]
     fn test_schedulable_command_should_execute_now_past_schedule() {
         let past_time = chrono::Utc::now() - chrono::Duration::hours(1);
-        let command = MockSchedulableCommand::new("test", "Test command")
-            .with_scheduled_time(past_time);
+        let command = MockSchedulableCommand::new("test", "Test command").with_scheduled_time(past_time);
         assert!(command.should_execute_now());
     }
 
     #[test]
     fn test_schedulable_command_should_execute_now_future_schedule() {
         let future_time = chrono::Utc::now() + chrono::Duration::hours(1);
-        let command = MockSchedulableCommand::new("test", "Test command")
-            .with_scheduled_time(future_time);
+        let command = MockSchedulableCommand::new("test", "Test command").with_scheduled_time(future_time);
         assert!(!command.should_execute_now());
     }
 
@@ -667,7 +662,7 @@ mod tests {
         let command = MockCommand::new("test", "Test command");
         let result = bus.execute(&command);
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("No handler found for command"));
         }
@@ -688,8 +683,7 @@ mod tests {
     fn test_command_log_entry_with_result() {
         let params = serde_yaml::to_value("test_params").unwrap();
         let result = CommandResult::success("Success");
-        let entry = CommandLogEntry::new("test_user", "test_command", params)
-            .with_result(result.clone());
+        let entry = CommandLogEntry::new("test_user", "test_command", params).with_result(result.clone());
         assert_eq!(entry.result, Some(result));
     }
 
@@ -910,7 +904,7 @@ mod tests {
         let command = MockRedoableCommand::new("test", "Test command").with_can_redo(false);
         let result = command.redo();
         assert!(result.is_err());
-        
+
         if let Err(err) = result {
             assert!(err.to_string().contains("Command cannot be redone"));
         }
@@ -1065,7 +1059,7 @@ mod tests {
         let result = command.execute().unwrap();
         assert!(result.success);
         assert!(result.data.is_some());
-        
+
         if let Some(data) = result.data {
             let metadata_map: HashMap<String, String> = serde_yaml::from_value(data).unwrap();
             assert_eq!(metadata_map.get("priority"), Some(&"high".to_string()));

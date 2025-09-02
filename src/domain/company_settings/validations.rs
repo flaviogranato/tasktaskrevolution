@@ -1,4 +1,3 @@
-use crate::domain::shared::errors::DomainError;
 use crate::domain::company_settings::errors::CompanySettingsError;
 
 /// Validações de domínio para configurações da empresa
@@ -32,7 +31,10 @@ impl CompanySettingsValidator {
         }
 
         // Validar se contém apenas caracteres válidos (letras, espaços, hífens e acentos)
-        if !name.chars().all(|c| c.is_alphabetic() || c.is_whitespace() || c == '-' || c == '\'') {
+        if !name
+            .chars()
+            .all(|c| c.is_alphabetic() || c.is_whitespace() || c == '-' || c == '\'')
+        {
             return Err(CompanySettingsError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
@@ -105,12 +107,29 @@ impl CompanySettingsValidator {
 
         // Lista de fusos horários válidos comuns
         let valid_timezones = [
-            "UTC", "GMT", "EST", "CST", "MST", "PST",
-            "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-            "America/Sao_Paulo", "America/Argentina/Buenos_Aires", "America/Mexico_City",
-            "Europe/London", "Europe/Paris", "Europe/Berlin", "Europe/Rome", "Europe/Madrid",
-            "Asia/Shanghai", "Asia/Singapore", "Asia/Dubai",
-            "Australia/Sydney", "Australia/Melbourne"
+            "UTC",
+            "GMT",
+            "EST",
+            "CST",
+            "MST",
+            "PST",
+            "America/New_York",
+            "America/Chicago",
+            "America/Denver",
+            "America/Los_Angeles",
+            "America/Sao_Paulo",
+            "America/Argentina/Buenos_Aires",
+            "America/Mexico_City",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Europe/Rome",
+            "Europe/Madrid",
+            "Asia/Shanghai",
+            "Asia/Singapore",
+            "Asia/Dubai",
+            "Australia/Sydney",
+            "Australia/Melbourne",
         ];
 
         if !valid_timezones.contains(&timezone) {
@@ -151,30 +170,38 @@ mod tests {
     #[test]
     fn test_validate_manager_name_empty() {
         let result = CompanySettingsValidator::validate_manager_name("");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_name" && reason.contains("vazio")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_name" && reason.contains("vazio"))
+        );
     }
 
     #[test]
     fn test_validate_manager_name_too_short() {
         let result = CompanySettingsValidator::validate_manager_name("A");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_name" && reason.contains("2 caracteres")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_name" && reason.contains("2 caracteres"))
+        );
     }
 
     #[test]
     fn test_validate_manager_name_too_long() {
         let long_name = "A".repeat(101);
         let result = CompanySettingsValidator::validate_manager_name(&long_name);
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_name" && reason.contains("100 caracteres")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_name" && reason.contains("100 caracteres"))
+        );
     }
 
     #[test]
     fn test_validate_manager_name_invalid_chars() {
         let result = CompanySettingsValidator::validate_manager_name("John123");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_name" && reason.contains("caracteres inválidos")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_name" && reason.contains("caracteres inválidos"))
+        );
     }
 
     #[test]
@@ -187,22 +214,28 @@ mod tests {
     #[test]
     fn test_validate_manager_email_empty() {
         let result = CompanySettingsValidator::validate_manager_email("");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_email" && reason.contains("vazio")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_email" && reason.contains("vazio"))
+        );
     }
 
     #[test]
     fn test_validate_manager_email_no_at() {
         let result = CompanySettingsValidator::validate_manager_email("johnexample.com");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_email" && reason.contains("Formato de email inválido")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_email" && reason.contains("Formato de email inválido"))
+        );
     }
 
     #[test]
     fn test_validate_manager_email_no_dot() {
         let result = CompanySettingsValidator::validate_manager_email("john@example");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "manager_email" && reason.contains("Formato de email inválido")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "manager_email" && reason.contains("Formato de email inválido"))
+        );
     }
 
     #[test]
@@ -215,34 +248,30 @@ mod tests {
     #[test]
     fn test_validate_default_timezone_empty() {
         let result = CompanySettingsValidator::validate_default_timezone("");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "default_timezone" && reason.contains("vazio")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "default_timezone" && reason.contains("vazio"))
+        );
     }
 
     #[test]
     fn test_validate_default_timezone_invalid() {
         let result = CompanySettingsValidator::validate_default_timezone("Invalid/Timezone");
-        assert!(matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ }) 
-            if field == "default_timezone" && reason.contains("não é suportado")));
+        assert!(
+            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            if field == "default_timezone" && reason.contains("não é suportado"))
+        );
     }
 
     #[test]
     fn test_validate_all_config_success() {
-        let result = CompanySettingsValidator::validate_all_config(
-            "John Doe",
-            "john@example.com",
-            "UTC"
-        );
+        let result = CompanySettingsValidator::validate_all_config("John Doe", "john@example.com", "UTC");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_validate_all_config_failure() {
-        let result = CompanySettingsValidator::validate_all_config(
-            "",
-            "invalid-email",
-            "Invalid/Timezone"
-        );
+        let result = CompanySettingsValidator::validate_all_config("", "invalid-email", "Invalid/Timezone");
         assert!(result.is_err());
     }
 }

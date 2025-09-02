@@ -295,7 +295,7 @@ mod tests {
         })
         .with_source(io_error);
 
-        assert!(matches!(domain_error.kind(), DomainErrorKind::Io { operation, path } 
+        assert!(matches!(domain_error.kind(), DomainErrorKind::Io { operation, path }
             if operation == "read" && path.as_deref() == Some("/path/to/file")));
         assert!(domain_error.source().is_some());
     }
@@ -451,7 +451,7 @@ mod tests {
 
         assert!(domain_result.is_err());
         let error = domain_result.unwrap_err();
-        assert!(matches!(error.kind(), DomainErrorKind::Generic { message } 
+        assert!(matches!(error.kind(), DomainErrorKind::Generic { message }
             if message == "Database connection failed"));
         assert_eq!(error.context(), Some(&"Failed to load user data".to_string()));
     }
@@ -548,100 +548,121 @@ mod tests {
     #[test]
     fn test_domain_error_display_all_variants() {
         // Testar todas as variantes de DomainErrorKind para garantir cobertura completa
-        
+
         // Project Management Errors
         let project_not_found = DomainError::project_not_found("PROJ-001");
         assert!(format!("{}", project_not_found).contains("Project with code 'PROJ-001' not found"));
 
-        let project_already_exists = DomainError::new(DomainErrorKind::ProjectAlreadyExists { code: "PROJ-001".to_string() });
+        let project_already_exists = DomainError::new(DomainErrorKind::ProjectAlreadyExists {
+            code: "PROJ-001".to_string(),
+        });
         assert!(format!("{}", project_already_exists).contains("Project with code 'PROJ-001' already exists"));
 
         let project_invalid_state = DomainError::project_invalid_state("Completed", "In Progress");
-        assert!(format!("{}", project_invalid_state).contains("Project is in invalid state 'Completed', expected 'In Progress'"));
+        assert!(
+            format!("{}", project_invalid_state)
+                .contains("Project is in invalid state 'Completed', expected 'In Progress'")
+        );
 
-        let project_validation_failed = DomainError::new(DomainErrorKind::ProjectValidationFailed { 
-            details: vec!["Name required".to_string(), "Code invalid".to_string()] 
+        let project_validation_failed = DomainError::new(DomainErrorKind::ProjectValidationFailed {
+            details: vec!["Name required".to_string(), "Code invalid".to_string()],
         });
-        assert!(format!("{}", project_validation_failed).contains("Project validation failed: Name required, Code invalid"));
+        assert!(
+            format!("{}", project_validation_failed).contains("Project validation failed: Name required, Code invalid")
+        );
 
         // Resource Management Errors
         let resource_not_found = DomainError::resource_not_found("RES-001");
         assert!(format!("{}", resource_not_found).contains("Resource with code 'RES-001' not found"));
 
-        let resource_already_exists = DomainError::new(DomainErrorKind::ResourceAlreadyExists { code: "RES-001".to_string() });
+        let resource_already_exists = DomainError::new(DomainErrorKind::ResourceAlreadyExists {
+            code: "RES-001".to_string(),
+        });
         assert!(format!("{}", resource_already_exists).contains("Resource with code 'RES-001' already exists"));
 
-        let resource_invalid_state = DomainError::new(DomainErrorKind::ResourceInvalidState { 
-            current: "Inactive".to_string(), 
-            expected: "Active".to_string() 
+        let resource_invalid_state = DomainError::new(DomainErrorKind::ResourceInvalidState {
+            current: "Inactive".to_string(),
+            expected: "Active".to_string(),
         });
-        assert!(format!("{}", resource_invalid_state).contains("Resource is in invalid state 'Inactive', expected 'Active'"));
+        assert!(
+            format!("{}", resource_invalid_state)
+                .contains("Resource is in invalid state 'Inactive', expected 'Active'")
+        );
 
-        let resource_validation_failed = DomainError::new(DomainErrorKind::ResourceValidationFailed { 
-            details: vec!["Email invalid".to_string(), "Name required".to_string()] 
+        let resource_validation_failed = DomainError::new(DomainErrorKind::ResourceValidationFailed {
+            details: vec!["Email invalid".to_string(), "Name required".to_string()],
         });
-        assert!(format!("{}", resource_validation_failed).contains("Resource validation failed: Email invalid, Name required"));
+        assert!(
+            format!("{}", resource_validation_failed)
+                .contains("Resource validation failed: Email invalid, Name required")
+        );
 
         // Task Management Errors
         let task_not_found = DomainError::task_not_found("TASK-001");
         assert!(format!("{}", task_not_found).contains("Task with code 'TASK-001' not found"));
 
-        let task_already_exists = DomainError::new(DomainErrorKind::TaskAlreadyExists { code: "TASK-001".to_string() });
+        let task_already_exists = DomainError::new(DomainErrorKind::TaskAlreadyExists {
+            code: "TASK-001".to_string(),
+        });
         assert!(format!("{}", task_already_exists).contains("Task with code 'TASK-001' already exists"));
 
-        let task_invalid_state = DomainError::new(DomainErrorKind::TaskInvalidState { 
-            current: "Completed".to_string(), 
-            expected: "In Progress".to_string() 
+        let task_invalid_state = DomainError::new(DomainErrorKind::TaskInvalidState {
+            current: "Completed".to_string(),
+            expected: "In Progress".to_string(),
         });
-        assert!(format!("{}", task_invalid_state).contains("Task is in invalid state 'Completed', expected 'In Progress'"));
+        assert!(
+            format!("{}", task_invalid_state).contains("Task is in invalid state 'Completed', expected 'In Progress'")
+        );
 
-        let task_validation_failed = DomainError::new(DomainErrorKind::TaskValidationFailed { 
-            details: vec!["Name required".to_string(), "Dates invalid".to_string()] 
+        let task_validation_failed = DomainError::new(DomainErrorKind::TaskValidationFailed {
+            details: vec!["Name required".to_string(), "Dates invalid".to_string()],
         });
         assert!(format!("{}", task_validation_failed).contains("Task validation failed: Name required, Dates invalid"));
 
-        let task_assignment_failed = DomainError::new(DomainErrorKind::TaskAssignmentFailed { 
-            reason: "Resource unavailable".to_string() 
+        let task_assignment_failed = DomainError::new(DomainErrorKind::TaskAssignmentFailed {
+            reason: "Resource unavailable".to_string(),
         });
         assert!(format!("{}", task_assignment_failed).contains("Task assignment failed: Resource unavailable"));
 
         // Configuration Errors
-        let config_invalid = DomainError::new(DomainErrorKind::ConfigurationInvalid { 
-            field: "timezone".to_string(), 
-            value: "INVALID".to_string() 
+        let config_invalid = DomainError::new(DomainErrorKind::ConfigurationInvalid {
+            field: "timezone".to_string(),
+            value: "INVALID".to_string(),
         });
         assert!(format!("{}", config_invalid).contains("Invalid configuration for field 'timezone': INVALID"));
 
-        let config_missing = DomainError::new(DomainErrorKind::ConfigurationMissing { 
-            field: "database_url".to_string() 
+        let config_missing = DomainError::new(DomainErrorKind::ConfigurationMissing {
+            field: "database_url".to_string(),
         });
         assert!(format!("{}", config_missing).contains("Missing configuration for field 'database_url'"));
 
         // Repository Errors
-        let repository_error = DomainError::new(DomainErrorKind::RepositoryError { 
-            operation: "find".to_string(), 
-            details: "Connection timeout".to_string() 
+        let repository_error = DomainError::new(DomainErrorKind::RepositoryError {
+            operation: "find".to_string(),
+            details: "Connection timeout".to_string(),
         });
         assert!(format!("{}", repository_error).contains("Repository error during find: Connection timeout"));
 
-        let persistence_error = DomainError::new(DomainErrorKind::PersistenceError { 
-            operation: "save".to_string(), 
-            details: "Disk full".to_string() 
+        let persistence_error = DomainError::new(DomainErrorKind::PersistenceError {
+            operation: "save".to_string(),
+            details: "Disk full".to_string(),
         });
         assert!(format!("{}", persistence_error).contains("Persistence error during save: Disk full"));
 
         // Generic Errors
-        let generic_error = DomainError::new(DomainErrorKind::Generic { 
-            message: "Unexpected error occurred".to_string() 
+        let generic_error = DomainError::new(DomainErrorKind::Generic {
+            message: "Unexpected error occurred".to_string(),
         });
         assert!(format!("{}", generic_error).contains("Unexpected error occurred"));
     }
 
     #[test]
     fn test_domain_error_with_context_chaining() {
-        let error = DomainError::new(DomainErrorKind::ProjectNotFound { code: "PROJ-001".to_string() })
-            .with_context("First context")
-            .with_context("Second context");
+        let error = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        })
+        .with_context("First context")
+        .with_context("Second context");
 
         // O último contexto deve sobrescrever o anterior
         assert_eq!(error.context(), Some(&"Second context".to_string()));
@@ -650,9 +671,9 @@ mod tests {
     #[test]
     fn test_domain_error_with_source_chaining() {
         let io_error = io::Error::new(io::ErrorKind::NotFound, "File not found");
-        let error = DomainError::new(DomainErrorKind::Io { 
-            operation: "read".to_string(), 
-            path: None 
+        let error = DomainError::new(DomainErrorKind::Io {
+            operation: "read".to_string(),
+            path: None,
         })
         .with_source(io_error);
 
@@ -665,59 +686,77 @@ mod tests {
     fn test_domain_error_kind_variants_debug() {
         // Testar debug formatting para todas as variantes
         let variants = vec![
-            DomainErrorKind::ProjectNotFound { code: "TEST".to_string() },
-            DomainErrorKind::ProjectAlreadyExists { code: "TEST".to_string() },
-            DomainErrorKind::ProjectInvalidState { 
-                current: "TEST".to_string(), 
-                expected: "TEST".to_string() 
+            DomainErrorKind::ProjectNotFound {
+                code: "TEST".to_string(),
             },
-            DomainErrorKind::ProjectValidationFailed { 
-                details: vec!["TEST".to_string()] 
+            DomainErrorKind::ProjectAlreadyExists {
+                code: "TEST".to_string(),
             },
-            DomainErrorKind::ResourceNotFound { code: "TEST".to_string() },
-            DomainErrorKind::ResourceAlreadyExists { code: "TEST".to_string() },
-            DomainErrorKind::ResourceInvalidState { 
-                current: "TEST".to_string(), 
-                expected: "TEST".to_string() 
+            DomainErrorKind::ProjectInvalidState {
+                current: "TEST".to_string(),
+                expected: "TEST".to_string(),
             },
-            DomainErrorKind::ResourceValidationFailed { 
-                details: vec!["TEST".to_string()] 
+            DomainErrorKind::ProjectValidationFailed {
+                details: vec!["TEST".to_string()],
             },
-            DomainErrorKind::TaskNotFound { code: "TEST".to_string() },
-            DomainErrorKind::TaskAlreadyExists { code: "TEST".to_string() },
-            DomainErrorKind::TaskInvalidState { 
-                current: "TEST".to_string(), 
-                expected: "TEST".to_string() 
+            DomainErrorKind::ResourceNotFound {
+                code: "TEST".to_string(),
             },
-            DomainErrorKind::TaskValidationFailed { 
-                details: vec!["TEST".to_string()] 
+            DomainErrorKind::ResourceAlreadyExists {
+                code: "TEST".to_string(),
             },
-            DomainErrorKind::TaskAssignmentFailed { reason: "TEST".to_string() },
-            DomainErrorKind::ConfigurationInvalid { 
-                field: "TEST".to_string(), 
-                value: "TEST".to_string() 
+            DomainErrorKind::ResourceInvalidState {
+                current: "TEST".to_string(),
+                expected: "TEST".to_string(),
             },
-            DomainErrorKind::ConfigurationMissing { field: "TEST".to_string() },
-            DomainErrorKind::RepositoryError { 
-                operation: "TEST".to_string(), 
-                details: "TEST".to_string() 
+            DomainErrorKind::ResourceValidationFailed {
+                details: vec!["TEST".to_string()],
             },
-            DomainErrorKind::PersistenceError { 
-                operation: "TEST".to_string(), 
-                details: "TEST".to_string() 
+            DomainErrorKind::TaskNotFound {
+                code: "TEST".to_string(),
             },
-            DomainErrorKind::ValidationError { 
-                field: "TEST".to_string(), 
-                message: "TEST".to_string() 
+            DomainErrorKind::TaskAlreadyExists {
+                code: "TEST".to_string(),
             },
-            DomainErrorKind::Generic { message: "TEST".to_string() },
-            DomainErrorKind::Io { 
-                operation: "TEST".to_string(), 
-                path: None 
+            DomainErrorKind::TaskInvalidState {
+                current: "TEST".to_string(),
+                expected: "TEST".to_string(),
             },
-            DomainErrorKind::Serialization { 
-                format: "TEST".to_string(), 
-                details: "TEST".to_string() 
+            DomainErrorKind::TaskValidationFailed {
+                details: vec!["TEST".to_string()],
+            },
+            DomainErrorKind::TaskAssignmentFailed {
+                reason: "TEST".to_string(),
+            },
+            DomainErrorKind::ConfigurationInvalid {
+                field: "TEST".to_string(),
+                value: "TEST".to_string(),
+            },
+            DomainErrorKind::ConfigurationMissing {
+                field: "TEST".to_string(),
+            },
+            DomainErrorKind::RepositoryError {
+                operation: "TEST".to_string(),
+                details: "TEST".to_string(),
+            },
+            DomainErrorKind::PersistenceError {
+                operation: "TEST".to_string(),
+                details: "TEST".to_string(),
+            },
+            DomainErrorKind::ValidationError {
+                field: "TEST".to_string(),
+                message: "TEST".to_string(),
+            },
+            DomainErrorKind::Generic {
+                message: "TEST".to_string(),
+            },
+            DomainErrorKind::Io {
+                operation: "TEST".to_string(),
+                path: None,
+            },
+            DomainErrorKind::Serialization {
+                format: "TEST".to_string(),
+                details: "TEST".to_string(),
             },
         ];
 
@@ -730,8 +769,10 @@ mod tests {
 
     #[test]
     fn test_domain_error_context_methods() {
-        let error = DomainError::new(DomainErrorKind::ProjectNotFound { code: "PROJ-001".to_string() })
-            .with_context("Test context");
+        let error = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        })
+        .with_context("Test context");
 
         // Testar métodos de acesso
         assert!(matches!(error.kind(), DomainErrorKind::ProjectNotFound { code } if code == "PROJ-001"));
@@ -741,18 +782,28 @@ mod tests {
 
     #[test]
     fn test_domain_error_kind_comparison() {
-        let error1 = DomainError::new(DomainErrorKind::ProjectNotFound { code: "PROJ-001".to_string() });
-        let error2 = DomainError::new(DomainErrorKind::ProjectNotFound { code: "PROJ-001".to_string() });
-        let error3 = DomainError::new(DomainErrorKind::ProjectNotFound { code: "PROJ-002".to_string() });
+        let error1 = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        });
+        let error2 = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-001".to_string(),
+        });
+        let error3 = DomainError::new(DomainErrorKind::ProjectNotFound {
+            code: "PROJ-002".to_string(),
+        });
 
         // Testar que erros com o mesmo kind têm códigos iguais
-        if let (DomainErrorKind::ProjectNotFound { code: code1 }, DomainErrorKind::ProjectNotFound { code: code2 }) = (error1.kind(), error2.kind()) {
+        if let (DomainErrorKind::ProjectNotFound { code: code1 }, DomainErrorKind::ProjectNotFound { code: code2 }) =
+            (error1.kind(), error2.kind())
+        {
             assert_eq!(code1, code2);
         } else {
             panic!("Expected ProjectNotFound errors");
         }
 
-        if let (DomainErrorKind::ProjectNotFound { code: code1 }, DomainErrorKind::ProjectNotFound { code: code3 }) = (error1.kind(), error3.kind()) {
+        if let (DomainErrorKind::ProjectNotFound { code: code1 }, DomainErrorKind::ProjectNotFound { code: code3 }) =
+            (error1.kind(), error3.kind())
+        {
             assert_ne!(code1, code3);
         } else {
             panic!("Expected ProjectNotFound errors");

@@ -112,7 +112,7 @@ mod tests {
         shared::errors::{DomainError, DomainErrorKind},
         task_management::{
             Task,
-            state::{Completed, InProgress, Planned, Blocked, Cancelled},
+            state::{Blocked, Cancelled, Completed, InProgress, Planned},
         },
     };
     use chrono::NaiveDate;
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_task_report_with_all_task_states() {
-        use crate::domain::task_management::state::{Planned, Blocked, Cancelled};
+        use crate::domain::task_management::state::{Blocked, Cancelled, Planned};
 
         // Criar tarefas com todos os estados
         let planned_task: Task<Planned> = Task {
@@ -229,7 +229,9 @@ mod tests {
             code: "TSK-BLOCK".to_string(),
             name: "Blocked Task".to_string(),
             description: None,
-            state: Blocked { reason: "Waiting for dependency".to_string() },
+            state: Blocked {
+                reason: "Waiting for dependency".to_string(),
+            },
             start_date: NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(),
             due_date: NaiveDate::from_ymd_opt(2025, 1, 20).unwrap(),
             actual_end_date: None,
@@ -280,7 +282,7 @@ mod tests {
         );
 
         let lines_set: std::collections::HashSet<&str> = lines.collect();
-        
+
         // Verificar todas as variantes de tarefas
         assert!(lines_set.contains("TSK-PLAN,Planning Phase,Planned,0,2025-01-01,2025-01-15,"));
         assert!(lines_set.contains("TSK-BLOCK,Blocked Task,Blocked,N/A,2025-01-05,2025-01-20,Developer"));
@@ -468,7 +470,10 @@ mod tests {
         let task_line = lines.next().unwrap();
         assert!(task_line.contains("TSK-FORMAT"));
         // O CSV escapa aspas e vírgulas, então vamos verificar o formato real
-        assert!(task_line.contains("Task with \"quotes\" and, commas") || task_line.contains("Task with \"\"quotes\"\" and, commas"));
+        assert!(
+            task_line.contains("Task with \"quotes\" and, commas")
+                || task_line.contains("Task with \"\"quotes\"\" and, commas")
+        );
         assert!(task_line.contains("John \"The Developer\"") || task_line.contains("John \"\"The Developer\"\""));
     }
 

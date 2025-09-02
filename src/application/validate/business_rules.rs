@@ -1,14 +1,12 @@
+use super::types::ValidationResult;
 use crate::domain::{
-    project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository,
-    company_management::repository::CompanyRepository,
-    resource_management::resource::Period,
+    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
+    resource_management::repository::ResourceRepository, resource_management::resource::Period,
     shared::errors::DomainError,
 };
-use super::types::{ValidationResult, ValidationSeverity};
 use chrono::{DateTime, FixedOffset, Local, NaiveDate, Offset};
 
-pub struct ValidateBusinessRulesUseCase<'a, P, R, C> 
+pub struct ValidateBusinessRulesUseCase<'a, P, R, C>
 where
     P: ProjectRepository,
     R: ResourceRepository,
@@ -74,7 +72,7 @@ where
                             for period2 in vacations2 {
                                 if self.check_vacation_overlap(period1, period2) {
                                     results.push(
-                                        ValidationResult::warning(format!("Vacation overlap detected"))
+                                        ValidationResult::warning("Vacation overlap detected".to_string())
                                             .with_entity("Resource".to_string(), resource1.code().to_string())
                                             .with_details(format!(
                                                 "Resource '{}' and '{}' have overlapping vacations between {} and {}",
@@ -82,7 +80,7 @@ where
                                                 resource2.name(),
                                                 period1.start_date.format("%d/%m/%Y"),
                                                 period1.end_date.format("%d/%m/%Y")
-                                            ))
+                                            )),
                                     );
                                 }
                             }
@@ -111,13 +109,13 @@ where
         for project in projects {
             for task in project.tasks().values() {
                 let assigned_resources = task.assigned_resources();
-                
+
                 // Check if task has resources assigned
                 if assigned_resources.is_empty() {
                     results.push(
-                        ValidationResult::warning(format!("Task has no assigned resources"))
+                        ValidationResult::warning("Task has no assigned resources".to_string())
                             .with_entity("Task".to_string(), task.code().to_string())
-                            .with_details("Task may not be completed without resource assignment".to_string())
+                            .with_details("Task may not be completed without resource assignment".to_string()),
                     );
                     continue;
                 }
@@ -141,9 +139,9 @@ where
             if let (Some(start_date), Some(end_date)) = (project.start_date(), project.end_date()) {
                 if start_date >= end_date {
                     results.push(
-                        ValidationResult::error(format!("Invalid project timeline"))
+                        ValidationResult::error("Invalid project timeline".to_string())
                             .with_entity("Project".to_string(), project.code().to_string())
-                            .with_details("Project start date must be before end date".to_string())
+                            .with_details("Project start date must be before end date".to_string()),
                     );
                 }
 
@@ -153,16 +151,16 @@ where
                     let task_end = task.due_date();
                     if *task_start < start_date {
                         results.push(
-                            ValidationResult::error(format!("Task starts before project"))
+                            ValidationResult::error("Task starts before project".to_string())
                                 .with_entity("Task".to_string(), task.code().to_string())
-                                .with_details("Task start date is before project start date".to_string())
+                                .with_details("Task start date is before project start date".to_string()),
                         );
                     }
                     if *task_end > end_date {
                         results.push(
-                            ValidationResult::error(format!("Task extends beyond project"))
+                            ValidationResult::error("Task extends beyond project".to_string())
                                 .with_entity("Task".to_string(), task.code().to_string())
-                                .with_details("Task due date is after project end date".to_string())
+                                .with_details("Task due date is after project end date".to_string()),
                         );
                     }
                 }
@@ -176,7 +174,7 @@ where
         &self,
         _projects: &[crate::domain::project_management::any_project::AnyProject],
     ) -> Result<Vec<ValidationResult>, DomainError> {
-        let mut results = Vec::new();
+        let results = Vec::new();
 
         // TODO: Implement cost validation when budget and cost fields are available
         // For now, this is a placeholder
@@ -213,7 +211,8 @@ where
         _vacation_rules: &crate::domain::project_management::project::VacationRules,
     ) -> usize {
         // Simplified implementation - count resources not on vacation during project period
-        resources.iter()
+        resources
+            .iter()
             .filter(|resource| {
                 if let Some(vacations) = resource.vacations() {
                     // Check if resource is available during project period

@@ -137,7 +137,7 @@ impl Config {
 
     /// Validates if the configuration is complete and valid
     pub fn is_valid(&self) -> bool {
-        !self.manager_name.trim().is_empty() 
+        !self.manager_name.trim().is_empty()
             && !self.manager_email.trim().is_empty()
             && !self.default_timezone.trim().is_empty()
             && !self.work_days.is_empty()
@@ -145,17 +145,19 @@ impl Config {
 
     /// Gets the current work schedule as a formatted string
     pub fn work_schedule_display(&self) -> String {
-        let days = self.work_days.iter()
+        let days = self
+            .work_days
+            .iter()
             .map(|d| d.to_string())
             .collect::<Vec<_>>()
             .join(", ");
-        
+
         let hours = if let (Some(start), Some(end)) = (&self.work_hours_start, &self.work_hours_end) {
             format!("{} - {}", start, end)
         } else {
             "Not configured".to_string()
         };
-        
+
         format!("Days: {} | Hours: {}", days, hours)
     }
 
@@ -163,19 +165,33 @@ impl Config {
     pub fn is_valid_timezone(&self) -> bool {
         // Basic timezone validation - can be enhanced with chrono-tz
         let valid_timezones = [
-            "UTC", "GMT", "EST", "PST", "CST", "MST",
-            "America/New_York", "America/Los_Angeles", "America/Chicago",
-            "Europe/London", "Europe/Paris", "Europe/Berlin",
-            "Asia/Tokyo", "Asia/Shanghai", "Asia/Dubai",
-            "America/Sao_Paulo", "America/Argentina/Buenos_Aires"
+            "UTC",
+            "GMT",
+            "EST",
+            "PST",
+            "CST",
+            "MST",
+            "America/New_York",
+            "America/Los_Angeles",
+            "America/Chicago",
+            "Europe/London",
+            "Europe/Paris",
+            "Europe/Berlin",
+            "Asia/Tokyo",
+            "Asia/Shanghai",
+            "Asia/Dubai",
+            "America/Sao_Paulo",
+            "America/Argentina/Buenos_Aires",
         ];
-        
+
         valid_timezones.contains(&self.default_timezone.as_str())
     }
 
     /// Gets the company display name
     pub fn display_name(&self) -> String {
-        self.company_name.clone().unwrap_or_else(|| "Unnamed Company".to_string())
+        self.company_name
+            .clone()
+            .unwrap_or_else(|| "Unnamed Company".to_string())
     }
 
     /// Creates a summary of the configuration
@@ -255,11 +271,7 @@ mod tests {
 
     #[test]
     fn test_config_work_day_checks() {
-        let mut config = Config::new(
-            "Admin".to_string(),
-            "admin@company.com".to_string(),
-            "UTC".to_string(),
-        );
+        let mut config = Config::new("Admin".to_string(), "admin@company.com".to_string(), "UTC".to_string());
 
         assert!(config.is_work_day(&WorkDay::Monday));
         assert!(!config.is_work_day(&WorkDay::Sunday));
@@ -271,12 +283,8 @@ mod tests {
 
     #[test]
     fn test_config_work_hours_checks() {
-        let config = Config::new(
-            "Admin".to_string(),
-            "admin@company.com".to_string(),
-            "UTC".to_string(),
-        )
-        .with_work_hours("09:00".to_string(), "18:00".to_string());
+        let config = Config::new("Admin".to_string(), "admin@company.com".to_string(), "UTC".to_string())
+            .with_work_hours("09:00".to_string(), "18:00".to_string());
 
         assert!(config.is_work_hours("10:00"));
         assert!(config.is_work_hours("18:00"));

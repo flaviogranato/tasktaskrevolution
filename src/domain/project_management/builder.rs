@@ -1,9 +1,8 @@
 use super::project::{Project, ProjectSettings, VacationRules, WorkHours};
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use crate::domain::shared::errors::DomainErrorKind::ProjectInvalidState;
-use chrono::{DateTime, NaiveDate, Utc};
+use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use chrono::{NaiveDate, Utc};
 use std::collections::HashMap;
-use uuid7::Uuid;
 
 /// Builder for creating `Project` instances with a fluent interface.
 /// This builder ensures that all required fields are set before building.
@@ -140,18 +139,18 @@ impl ProjectBuilder {
         })?;
 
         // Validate dates if both are provided
-        if let (Some(start), Some(end)) = (self.start_date, self.end_date) {
-            if start > end {
-                return Err(DomainError::new(ProjectInvalidState {
-                    current: "invalid_dates".to_string(),
-                    expected: "start_date < end_date".to_string(),
-                })
-                .with_context("Start date must be before end date"));
-            }
+        if let (Some(start), Some(end)) = (self.start_date, self.end_date)
+            && start > end
+        {
+            return Err(DomainError::new(ProjectInvalidState {
+                current: "invalid_dates".to_string(),
+                expected: "start_date < end_date".to_string(),
+            })
+            .with_context("Start date must be before end date"));
         }
 
         let now = Utc::now();
-        
+
         let settings = ProjectSettings {
             timezone: self.timezone,
             vacation_rules: self.vacation_rules,

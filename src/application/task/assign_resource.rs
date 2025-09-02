@@ -1,8 +1,8 @@
 use crate::domain::{
     project_management::repository::ProjectRepository,
+    resource_management::{any_resource::AnyResource, repository::ResourceRepository},
     shared::errors::DomainError,
     task_management::{any_task::AnyTask, repository::TaskRepository},
-    resource_management::{any_resource::AnyResource, repository::ResourceRepository},
 };
 use std::fmt;
 
@@ -75,15 +75,20 @@ where
 
         // 3. Validate resource availability
         if !self.is_resource_available(&resource) {
-            return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(resource_code.to_string(), task_code.to_string()));
+            return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(
+                resource_code.to_string(),
+                task_code.to_string(),
+            ));
         }
 
         // 4. Assign the resource to the task
         let updated_task = self.assign_resource_to_task(task, resource)?;
 
         // 5. Save the updated task
-        let saved_task = self.task_repository.save(updated_task)
-            .map_err(|e| AssignResourceToTaskError::RepositoryError(e))?;
+        let saved_task = self
+            .task_repository
+            .save(updated_task)
+            .map_err(AssignResourceToTaskError::RepositoryError)?;
 
         Ok(saved_task)
     }
@@ -95,7 +100,11 @@ where
         true
     }
 
-    fn assign_resource_to_task(&self, task: AnyTask, _resource: AnyResource) -> Result<AnyTask, AssignResourceToTaskError> {
+    fn assign_resource_to_task(
+        &self,
+        task: AnyTask,
+        _resource: AnyResource,
+    ) -> Result<AnyTask, AssignResourceToTaskError> {
         // This will be implemented in the domain layer
         // For now, return the task as-is
         Ok(task)
@@ -331,7 +340,10 @@ mod tests {
 
                 // 3. Validate resource availability - always return false
                 if !self.is_resource_available(&resource) {
-                    return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(resource_code.to_string(), task_code.to_string()));
+                    return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(
+                        resource_code.to_string(),
+                        task_code.to_string(),
+                    ));
                 }
 
                 // 4. Assign resource to task
@@ -348,7 +360,11 @@ mod tests {
                 false
             }
 
-            fn assign_resource_to_task(&self, task: AnyTask, _resource: AnyResource) -> Result<AnyTask, AssignResourceToTaskError> {
+            fn assign_resource_to_task(
+                &self,
+                task: AnyTask,
+                _resource: AnyResource,
+            ) -> Result<AnyTask, AssignResourceToTaskError> {
                 Ok(task)
             }
         }
@@ -359,7 +375,10 @@ mod tests {
         let result = use_case.execute("TASK-001", "RES-001");
 
         // Assert
-        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceAlreadyAssigned(_, _))));
+        assert!(matches!(
+            result,
+            Err(AssignResourceToTaskError::ResourceAlreadyAssigned(_, _))
+        ));
     }
 
     #[test]
@@ -375,9 +394,11 @@ mod tests {
 
         impl TaskRepository for FailingMockTaskRepository {
             fn save(&self, _task: AnyTask) -> Result<AnyTask, DomainError> {
-                Err(DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
-                    message: "Save failed".to_string(),
-                }))
+                Err(DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: "Save failed".to_string(),
+                    },
+                ))
             }
 
             fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
@@ -421,8 +442,11 @@ mod tests {
                 }
                 _ => {
                     // If it's not a RepositoryError, check if the error message contains the expected text
-                    assert!(e.to_string().contains("Save failed"), 
-                        "Expected error to contain 'Save failed', but got: {}", e);
+                    assert!(
+                        e.to_string().contains("Save failed"),
+                        "Expected error to contain 'Save failed', but got: {}",
+                        e
+                    );
                 }
             }
         }

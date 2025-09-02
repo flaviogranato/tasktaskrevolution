@@ -58,7 +58,7 @@ fn test_init_manager_success() {
     // Arrange
     let mock_repo = MockConfigRepository::new();
     let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-    
+
     let init_data = InitManagerData {
         name: "João Silva".to_string(),
         email: "joao.silva@consultoria.com".to_string(),
@@ -74,7 +74,7 @@ fn test_init_manager_success() {
     // Assert
     assert!(result.is_ok());
     let config = result.unwrap();
-    
+
     assert_eq!(config.manager_name, "João Silva");
     assert_eq!(config.manager_email, "joao.silva@consultoria.com");
     assert_eq!(config.company_name, Some("TechConsulting Ltda".to_string()));
@@ -88,7 +88,7 @@ fn test_init_manager_invalid_email() {
     // Arrange
     let mock_repo = MockConfigRepository::new();
     let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-    
+
     let init_data = InitManagerData {
         name: "João Silva".to_string(),
         email: "email-invalido".to_string(),
@@ -112,7 +112,7 @@ fn test_init_manager_invalid_timezone() {
     // Arrange
     let mock_repo = MockConfigRepository::new();
     let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-    
+
     let init_data = InitManagerData {
         name: "João Silva".to_string(),
         email: "joao.silva@consultoria.com".to_string(),
@@ -136,7 +136,7 @@ fn test_init_manager_invalid_work_hours() {
     // Arrange
     let mock_repo = MockConfigRepository::new();
     let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-    
+
     let init_data = InitManagerData {
         name: "João Silva".to_string(),
         email: "joao.silva@consultoria.com".to_string(),
@@ -160,7 +160,7 @@ fn test_init_manager_empty_name() {
     // Arrange
     let mock_repo = MockConfigRepository::new();
     let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-    
+
     let init_data = InitManagerData {
         name: "".to_string(),
         email: "joao.silva@consultoria.com".to_string(),
@@ -184,7 +184,7 @@ fn test_init_manager_empty_company_name() {
     // Arrange
     let mock_repo = MockConfigRepository::new();
     let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-    
+
     let init_data = InitManagerData {
         name: "João Silva".to_string(),
         email: "joao.silva@consultoria.com".to_string(),
@@ -208,7 +208,7 @@ fn test_init_manager_repository_error() {
     // Arrange
     let mock_repo = MockConfigRepository::with_failure();
     let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-    
+
     let init_data = InitManagerData {
         name: "João Silva".to_string(),
         email: "joao.silva@consultoria.com".to_string(),
@@ -240,7 +240,7 @@ fn test_init_manager_different_timezones() {
         // Arrange
         let mock_repo = MockConfigRepository::new();
         let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-        
+
         let init_data = InitManagerData {
             name: "João Silva".to_string(),
             email: "joao.silva@consultoria.com".to_string(),
@@ -272,7 +272,7 @@ fn test_init_manager_work_hours_edge_cases() {
         // Arrange
         let mock_repo = MockConfigRepository::new();
         let use_case = InitManagerUseCase::new(Box::new(mock_repo));
-        
+
         let init_data = InitManagerData {
             name: "João Silva".to_string(),
             email: "joao.silva@consultoria.com".to_string(),
@@ -288,7 +288,7 @@ fn test_init_manager_work_hours_edge_cases() {
         // Assert
         assert!(result.is_ok(), "Failed for work hours: {} - {}", start, end);
         let config = result.unwrap();
-        
+
         assert_eq!(config.work_hours_start, Some(start.to_string()));
         assert_eq!(config.work_hours_end, Some(end.to_string()));
     }

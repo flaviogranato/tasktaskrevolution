@@ -1,7 +1,5 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository,
-    shared::errors::DomainError,
-    task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
 };
 use std::fmt;
 
@@ -67,9 +65,7 @@ where
             return Err(RemoveDependencyError::TaskNotFound(task_code.to_string()));
         }
         if !project.tasks().contains_key(dependency_code) {
-            return Err(RemoveDependencyError::DependencyNotFound(
-                dependency_code.to_string(),
-            ));
+            return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string()));
         }
 
         // 3. Check if the dependency actually exists
@@ -83,9 +79,7 @@ where
         };
 
         if !dependencies.contains(&dependency_code.to_string()) {
-            return Err(RemoveDependencyError::DependencyNotFound(
-                dependency_code.to_string(),
-            ));
+            return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string()));
         }
 
         // 4. Validate that removing the dependency won't break critical constraints
@@ -96,8 +90,9 @@ where
         }
 
         // 5. Remove the dependency from the task
-        let updated_task = project.remove_dependency_from_task(task_code, dependency_code)
-            .map_err(|e| RemoveDependencyError::DomainError(e))?;
+        let updated_task = project
+            .remove_dependency_from_task(task_code, dependency_code)
+            .map_err(RemoveDependencyError::DomainError)?;
 
         // 6. Save the updated project
         self.project_repository.save(project.clone())?;
@@ -317,10 +312,10 @@ mod tests {
     fn test_remove_dependency_task_blocked_by_dependency() {
         // Arrange
         use crate::domain::task_management::state::Blocked;
-        
+
         let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
         let task_b = create_test_task("TASK-B", vec![]);
-        
+
         // Convert task_a to blocked state
         let blocked_task = Task::<Blocked> {
             id: task_a.id,
@@ -328,7 +323,9 @@ mod tests {
             code: task_a.code,
             name: task_a.name,
             description: task_a.description,
-            state: Blocked { reason: "Waiting for dependency".to_string() },
+            state: Blocked {
+                reason: "Waiting for dependency".to_string(),
+            },
             start_date: task_a.start_date,
             due_date: task_a.due_date,
             actual_end_date: task_a.actual_end_date,
@@ -354,11 +351,11 @@ mod tests {
     fn test_remove_dependency_task_not_blocked_by_dependency() {
         // Arrange
         use crate::domain::task_management::state::Blocked;
-        
+
         let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string(), "TASK-C".to_string()]); // Has 2 dependencies
         let task_b = create_test_task("TASK-B", vec![]);
         let task_c = create_test_task("TASK-C", vec![]);
-        
+
         // Convert task_a to blocked state
         let blocked_task = Task::<Blocked> {
             id: task_a.id,
@@ -366,7 +363,9 @@ mod tests {
             code: task_a.code,
             name: task_a.name,
             description: task_a.description,
-            state: Blocked { reason: "Waiting for dependency".to_string() },
+            state: Blocked {
+                reason: "Waiting for dependency".to_string(),
+            },
             start_date: task_a.start_date,
             due_date: task_a.due_date,
             actual_end_date: task_a.actual_end_date,
@@ -408,21 +407,21 @@ mod tests {
         assert!(result.is_ok()); // Should succeed because task is not blocked
     }
 
-
-
     #[test]
     fn test_remove_dependency_repository_error() {
         // Arrange
         let task_a = create_test_task("TASK-A", vec!["TASK-B".to_string()]);
         let task_b = create_test_task("TASK-B", vec![]);
-        
+
         // Create a mock repository that fails on save
         struct FailingMockProjectRepository;
-        
+
         impl ProjectRepository for FailingMockProjectRepository {
             fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
                 Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic { message: "Repository save failed".to_string() },
+                    crate::domain::shared::errors::DomainErrorKind::Generic {
+                        message: "Repository save failed".to_string(),
+                    },
                 ))
             }
 

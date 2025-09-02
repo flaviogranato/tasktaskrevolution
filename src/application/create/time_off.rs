@@ -305,11 +305,19 @@ mod tests {
         let repository = MockResourceRepository::new(vec![create_test_available_resource()]);
         let use_case = CreateTimeOffUseCase::new(repository);
 
-        let result = use_case.execute("John Doe", 10, "2024-01-01", Some("Test with special chars: !@#$%^&*()"));
+        let result = use_case.execute(
+            "John Doe",
+            10,
+            "2024-01-01",
+            Some("Test with special chars: !@#$%^&*()"),
+        );
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
         assert_eq!(updated_resource.time_off_balance, 10);
-        assert_eq!(updated_resource.description, Some("Test with special chars: !@#$%^&*()".to_string()));
+        assert_eq!(
+            updated_resource.description,
+            Some("Test with special chars: !@#$%^&*()".to_string())
+        );
     }
 
     #[test]

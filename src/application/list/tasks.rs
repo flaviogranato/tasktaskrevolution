@@ -76,11 +76,11 @@ mod tests {
             .name("Test Project".to_string())
             .company_code("COMP-001".to_string())
             .created_by("test-user".to_string());
-        
+
         for task in tasks {
             builder = builder.add_task(task);
         }
-        
+
         builder.build().unwrap().into()
     }
 

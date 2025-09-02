@@ -1,7 +1,6 @@
 use crate::domain::company_settings::{
     config::{Config, WorkDay},
     repository::ConfigRepository,
-    errors::CompanySettingsError,
 };
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use std::str::FromStr;
@@ -25,124 +24,128 @@ where
     pub fn execute(&self, updates: CompanyConfigUpdates) -> Result<Config, DomainError> {
         // Load existing configuration
         let (mut config, _) = self.repository.load()?;
-        
+
         // Validate updates before applying
-        if let Some(manager_name) = &updates.manager_name {
-            if manager_name.trim().is_empty() {
-                return Err(DomainError::new(DomainErrorKind::ValidationError {
-                    field: "manager_name".to_string(),
-                    message: "Manager name cannot be empty".to_string(),
-                }));
-            }
+        if let Some(manager_name) = &updates.manager_name
+            && manager_name.trim().is_empty()
+        {
+            return Err(DomainError::new(DomainErrorKind::ValidationError {
+                field: "manager_name".to_string(),
+                message: "Manager name cannot be empty".to_string(),
+            }));
         }
-        
-        if let Some(manager_email) = &updates.manager_email {
-            if manager_email.trim().is_empty() || !manager_email.contains('@') || !manager_email.contains('.') {
-                return Err(DomainError::new(DomainErrorKind::ValidationError {
-                    field: "manager_email".to_string(),
-                    message: "Invalid email format".to_string(),
-                }));
-            }
+
+        if let Some(manager_email) = &updates.manager_email
+            && (manager_email.trim().is_empty() || !manager_email.contains('@') || !manager_email.contains('.'))
+        {
+            return Err(DomainError::new(DomainErrorKind::ValidationError {
+                field: "manager_email".to_string(),
+                message: "Invalid email format".to_string(),
+            }));
         }
-        
+
         // Apply updates
         if let Some(company_name) = updates.company_name {
             config.update_company_name(company_name);
         }
-        
-        if let Some(manager_name) = updates.manager_name {
-            if let Some(manager_email) = &updates.manager_email {
-                config.update_manager(manager_name, manager_email.clone());
-            }
+
+        if let Some(manager_name) = updates.manager_name
+            && let Some(manager_email) = &updates.manager_email
+        {
+            config.update_manager(manager_name, manager_email.clone());
         }
-        
+
         if let Some(timezone) = updates.default_timezone {
             config.update_timezone(timezone);
         }
-        
-        if let Some(start) = updates.work_hours_start {
-            if let Some(end) = updates.work_hours_end {
-                config.update_work_hours(start, end);
-            }
+
+        if let Some(start) = updates.work_hours_start
+            && let Some(end) = updates.work_hours_end
+        {
+            config.update_work_hours(start, end);
         }
-        
+
         if let Some(work_days) = updates.work_days {
             // Convert string work days to WorkDay enum
-            let work_days_enum: Vec<WorkDay> = work_days
-                .iter()
-                .filter_map(|day| WorkDay::from_str(day))
-                .collect();
-            
+            let work_days_enum: Vec<WorkDay> = work_days.iter().filter_map(|day| WorkDay::from_str(day)).collect();
+
             if !work_days_enum.is_empty() {
                 config.update_work_days(work_days_enum);
             }
         }
-        
+
         Ok(config)
     }
 
     /// Updates configuration from YAML string (for manual edits)
     pub fn update_from_yaml(&self, yaml_content: &str) -> Result<Config, DomainError> {
         // Parse YAML content
-        let yaml_data: serde_yaml::Value = serde_yaml::from_str(yaml_content)
-            .map_err(|e| DomainError::new(DomainErrorKind::Serialization {
+        let yaml_data: serde_yaml::Value = serde_yaml::from_str(yaml_content).map_err(|e| {
+            DomainError::new(DomainErrorKind::Serialization {
                 format: "YAML".to_string(),
                 details: e.to_string(),
-            }))?;
-        
+            })
+        })?;
+
         // Create new config from YAML
         let manager_name = yaml_data["manager_name"]
             .as_str()
-            .ok_or_else(|| DomainError::new(DomainErrorKind::ConfigurationMissing {
-                field: "manager_name".to_string(),
-            }))?
+            .ok_or_else(|| {
+                DomainError::new(DomainErrorKind::ConfigurationMissing {
+                    field: "manager_name".to_string(),
+                })
+            })?
             .to_string();
-        
+
         let manager_email = yaml_data["manager_email"]
             .as_str()
-            .ok_or_else(|| DomainError::new(DomainErrorKind::ConfigurationMissing {
-                field: "manager_email".to_string(),
-            }))?
+            .ok_or_else(|| {
+                DomainError::new(DomainErrorKind::ConfigurationMissing {
+                    field: "manager_email".to_string(),
+                })
+            })?
             .to_string();
-        
+
         let default_timezone = yaml_data["default_timezone"]
             .as_str()
-            .ok_or_else(|| DomainError::new(DomainErrorKind::ConfigurationMissing {
-                field: "default_timezone".to_string(),
-            }))?
+            .ok_or_else(|| {
+                DomainError::new(DomainErrorKind::ConfigurationMissing {
+                    field: "default_timezone".to_string(),
+                })
+            })?
             .to_string();
-        
+
         let mut config = Config::new(manager_name, manager_email, default_timezone);
-        
+
         // Set optional fields
         if let Some(company_name) = yaml_data["company_name"].as_str() {
             config.update_company_name(company_name.to_string());
         }
-        
-        if let Some(start) = yaml_data["work_hours_start"].as_str() {
-            if let Some(end) = yaml_data["work_hours_end"].as_str() {
-                config.update_work_hours(start.to_string(), end.to_string());
-            }
+
+        if let Some(start) = yaml_data["work_hours_start"].as_str()
+            && let Some(end) = yaml_data["work_hours_end"].as_str()
+        {
+            config.update_work_hours(start.to_string(), end.to_string());
         }
-        
+
         if let Some(work_days) = yaml_data["work_days"].as_sequence() {
             let work_days_strings: Vec<String> = work_days
                 .iter()
                 .filter_map(|day| day.as_str().map(|s| s.to_string()))
                 .collect();
-            
+
             if !work_days_strings.is_empty() {
                 let work_days_enum: Vec<WorkDay> = work_days_strings
                     .iter()
                     .filter_map(|day| WorkDay::from_str(day))
                     .collect();
-                
+
                 if !work_days_enum.is_empty() {
                     config.update_work_days(work_days_enum);
                 }
             }
         }
-        
+
         Ok(config)
     }
 
@@ -150,86 +153,99 @@ where
     pub fn merge_updates(&self, cli_updates: CompanyConfigUpdates) -> Result<Config, DomainError> {
         // Load existing configuration
         let (mut config, _) = self.repository.load()?;
-        
+
         // Apply CLI updates (preserving existing YAML values)
         if let Some(timezone) = cli_updates.default_timezone {
             config.update_timezone(timezone);
         }
-        
-        if let Some(start) = cli_updates.work_hours_start {
-            if let Some(end) = cli_updates.work_hours_end {
-                config.update_work_hours(start, end);
-            }
+
+        if let Some(start) = cli_updates.work_hours_start
+            && let Some(end) = cli_updates.work_hours_end
+        {
+            config.update_work_hours(start, end);
         }
-        
+
         if let Some(company_name) = cli_updates.company_name {
             config.update_company_name(company_name);
         }
-        
-        if let Some(manager_name) = cli_updates.manager_name {
-            if let Some(manager_email) = cli_updates.manager_email {
-                config.update_manager(manager_name, manager_email);
-            }
+
+        if let Some(manager_name) = cli_updates.manager_name
+            && let Some(manager_email) = cli_updates.manager_email
+        {
+            config.update_manager(manager_name, manager_email);
         }
-        
+
         Ok(config)
     }
 
     /// Validates YAML content before applying
     pub fn validate_yaml(&self, yaml_content: &str) -> Result<(), DomainError> {
         // Try to parse YAML first
-        let yaml_data: serde_yaml::Value = serde_yaml::from_str(yaml_content)
-            .map_err(|e| DomainError::new(DomainErrorKind::Serialization {
+        let yaml_data: serde_yaml::Value = serde_yaml::from_str(yaml_content).map_err(|e| {
+            DomainError::new(DomainErrorKind::Serialization {
                 format: "YAML".to_string(),
                 details: e.to_string(),
-            }))?;
-        
+            })
+        })?;
+
         // Validate required fields
         let manager_name = yaml_data["manager_name"].as_str();
         let manager_email = yaml_data["manager_email"].as_str();
         let default_timezone = yaml_data["default_timezone"].as_str();
-        
+
         if manager_name.is_none() || manager_name.unwrap().trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "manager_name".to_string(),
                 message: "Manager name is required and cannot be empty".to_string(),
             }));
         }
-        
+
         if manager_email.is_none() || manager_email.unwrap().trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "manager_email".to_string(),
                 message: "Manager email is required and cannot be empty".to_string(),
             }));
         }
-        
+
         if default_timezone.is_none() || default_timezone.unwrap().trim().is_empty() {
             return Err(DomainError::new(DomainErrorKind::ValidationError {
                 field: "default_timezone".to_string(),
                 message: "Default timezone is required and cannot be empty".to_string(),
             }));
         }
-        
+
         // Validate email format (basic validation)
-        if let Some(email) = manager_email {
-            if !email.contains('@') || !email.contains('.') {
-                return Err(DomainError::new(DomainErrorKind::ValidationError {
-                    field: "manager_email".to_string(),
-                    message: "Invalid email format".to_string(),
-                }));
-            }
+        if let Some(email) = manager_email
+            && (!email.contains('@') || !email.contains('.'))
+        {
+            return Err(DomainError::new(DomainErrorKind::ValidationError {
+                field: "manager_email".to_string(),
+                message: "Invalid email format".to_string(),
+            }));
         }
-        
+
         // Validate timezone (basic validation)
         if let Some(timezone) = default_timezone {
             let valid_timezones = [
-                "UTC", "GMT", "EST", "PST", "CST", "MST",
-                "America/New_York", "America/Los_Angeles", "America/Chicago",
-                "Europe/London", "Europe/Paris", "Europe/Berlin",
-                "Asia/Tokyo", "Asia/Shanghai", "Asia/Dubai",
-                "America/Sao_Paulo", "America/Argentina/Buenos_Aires"
+                "UTC",
+                "GMT",
+                "EST",
+                "PST",
+                "CST",
+                "MST",
+                "America/New_York",
+                "America/Los_Angeles",
+                "America/Chicago",
+                "Europe/London",
+                "Europe/Paris",
+                "Europe/Berlin",
+                "Asia/Tokyo",
+                "Asia/Shanghai",
+                "Asia/Dubai",
+                "America/Sao_Paulo",
+                "America/Argentina/Buenos_Aires",
             ];
-            
+
             if !valid_timezones.contains(&timezone) {
                 return Err(DomainError::new(DomainErrorKind::ValidationError {
                     field: "default_timezone".to_string(),
@@ -237,7 +253,7 @@ where
                 }));
             }
         }
-        
+
         Ok(())
     }
 }
@@ -320,9 +336,9 @@ impl CompanyConfigUpdates {
 mod tests {
     use super::*;
     use crate::domain::company_settings::config::{Config, WorkDay};
+    use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::PathBuf;
-    use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 
     // Mock repository for testing
     struct MockConfigRepository {
@@ -330,7 +346,11 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), crate::domain::shared::errors::DomainError> {
+        fn save(
+            &self,
+            _config: ConfigManifest,
+            _path: PathBuf,
+        ) -> Result<(), crate::domain::shared::errors::DomainError> {
             Ok(())
         }
 
@@ -339,10 +359,13 @@ mod tests {
         }
 
         fn load(&self) -> Result<(Config, PathBuf), crate::domain::shared::errors::DomainError> {
-            self.config.borrow().clone().map(|c| (c, PathBuf::from("/tmp")))
-                .ok_or(crate::domain::shared::errors::DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::ConfigurationMissing { field: "config".to_string() }
-                ))
+            self.config.borrow().clone().map(|c| (c, PathBuf::from("/tmp"))).ok_or(
+                crate::domain::shared::errors::DomainError::new(
+                    crate::domain::shared::errors::DomainErrorKind::ConfigurationMissing {
+                        field: "config".to_string(),
+                    },
+                ),
+            )
         }
     }
 
@@ -353,7 +376,8 @@ mod tests {
             "John Doe".to_string(),
             "john@company.com".to_string(),
             "UTC".to_string(),
-        ).with_company_name("Test Company".to_string());
+        )
+        .with_company_name("Test Company".to_string());
 
         let mock_repo = MockConfigRepository {
             config: RefCell::new(Some(initial_config.clone())),
@@ -383,8 +407,7 @@ mod tests {
         };
 
         let use_case = UpdateCompanyConfigUseCase::new(mock_repo);
-        let updates = CompanyConfigUpdates::new()
-            .with_company_name("New Company".to_string());
+        let updates = CompanyConfigUpdates::new().with_company_name("New Company".to_string());
 
         // Act
         let result = use_case.execute(updates);
@@ -409,8 +432,7 @@ mod tests {
         };
 
         let use_case = UpdateCompanyConfigUseCase::new(mock_repo);
-        let updates = CompanyConfigUpdates::new()
-            .with_manager("".to_string(), "invalid-email".to_string()); // Invalid data
+        let updates = CompanyConfigUpdates::new().with_manager("".to_string(), "invalid-email".to_string()); // Invalid data
 
         // Act
         let result = use_case.execute(updates);
@@ -476,7 +498,8 @@ work_days: ["monday", "tuesday", "wednesday"]
             "John Doe".to_string(),
             "john@company.com".to_string(),
             "UTC".to_string(),
-        ).with_company_name("Initial Company".to_string());
+        )
+        .with_company_name("Initial Company".to_string());
 
         let mock_repo = MockConfigRepository {
             config: RefCell::new(Some(initial_config)),
