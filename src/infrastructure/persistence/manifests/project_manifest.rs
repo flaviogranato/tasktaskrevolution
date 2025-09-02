@@ -156,8 +156,9 @@ impl TryFrom<ProjectManifest> for AnyProject {
             "system".to_string(), // TODO: Get from manifest
         ).map_err(|e| e.to_string())?;
         
-        // Set the ID from the manifest to preserve it during conversion
+        // Set the ID and description from the manifest to preserve them during conversion
         project.id = id.to_string();
+        project.description = description;
         
         Ok(AnyProject::Project(project))
     }
