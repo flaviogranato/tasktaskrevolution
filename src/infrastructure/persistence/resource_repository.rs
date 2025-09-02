@@ -35,6 +35,122 @@ impl FileResourceRepository {
             .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
     }
 
+    /// Gets the path to a resource in a specific company's global resources
+    fn get_company_resource_path(&self, company_code: &str, resource_name: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("resources")
+            .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
+    }
+
+    /// Gets the path to a resource in a specific project
+    fn get_project_resource_path(&self, company_code: &str, project_code: &str, resource_name: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("projects")
+            .join(project_code)
+            .join("resources")
+            .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
+    }
+
+    /// Gets the path to company resources directory
+    fn get_company_resources_path(&self, company_code: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("resources")
+    }
+
+    /// Gets the path to project resources directory
+    fn get_project_resources_path(&self, company_code: &str, project_code: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("projects")
+            .join(project_code)
+            .join("resources")
+    }
+
+    /// Find all resources available for a specific project
+    /// This includes:
+    /// 1. Company global resources (can be allocated to any project)
+    /// 2. Project-specific resources (belong only to this project)
+    fn find_all_by_project(&self, company_code: &str, project_code: &str) -> Result<Vec<AnyResource>, DomainError> {
+        let mut resources = Vec::new();
+
+        // 1. Load company global resources (available for all projects)
+        let company_resources_path = self.get_company_resources_path(company_code);
+        if company_resources_path.exists() {
+            let pattern = company_resources_path.join("*.yaml");
+            let walker = glob(pattern.to_str().unwrap())
+                .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+
+            for entry in walker {
+                let entry = entry.map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+                let file_path = entry.as_path();
+                let yaml = fs::read_to_string(file_path).map_err(|e| {
+                    DomainError::new(DomainErrorKind::Io {
+                        operation: "file operation".to_string(),
+                        path: None,
+                    })
+                    .with_context(format!("Error reading resource file: {e}"))
+                })?;
+
+                let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| {
+                    DomainError::new(DomainErrorKind::Serialization {
+                        format: "YAML".to_string(),
+                        details: format!("Error deserializing resource: {}", e),
+                    })
+                })?;
+
+                resources.push(AnyResource::try_from(resource_manifest).map_err(|e| {
+                    DomainError::new(DomainErrorKind::Serialization {
+                        format: "YAML".to_string(),
+                        details: format!("Error converting manifest: {}", e),
+                    })
+                })?);
+            }
+        }
+
+        // 2. Load project-specific resources (belong only to this project)
+        let project_resources_path = self.get_project_resources_path(company_code, project_code);
+        if project_resources_path.exists() {
+            let pattern = project_resources_path.join("*.yaml");
+            let walker = glob(pattern.to_str().unwrap())
+                .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+
+            for entry in walker {
+                let entry = entry.map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+                let file_path = entry.as_path();
+                let yaml = fs::read_to_string(file_path).map_err(|e| {
+                    DomainError::new(DomainErrorKind::Io {
+                        operation: "file operation".to_string(),
+                        path: None,
+                    })
+                    .with_context(format!("Error reading resource file: {e}"))
+                })?;
+
+                let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| {
+                    DomainError::new(DomainErrorKind::Serialization {
+                        format: "YAML".to_string(),
+                        details: format!("Error deserializing resource: {}", e),
+                    })
+                })?;
+
+                resources.push(AnyResource::try_from(resource_manifest).map_err(|e| {
+                    DomainError::new(DomainErrorKind::Serialization {
+                        format: "YAML".to_string(),
+                        details: format!("Error converting manifest: {}", e),
+                    })
+                })?);
+            }
+        }
+
+        Ok(resources)
+    }
+
     fn find_by_name(&self, resource_name: &str) -> Result<Option<AnyResource>, DomainError> {
         let file_path = self.get_resource_file_path(resource_name);
         if !file_path.exists() {
@@ -121,13 +237,85 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resource)
     }
 
+    /// Save resource in the new hierarchical structure
+    /// If project_code is None, saves as company global resource
+    /// If project_code is Some, saves as project-specific resource
+    fn save_in_hierarchy(&self, resource: AnyResource, company_code: &str, project_code: Option<&str>) -> Result<AnyResource, DomainError> {
+        let file_path = if let Some(proj_code) = project_code {
+            // Save as project-specific resource
+            self.get_project_resource_path(company_code, proj_code, resource.name())
+        } else {
+            // Save as company global resource
+            self.get_company_resource_path(company_code, resource.name())
+        };
+
+        let resource_manifest = ResourceManifest::from(resource.clone());
+        let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| {
+            DomainError::new(DomainErrorKind::Serialization {
+                format: "YAML".to_string(),
+                details: format!("Error serializing resource: {}", e),
+            })
+        })?;
+
+        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| {
+            DomainError::new(DomainErrorKind::Io {
+                operation: "file operation".to_string(),
+                path: None,
+            })
+            .with_context(format!("Error creating directory: {e}"))
+        })?;
+
+        fs::write(file_path, yaml).map_err(|e| {
+            DomainError::new(DomainErrorKind::Io {
+                operation: "file operation".to_string(),
+                path: None,
+            })
+            .with_context(format!("Error writing resource file: {e}"))
+        })?;
+
+        Ok(resource)
+    }
+
     fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
-        let pattern = self.base_path.join("**/resources/**/*.yaml");
-        let walker = glob(pattern.to_str().unwrap())
-            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
         let mut resources = Vec::new();
 
-        for entry in walker {
+        // Search in company resources: companies/*/resources/*.yaml
+        let company_pattern = self.base_path.join("companies/*/resources/*.yaml");
+        let company_walker = glob(company_pattern.to_str().unwrap())
+            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+
+        for entry in company_walker {
+            let entry = entry.map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+            let file_path = entry.as_path();
+            let yaml = fs::read_to_string(file_path).map_err(|e| {
+                DomainError::new(DomainErrorKind::Io {
+                    operation: "file operation".to_string(),
+                    path: None,
+                })
+                .with_context(format!("Error reading resource file: {e}"))
+            })?;
+
+            let resource_manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| {
+                DomainError::new(DomainErrorKind::Serialization {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing resource: {}", e),
+                })
+            })?;
+
+            resources.push(AnyResource::try_from(resource_manifest).map_err(|e| {
+                DomainError::new(DomainErrorKind::Serialization {
+                    format: "YAML".to_string(),
+                    details: format!("Error converting manifest: {}", e),
+                })
+            })?);
+        }
+
+        // Search in project resources: companies/*/projects/*/resources/*.yaml
+        let project_pattern = self.base_path.join("companies/*/projects/*/resources/*.yaml");
+        let project_walker = glob(project_pattern.to_str().unwrap())
+            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+
+        for entry in project_walker {
             let entry = entry.map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
             let file_path = entry.as_path();
             let yaml = fs::read_to_string(file_path).map_err(|e| {

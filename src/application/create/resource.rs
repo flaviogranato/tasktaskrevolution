@@ -11,11 +11,20 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
-    pub fn execute(&self, name: &str, resource_type: &str) -> Result<(), DomainError> {
+    pub fn execute(&self, name: &str, resource_type: &str, company_code: String, project_code: Option<String>) -> Result<(), DomainError> {
         let code = self.repository.get_next_code(resource_type)?;
         let r = Resource::new(code, name.to_string(), None, resource_type.to_string(), None, 0);
-        self.repository.save(r.into())?;
-        println!("Recurso {name} criado.");
+        
+        // Use the new hierarchical save method
+        self.repository.save_in_hierarchy(r.into(), &company_code, project_code.as_deref())?;
+        
+        let location = if let Some(proj_code) = project_code {
+            format!("company {} and project {}", company_code, proj_code)
+        } else {
+            format!("company {}", company_code)
+        };
+        
+        println!("Resource {name} created in {location}.");
         Ok(())
     }
 }
