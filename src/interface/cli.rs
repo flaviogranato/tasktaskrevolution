@@ -62,7 +62,7 @@ enum Commands {
         /// Email do manager/consultor
         #[clap(long, value_name = "EMAIL")]
         email: String,
-        /// Nome da empresa/consultoria
+        /// Company/consultancy name
         #[clap(long, value_name = "COMPANY")]
         company_name: String,
         /// Timezone (ex: UTC, America/Sao_Paulo)
@@ -76,7 +76,7 @@ enum Commands {
         work_end: String,
     },
     Build {
-        /// Opcional: Caminho para o diretório do projeto.
+        /// Optional: Path to the project directory.
         /// Se não for fornecido, usa o diretório atual.
         path: Option<PathBuf>,
     },
@@ -148,6 +148,12 @@ pub enum CreateCommands {
         name: String,
         /// Resource type/role
         resource_type: String,
+        /// Company code (required for new structure)
+        #[clap(long, value_name = "COMPANY_CODE")]
+        company_code: Option<String>,
+        /// Project code (optional - if not provided, resource is global to company)
+        #[clap(long, value_name = "PROJECT_CODE")]
+        project_code: Option<String>,
     },
     /// Create a new company
     #[clap(alias = "comp")]
@@ -426,11 +432,15 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 use_case.execute(name, description.as_deref(), company_code)?;
                 Ok(())
             }
-            CreateCommands::Resource { name, resource_type } => {
+            CreateCommands::Resource { name, resource_type, company_code, project_code } => {
                 let repository = FileResourceRepository::new(".");
                 let use_case = CreateResourceUseCase::new(repository);
 
-                let _ = use_case.execute(name, resource_type);
+                // For now, use default values if not provided
+                // TODO: In the future, we should require company_code or detect from context
+                let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
+                
+                let _ = use_case.execute(name, resource_type, company_code, project_code.clone());
                 Ok(())
             }
             CreateCommands::Company {
