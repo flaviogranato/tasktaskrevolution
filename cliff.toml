@@ -10,9 +10,9 @@ breaking_always_bump_major = true
 initial_tag = "0.0.1"
 
 [remote]
-type = "gitlab"
+type = "github"
 repo = "seventhfloor/tasktaskrevolution"
-host = "gitlab.com"
+host = "github.com"
 
 [changelog]
 # template for the changelog header
