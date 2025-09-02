@@ -228,8 +228,11 @@ impl ProjectRepository for FileProjectRepository {
         let mut processed_paths = std::collections::HashSet::new();
 
         // Padrão para buscar projetos na nova estrutura: companies/*/projects/*/project.yaml
-        let pattern = self.base_path.join("companies/*/projects/*/project.yaml");
-        if let Ok(walker) = glob(pattern.to_str().unwrap()) {
+        let absolute_base = std::fs::canonicalize(&self.base_path)
+            .unwrap_or_else(|_| self.base_path.clone());
+        let pattern = absolute_base.join("companies/*/projects/*/project.yaml");
+        let pattern_str = pattern.to_str().unwrap();
+        if let Ok(walker) = glob(pattern_str) {
             for entry in walker.flatten() {
                 let manifest_path = entry.path();
                 if processed_paths.contains(manifest_path) {

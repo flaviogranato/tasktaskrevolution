@@ -669,7 +669,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         },
         Commands::List { list_command } => match list_command {
             ListCommands::Projects => {
-                let repository = FileProjectRepository::new();
+                let repository = FileProjectRepository::with_base_path(".".into());
                 let use_case = ListProjectsUseCase::new(repository);
                 match use_case.execute() {
                     Ok(projects) => {
