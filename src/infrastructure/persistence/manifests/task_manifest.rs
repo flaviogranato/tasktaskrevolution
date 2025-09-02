@@ -1,4 +1,4 @@
-use crate::domain::task_management::{AnyTask, Task, state::*};
+use crate::domain::task_management::{AnyTask, Task, state::*, Priority as TaskPriority};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -271,6 +271,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 actual_end_date: manifest.spec.actual_end_date,
                 dependencies: manifest.spec.dependencies,
                 assigned_resources,
+                priority: TaskPriority::default(),
             }),
             Status::InProgress => {
                 let progress = manifest
@@ -297,6 +298,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     actual_end_date: manifest.spec.actual_end_date,
                     dependencies: manifest.spec.dependencies,
                     assigned_resources,
+                    priority: TaskPriority::default(),
                 })
             }
             Status::Done => AnyTask::Completed(Task {
@@ -311,6 +313,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 actual_end_date: manifest.spec.actual_end_date,
                 dependencies: manifest.spec.dependencies,
                 assigned_resources,
+                priority: TaskPriority::default(),
             }),
             Status::Blocked => {
                 let reason = manifest
@@ -333,6 +336,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     actual_end_date: manifest.spec.actual_end_date,
                     dependencies: manifest.spec.dependencies,
                     assigned_resources,
+                    priority: TaskPriority::default(),
                 })
             }
             Status::Cancelled => AnyTask::Cancelled(Task {
@@ -347,6 +351,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 actual_end_date: manifest.spec.actual_end_date,
                 dependencies: manifest.spec.dependencies,
                 assigned_resources,
+                priority: TaskPriority::default(),
             }),
         };
 

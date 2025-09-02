@@ -29,6 +29,12 @@ pub struct ConfigSpec {
     #[serde(default = "default_timezone")]
     pub default_timezone: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub company_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub work_hours_start: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub work_hours_end: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub currency: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub work_hours_per_day: Option<u8>,
@@ -58,6 +64,9 @@ impl ConfigManifest {
                 manager_name: "Default Manager".to_string(),
                 manager_email: "email@example.com".to_string(),
                 default_timezone: "UTC".to_string(),
+                company_name: None,
+                work_hours_start: None,
+                work_hours_end: None,
                 currency: None,
                 work_hours_per_day: None,
                 work_days_per_week: None,
@@ -85,7 +94,10 @@ impl Convertible<Config> for ConfigManifest {
             spec: ConfigSpec {
                 manager_name: source.manager_name,
                 manager_email: source.manager_email,
-                default_timezone: "UTC".to_string(),
+                default_timezone: source.default_timezone,
+                company_name: source.company_name,
+                work_hours_start: source.work_hours_start,
+                work_hours_end: source.work_hours_end,
                 currency: None,
                 work_hours_per_day: None,
                 work_days_per_week: None,
@@ -103,9 +115,9 @@ impl Convertible<Config> for ConfigManifest {
             manager_name: self.spec.manager_name.clone(),
             manager_email: self.spec.manager_email.clone(),
             default_timezone: self.spec.default_timezone.clone(),
-            company_name: None,
-            work_hours_start: None,
-            work_hours_end: None,
+            company_name: self.spec.company_name.clone(),
+            work_hours_start: self.spec.work_hours_start.clone(),
+            work_hours_end: self.spec.work_hours_end.clone(),
             work_days: vec![],
             created_at: Some(self.metadata.created_at),
             updated_at: Some(self.metadata.created_at),

@@ -40,8 +40,12 @@ impl InitManagerUseCase {
         // Set work hours
         config = config.with_work_hours(data.work_hours_start.clone(), data.work_hours_end.clone());
 
-        // TODO: Save to repository when ConfigManifest is implemented
-        // For now, just return the config
+        // Save to repository
+        use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
+        use crate::domain::shared::convertable::Convertible;
+        let config_manifest = <ConfigManifest as Convertible<Config>>::from(config.clone());
+        let current_dir = std::env::current_dir().map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+        self.repository.save(config_manifest, current_dir)?;
 
         Ok(config)
     }
