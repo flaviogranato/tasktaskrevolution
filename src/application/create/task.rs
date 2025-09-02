@@ -1,4 +1,4 @@
-use crate::domain::task_management::Priority;
+use crate::domain::task_management::{Priority, Category};
 use crate::domain::{
     project_management::repository::ProjectRepository,
     shared::errors::{DomainError, DomainErrorKind},

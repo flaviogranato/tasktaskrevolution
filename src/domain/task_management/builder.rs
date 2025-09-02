@@ -1,3 +1,4 @@
+use super::category::Category;
 use super::priority::Priority;
 use super::state::Planned;
 use super::task::{Task, TaskError};
@@ -30,6 +31,7 @@ pub struct TaskBuilder<State> {
     due_date: Option<NaiveDate>,
     assigned_resources: Vec<String>,
     priority: Priority,
+    category: Category,
     _state: PhantomData<State>,
 }
 
@@ -46,6 +48,7 @@ impl TaskBuilder<New> {
             due_date: None,
             assigned_resources: Vec::new(),
             priority: Priority::default(),
+            category: Category::default(),
             _state: PhantomData,
         }
     }
@@ -61,6 +64,7 @@ impl TaskBuilder<New> {
             due_date: self.due_date,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
             _state: PhantomData,
         }
     }
@@ -85,6 +89,7 @@ impl TaskBuilder<WithProjectCode> {
             due_date: self.due_date,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
             _state: PhantomData,
         }
     }
@@ -104,6 +109,12 @@ impl TaskBuilder<WithName> {
         self
     }
 
+    /// Sets the category for the task.
+    pub fn category(mut self, category: Category) -> Self {
+        self.category = category;
+        self
+    }
+
     /// Sets the start and due dates for the task, validating that the range is valid.
     pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, TaskError> {
         if start > due {
@@ -119,6 +130,7 @@ impl TaskBuilder<WithName> {
             due_date: Some(due),
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
             _state: PhantomData,
         })
     }
@@ -158,6 +170,7 @@ impl TaskBuilder<WithDates> {
             due_date: self.due_date,
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
             _state: PhantomData,
         })
     }
@@ -182,6 +195,7 @@ impl TaskBuilder<Ready> {
             dependencies: vec![],
             assigned_resources: self.assigned_resources,
             priority: self.priority,
+            category: self.category,
         })
     }
 }

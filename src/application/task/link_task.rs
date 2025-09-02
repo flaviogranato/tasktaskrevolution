@@ -1,4 +1,4 @@
-use crate::domain::task_management::Priority;
+use crate::domain::task_management::{Priority, Category};
 use crate::domain::{
     project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
 };
@@ -181,7 +181,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         }
         .into()
     }

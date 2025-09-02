@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::{any_task::AnyTask, Priority},
+    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::{any_task::AnyTask, Priority, Category},
 };
 use std::fmt;
 
@@ -187,7 +187,7 @@ mod tests {
             actual_end_date: None,
             dependencies,
             assigned_resources: vec![],
-            priority: Priority::default(),
+            priority: Priority::default(), category: Category::default(),
         }
     }
 
@@ -333,7 +333,9 @@ mod tests {
             due_date: task_a.due_date,
             actual_end_date: task_a.actual_end_date,
             dependencies: task_a.dependencies,
-            assigned_resources: task_a.assigned_resources, priority: task_a.priority,
+            assigned_resources: task_a.assigned_resources,
+            priority: task_a.priority,
+            category: task_a.category,
         };
 
         let project = setup_test_project(vec![blocked_task.into(), task_b.into()]);
@@ -373,7 +375,9 @@ mod tests {
             due_date: task_a.due_date,
             actual_end_date: task_a.actual_end_date,
             dependencies: task_a.dependencies,
-            assigned_resources: task_a.assigned_resources, priority: task_a.priority,
+            assigned_resources: task_a.assigned_resources,
+            priority: task_a.priority,
+            category: task_a.category,
         };
 
         let project = setup_test_project(vec![blocked_task.into(), task_b.into(), task_c.into()]);
