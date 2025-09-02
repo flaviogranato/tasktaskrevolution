@@ -1,3 +1,4 @@
+use crate::domain::task_management::Priority;
 use crate::domain::{project_management::repository::ProjectRepository, task_management::AnyTask};
 use csv::Writer;
 use std::error::Error;
@@ -221,6 +222,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
+            priority: Priority::default(),
         };
 
         let blocked_task: Task<Blocked> = Task {
@@ -251,6 +253,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
+            priority: Priority::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
@@ -334,6 +337,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
+            priority: Priority::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
@@ -529,6 +533,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec![],
+            priority: Priority::default(),
         };
 
         let mut project: AnyProject = ProjectBuilder::new()
