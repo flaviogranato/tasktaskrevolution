@@ -77,7 +77,7 @@ impl FileResourceRepository {
     /// This includes:
     /// 1. Company global resources (can be allocated to any project)
     /// 2. Project-specific resources (belong only to this project)
-    fn find_all_by_project(&self, company_code: &str, project_code: &str) -> Result<Vec<AnyResource>, DomainError> {
+    pub fn find_all_by_project(&self, company_code: &str, project_code: &str) -> Result<Vec<AnyResource>, DomainError> {
         let mut resources = Vec::new();
 
         // 1. Load company global resources (available for all projects)
