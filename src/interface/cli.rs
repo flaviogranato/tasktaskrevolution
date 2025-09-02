@@ -81,37 +81,47 @@ enum Commands {
         /// Se não for fornecido, usa o diretório atual.
         path: Option<PathBuf>,
     },
+    /// Create new entities (projects, resources, companies, tasks, etc.)
+    #[clap(alias = "c")]
     Create {
         #[clap(subcommand)]
         create_command: CreateCommands,
     },
+    /// Manage companies (list, describe, update, delete)
     Company {
         #[clap(subcommand)]
         company_command: CompanyCommands,
     },
+    /// List entities (projects, resources, tasks)
+    #[clap(alias = "l")]
     List {
         #[clap(subcommand)]
         list_command: ListCommands,
     },
+    /// Validate system, entities, business rules, and data integrity
     Validate {
         #[clap(subcommand)]
         validate_command: ValidateCommands,
     },
+    /// Generate reports (vacation, task reports)
     Report {
         #[clap(subcommand)]
         report_command: ReportCommands,
     },
-    /// Update an existing entity (project, resource, task).
+    /// Update an existing entity (project, resource, task, company)
+    #[clap(alias = "u")]
     Update {
         #[clap(subcommand)]
         update_command: UpdateCommands,
     },
-    /// Delete an entity (soft delete).
+    /// Delete an entity (soft delete)
+    #[clap(alias = "del")]
     Delete {
         #[clap(subcommand)]
         delete_command: DeleteCommands,
     },
-    /// Describe a resource to see its details.
+    /// Describe a resource to see its details
+    #[clap(alias = "d")]
     Describe {
         #[clap(subcommand)]
         describe_command: DescribeCommands,
@@ -125,10 +135,16 @@ enum Commands {
 
 #[derive(Subcommand, Debug)]
 pub enum CompanyCommands {
+    /// List all companies
+    #[clap(alias = "l")]
     List,
+    /// Describe a company's details
+    #[clap(alias = "d")]
     Describe {
         code: String,
     },
+    /// Update a company's details
+    #[clap(alias = "u")]
     Update {
         code: String,
         #[clap(long, value_name = "NAME")]
@@ -148,6 +164,8 @@ pub enum CompanyCommands {
         #[clap(long, value_name = "INDUSTRY")]
         industry: Option<String>,
     },
+    /// Delete a company
+    #[clap(alias = "del")]
     Delete {
         code: String,
     },
@@ -155,14 +173,24 @@ pub enum CompanyCommands {
 
 #[derive(Subcommand, Debug)]
 pub enum CreateCommands {
+    /// Create a new project
+    #[clap(alias = "proj")]
     Project {
+        /// Project name
         name: String,
+        /// Project description
         description: Option<String>,
     },
+    /// Create a new resource (person)
+    #[clap(alias = "res")]
     Resource {
+        /// Resource name
         name: String,
+        /// Resource type/role
         resource_type: String,
     },
+    /// Create a new company
+    #[clap(alias = "comp")]
     Company {
         #[clap(long, value_name = "CODE", default_value = "")]
         code: String,
@@ -185,6 +213,8 @@ pub enum CreateCommands {
         #[clap(long, value_name = "USER", default_value = "system")]
         created_by: String,
     },
+    /// Create a vacation period for a resource
+    #[clap(alias = "vac")]
     Vacation {
         #[arg(long, short)]
         resource: String,
@@ -197,6 +227,8 @@ pub enum CreateCommands {
         #[arg(long, short)]
         compensated_hours: Option<u32>,
     },
+    /// Create a time-off entry for a resource
+    #[clap(alias = "to")]
     TimeOff {
         #[arg(long)]
         resource: String,
@@ -207,6 +239,8 @@ pub enum CreateCommands {
         #[arg(long)]
         description: Option<String>,
     },
+    /// Create a new task
+    #[clap(alias = "tsk")]
     Task {
         #[arg(long)]
         project_code: Option<String>,
@@ -227,50 +261,59 @@ pub enum CreateCommands {
 
 #[derive(Subcommand, Debug)]
 pub enum ListCommands {
+    /// List all projects
+    #[clap(alias = "proj")]
     Projects,
+    /// List all resources
+    #[clap(alias = "res")]
     Resources,
+    /// List all tasks
+    #[clap(alias = "tsk")]
     Tasks,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum UpdateCommands {
-    /// Update an existing project's details.
+    /// Update an existing project's details
+    #[clap(alias = "proj")]
     Project {
-        /// The new name of the project.
+        /// The new name of the project
         #[clap(long)]
         name: Option<String>,
-        /// The new description of the project.
+        /// The new description of the project
         #[clap(long)]
         description: Option<String>,
     },
-    /// Update an existing resource's details.
+    /// Update an existing resource's details
+    #[clap(alias = "res")]
     Resource {
-        /// The code of the resource to update.
+        /// The code of the resource to update
         code: String,
-        /// The new name for the resource.
+        /// The new name for the resource
         #[clap(long)]
         name: Option<String>,
-        /// The new email for the resource.
+        /// The new email for the resource
         #[clap(long)]
         email: Option<String>,
-        /// The new type for the resource (e.g., Developer, QA).
+        /// The new type for the resource (e.g., Developer, QA)
         #[clap(long)]
         resource_type: Option<String>,
     },
-    /// Update an existing task's details.
+    /// Update an existing task's details
+    #[clap(alias = "tsk")]
     Task {
-        /// The code of the task to update.
+        /// The code of the task to update
         code: String,
-        /// The new name for the task.
+        /// The new name for the task
         #[clap(long)]
         name: Option<String>,
-        /// The new description for the task.
+        /// The new description for the task
         #[clap(long)]
         description: Option<String>,
-        /// The new start date for the task (YYYY-MM-DD).
+        /// The new start date for the task (YYYY-MM-DD)
         #[clap(long)]
         start_date: Option<String>,
-        /// The new due date for the task (YYYY-MM-DD).
+        /// The new due date for the task (YYYY-MM-DD)
         #[clap(long)]
         due_date: Option<String>,
     },
@@ -287,9 +330,10 @@ pub enum DeleteCommands {
         /// The code of the resource to delete.
         code: String,
     },
-    /// Deletes (cancels) a task.
+    /// Deletes (cancels) a task
+    #[clap(alias = "tsk")]
     Task {
-        /// The code of the task to delete.
+        /// The code of the task to delete
         code: String,
     },
 }
@@ -305,9 +349,10 @@ pub enum DescribeCommands {
         /// The code of the resource to describe.
         code: String,
     },
-    /// Describe a task to see its details.
+    /// Describe a task to see its details
+    #[clap(alias = "tsk")]
     Task {
-        /// The code of the task to describe.
+        /// The code of the task to describe
         code: String,
     },
     /// Describe the global configuration.
