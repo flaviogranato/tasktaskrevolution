@@ -1,5 +1,5 @@
 use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
+    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::{any_task::AnyTask, Priority},
 };
 use std::fmt;
 
@@ -108,6 +108,7 @@ mod tests {
             actual_end_date: None,
             dependencies: vec![],
             assigned_resources: vec!["dev-1".to_string()],
+            priority: Priority::default(),
         }
         .into()
     }

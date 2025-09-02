@@ -382,7 +382,7 @@ mod convertable_tests {
             due_date: test_date(2024, 1, 10),
             actual_end_date: None,
             dependencies: vec![],
-            assigned_resources: vec!["res-1".to_string()],
+            assigned_resources: vec!["res-1".to_string()], priority: TaskPriority::default(),
         }
     }
 
