@@ -149,12 +149,15 @@ impl TryFrom<ProjectManifest> for AnyProject {
 
         // TODO: Implement proper conversion from manifest to Project
         // For now, we'll create a basic project
-        let project = crate::domain::project_management::project::Project::new(
+        let mut project = crate::domain::project_management::project::Project::new(
             code,
             name,
             "COMP-001".to_string(), // TODO: Get from manifest
             "system".to_string(), // TODO: Get from manifest
         ).map_err(|e| e.to_string())?;
+        
+        // Set the ID from the manifest to preserve it during conversion
+        project.id = id.to_string();
         
         Ok(AnyProject::Project(project))
     }

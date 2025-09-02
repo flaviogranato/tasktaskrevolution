@@ -70,12 +70,10 @@ where
         let needs_reschedule = args.due_date.is_some();
 
         // 2. Delegate the update to the project aggregate.
-        // TODO: Implement update_task method in AnyProject
         // This method ensures all domain invariants are respected.
-        // For now, we'll just return success
-        // project
-        //     .update_task(task_code, args.name, args.description, args.start_date, args.due_date)
-        //     .map_err(UpdateTaskError::DomainError)?;
+        let updated_task = project
+            .update_task(task_code, args.name, args.description, args.start_date, args.due_date)
+            .map_err(UpdateTaskError::DomainError)?;
 
         // 3. If the due date was changed, reschedule all dependent tasks.
         if needs_reschedule {
@@ -88,13 +86,6 @@ where
         self.project_repository.save(project.clone())?;
 
         // 5. Return the updated task to the caller.
-        let updated_task = project
-            .tasks()
-            .get(task_code)
-            .cloned()
-            // This should ideally not happen if update_task succeeded, but we check for safety.
-            .ok_or_else(|| UpdateTaskError::TaskNotFound(task_code.to_string()))?;
-
         Ok(updated_task)
     }
 }

@@ -341,6 +341,29 @@ impl AnyTask {
             }
         }
     }
+
+    pub fn complete(self) -> AnyTask {
+        match self {
+            AnyTask::Planned(task) => {
+                // First start the task, then complete it
+                let in_progress_task = task.start();
+                let completed_task = in_progress_task.complete();
+                AnyTask::Completed(completed_task)
+            }
+            AnyTask::InProgress(task) => {
+                let completed_task = task.complete();
+                AnyTask::Completed(completed_task)
+            }
+            AnyTask::Blocked(task) => {
+                // Unblock first, then complete
+                let in_progress_task = task.unblock();
+                let completed_task = in_progress_task.complete();
+                AnyTask::Completed(completed_task)
+            }
+            AnyTask::Completed(_) => self, // Already completed
+            AnyTask::Cancelled(_) => self, // Cannot complete a cancelled task
+        }
+    }
 }
 
 // Provide From implementations to easily convert a specific Task<State> into an AnyTask.

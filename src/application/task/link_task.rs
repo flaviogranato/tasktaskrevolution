@@ -111,17 +111,11 @@ where
         }
 
         // 4. Add the dependency to the task.
-        // TODO: Implement add_dependency_to_task method in AnyProject
-        // For now, we'll just return success
-        // let updated_task = project.add_dependency_to_task(task_code, dependency_code)?;
+        let updated_task = project.add_dependency_to_task(task_code, dependency_code)
+            .map_err(|e| LinkTaskError::DomainError(e))?;
 
         // 5. Save the entire project aggregate with the modified task.
         self.project_repository.save(project.clone())?;
-
-        // TODO: Return the updated task once add_dependency_to_task is implemented
-        // For now, we'll return a placeholder
-        let updated_task = project.tasks().get(task_code).cloned()
-            .ok_or_else(|| LinkTaskError::TaskNotFound(task_code.to_string()))?;
         
         Ok(updated_task)
     }
