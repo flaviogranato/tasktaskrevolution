@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "TaskTaskRevolution"
-version = "0.5.4"
+version = "0.5.5-dev"
 dependencies = [
  "assert_fs",
  "chrono",
