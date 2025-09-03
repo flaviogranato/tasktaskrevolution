@@ -17,7 +17,7 @@ endblock title %} {% block content %}
                     <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                     </svg>
-                    <a href="{{ relative_path_prefix }}companies/{{ company.code }}/index.html" class="ml-1 text-sm font-medium text-slate-700 hover:text-blue-600 md:ml-2">{{ company.name }}</a>
+                    <a href="../../index.html" class="ml-1 text-sm font-medium text-slate-700 hover:text-blue-600 md:ml-2">{{ company.name }}</a>
                 </div>
             </li>
             <li>
@@ -45,7 +45,7 @@ endblock title %} {% block content %}
             <span><strong>Status:</strong> {{ project.status }}</span>
             <span><strong>Start Date:</strong> {% if project.start_date %}{{ project.start_date | date(format="%Y-%m-%d") }}{% else %}N/A{% endif %}</span>
             <span><strong>End Date:</strong> {% if project.end_date %}{{ project.end_date | date(format="%Y-%m-%d") }}{% else %}N/A{% endif %}</span>
-            <a href="{{ relative_path_prefix }}detail.html" 
+            <a href="detail.html" 
                class="inline-flex items-center px-3 py-1 rounded-md text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
                 View Details →
             </a>
@@ -159,7 +159,7 @@ endblock title %} {% block content %}
                             {{ task.due_date | date(format="%Y-%m-%d") }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{{ relative_path_prefix }}tasks/{{ task.code }}/detail.html" 
+                            <a href="tasks/{{ task.code }}/detail.html" 
                                class="text-blue-600 hover:text-blue-900">View Details</a>
                         </td>
                     </tr>
@@ -213,7 +213,7 @@ endblock title %} {% block content %}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{{ relative_path_prefix }}../../resources/{{ resource.code }}/detail.html" 
+                            <a href="../../resources/{{ resource.code }}/detail.html" 
                                class="text-blue-600 hover:text-blue-900">View Details</a>
                         </td>
                     </tr>

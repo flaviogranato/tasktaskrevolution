@@ -387,7 +387,10 @@ impl BuildUseCase {
                             project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
                             project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
                             project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
-                            project_map.insert("task_count".to_string(), tera::Value::Number(tera::Number::from(project_tasks.len())));
+                            project_map.insert(
+                                "task_count".to_string(),
+                                tera::Value::Number(tera::Number::from(project_tasks.len())),
+                            );
                             Some(tera::Value::Object(project_map))
                         } else {
                             None
@@ -411,9 +414,16 @@ impl BuildUseCase {
                                 task_map.insert("code".to_string(), tera::Value::String(task.code().to_string()));
                                 task_map.insert("name".to_string(), tera::Value::String(task.name().to_string()));
                                 task_map.insert("status".to_string(), tera::Value::String(task.status().to_string()));
-                                task_map.insert("project_code".to_string(), tera::Value::String(project.code().to_string()));
-                                task_map.insert("project_name".to_string(), tera::Value::String(project.name().to_string()));
-                                task_map.insert("due_date".to_string(), tera::Value::String(task.due_date().to_string()));
+                                task_map.insert(
+                                    "project_code".to_string(),
+                                    tera::Value::String(project.code().to_string()),
+                                );
+                                task_map.insert(
+                                    "project_name".to_string(),
+                                    tera::Value::String(project.name().to_string()),
+                                );
+                                task_map
+                                    .insert("due_date".to_string(), tera::Value::String(task.due_date().to_string()));
                                 tera::Value::Object(task_map)
                             })
                     })
@@ -866,9 +876,24 @@ spec:
         assert!(result.is_ok());
 
         // Verify all project pages were created
-        let completed_page = output_dir.join("companies").join("test-company").join("projects").join("proj-completed").join("index.html");
-        let cancelled_page = output_dir.join("companies").join("test-company").join("projects").join("proj-cancelled").join("index.html");
-        let in_progress_page = output_dir.join("companies").join("test-company").join("projects").join("proj-in-progress").join("index.html");
+        let completed_page = output_dir
+            .join("companies")
+            .join("test-company")
+            .join("projects")
+            .join("proj-completed")
+            .join("index.html");
+        let cancelled_page = output_dir
+            .join("companies")
+            .join("test-company")
+            .join("projects")
+            .join("proj-cancelled")
+            .join("index.html");
+        let in_progress_page = output_dir
+            .join("companies")
+            .join("test-company")
+            .join("projects")
+            .join("proj-in-progress")
+            .join("index.html");
 
         assert!(completed_page.exists());
         assert!(cancelled_page.exists());
@@ -907,7 +932,12 @@ spec:
         assert!(result.is_ok());
 
         // Verify the project page was created
-        let project_page = output_dir.join("companies").join("test-company").join("projects").join("proj-with-tz").join("index.html");
+        let project_page = output_dir
+            .join("companies")
+            .join("test-company")
+            .join("projects")
+            .join("proj-with-tz")
+            .join("index.html");
         assert!(project_page.exists());
     }
 }
