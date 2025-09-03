@@ -107,12 +107,12 @@ jobs:
       run: |
         mkdir -p /tmp/teste
         cd /tmp/teste
-        eval "../../target/debug/ttr init --name \"Test Manager\" --email \"test@example.com\" --company-name \"Test Company\""
-        eval "../../target/debug/ttr create company --name \"Tech Corp\" --code \"TECH-CORP\" --description \"Technology company\""
-        eval "../../target/debug/ttr create resource \"John Doe\" \"Developer\" --company-code \"TECH-CORP\""
-        eval "../../target/debug/ttr create project \"Web App\" \"Web application project\" --company-code \"TECH-CORP\""
-        eval "../../target/debug/ttr create task --name \"Setup Environment\" --description \"Setup development environment\" --start-date \"2024-01-15\" --due-date \"2024-01-22\" --project-code \"proj-1\" --company-code \"TECH-CORP\""
-        eval "../../target/debug/ttr build"
+        eval "../target/debug/ttr init --name \"Test Manager\" --email \"test@example.com\" --company-name \"Test Company\""
+        eval "../target/debug/ttr create company --name \"Tech Corp\" --code \"TECH-CORP\" --description \"Technology company\""
+        eval "../target/debug/ttr create resource \"John Doe\" \"Developer\" --company-code \"TECH-CORP\""
+        eval "../target/debug/ttr create project \"Web App\" \"Web application project\" --company-code \"TECH-CORP\""
+        eval "../target/debug/ttr create task --name \"Setup Environment\" --description \"Setup development environment\" --start-date \"2024-01-15\" --due-date \"2024-01-22\" --project-code \"proj-1\" --company-code \"TECH-CORP\""
+        eval "../target/debug/ttr build"
         
     - name: Validate HTML
       run: html-validate /tmp/teste/public/**/*.html
@@ -150,12 +150,12 @@ jobs:
       run: |
         mkdir -p /tmp/perf-test
         cd /tmp/perf-test
-        eval "../../target/release/ttr init --name \"Test Manager\" --email \"test@example.com\" --company-name \"Test Company\""
-        eval "../../target/release/ttr create company --name \"Tech Corp\" --code \"TECH-CORP\" --description \"Technology company\""
-        eval "../../target/release/ttr create resource \"John Doe\" \"Developer\" --company-code \"TECH-CORP\""
-        eval "../../target/release/ttr create project \"Web App\" \"Web application project\" --company-code \"TECH-CORP\""
-        eval "../../target/release/ttr create task --name \"Setup Environment\" --description \"Setup development environment\" --start-date \"2024-01-15\" --due-date \"2024-01-22\" --project-code \"proj-1\" --company-code \"TECH-CORP\""
-        eval "../../target/release/ttr build"
+        eval "../target/release/ttr init --name \"Test Manager\" --email \"test@example.com\" --company-name \"Test Company\""
+        eval "../target/release/ttr create company --name \"Tech Corp\" --code \"TECH-CORP\" --description \"Technology company\""
+        eval "../target/release/ttr create resource \"John Doe\" \"Developer\" --company-code \"TECH-CORP\""
+        eval "../target/release/ttr create project \"Web App\" \"Web application project\" --company-code \"TECH-CORP\""
+        eval "../target/release/ttr create task --name \"Setup Environment\" --description \"Setup development environment\" --start-date \"2024-01-15\" --due-date \"2024-01-22\" --project-code \"proj-1\" --company-code \"TECH-CORP\""
+        eval "../target/release/ttr build"
         
     - name: Start HTTP server
       run: |

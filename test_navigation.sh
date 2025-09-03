@@ -12,7 +12,7 @@ echo "========================================"
 
 # Configuration
 TEST_DIR="/tmp/teste_nav"
-TTR_BINARY="/home/flavio/projects/tasktaskrevolution/target/debug/ttr"
+TTR_BINARY="./target/debug/ttr"
 
 # Colors for output
 RED='\033[0;31m'
