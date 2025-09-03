@@ -176,7 +176,7 @@ impl BuildUseCase {
         context.insert("total_projects", &total_projects);
         context.insert("total_resources", &total_resources);
         context.insert("manager", &tera::Value::Object(manager_map.clone()));
-        context.insert("relative_path_prefix", "");
+        context.insert("relative_path_prefix", "/");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 
         // Create a dummy project for the base template header, which expects a `project` object.

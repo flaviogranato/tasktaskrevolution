@@ -115,8 +115,8 @@ main() {
     eval "$TTR_BINARY create task --name \"Setup Environment\" --description \"Setup development environment\" --start-date \"2024-01-15\" --due-date \"2024-01-22\" --project-code \"proj-1\" --company-code \"TECH-CORP\""
     
     # Build HTML
-    log_info "Building HTML site"
-    eval "$TTR_BINARY build"
+    log_info "Building HTML site for local file system"
+    TTR_LOCAL_BUILD=true eval "$TTR_BINARY build"
     
     # Navigation tests
     log_info "Running navigation tests..."

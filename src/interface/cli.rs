@@ -81,6 +81,19 @@ enum Commands {
         path: Option<PathBuf>,
     },
 
+    /// Start a local development server to serve the generated HTML site
+    Server {
+        /// Optional: Path to the project directory.
+        /// Se não for fornecido, usa o diretório atual.
+        path: Option<PathBuf>,
+        /// Port to run the server on
+        #[clap(long, default_value = "1313")]
+        port: u16,
+        /// Host to bind the server to
+        #[clap(long, default_value = "127.0.0.1")]
+        host: String,
+    },
+
     /// Create new entities (projects, resources, companies, tasks, etc.)
     #[clap(alias = "c")]
     Create {
@@ -364,6 +377,81 @@ enum TaskCommands {
     },
 }
 
+fn start_dev_server(public_dir: &std::path::Path, host: &str, port: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    use std::net::TcpListener;
+    use std::thread;
+
+    let listener = TcpListener::bind(format!("{}:{}", host, port))?;
+    
+    for stream in listener.incoming() {
+        match stream {
+            Ok(stream) => {
+                let public_dir = public_dir.to_path_buf();
+                thread::spawn(move || {
+                    handle_client(stream, &public_dir);
+                });
+            }
+            Err(e) => {
+                eprintln!("Connection failed: {}", e);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn handle_client(mut stream: std::net::TcpStream, public_dir: &std::path::Path) {
+    let mut reader = std::io::BufReader::new(&stream);
+    let mut request_line = String::new();
+    
+    if std::io::BufRead::read_line(&mut reader, &mut request_line).is_err() {
+        return;
+    }
+    
+    let request_parts: Vec<&str> = request_line.split_whitespace().collect();
+    if request_parts.len() < 2 {
+        return;
+    }
+    
+    let mut path = request_parts[1];
+    if path == "/" {
+        path = "/index.html";
+    }
+    
+    // Remove leading slash
+    let file_path = public_dir.join(&path[1..]);
+    
+    let (status, content_type, body) = if file_path.exists() && file_path.is_file() {
+        match std::fs::read(&file_path) {
+            Ok(contents) => {
+                let content_type = match file_path.extension().and_then(|s| s.to_str()) {
+                    Some("html") => "text/html; charset=utf-8",
+                    Some("css") => "text/css",
+                    Some("js") => "application/javascript",
+                    Some("png") => "image/png",
+                    Some("jpg") | Some("jpeg") => "image/jpeg",
+                    Some("gif") => "image/gif",
+                    Some("svg") => "image/svg+xml",
+                    _ => "application/octet-stream",
+                };
+                ("200 OK", content_type, contents)
+            }
+            Err(_) => ("500 Internal Server Error", "text/plain", b"Internal Server Error".to_vec()),
+        }
+    } else {
+        ("404 Not Found", "text/html; charset=utf-8", b"<h1>404 Not Found</h1>".to_vec())
+    };
+    
+    let response = format!(
+        "HTTP/1.1 {}\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n",
+        status,
+        content_type,
+        body.len()
+    );
+    
+    let _ = std::io::Write::write_all(&mut stream, response.as_bytes());
+    let _ = std::io::Write::write_all(&mut stream, &body);
+}
+
 pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     match &cli.command {
         Commands::Init {
@@ -419,6 +507,37 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 Err(e) => {
                     println!("Erro ao inicializar o builder: {e}");
                 }
+            }
+            Ok(())
+        }
+
+        Commands::Server { path, port, host } => {
+            let project_path = path.clone().unwrap_or_else(|| PathBuf::from("."));
+            let output_dir = project_path.join("public");
+
+            // First build the site
+            match BuildUseCase::new(project_path.clone(), output_dir.to_str().unwrap()) {
+                Ok(use_case) => {
+                    if let Err(e) = use_case.execute() {
+                        println!("Erro ao construir o site: {e}");
+                        return Ok(());
+                    }
+                }
+                Err(e) => {
+                    println!("Erro ao inicializar o builder: {e}");
+                    return Ok(());
+                }
+            }
+
+            // Then start the server
+            println!("🚀 Starting TTR development server...");
+            println!("📁 Serving files from: {}", output_dir.display());
+            println!("🌐 Server running at: http://{}:{}", host, port);
+            println!("📖 Open your browser and navigate to: http://{}:{}", host, port);
+            println!("⏹️  Press Ctrl+C to stop the server");
+
+            if let Err(e) = start_dev_server(&output_dir, host, *port) {
+                println!("Erro ao iniciar o servidor: {e}");
             }
             Ok(())
         }

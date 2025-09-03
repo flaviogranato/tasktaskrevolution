@@ -27,13 +27,13 @@
                     </div>
                     <nav class="hidden md:flex space-x-6">
                         <a
-                            href="/index.html"
+                            href="{{ relative_path_prefix | safe }}index.html"
                             class="text-slate-600 hover:text-slate-900 font-medium transition-colors"
                             >Dashboard</a
                         >
                         {% if companies %}
                         <a
-                            href="/companies.html"
+                            href="{{ relative_path_prefix | safe }}companies.html"
                             class="text-slate-600 hover:text-slate-900 font-medium transition-colors"
                             >Companies</a
                         >
