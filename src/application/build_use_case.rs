@@ -377,6 +377,58 @@ impl BuildUseCase {
                 resource_context.insert("relative_path_prefix", "../../");
                 resource_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 
+                // Add projects where this resource is assigned
+                let resource_projects: Vec<_> = company_projects
+                    .iter()
+                    .filter_map(|(project, project_tasks, project_resources, _)| {
+                        // Check if this resource is assigned to this project
+                        if project_resources.iter().any(|r| r.code() == resource.code()) {
+                            let mut project_map = tera::Map::new();
+                            project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
+                            project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+                            project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
+                            project_map.insert("task_count".to_string(), tera::Value::Number(tera::Number::from(project_tasks.len())));
+                            Some(tera::Value::Object(project_map))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                resource_context.insert("projects", &resource_projects);
+
+                // Add tasks where this resource is assigned
+                let resource_tasks: Vec<_> = company_projects
+                    .iter()
+                    .flat_map(|(project, project_tasks, _, _)| {
+                        project_tasks
+                            .iter()
+                            .filter(|task| {
+                                // Check if this resource is assigned to this task
+                                task.assigned_resources().contains(&resource.code().to_string())
+                            })
+                            .map(|task| {
+                                let mut task_map = tera::Map::new();
+                                task_map.insert("code".to_string(), tera::Value::String(task.code().to_string()));
+                                task_map.insert("name".to_string(), tera::Value::String(task.name().to_string()));
+                                task_map.insert("status".to_string(), tera::Value::String(task.status().to_string()));
+                                task_map.insert("project_code".to_string(), tera::Value::String(project.code().to_string()));
+                                task_map.insert("project_name".to_string(), tera::Value::String(project.name().to_string()));
+                                task_map.insert("due_date".to_string(), tera::Value::String(task.due_date().to_string()));
+                                tera::Value::Object(task_map)
+                            })
+                    })
+                    .collect();
+                resource_context.insert("tasks", &resource_tasks);
+
+                // Calculate utilization percentage (simple calculation based on assigned tasks)
+                let utilization_percentage = if resource_tasks.is_empty() {
+                    0
+                } else {
+                    // Simple calculation: 20% per task (up to 100%)
+                    std::cmp::min(resource_tasks.len() * 20, 100)
+                };
+                resource_context.insert("utilization_percentage", &utilization_percentage);
+
                 // Create dummy project for base template
                 let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
                     .code("RESOURCE_DASHBOARD".to_string())
