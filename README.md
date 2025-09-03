@@ -16,7 +16,7 @@ TaskTaskRevolution (ttr) transforms a structured directory of YAML files into a 
 
 ```bash
 # Clone the repository
-git clone https://gitlab.com/flaviogranato/tasktaskrevolution.git
+git clone https://github.com/flaviogranato/tasktaskrevolution.git
 
 # Enter the directory
 cd tasktaskrevolution
