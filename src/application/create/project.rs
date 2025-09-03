@@ -113,7 +113,7 @@ mod test {
         let name = "John";
         let description = Some("a simple test project");
 
-        let result = use_case.execute(name, description);
+        let result = use_case.execute(name, description, "TEST_COMPANY".to_string());
         assert!(result.is_ok());
     }
 
@@ -124,7 +124,7 @@ mod test {
         let name = "John";
         let description = Some("a simple test project");
 
-        let result = use_case.execute(name, description);
+        let result = use_case.execute(name, description, "TEST_COMPANY".to_string());
         assert!(result.is_err());
     }
 
@@ -134,7 +134,7 @@ mod test {
         let use_case = CreateProjectUseCase::new(mock_repo);
         let name = "John";
         let description = Some("a simple test project");
-        let _ = use_case.execute(name, description);
+        let _ = use_case.execute(name, description, "TEST_COMPANY".to_string());
 
         let saved_config = use_case.get_repository().saved_config.borrow();
         assert!(saved_config.is_some());

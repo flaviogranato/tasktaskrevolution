@@ -1,16 +1,13 @@
+use crate::application::build_context::BuildContext;
 use crate::domain::{
-    company_settings::repository::ConfigRepository,
-    project_management::AnyProject,
-    task_management::repository::TaskRepository,
+    company_management::repository::CompanyRepository, company_settings::repository::ConfigRepository,
+    project_management::AnyProject, task_management::repository::TaskRepository,
 };
 use crate::infrastructure::persistence::{
-    config_repository::FileConfigRepository,
-    project_repository::FileProjectRepository,
-    resource_repository::FileResourceRepository,
-    task_repository::FileTaskRepository,
+    config_repository::FileConfigRepository, project_repository::FileProjectRepository,
+    resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
 };
 use crate::interface::assets::{StaticAssets, TemplateAssets};
-use crate::application::build_context::BuildContext;
 
 use glob::glob;
 
@@ -31,11 +28,10 @@ pub struct BuildUseCase {
 impl BuildUseCase {
     pub fn new(base_path: PathBuf, output_dir: &str) -> Result<Self, Box<dyn Error>> {
         // Detect build context
-        let context = BuildContext::detect(&base_path)
-            .map_err(|e| format!("Failed to detect build context: {}", e))?;
-        
+        let context = BuildContext::detect(&base_path).map_err(|e| format!("Failed to detect build context: {}", e))?;
+
         println!("[INFO] Detected build context: {}", context.display_name());
-        
+
         let mut tera = Tera::default();
         for filename in TemplateAssets::iter() {
             let file = TemplateAssets::get(filename.as_ref()).unwrap();
@@ -70,9 +66,15 @@ impl BuildUseCase {
         let config_repo = FileConfigRepository::with_base_path(self.base_path.clone());
         let (config, _) = config_repo.load()?;
 
-        // 4. Find all projects and load their data.
+        // 4. Load companies and their data
+        let company_repo =
+            crate::infrastructure::persistence::company_repository::FileCompanyRepository::new(self.base_path.clone());
+        let companies = company_repo.find_all()?;
+
+        // 5. Find all projects and load their data.
         let mut all_projects_data = Vec::new();
         let project_manifest_pattern = self.base_path.join("companies/*/projects/*/project.yaml");
+
         for entry in glob(project_manifest_pattern.to_str().unwrap())? {
             let manifest_path = entry?;
             let project_path = manifest_path.parent().unwrap().to_path_buf();
@@ -82,18 +84,18 @@ impl BuildUseCase {
             let resource_repo = FileResourceRepository::new(self.base_path.clone());
 
             let project = project_repo.load_from_path(&project_path)?;
-            
+
             // Extract company and project codes from the path
             let path_components: Vec<_> = project_path.components().collect();
             let company_code = path_components[path_components.len() - 3].as_os_str().to_str().unwrap();
             let project_code = project.code();
-            
+
             // Load resources using the new hierarchical method
             let resources = resource_repo.find_all_by_project(company_code, project_code)?;
-            
+
             // Load tasks from both project aggregate and hierarchical structure
             let mut tasks: Vec<_> = project.tasks().values().cloned().collect();
-            
+
             // Also load tasks from the hierarchical structure
             let task_repo = FileTaskRepository::new(self.base_path.clone());
             let hierarchical_tasks = task_repo.find_all_by_project(company_code, project_code)?;
@@ -109,51 +111,72 @@ impl BuildUseCase {
                 project
             };
 
-            all_projects_data.push((project, tasks, resources));
+            all_projects_data.push((project, tasks, resources, company_code.to_string()));
         }
 
-        // 5. Render the global index page with all projects.
+        // 6. Group projects by company
+        let mut companies_with_data = Vec::new();
+        for company in companies {
+            let company_code = company.code();
+            let company_projects: Vec<_> = all_projects_data
+                .iter()
+                .filter(|(_, _, _, comp_code)| comp_code == company_code)
+                .collect();
+
+            let project_count = company_projects.len();
+            let resource_count = company_projects
+                .iter()
+                .map(|(_, _, resources, _)| resources.len())
+                .sum::<usize>();
+
+            companies_with_data.push((company, company_projects, project_count, resource_count));
+        }
+
+        // 7. Render the global index page with companies overview
         println!("[INFO] Generating global index page...");
         let mut context = Context::new();
 
-        let project_values: Vec<_> = all_projects_data
+        let company_values: Vec<_> = companies_with_data
             .iter()
-            .map(|(project, tasks, resources)| {
-                let mut project_map = tera::Map::new();
-                project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
-                project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
-                project_map.insert(
+            .map(|(company, _, project_count, resource_count)| {
+                let mut company_map = tera::Map::new();
+                company_map.insert("code".to_string(), tera::Value::String(company.code().to_string()));
+                company_map.insert("name".to_string(), tera::Value::String(company.name().to_string()));
+                company_map.insert(
                     "description".to_string(),
                     tera::Value::String(
-                        project
-                            .description()
-                            .map_or("No description available.".to_string(), |d| d.to_string()),
+                        company
+                            .description
+                            .as_deref()
+                            .unwrap_or("No description available.")
+                            .to_string(),
                     ),
                 );
-                project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
-                project_map.insert(
-                    "start_date".to_string(),
-                    project
-                        .start_date()
-                        .map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())),
+                company_map.insert(
+                    "project_count".to_string(),
+                    tera::Value::Number(tera::Number::from(*project_count)),
                 );
-
-                let mut map = tera::Map::new();
-                map.insert("project".to_string(), tera::Value::Object(project_map));
-                map.insert("tasks".to_string(), tera::to_value(tasks).unwrap());
-                map.insert("resources".to_string(), tera::to_value(resources).unwrap());
-                tera::Value::Object(map)
+                company_map.insert(
+                    "resource_count".to_string(),
+                    tera::Value::Number(tera::Number::from(*resource_count)),
+                );
+                tera::Value::Object(company_map)
             })
             .collect();
 
-        context.insert("projects", &project_values);
+        let total_projects: usize = companies_with_data.iter().map(|(_, _, count, _)| count).sum();
+        let total_resources: usize = companies_with_data.iter().map(|(_, _, _, count)| count).sum();
+
+        context.insert("companies", &company_values);
+        context.insert("total_projects", &total_projects);
+        context.insert("total_resources", &total_resources);
         context.insert("relative_path_prefix", "");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 
         // Create a dummy project for the base template header, which expects a `project` object.
         let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
             .code("TTR_DASHBOARD".to_string())
-            .name("Projects Dashboard".to_string())
+            .name("TaskTaskRevolution Dashboard".to_string())
             .company_code("TTR".to_string())
             .created_by("system".to_string())
             .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
@@ -172,57 +195,161 @@ impl BuildUseCase {
         fs::write(self.output_dir.join("index.html"), index_html)?;
         println!("✅ Global index page generated successfully.");
 
-        // 6. Render a detail page for each project.
-        let projects_base_dir = self.output_dir.join("projects");
-        fs::create_dir_all(&projects_base_dir)?;
+        // 8. Generate company pages
+        let companies_base_dir = self.output_dir.join("companies");
+        fs::create_dir_all(&companies_base_dir)?;
 
-        for (project, tasks, resources) in &all_projects_data {
-            let project_code = project.code();
-            let project_name = project.name();
-            println!("[INFO] Generating page for project: {project_name} ({project_code})");
+        for (company, company_projects, project_count, resource_count) in &companies_with_data {
+            let company_code = company.code();
+            let company_name = company.name();
+            println!("[INFO] Generating page for company: {company_name} ({company_code})");
 
-            let project_output_dir = projects_base_dir.join(project_code);
-            fs::create_dir_all(&project_output_dir)?;
+            let company_output_dir = companies_base_dir.join(company_code);
+            fs::create_dir_all(&company_output_dir)?;
 
-            let mut context = Context::new();
-            // Create a simplified project object for the template
-            let mut project_map = tera::Map::new();
-            project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
-            project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
-            project_map.insert(
+            // Create company context
+            let mut company_context = Context::new();
+            let mut company_map = tera::Map::new();
+            company_map.insert("code".to_string(), tera::Value::String(company.code().to_string()));
+            company_map.insert("name".to_string(), tera::Value::String(company.name().to_string()));
+            company_map.insert(
                 "description".to_string(),
                 tera::Value::String(
-                    project
-                        .description()
-                        .map_or("No description available.".to_string(), |d| d.to_string()),
+                    company
+                        .description
+                        .as_deref()
+                        .unwrap_or("No description available.")
+                        .to_string(),
                 ),
             );
-            project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
-            project_map.insert(
-                "start_date".to_string(),
-                project
-                    .start_date()
-                    .map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())),
+            company_map.insert(
+                "project_count".to_string(),
+                tera::Value::Number(tera::Number::from(*project_count)),
+            );
+            company_map.insert(
+                "resource_count".to_string(),
+                tera::Value::Number(tera::Number::from(*resource_count)),
             );
 
-            context.insert("project", &tera::Value::Object(project_map));
-            context.insert("tasks", tasks);
-            context.insert("resources", resources);
-            context.insert("relative_path_prefix", "../../");
-            context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+            // Create project summaries for company page
+            let project_summaries: Vec<_> = company_projects
+                .iter()
+                .map(|(project, tasks, _, _)| {
+                    let mut project_map = tera::Map::new();
+                    project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
+                    project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+                    project_map.insert(
+                        "description".to_string(),
+                        tera::Value::String(
+                            project
+                                .description()
+                                .map_or("No description available.".to_string(), |d| d.to_string()),
+                        ),
+                    );
+                    project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
+                    project_map.insert(
+                        "task_count".to_string(),
+                        tera::Value::Number(tera::Number::from(tasks.len())),
+                    );
+                    tera::Value::Object(project_map)
+                })
+                .collect();
 
-            // Render project detail page (e.g., project.html)
-            let project_html = match self.tera.render("project.html", &context) {
+            // Load company resources (using hierarchical method)
+            let resource_repo = FileResourceRepository::new(self.base_path.clone());
+            let company_resources_filtered = resource_repo
+                .find_all_by_project(company_code, "")
+                .unwrap_or_else(|_| Vec::new());
+
+            company_context.insert("company", &tera::Value::Object(company_map.clone()));
+            company_context.insert("projects", &project_summaries);
+            company_context.insert("resources", &company_resources_filtered);
+            company_context.insert("relative_path_prefix", "../");
+            company_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+
+            // Create dummy project for base template
+            let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
+                .code("COMPANY_DASHBOARD".to_string())
+                .name(format!("{} Dashboard", company_name))
+                .company_code(company_code.to_string())
+                .created_by("system".to_string())
+                .build()
+                .unwrap()
+                .into();
+            company_context.insert("project", &dummy_project);
+
+            // Render company page
+            let company_html = match self.tera.render("company.html", &company_context) {
                 Ok(html) => html,
                 Err(e) => {
-                    eprintln!("Template render error for project.html: {:?}", e);
+                    eprintln!("Template render error for company.html: {:?}", e);
                     return Err(format!("Template error: {}", e).into());
                 }
             };
-            let project_page_path = project_output_dir.join("index.html");
-            fs::write(project_page_path, project_html)?;
+            let company_page_path = company_output_dir.join("index.html");
+            fs::write(company_page_path, company_html)?;
 
-            println!("✅ Project '{project_name}' page generated successfully.");
+            println!("✅ Company '{company_name}' page generated successfully.");
+
+            // 9. Generate project pages within company
+            let projects_base_dir = company_output_dir.join("projects");
+            fs::create_dir_all(&projects_base_dir)?;
+
+            for (project, tasks, resources, _) in company_projects {
+                let project_code = project.code();
+                let project_name = project.name();
+                println!("[INFO] Generating page for project: {project_name} ({project_code})");
+
+                let project_output_dir = projects_base_dir.join(project_code);
+                fs::create_dir_all(&project_output_dir)?;
+
+                let mut project_context = Context::new();
+                // Create a simplified project object for the template
+                let mut project_map = tera::Map::new();
+                project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
+                project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+                project_map.insert(
+                    "description".to_string(),
+                    tera::Value::String(
+                        project
+                            .description()
+                            .map_or("No description available.".to_string(), |d| d.to_string()),
+                    ),
+                );
+                project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
+                project_map.insert(
+                    "start_date".to_string(),
+                    project
+                        .start_date()
+                        .map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())),
+                );
+                project_map.insert(
+                    "end_date".to_string(),
+                    project
+                        .end_date()
+                        .map_or(tera::Value::Null, |d| tera::Value::String(d.to_string())),
+                );
+
+                project_context.insert("project", &tera::Value::Object(project_map));
+                project_context.insert("company", &tera::Value::Object(company_map.clone()));
+                project_context.insert("tasks", tasks);
+                project_context.insert("resources", resources);
+                project_context.insert("relative_path_prefix", "../../../");
+                project_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+
+                // Render project detail page (e.g., project.html)
+                let project_html = match self.tera.render("project.html", &project_context) {
+                    Ok(html) => html,
+                    Err(e) => {
+                        eprintln!("Template render error for project.html: {:?}", e);
+                        return Err(format!("Template error: {}", e).into());
+                    }
+                };
+                let project_page_path = project_output_dir.join("index.html");
+                fs::write(project_page_path, project_html)?;
+
+                println!("✅ Project '{project_name}' page generated successfully.");
+            }
         }
 
         Ok(())
