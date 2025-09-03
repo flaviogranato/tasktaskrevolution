@@ -4,7 +4,12 @@ use chrono::{DateTime, Local};
 
 pub trait ResourceRepository {
     fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError>;
-    fn save_in_hierarchy(&self, resource: AnyResource, company_code: &str, project_code: Option<&str>) -> Result<AnyResource, DomainError>;
+    fn save_in_hierarchy(
+        &self,
+        resource: AnyResource,
+        company_code: &str,
+        project_code: Option<&str>,
+    ) -> Result<AnyResource, DomainError>;
     fn find_all(&self) -> Result<Vec<AnyResource>, DomainError>;
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, DomainError>;
     fn save_time_off(

@@ -45,14 +45,13 @@ impl FileProjectRepository {
     }
 
     /// Gets the path to the projects directory for a specific company
+    #[allow(dead_code)]
     fn get_company_projects_path(&self, company_code: &str) -> PathBuf {
-        self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("projects")
+        self.base_path.join("companies").join(company_code).join("projects")
     }
 
     /// Gets the path to all companies directory
+    #[allow(dead_code)]
     fn get_companies_path(&self) -> PathBuf {
         self.base_path.join("companies")
     }
@@ -82,6 +81,7 @@ impl FileProjectRepository {
     }
 
     /// Loads a specific project by company code and project code
+    #[allow(dead_code)]
     pub fn load_by_codes(&self, company_code: &str, project_code: &str) -> Result<AnyProject, DomainError> {
         let project_path = self.get_project_path(company_code, project_code);
         self.load_from_path(&project_path)
@@ -101,9 +101,15 @@ impl FileProjectRepository {
     }
 
     /// Creates a project from manifest with the correct company_code
-    fn create_project_with_company_code(&self, manifest: ProjectManifest, company_code: &str) -> Result<AnyProject, DomainError> {
+    fn create_project_with_company_code(
+        &self,
+        manifest: ProjectManifest,
+        company_code: &str,
+    ) -> Result<AnyProject, DomainError> {
         let code = manifest.metadata.code.ok_or_else(|| {
-            DomainError::new(DomainErrorKind::Generic { message: "Project code is missing in manifest".to_string() })
+            DomainError::new(DomainErrorKind::Generic {
+                message: "Project code is missing in manifest".to_string(),
+            })
         })?;
         let name = manifest.metadata.name;
         let description = if manifest.metadata.description.is_empty() {
@@ -117,7 +123,7 @@ impl FileProjectRepository {
         let timezone = manifest.spec.timezone;
 
         // Convert status from manifest
-        let status = match manifest.spec.status {
+        let _status = match manifest.spec.status {
             crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::Planned => {
                 crate::domain::project_management::project::ProjectStatus::Planned
             }
@@ -314,8 +320,7 @@ impl ProjectRepository for FileProjectRepository {
         let mut processed_paths = std::collections::HashSet::new();
 
         // Padrão para buscar projetos na nova estrutura: companies/*/projects/*/project.yaml
-        let absolute_base = std::fs::canonicalize(&self.base_path)
-            .unwrap_or_else(|_| self.base_path.clone());
+        let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
         let pattern = absolute_base.join("companies/*/projects/*/project.yaml");
         let pattern_str = pattern.to_str().unwrap();
         if let Ok(walker) = glob(pattern_str) {
@@ -326,14 +331,13 @@ impl ProjectRepository for FileProjectRepository {
                 }
                 if let Ok(manifest) = self.load_manifest(manifest_path) {
                     // Extract company_code from path: companies/{company_code}/projects/{project_code}/project.yaml
-                    if let Some(company_code) = self.extract_company_code_from_path(manifest_path) {
-                        if let Ok(mut project) = self.create_project_with_company_code(manifest, &company_code)
-                            && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
-                        {
-                            projects.push(project);
-                            processed_paths.insert(manifest_path.to_path_buf());
-                        }
-                    }
+                                    if let Some(company_code) = self.extract_company_code_from_path(manifest_path)
+                    && let Ok(mut project) = self.create_project_with_company_code(manifest, &company_code)
+                    && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
+                {
+                    projects.push(project);
+                    processed_paths.insert(manifest_path.to_path_buf());
+                }
                 }
             }
         }

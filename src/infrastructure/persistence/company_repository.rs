@@ -70,17 +70,17 @@ impl FileCompanyRepository {
                             operation: "read_company_file".to_string(),
                             details: format!("Failed to read company file {}: {}", company_yaml_path.display(), e),
                         })
-                })?;
+                    })?;
 
-                let manifest: CompanyManifest = serde_yaml::from_str(&content).map_err(|e| {
-                    DomainError::new(DomainErrorKind::Serialization {
-                        format: "YAML".to_string(),
-                        details: format!("Failed to parse company file {}: {}", company_yaml_path.display(), e),
-                    })
-                })?;
+                    let manifest: CompanyManifest = serde_yaml::from_str(&content).map_err(|e| {
+                        DomainError::new(DomainErrorKind::Serialization {
+                            format: "YAML".to_string(),
+                            details: format!("Failed to parse company file {}: {}", company_yaml_path.display(), e),
+                        })
+                    })?;
 
-                let company = manifest.to();
-                companies.insert(company.code.clone(), company);
+                    let company = manifest.to();
+                    companies.insert(company.code.clone(), company);
                 }
             }
         }

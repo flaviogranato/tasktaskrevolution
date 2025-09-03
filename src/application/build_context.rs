@@ -1,6 +1,6 @@
-use std::path::Path;
-use serde_yaml;
 use serde::Deserialize;
+use serde_yaml;
+use std::path::Path;
 
 /// Represents the different contexts where the build command can be executed
 #[derive(Debug, Clone, PartialEq)]
@@ -67,69 +67,65 @@ impl BuildContext {
     /// Detects the build context by analyzing the current directory structure
     pub fn detect(path: &Path) -> Result<Self, BuildContextError> {
         let path_str = path.to_string_lossy().to_string();
-        
+
         // Check for config.yaml (root context)
         if path.join("config.yaml").exists() {
             return Ok(BuildContext::Root);
         }
-        
+
         // Check for company.yaml (company context)
         if let Some(company_code) = Self::find_company_yaml(path)? {
             return Ok(BuildContext::Company(company_code));
         }
-        
+
         // Check for project.yaml (project context)
         if let Some(project_code) = Self::find_project_yaml(path)? {
             return Ok(BuildContext::Project(project_code));
         }
-        
+
         Err(BuildContextError::NoContextFound { path: path_str })
     }
-    
+
     /// Finds and parses company.yaml file in the given path
     fn find_company_yaml(path: &Path) -> Result<Option<String>, BuildContextError> {
         let company_yaml_path = path.join("company.yaml");
-        
+
         if !company_yaml_path.exists() {
             return Ok(None);
         }
-        
-        let content = std::fs::read_to_string(&company_yaml_path)
-            .map_err(|e| BuildContextError::IoError { 
-                error: format!("Failed to read company.yaml: {}", e) 
-            })?;
-        
-        let manifest: CompanyManifest = serde_yaml::from_str(&content)
-            .map_err(|e| BuildContextError::InvalidYaml { 
-                file: "company.yaml".to_string(),
-                error: e.to_string()
-            })?;
-        
+
+        let content = std::fs::read_to_string(&company_yaml_path).map_err(|e| BuildContextError::IoError {
+            error: format!("Failed to read company.yaml: {}", e),
+        })?;
+
+        let manifest: CompanyManifest = serde_yaml::from_str(&content).map_err(|e| BuildContextError::InvalidYaml {
+            file: "company.yaml".to_string(),
+            error: e.to_string(),
+        })?;
+
         Ok(Some(manifest.metadata.code))
     }
-    
+
     /// Finds and parses project.yaml file in the given path
     fn find_project_yaml(path: &Path) -> Result<Option<String>, BuildContextError> {
         let project_yaml_path = path.join("project.yaml");
-        
+
         if !project_yaml_path.exists() {
             return Ok(None);
         }
-        
-        let content = std::fs::read_to_string(&project_yaml_path)
-            .map_err(|e| BuildContextError::IoError { 
-                error: format!("Failed to read project.yaml: {}", e) 
-            })?;
-        
-        let manifest: ProjectManifest = serde_yaml::from_str(&content)
-            .map_err(|e| BuildContextError::InvalidYaml { 
-                file: "project.yaml".to_string(),
-                error: e.to_string()
-            })?;
-        
+
+        let content = std::fs::read_to_string(&project_yaml_path).map_err(|e| BuildContextError::IoError {
+            error: format!("Failed to read project.yaml: {}", e),
+        })?;
+
+        let manifest: ProjectManifest = serde_yaml::from_str(&content).map_err(|e| BuildContextError::InvalidYaml {
+            file: "project.yaml".to_string(),
+            error: e.to_string(),
+        })?;
+
         Ok(Some(manifest.metadata.code))
     }
-    
+
     /// Returns the display name for the context
     pub fn display_name(&self) -> String {
         match self {
@@ -138,7 +134,7 @@ impl BuildContext {
             BuildContext::Project(code) => format!("Project: {}", code),
         }
     }
-    
+
     /// Returns the relative path prefix for assets based on context
     #[allow(dead_code)]
     pub fn asset_path_prefix(&self) -> String {
@@ -148,7 +144,7 @@ impl BuildContext {
             BuildContext::Project(_) => "../../".to_string(),
         }
     }
-    
+
     /// Returns the output directory structure based on context
     #[allow(dead_code)]
     pub fn output_structure(&self) -> OutputStructure {
@@ -192,20 +188,20 @@ mod tests {
     fn test_detect_root_context() {
         let temp_dir = tempdir().unwrap();
         let root = temp_dir.path();
-        
+
         // Create config.yaml
         let mut config_file = File::create(root.join("config.yaml")).unwrap();
         writeln!(config_file, "apiVersion: tasktaskrevolution.io/v1alpha1\nkind: Config").unwrap();
-        
+
         let context = BuildContext::detect(root).unwrap();
         assert_eq!(context, BuildContext::Root);
     }
-    
+
     #[test]
     fn test_detect_company_context() {
         let temp_dir = tempdir().unwrap();
         let root = temp_dir.path();
-        
+
         // Create company.yaml
         let company_content = r#"
 apiVersion: company.tasktaskrevolution.io/v1
@@ -216,16 +212,16 @@ metadata:
 "#;
         let mut company_file = File::create(root.join("company.yaml")).unwrap();
         writeln!(company_file, "{}", company_content).unwrap();
-        
+
         let context = BuildContext::detect(root).unwrap();
         assert_eq!(context, BuildContext::Company("TECH".to_string()));
     }
-    
+
     #[test]
     fn test_detect_project_context() {
         let temp_dir = tempdir().unwrap();
         let root = temp_dir.path();
-        
+
         // Create project.yaml
         let project_content = r#"
 apiVersion: tasktaskrevolution.io/v1alpha1
@@ -236,20 +232,20 @@ metadata:
 "#;
         let mut project_file = File::create(root.join("project.yaml")).unwrap();
         writeln!(project_file, "{}", project_content).unwrap();
-        
+
         let context = BuildContext::detect(root).unwrap();
         assert_eq!(context, BuildContext::Project("proj-1".to_string()));
     }
-    
+
     #[test]
     fn test_no_context_found() {
         let temp_dir = tempdir().unwrap();
         let root = temp_dir.path();
-        
+
         // Create a random file
         let mut random_file = File::create(root.join("random.txt")).unwrap();
         writeln!(random_file, "random content").unwrap();
-        
+
         let result = BuildContext::detect(root);
         assert!(result.is_err());
         match result.unwrap_err() {
@@ -260,18 +256,27 @@ metadata:
             _ => panic!("Expected NoContextFound error"),
         }
     }
-    
+
     #[test]
     fn test_display_names() {
         assert_eq!(BuildContext::Root.display_name(), "Global Dashboard");
-        assert_eq!(BuildContext::Company("TECH".to_string()).display_name(), "Company: TECH");
-        assert_eq!(BuildContext::Project("proj-1".to_string()).display_name(), "Project: proj-1");
+        assert_eq!(
+            BuildContext::Company("TECH".to_string()).display_name(),
+            "Company: TECH"
+        );
+        assert_eq!(
+            BuildContext::Project("proj-1".to_string()).display_name(),
+            "Project: proj-1"
+        );
     }
-    
+
     #[test]
     fn test_asset_path_prefixes() {
         assert_eq!(BuildContext::Root.asset_path_prefix(), "");
         assert_eq!(BuildContext::Company("TECH".to_string()).asset_path_prefix(), "../");
-        assert_eq!(BuildContext::Project("proj-1".to_string()).asset_path_prefix(), "../../");
+        assert_eq!(
+            BuildContext::Project("proj-1".to_string()).asset_path_prefix(),
+            "../../"
+        );
     }
 }

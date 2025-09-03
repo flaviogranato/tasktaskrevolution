@@ -424,25 +424,34 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
         }
 
         Commands::Create { create_command } => match create_command {
-            CreateCommands::Project { name, description, company_code } => {
+            CreateCommands::Project {
+                name,
+                description,
+                company_code,
+            } => {
                 let repository = FileProjectRepository::new();
                 let use_case = CreateProjectUseCase::new(repository);
 
                 // For now, use a default company code if not provided
                 // TODO: In the future, we should require company_code or detect from context
                 let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
-                
+
                 use_case.execute(name, description.as_deref(), company_code)?;
                 Ok(())
             }
-            CreateCommands::Resource { name, resource_type, company_code, project_code } => {
+            CreateCommands::Resource {
+                name,
+                resource_type,
+                company_code,
+                project_code,
+            } => {
                 let repository = FileResourceRepository::new(".");
                 let use_case = CreateResourceUseCase::new(repository);
 
                 // For now, use default values if not provided
                 // TODO: In the future, we should require company_code or detect from context
                 let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
-                
+
                 let _ = use_case.execute(name, resource_type, company_code, project_code.clone());
                 Ok(())
             }
@@ -591,9 +600,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     None => {
                         let manifest_path = PathBuf::from("project.yaml");
                         if !manifest_path.exists() {
-                            println!(
-                                "Error: Command executed outside a project directory. Specify --project-code."
-                            );
+                            println!("Error: Command executed outside a project directory. Specify --project-code.");
                             return Ok(());
                         }
                         let content = match std::fs::read_to_string(manifest_path) {
@@ -637,7 +644,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 // For now, use default values if not provided
                 // TODO: In the future, we should require company_code or detect from context
                 let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
-                
+
                 let args = CreateTaskArgs {
                     company_code,
                     project_code: final_project_code,
@@ -679,7 +686,12 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                             println!("{:<15} {:<15} {:<30}", "CODE", "COMPANY", "NAME");
                             println!("{:-<15} {:-<15} {:-<30}", "", "", "");
                             for project in projects {
-                                println!("{:<15} {:<15} {:<30}", project.code(), project.company_code(), project.name());
+                                println!(
+                                    "{:<15} {:<15} {:<30}",
+                                    project.code(),
+                                    project.company_code(),
+                                    project.name()
+                                );
                             }
                         }
                     }
@@ -1494,7 +1506,7 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
 
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Project { name, description } = create_command {
+            if let CreateCommands::Project { name, description, .. } = create_command {
                 assert_eq!(name, "My Project");
                 assert_eq!(description, Some("A test project".to_string()));
             } else {
@@ -1511,7 +1523,7 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
 
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Project { name, description } = create_command {
+            if let CreateCommands::Project { name, description, .. } = create_command {
                 assert_eq!(name, "My Project");
                 assert_eq!(description, None);
             } else {
@@ -1528,7 +1540,7 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
 
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Resource { name, resource_type } = create_command {
+            if let CreateCommands::Resource { name, resource_type, .. } = create_command {
                 assert_eq!(name, "John Doe");
                 assert_eq!(resource_type, "Developer");
             } else {
@@ -1720,6 +1732,7 @@ mod tests {
                 start_date,
                 due_date,
                 assignees,
+                ..
             } = create_command
             {
                 assert_eq!(project_code, Some("PROJ-001".to_string()));
@@ -1761,6 +1774,7 @@ mod tests {
                 start_date,
                 due_date,
                 assignees,
+                ..
             } = create_command
             {
                 assert_eq!(project_code, None);

@@ -81,8 +81,6 @@ impl fmt::Display for Priority {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;

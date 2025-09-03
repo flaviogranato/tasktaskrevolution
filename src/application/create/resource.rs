@@ -11,19 +11,26 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
-    pub fn execute(&self, name: &str, resource_type: &str, company_code: String, project_code: Option<String>) -> Result<(), DomainError> {
+    pub fn execute(
+        &self,
+        name: &str,
+        resource_type: &str,
+        company_code: String,
+        project_code: Option<String>,
+    ) -> Result<(), DomainError> {
         let code = self.repository.get_next_code(resource_type)?;
         let r = Resource::new(code, name.to_string(), None, resource_type.to_string(), None, 0);
-        
+
         // Use the new hierarchical save method
-        self.repository.save_in_hierarchy(r.into(), &company_code, project_code.as_deref())?;
-        
+        self.repository
+            .save_in_hierarchy(r.into(), &company_code, project_code.as_deref())?;
+
         let location = if let Some(proj_code) = project_code {
             format!("company {} and project {}", company_code, proj_code)
         } else {
             format!("company {}", company_code)
         };
-        
+
         println!("Resource {name} created in {location}.");
         Ok(())
     }
@@ -62,6 +69,15 @@ mod test {
             *self.saved_config.borrow_mut() = Some(resource.clone());
 
             Ok(resource)
+        }
+
+        fn save_in_hierarchy(
+            &self,
+            resource: AnyResource,
+            _company_code: &str,
+            _project_code: Option<&str>,
+        ) -> Result<AnyResource, DomainError> {
+            self.save(resource)
         }
 
         fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
@@ -109,7 +125,7 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type);
+        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None);
         assert!(result.is_ok());
     }
 
@@ -120,7 +136,7 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type);
+        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None);
         assert!(result.is_err());
     }
 
@@ -130,7 +146,7 @@ mod test {
         let use_case = CreateResourceUseCase::new(mock_repo);
         let name = "John";
         let resource_type = "Developer";
-        let _ = use_case.execute(name, resource_type);
+        let _ = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None);
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());

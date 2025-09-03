@@ -57,10 +57,7 @@ impl FileResourceRepository {
 
     /// Gets the path to company resources directory
     fn get_company_resources_path(&self, company_code: &str) -> PathBuf {
-        self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("resources")
+        self.base_path.join("companies").join(company_code).join("resources")
     }
 
     /// Gets the path to project resources directory
@@ -240,7 +237,12 @@ impl ResourceRepository for FileResourceRepository {
     /// Save resource in the new hierarchical structure
     /// If project_code is None, saves as company global resource
     /// If project_code is Some, saves as project-specific resource
-    fn save_in_hierarchy(&self, resource: AnyResource, company_code: &str, project_code: Option<&str>) -> Result<AnyResource, DomainError> {
+    fn save_in_hierarchy(
+        &self,
+        resource: AnyResource,
+        company_code: &str,
+        project_code: Option<&str>,
+    ) -> Result<AnyResource, DomainError> {
         let file_path = if let Some(proj_code) = project_code {
             // Save as project-specific resource
             self.get_project_resource_path(company_code, proj_code, resource.name())
