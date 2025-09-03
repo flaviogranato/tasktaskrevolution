@@ -106,6 +106,15 @@ mod tests {
             Ok(self.resources.borrow().get(code).cloned())
         }
 
+        fn save_in_hierarchy(
+            &self,
+            resource: AnyResource,
+            _company_code: &str,
+            _project_code: Option<&str>,
+        ) -> Result<AnyResource, DomainError> {
+            self.save(resource)
+        }
+
         // Other methods are not needed for this test.
         fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
             unimplemented!()

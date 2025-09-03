@@ -1,0 +1,8 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Config
+metadata:
+  createdAt: "2024-01-01T00:00:00Z"
+spec:
+  managerName: "Test Manager"
+  managerEmail: "manager@test.com"
+  defaultTimezone: "America/Sao_Paulo"

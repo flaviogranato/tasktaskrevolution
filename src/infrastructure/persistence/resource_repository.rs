@@ -562,8 +562,10 @@ mod tests {
         let resource1 = create_test_resource("test1", "dev-1", "dev");
         let resource2 = create_test_resource("test2", "dev-2", "dev");
 
-        repo.save(resource1.clone().into()).unwrap();
-        repo.save(resource2.clone().into()).unwrap();
+        repo.save_in_hierarchy(resource1.clone().into(), "COMP-001", None)
+            .unwrap();
+        repo.save_in_hierarchy(resource2.clone().into(), "COMP-001", None)
+            .unwrap();
 
         let resources = repo.find_all().unwrap();
         assert_eq!(resources.len(), 2);
@@ -621,11 +623,14 @@ mod tests {
         assert_eq!(repo.get_next_code("dev").unwrap(), "dev-1");
 
         // Add some resources
-        repo.save(create_test_resource("res1", "dev-1", "dev").into()).unwrap();
-        repo.save(create_test_resource("res2", "qa-1", "qa").into()).unwrap();
-        repo.save(create_test_resource("res3", "dev-2", "dev").into()).unwrap();
-        repo.save(create_test_resource("res4", "dev-5", "dev").into()) // Test with a gap
+        repo.save_in_hierarchy(create_test_resource("res1", "dev-1", "dev").into(), "COMP-001", None)
             .unwrap();
+        repo.save_in_hierarchy(create_test_resource("res2", "qa-1", "qa").into(), "COMP-001", None)
+            .unwrap();
+        repo.save_in_hierarchy(create_test_resource("res3", "dev-2", "dev").into(), "COMP-001", None)
+            .unwrap();
+        repo.save_in_hierarchy(create_test_resource("res4", "dev-5", "dev").into(), "COMP-001", None)
+            .unwrap(); // Test with a gap
 
         // Test again for both types
         assert_eq!(repo.get_next_code("dev").unwrap(), "dev-6");
@@ -696,7 +701,8 @@ mod tests {
         let repo = FileResourceRepository::new(temp_dir.path());
 
         let resource = create_test_resource("Test Resource", "TEST-001", "developer");
-        repo.save(resource.clone().into()).expect("Failed to save resource");
+        repo.save_in_hierarchy(resource.clone().into(), "COMP-001", None)
+            .expect("Failed to save resource");
 
         // Find resource by code
         let found_resource = repo.find_by_code("TEST-001");

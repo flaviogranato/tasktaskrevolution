@@ -138,6 +138,19 @@ mod tests {
             Ok(self.tasks.borrow().get(code).cloned())
         }
 
+        fn save_in_hierarchy(
+            &self,
+            task: AnyTask,
+            _company_code: &str,
+            _project_code: &str,
+        ) -> Result<AnyTask, DomainError> {
+            self.save(task)
+        }
+
+        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, DomainError> {
+            Ok(self.tasks.borrow().values().cloned().collect())
+        }
+
         fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, DomainError> {
             unimplemented!()
         }
@@ -165,6 +178,15 @@ mod tests {
 
         fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, DomainError> {
             Ok(self.resources.borrow().get(code).cloned())
+        }
+
+        fn save_in_hierarchy(
+            &self,
+            resource: AnyResource,
+            _company_code: &str,
+            _project_code: Option<&str>,
+        ) -> Result<AnyResource, DomainError> {
+            self.save(resource)
         }
 
         fn save_time_off(
@@ -408,6 +430,23 @@ mod tests {
 
             fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, DomainError> {
                 Ok(self.tasks.borrow().get(code).cloned())
+            }
+
+            fn save_in_hierarchy(
+                &self,
+                task: AnyTask,
+                _company_code: &str,
+                _project_code: &str,
+            ) -> Result<AnyTask, DomainError> {
+                self.save(task)
+            }
+
+            fn find_all_by_project(
+                &self,
+                _company_code: &str,
+                _project_code: &str,
+            ) -> Result<Vec<AnyTask>, DomainError> {
+                Ok(self.tasks.borrow().values().cloned().collect())
             }
 
             fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, DomainError> {

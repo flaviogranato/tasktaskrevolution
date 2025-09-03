@@ -346,7 +346,8 @@ mod tests {
         let repo = FileTaskRepository::new(temp_dir.path());
 
         let task = create_test_task("Test Task", "TEST-001", "PROJ-001");
-        repo.save(task.clone().into()).expect("Failed to save task");
+        repo.save_in_hierarchy(task.clone().into(), "COMP-001", "PROJ-001")
+            .expect("Failed to save task");
 
         // Find task by code
         let found_task = repo.find_by_code("TEST-001");
@@ -370,9 +371,12 @@ mod tests {
         let task2 = create_test_task("Task 2", "TASK-002", "PROJ-001");
         let task3 = create_test_task("Task 3", "TASK-003", "PROJ-002");
 
-        repo.save(task1.into()).expect("Failed to save task 1");
-        repo.save(task2.into()).expect("Failed to save task 2");
-        repo.save(task3.into()).expect("Failed to save task 3");
+        repo.save_in_hierarchy(task1.into(), "COMP-001", "PROJ-001")
+            .expect("Failed to save task 1");
+        repo.save_in_hierarchy(task2.into(), "COMP-001", "PROJ-001")
+            .expect("Failed to save task 2");
+        repo.save_in_hierarchy(task3.into(), "COMP-001", "PROJ-002")
+            .expect("Failed to save task 3");
 
         // Find tasks by project
         let proj1_tasks = repo
@@ -453,12 +457,24 @@ mod tests {
         assert_eq!(repo.get_next_code("PROJ-001").unwrap(), "PROJ-001-1");
 
         // Add some tasks
-        repo.save(create_test_task("Task 1", "PROJ-001-1", "PROJ-001").into())
-            .unwrap();
-        repo.save(create_test_task("Task 2", "PROJ-001-2", "PROJ-001").into())
-            .unwrap();
-        repo.save(create_test_task("Task 3", "PROJ-001-5", "PROJ-001").into())
-            .unwrap(); // Test with a gap
+        repo.save_in_hierarchy(
+            create_test_task("Task 1", "PROJ-001-1", "PROJ-001").into(),
+            "COMP-001",
+            "PROJ-001",
+        )
+        .unwrap();
+        repo.save_in_hierarchy(
+            create_test_task("Task 2", "PROJ-001-2", "PROJ-001").into(),
+            "COMP-001",
+            "PROJ-001",
+        )
+        .unwrap();
+        repo.save_in_hierarchy(
+            create_test_task("Task 3", "PROJ-001-5", "PROJ-001").into(),
+            "COMP-001",
+            "PROJ-001",
+        )
+        .unwrap(); // Test with a gap
 
         // Test again
         assert_eq!(repo.get_next_code("PROJ-001").unwrap(), "PROJ-001-6");

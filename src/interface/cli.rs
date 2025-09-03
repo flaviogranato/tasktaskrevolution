@@ -1540,7 +1540,10 @@ mod tests {
         let cli = Cli::try_parse_from(args).unwrap();
 
         if let Commands::Create { create_command } = cli.command {
-            if let CreateCommands::Resource { name, resource_type, .. } = create_command {
+            if let CreateCommands::Resource {
+                name, resource_type, ..
+            } = create_command
+            {
                 assert_eq!(name, "John Doe");
                 assert_eq!(resource_type, "Developer");
             } else {
