@@ -331,13 +331,13 @@ impl ProjectRepository for FileProjectRepository {
                 }
                 if let Ok(manifest) = self.load_manifest(manifest_path) {
                     // Extract company_code from path: companies/{company_code}/projects/{project_code}/project.yaml
-                                    if let Some(company_code) = self.extract_company_code_from_path(manifest_path)
-                    && let Ok(mut project) = self.create_project_with_company_code(manifest, &company_code)
-                    && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
-                {
-                    projects.push(project);
-                    processed_paths.insert(manifest_path.to_path_buf());
-                }
+                    if let Some(company_code) = self.extract_company_code_from_path(manifest_path)
+                        && let Ok(mut project) = self.create_project_with_company_code(manifest, &company_code)
+                        && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
+                    {
+                        projects.push(project);
+                        processed_paths.insert(manifest_path.to_path_buf());
+                    }
                 }
             }
         }
@@ -485,7 +485,12 @@ mod tests {
 
         // Load project by code - we need to implement find_by_code or use a different approach
         // For now, let's test that the project was saved by checking the file exists
-        let project_file = repo_path.join("Test Project").join("project.yaml");
+        let project_file = repo_path
+            .join("companies")
+            .join("COMP-001")
+            .join("projects")
+            .join("TEST-001")
+            .join("project.yaml");
         assert!(project_file.exists(), "Project file should exist after save");
     }
 
@@ -520,8 +525,18 @@ mod tests {
         repository.save(project2.into()).expect("Failed to save project 2");
 
         // Verify both projects were saved by checking files exist
-        let project1_file = repo_path.join("Project 1").join("project.yaml");
-        let project2_file = repo_path.join("Project 2").join("project.yaml");
+        let project1_file = repo_path
+            .join("companies")
+            .join("COMP-001")
+            .join("projects")
+            .join("PROJ-001")
+            .join("project.yaml");
+        let project2_file = repo_path
+            .join("companies")
+            .join("COMP-001")
+            .join("projects")
+            .join("PROJ-002")
+            .join("project.yaml");
 
         assert!(project1_file.exists(), "Project 1 file should exist");
         assert!(project2_file.exists(), "Project 2 file should exist");
@@ -546,7 +561,12 @@ mod tests {
             .expect("Failed to update project");
 
         // Verify update by checking file exists
-        let project_file = repo_path.join("Test Project").join("project.yaml");
+        let project_file = repo_path
+            .join("companies")
+            .join("COMP-001")
+            .join("projects")
+            .join("TEST-001")
+            .join("project.yaml");
         assert!(project_file.exists(), "Updated project file should exist");
     }
 
@@ -563,11 +583,21 @@ mod tests {
         repository.save(project.clone().into()).expect("Failed to save project");
 
         // Verify project exists
-        let project_file = repo_path.join("Test Project").join("project.yaml");
+        let project_file = repo_path
+            .join("companies")
+            .join("COMP-001")
+            .join("projects")
+            .join("TEST-001")
+            .join("project.yaml");
         assert!(project_file.exists(), "Project file should exist after save");
 
         // Verify project directory structure
-        let tasks_dir = repo_path.join("Test Project").join("tasks");
+        let tasks_dir = repo_path
+            .join("companies")
+            .join("COMP-001")
+            .join("projects")
+            .join("TEST-001")
+            .join("tasks");
         assert!(tasks_dir.exists(), "Tasks directory should exist");
     }
 
@@ -598,7 +628,12 @@ mod tests {
         repository.save(project.clone().into()).expect("Failed to save project");
 
         // Corrupt the YAML file
-        let project_file = repo_path.join("Test Project").join("project.yaml");
+        let project_file = repo_path
+            .join("companies")
+            .join("COMP-001")
+            .join("projects")
+            .join("TEST-001")
+            .join("project.yaml");
         fs::write(&project_file, "invalid: yaml: content: [").expect("Failed to corrupt file");
 
         // Note: We can't test loading corrupted files yet since find_by_code is not fully implemented
@@ -644,7 +679,12 @@ mod tests {
 
         // Verify all projects were saved by checking files exist
         for i in 1..=5 {
-            let project_file = repo_path.join(format!("Project {}", i)).join("project.yaml");
+            let project_file = repo_path
+                .join("companies")
+                .join("COMP-001")
+                .join("projects")
+                .join(format!("PROJ-{:03}", i))
+                .join("project.yaml");
             assert!(project_file.exists(), "Project {} file should exist", i);
         }
     }

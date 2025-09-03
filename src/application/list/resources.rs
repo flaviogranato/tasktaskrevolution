@@ -31,6 +31,16 @@ mod tests {
         fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
             Ok(None)
         }
+
+        fn save_in_hierarchy(
+            &self,
+            resource: AnyResource,
+            _company_code: &str,
+            _project_code: Option<&str>,
+        ) -> Result<AnyResource, DomainError> {
+            self.save(resource)
+        }
+
         fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
             unimplemented!()
         }

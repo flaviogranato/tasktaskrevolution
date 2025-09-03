@@ -1,5 +1,5 @@
 {% extends "base.html" %} 
-{% block title %}{{ resource.name }} - Resource Details - {{ super() }}{% endblock title %} 
+{% block title %}{{ company.name }} - Company Details - {{ super() }}{% endblock title %} 
 
 {% block content %}
 <div class="space-y-8">
@@ -27,51 +27,41 @@
                     <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                     </svg>
-                    <a href="{{ relative_path_prefix }}companies/{{ company.code }}/resources.html" class="ml-1 text-sm font-medium text-slate-700 hover:text-blue-600 md:ml-2">Resources</a>
-                </div>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="ml-1 text-sm font-medium text-slate-500 md:ml-2">{{ resource.name }}</span>
+                    <span class="ml-1 text-sm font-medium text-slate-500 md:ml-2">Details</span>
                 </div>
             </li>
         </ol>
     </nav>
 
-    <!-- Resource Header -->
+    <!-- Company Header -->
     <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
         <div class="flex items-start justify-between">
             <div>
                 <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ resource.name }}
+                    {{ company.name }}
                 </h2>
                 <p class="mt-2 text-lg text-slate-600">
-                    {{ resource.description | default(value="No description provided.") }}
+                    {{ company.description | default(value="No description provided.") }}
                 </p>
                 <div class="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
-                    <span><strong>Code:</strong> {{ resource.code }}</span>
-                    <span><strong>Type:</strong> {{ resource.resource_type }}</span>
-                    <span><strong>Email:</strong> {{ resource.email | default(value="N/A") }}</span>
-                    <span><strong>Company:</strong> {{ company.name }} ({{ company.code }})</span>
+                    <span><strong>Code:</strong> {{ company.code }}</span>
+                    <span><strong>Created:</strong> {{ company.created_at | default(value="N/A") }}</span>
                 </div>
             </div>
             <div class="flex space-x-2">
-                <a href="{{ relative_path_prefix }}companies/{{ company.code }}/resources.html" 
+                <a href="{{ relative_path_prefix }}companies/{{ company.code }}/index.html" 
                    class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                     </svg>
-                    Back to Resources
+                    Back to Company
                 </a>
             </div>
         </div>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
@@ -80,7 +70,7 @@
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-slate-500">Active Projects</p>
+                    <p class="text-sm font-medium text-slate-500">Total Projects</p>
                     <p class="text-2xl font-semibold text-slate-900">{{ projects | length }}</p>
                 </div>
             </div>
@@ -90,26 +80,12 @@
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-slate-500">Assigned Tasks</p>
-                    <p class="text-2xl font-semibold text-slate-900">{{ tasks | length }}</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm font-medium text-slate-500">Time Off Balance</p>
-                    <p class="text-2xl font-semibold text-slate-900">{{ resource.time_off_balance | default(value=0) }}</p>
+                    <p class="text-sm font-medium text-slate-500">Total Resources</p>
+                    <p class="text-2xl font-semibold text-slate-900">{{ resources | length }}</p>
                 </div>
             </div>
         </div>
@@ -118,66 +94,13 @@
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm font-medium text-slate-500">Utilization</p>
-                    <p class="text-2xl font-semibold text-slate-900">{{ utilization_percentage }}%</p>
+                    <p class="text-sm font-medium text-slate-500">Total Tasks</p>
+                    <p class="text-2xl font-semibold text-slate-900">{{ total_tasks | default(value=0) }}</p>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Resource Information -->
-    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
-        <h3 class="text-xl font-semibold text-slate-800 mb-6">Resource Information</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <h4 class="text-sm font-medium text-slate-500 uppercase tracking-wider mb-3">Basic Information</h4>
-                <dl class="space-y-2">
-                    <div>
-                        <dt class="text-sm font-medium text-slate-500">Resource Type</dt>
-                        <dd class="mt-1">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                {% if resource.resource_type == "Human" %}bg-blue-100 text-blue-800
-                                {% elif resource.resource_type == "Equipment" %}bg-green-100 text-green-800
-                                {% elif resource.resource_type == "Material" %}bg-yellow-100 text-yellow-800
-                                {% else %}bg-slate-100 text-slate-800{% endif %}">
-                                {{ resource.resource_type }}
-                            </span>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-slate-500">Email</dt>
-                        <dd class="mt-1 text-sm text-slate-900">{{ resource.email | default(value="Not provided") }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-slate-500">Time Off Balance</dt>
-                        <dd class="mt-1 text-sm text-slate-900">{{ resource.time_off_balance | default(value=0) }} days</dd>
-                    </div>
-                </dl>
-            </div>
-            <div>
-                <h4 class="text-sm font-medium text-slate-500 uppercase tracking-wider mb-3">Availability</h4>
-                <dl class="space-y-2">
-                    <div>
-                        <dt class="text-sm font-medium text-slate-500">Status</dt>
-                        <dd class="mt-1">
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Available
-                            </span>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-slate-500">Capacity</dt>
-                        <dd class="mt-1 text-sm text-slate-900">{{ capacity_hours | default(value="Not specified") }} hours/day</dd>
-                    </div>
-                    <div>
-                        <dt class="text-sm font-medium text-slate-500">Current Load</dt>
-                        <dd class="mt-1 text-sm text-slate-900">{{ current_load_hours | default(value=0) }} hours/day</dd>
-                    </div>
-                </dl>
             </div>
         </div>
     </div>
@@ -185,7 +108,7 @@
     <!-- Projects Section -->
     <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-slate-800">Active Projects</h3>
+            <h3 class="text-xl font-semibold text-slate-800">Projects</h3>
             <a href="{{ relative_path_prefix }}companies/{{ company.code }}/index.html" 
                class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                 View All Projects →
@@ -239,40 +162,37 @@
             <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-slate-900">No active projects</h3>
-            <p class="mt-1 text-sm text-slate-500">This resource is not assigned to any projects.</p>
+            <h3 class="mt-2 text-sm font-medium text-slate-900">No projects</h3>
+            <p class="mt-1 text-sm text-slate-500">This company has no projects yet.</p>
         </div>
         {% endif %}
     </div>
 
-    <!-- Tasks Section -->
+    <!-- Resources Section -->
     <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
         <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-slate-800">Assigned Tasks</h3>
-            <a href="{{ relative_path_prefix }}companies/{{ company.code }}/tasks.html" 
+            <h3 class="text-xl font-semibold text-slate-800">Resources</h3>
+            <a href="{{ relative_path_prefix }}companies/{{ company.code }}/resources.html" 
                class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                View All Tasks →
+                View All Resources →
             </a>
         </div>
-        {% if tasks %}
+        {% if resources %}
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200">
                 <thead class="bg-slate-50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Task Name
+                            Name
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Project
+                            Code
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Status
+                            Type
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Start Date
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            End Date
+                            Email
                         </th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                             Actions
@@ -280,54 +200,28 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-slate-200">
-                    {% for task in tasks %}
+                    {% for resource in resources %}
                     <tr class="hover:bg-slate-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-slate-900">
-                                {{ task.name }}
-                            </div>
-                            <div class="text-sm text-slate-500">
-                                {{ task.code }}
-                            </div>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                            {{ resource.name }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                            {{ task.project_code }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            {% if task.status == "InProgress" %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                                In Progress
-                            </span>
-                            {% elif task.status == "Blocked" %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-800">
-                                Blocked
-                            </span>
-                            {% elif task.status == "Planned" %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-800">
-                                Planned
-                            </span>
-                            {% elif task.status == "Completed" %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-green-100 text-green-800">
-                                Completed
-                            </span>
-                            {% elif task.status == "Cancelled" %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
-                                Cancelled
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800">
-                                Unknown
-                            </span>
-                            {% endif %}
+                            {{ resource.code }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                            {{ task.start_date | date(format="%Y-%m-%d") }}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if resource.resource_type == "Human" %}bg-blue-100 text-blue-800
+                                {% elif resource.resource_type == "Equipment" %}bg-green-100 text-green-800
+                                {% elif resource.resource_type == "Material" %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-slate-100 text-slate-800{% endif %}">
+                                {{ resource.resource_type }}
+                            </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                            {{ task.due_date | date(format="%Y-%m-%d") }}
+                            {{ resource.email | default(value="N/A") }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{{ relative_path_prefix }}companies/{{ company.code }}/projects/{{ task.project_code }}/tasks/{{ task.code }}/detail.html" 
+                            <a href="{{ relative_path_prefix }}companies/{{ company.code }}/resources/{{ resource.code }}/detail.html" 
                                class="text-blue-600 hover:text-blue-900">View Details</a>
                         </td>
                     </tr>
@@ -338,10 +232,10 @@
         {% else %}
         <div class="text-center py-8">
             <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-slate-900">No assigned tasks</h3>
-            <p class="mt-1 text-sm text-slate-500">This resource has no assigned tasks.</p>
+            <h3 class="mt-2 text-sm font-medium text-slate-900">No resources</h3>
+            <p class="mt-1 text-sm text-slate-500">This company has no resources yet.</p>
         </div>
         {% endif %}
     </div>
