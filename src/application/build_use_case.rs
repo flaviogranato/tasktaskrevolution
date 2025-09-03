@@ -209,6 +209,18 @@ impl BuildUseCase {
         };
         fs::write(self.output_dir.join("index.html"), index_html)?;
         println!("✅ Global index page generated successfully.");
+
+        // Generate companies.html page
+        let companies_html = match self.tera.render("index.html", &context) {
+            Ok(html) => html,
+            Err(e) => {
+                eprintln!("Template render error for companies.html: {:?}", e);
+                return Err(format!("Template error: {}", e).into());
+            }
+        };
+        fs::write(self.output_dir.join("companies.html"), companies_html)?;
+        println!("✅ Companies page generated successfully.");
+
         println!("[INFO] About to start company pages generation...");
         println!("[INFO] Companies with data count: {}", companies_with_data.len());
         println!(
