@@ -35,6 +35,18 @@ regex = "1.10"
 assert_cmd = "2.0"
 predicates = "3.1"
 
+[[test]]
+name = "advanced_workflows"
+path = "tests/integration/advanced_workflows.rs"
+
+[[test]]
+name = "data_validation"
+path = "tests/integration/data_validation.rs"
+
+[[test]]
+name = "error_scenarios"
+path = "tests/integration/error_scenarios.rs"
+
 [profile.release]
 opt-level = 3
 lto = true
