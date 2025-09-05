@@ -1,6 +1,9 @@
 use crate::{
-    application::company_management::{CreateCompanyArgs, CreateCompanyUseCase},
-    infrastructure::persistence::company_repository::FileCompanyRepository,
+    application::{
+        company_management::CreateCompanyArgs,
+        di::CreateUseCaseService,
+    },
+    interface::cli::handlers::DI_HANDLER,
 };
 use super::super::commands::CompanyCommand;
 
@@ -11,8 +14,8 @@ pub fn handle_company_command(command: CompanyCommand) -> Result<(), Box<dyn std
             code,
             description,
         } => {
-            let company_repository = FileCompanyRepository::new();
-            let create_use_case = CreateCompanyUseCase::new(company_repository);
+            let container = DI_HANDLER.get_container()?;
+            let create_service: std::sync::Arc<CreateUseCaseService> = container.resolve()?;
 
             let args = CreateCompanyArgs {
                 name,
@@ -20,7 +23,7 @@ pub fn handle_company_command(command: CompanyCommand) -> Result<(), Box<dyn std
                 description,
             };
 
-            match create_use_case.execute(args) {
+            match create_service.create_company.execute(args) {
                 Ok(company) => {
                     println!("✅ Company created successfully!");
                     println!("   Name: {}", company.name());

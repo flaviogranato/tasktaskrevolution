@@ -31,23 +31,20 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             start_date,
             end_date,
         } => {
-            let project_repository = FileProjectRepository::new();
-            let company_repository = FileCompanyRepository::new();
-            let create_use_case = CreateProjectUseCase::new(project_repository, company_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let create_use_case = CreateProjectUseCase::new(project_repository);
 
             let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
             let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            match create_use_case.execute(name, code, company, description, start, end) {
-                Ok(project) => {
+            match create_use_case.execute(&name, &code, &company, description.as_deref(), start, end) {
+                Ok(_) => {
                     println!("✅ Project created successfully!");
-                    println!("   Name: {}", project.name());
-                    println!("   Code: {}", project.code());
-                    println!("   Company: {}", project.company_code());
-                    println!("   Start: {}", project.start_date());
-                    println!("   End: {}", project.end_date());
+                    println!("   Name: {}", name);
+                    println!("   Code: {}", code);
+                    println!("   Company: {}", company);
                     Ok(())
                 }
                 Err(e) => {
@@ -63,42 +60,16 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             company,
             params,
         } => {
-            let project_repository = FileProjectRepository::new();
-            let company_repository = FileCompanyRepository::new();
-            let load_use_case = LoadTemplateUseCase::new();
-            let create_use_case = CreateFromTemplateUseCase::new(project_repository, company_repository);
-
-            let templates_dir = std::path::Path::new("templates/projects");
-            let template_data = load_use_case.load_by_name(templates_dir, &template)?;
-
-            let mut template_params = HashMap::new();
-            for param in params {
-                if let Some((key, value)) = param.split_once('=') {
-                    template_params.insert(key.to_string(), value.to_string());
-                }
-            }
-
-            match create_use_case.execute(template_data, name, code, company, template_params) {
-                Ok(project) => {
-                    println!("✅ Project created from template successfully!");
-                    println!("   Name: {}", project.name());
-                    println!("   Code: {}", project.code());
-                    println!("   Company: {}", project.company_code());
-                    Ok(())
-                }
-                Err(e) => {
-                    eprintln!("❌ Failed to create project from template: {}", e);
-                    Err(e.into())
-                }
-            }
+            // Este comando foi movido para template_handler.rs
+            return Err("FromTemplate command should be handled by template_handler".into());
         }
         ProjectCommand::Describe { code, company } => {
-            let project_repository = FileProjectRepository::new();
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let describe_use_case = DescribeProjectUseCase::new(project_repository);
 
-            match describe_use_case.execute(code, company) {
+            match describe_use_case.execute(&code) {
                 Ok(description) => {
-                    println!("{}", description);
+                    println!("{:?}", description);
                     Ok(())
                 }
                 Err(e) => {
@@ -115,7 +86,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             start_date,
             end_date,
         } => {
-            let project_repository = FileProjectRepository::new();
+            let project_repository = FileProjectRepository::with_base_path("."into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
             let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
@@ -128,11 +99,9 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             let args = UpdateProjectArgs {
                 name,
                 description,
-                start_date: start,
-                end_date: end,
             };
 
-            match update_use_case.execute(code, company, args) {
+            match update_use_case.execute(&code, args) {
                 Ok(_) => {
                     println!("✅ Project updated successfully!");
                     Ok(())
@@ -144,10 +113,10 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             }
         }
         ProjectCommand::Cancel { code, company } => {
-            let project_repository = FileProjectRepository::new();
+            let project_repository = FileProjectRepository::with_base_path("."into());
             let cancel_use_case = CancelProjectUseCase::new(project_repository);
 
-            match cancel_use_case.execute(code, company) {
+            match cancel_use_case.execute(&code) {
                 Ok(_) => {
                     println!("✅ Project cancelled successfully!");
                     Ok(())
@@ -164,10 +133,11 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             task,
             resource,
         } => {
-            let project_repository = FileProjectRepository::new();
-            let assign_use_case = AssignResourceToTaskUseCase::new(project_repository);
+            let project_repository = FileProjectRepository::with_base_path("."into());
+            let resource_repository = crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
+            let assign_use_case = AssignResourceToTaskUseCase::new(project_repository, resource_repository);
 
-            match assign_use_case.execute(project, company, task, resource) {
+            match assign_use_case.execute(&project, &task, &resource) {
                 Ok(_) => {
                     println!("✅ Resource assigned to task successfully!");
                     Ok(())

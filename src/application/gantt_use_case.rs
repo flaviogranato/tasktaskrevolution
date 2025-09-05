@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn test_gantt_use_case_creation() {
         let temp_dir = tempdir().unwrap();
-        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+        let _use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
         // Teste que a criação funciona sem erros
         assert!(true);
     }
@@ -133,9 +133,9 @@ mod tests {
     #[test]
     fn test_generate_demo_gantt() {
         let temp_dir = tempdir().unwrap();
-        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+        let _use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
-        let gantt = use_case.generate_demo_gantt().unwrap();
+        let gantt = _use_case.generate_demo_gantt().unwrap();
         assert_eq!(gantt.tasks.len(), 4);
         assert_eq!(gantt.dependencies.len(), 3);
     }

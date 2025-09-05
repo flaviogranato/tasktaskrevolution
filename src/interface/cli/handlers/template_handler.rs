@@ -1,12 +1,21 @@
 use crate::{
-    application::template::{
-        create_from_template::CreateFromTemplateUseCase,
-        list_templates::ListTemplatesUseCase,
-        load_template::LoadTemplateUseCase,
+    application::{
+        template::{
+            create_from_template::CreateFromTemplateUseCase,
+            list_templates::ListTemplatesUseCase,
+            load_template::LoadTemplateUseCase,
+        },
+        create::{
+            project::CreateProjectUseCase,
+            resource::CreateResourceUseCase,
+            task::CreateTaskUseCase,
+        },
     },
     infrastructure::persistence::{
         project_repository::FileProjectRepository,
         company_repository::FileCompanyRepository,
+        resource_repository::FileResourceRepository,
+        task_repository::FileTaskRepository,
     },
 };
 use super::super::commands::TemplateCommand;
@@ -44,9 +53,12 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
                 Ok(template) => {
                     println!("Template: {}", template.metadata.name);
                     println!("Description: {}", template.metadata.description);
-                    println!("Parameters:");
-                    for param in template.metadata.parameters {
-                        println!("  - {}: {}", param.name, param.description);
+                    println!("Version: {}", template.metadata.version);
+                    println!("Category: {}", template.metadata.category);
+                    println!("Tags: {:?}", template.metadata.tags);
+                    println!("Variables:");
+                    for (name, variable) in &template.spec.variables {
+                        println!("  - {}: {} ({})", name, variable.description, variable.r#type);
                     }
                     Ok(())
                 }
@@ -63,14 +75,14 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
             company,
             params,
         } => {
-            let project_repository = FileProjectRepository::new();
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let resource_repository = FileResourceRepository::new(".");
             let company_repository = FileCompanyRepository::new(".");
             let task_repository = FileTaskRepository::new(".");
             
-            let create_project_use_case = CreateProjectUseCase::new(project_repository, company_repository);
+            let create_project_use_case = CreateProjectUseCase::new(project_repository);
             let create_resource_use_case = CreateResourceUseCase::new(resource_repository);
-            let create_task_use_case = CreateTaskUseCase::new(task_repository, FileProjectRepository::new());
+            let create_task_use_case = CreateTaskUseCase::new(FileProjectRepository::with_base_path(".".into()));
             
             let load_use_case = LoadTemplateUseCase::new();
             let create_use_case = CreateFromTemplateUseCase::new(create_project_use_case, create_resource_use_case, create_task_use_case);
@@ -85,12 +97,10 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
                 }
             }
 
-            match create_use_case.execute(&template_data, &template_params, &code) {
+            match create_use_case.execute(&template_data, &template_params, code) {
                 Ok(project) => {
                     println!("✅ Project created from template successfully!");
-                    println!("   Name: {}", project.name);
-                    println!("   Code: {}", project.code);
-                    println!("   Company: {}", project.company_code);
+                    println!("   Project created from template successfully!");
                     Ok(())
                 }
                 Err(e) => {
