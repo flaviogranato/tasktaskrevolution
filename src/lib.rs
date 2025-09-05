@@ -1,5 +1,5 @@
 //! TaskTaskRevolution Library
-//! 
+//!
 //! Esta biblioteca contém a lógica principal do TTR CLI,
 //! separada da interface de linha de comando para facilitar
 //! testes unitários e reutilização.
@@ -35,7 +35,7 @@ impl AppConfig {
             timezone: None,
         }
     }
-    
+
     pub fn with_timezone(mut self, timezone: String) -> Self {
         self.timezone = Some(timezone);
         self
@@ -74,7 +74,7 @@ impl TestableOperation for InitOperation {
             self.config.timezone.as_deref().unwrap_or("UTC")
         ))
     }
-    
+
     fn validate(&self) -> CliResult<()> {
         if self.config.name.is_empty() {
             return Err("Name cannot be empty".into());
@@ -101,10 +101,10 @@ mod tests {
             "Test Company".to_string(),
         );
         let operation = InitOperation::new(config);
-        
+
         assert!(operation.validate().is_ok());
     }
-    
+
     #[test]
     fn test_init_operation_validation_empty_name() {
         let config = AppConfig::new(
@@ -113,21 +113,22 @@ mod tests {
             "Test Company".to_string(),
         );
         let operation = InitOperation::new(config);
-        
+
         assert!(operation.validate().is_err());
     }
-    
+
     #[test]
     fn test_init_operation_execute() {
         let config = AppConfig::new(
             "Test Manager".to_string(),
             "test@example.com".to_string(),
             "Test Company".to_string(),
-        ).with_timezone("America/Sao_Paulo".to_string());
-        
+        )
+        .with_timezone("America/Sao_Paulo".to_string());
+
         let operation = InitOperation::new(config);
         let result = operation.execute().unwrap();
-        
+
         assert!(result.contains("Test Manager"));
         assert!(result.contains("test@example.com"));
         assert!(result.contains("Test Company"));

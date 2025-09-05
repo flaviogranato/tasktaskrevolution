@@ -1,11 +1,11 @@
 //! Sistema de Dependências Avançado
-//! 
+//!
 //! Este módulo implementa um sistema robusto de dependências entre tarefas
 //! com suporte a diferentes tipos de dependência e gaps temporais.
 
-use chrono::{NaiveDate, Duration, Days};
-use std::collections::{HashMap, HashSet, VecDeque};
+use chrono::{Days, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 
@@ -31,7 +31,7 @@ impl DependencyType {
     pub fn description(&self) -> &'static str {
         match self {
             DependencyType::FinishToStart => "Finish to Start",
-            DependencyType::StartToStart => "Start to Start", 
+            DependencyType::StartToStart => "Start to Start",
             DependencyType::FinishToFinish => "Finish to Finish",
             DependencyType::StartToFinish => "Start to Finish",
         }
@@ -42,7 +42,7 @@ impl DependencyType {
         match self {
             DependencyType::FinishToStart => "FS",
             DependencyType::StartToStart => "SS",
-            DependencyType::FinishToFinish => "FF", 
+            DependencyType::FinishToFinish => "FF",
             DependencyType::StartToFinish => "SF",
         }
     }
@@ -80,19 +80,21 @@ impl LagType {
         match self {
             LagType::Positive(duration) => {
                 let days = Days::new(duration.num_days() as u64);
-                base_date.checked_add_days(days)
-                    .ok_or_else(|| DomainError::new(DomainErrorKind::ValidationError {
+                base_date.checked_add_days(days).ok_or_else(|| {
+                    DomainError::new(DomainErrorKind::ValidationError {
                         field: "lag".to_string(),
                         message: "Invalid positive lag duration".to_string(),
-                    }))
+                    })
+                })
             }
             LagType::Negative(duration) => {
                 let days = Days::new(duration.num_days() as u64);
-                base_date.checked_sub_days(days)
-                    .ok_or_else(|| DomainError::new(DomainErrorKind::ValidationError {
+                base_date.checked_sub_days(days).ok_or_else(|| {
+                    DomainError::new(DomainErrorKind::ValidationError {
                         field: "lag".to_string(),
                         message: "Invalid negative lag duration".to_string(),
-                    }))
+                    })
+                })
             }
             LagType::Zero => Ok(base_date),
         }
@@ -175,7 +177,7 @@ impl AdvancedDependency {
             self.lag.description(),
             self.successor_id
         );
-        
+
         if let Some(desc) = &self.description {
             format!("{} ({})", base, desc)
         } else {
@@ -296,16 +298,14 @@ impl AdvancedDependencyGraph {
         }
 
         // Atualizar nós
-        if let Some(node) = self.nodes.get_mut(&dependency.predecessor_id) {
-            if !node.successors.contains(&dependency.successor_id) {
-                node.successors.push(dependency.successor_id.clone());
-            }
+        if let Some(node) = self.nodes.get_mut(&dependency.predecessor_id)
+            && !node.successors.contains(&dependency.successor_id) {
+            node.successors.push(dependency.successor_id.clone());
         }
 
-        if let Some(node) = self.nodes.get_mut(&dependency.successor_id) {
-            if !node.predecessors.contains(&dependency.predecessor_id) {
-                node.predecessors.push(dependency.predecessor_id.clone());
-            }
+        if let Some(node) = self.nodes.get_mut(&dependency.successor_id)
+            && !node.predecessors.contains(&dependency.predecessor_id) {
+            node.predecessors.push(dependency.predecessor_id.clone());
         }
 
         Ok(())
@@ -331,7 +331,7 @@ impl AdvancedDependencyGraph {
         if task_id == target_id {
             return false; // Uma tarefa não é predecessora de si mesma
         }
-        
+
         let mut visited = HashSet::new();
         let mut queue = VecDeque::new();
         queue.push_back(task_id.to_string());
@@ -358,10 +358,9 @@ impl AdvancedDependencyGraph {
 
     /// Remove uma dependência
     pub fn remove_dependency(&mut self, predecessor_id: &str, successor_id: &str) -> Result<(), DomainError> {
-        if let Some(deps) = self.dependencies.get_mut(predecessor_id) {
-            if let Some(pos) = deps.iter().position(|dep| dep.successor_id == successor_id) {
-                deps.remove(pos);
-            }
+        if let Some(deps) = self.dependencies.get_mut(predecessor_id)
+            && let Some(pos) = deps.iter().position(|dep| dep.successor_id == successor_id) {
+            deps.remove(pos);
         }
 
         // Atualizar nós
@@ -378,7 +377,10 @@ impl AdvancedDependencyGraph {
 
     /// Retorna todas as dependências de uma tarefa
     pub fn get_dependencies(&self, task_id: &str) -> Vec<&AdvancedDependency> {
-        self.dependencies.get(task_id).map(|deps| deps.iter().collect()).unwrap_or_default()
+        self.dependencies
+            .get(task_id)
+            .map(|deps| deps.iter().collect())
+            .unwrap_or_default()
     }
 
     /// Retorna todas as dependências que apontam para uma tarefa
@@ -407,7 +409,7 @@ impl AdvancedDependencyGraph {
     /// Valida a integridade do grafo
     pub fn validate(&self) -> Result<(), DomainError> {
         // Verificar se todas as dependências referenciam tarefas existentes
-        for (_task_id, deps) in &self.dependencies {
+        for deps in self.dependencies.values() {
             for dep in deps {
                 if !self.nodes.contains_key(&dep.predecessor_id) {
                     return Err(DomainError::new(DomainErrorKind::ValidationError {
@@ -483,13 +485,19 @@ mod tests {
     #[test]
     fn test_lag_type_apply_to_date() {
         let base_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
-        
+
         let positive = LagType::positive_days(5);
         let negative = LagType::negative_days(2);
         let zero = LagType::zero();
 
-        assert_eq!(positive.apply_to_date(base_date).unwrap(), NaiveDate::from_ymd_opt(2024, 1, 6).unwrap());
-        assert_eq!(negative.apply_to_date(base_date).unwrap(), NaiveDate::from_ymd_opt(2023, 12, 30).unwrap());
+        assert_eq!(
+            positive.apply_to_date(base_date).unwrap(),
+            NaiveDate::from_ymd_opt(2024, 1, 6).unwrap()
+        );
+        assert_eq!(
+            negative.apply_to_date(base_date).unwrap(),
+            NaiveDate::from_ymd_opt(2023, 12, 30).unwrap()
+        );
         assert_eq!(zero.apply_to_date(base_date).unwrap(), base_date);
     }
 
@@ -558,7 +566,7 @@ mod tests {
     fn test_task_node_creation() {
         let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
         let end_date = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
-        
+
         let node = TaskNode::new(
             "task1".to_string(),
             "Test Task".to_string(),
@@ -584,13 +592,7 @@ mod tests {
     #[test]
     fn test_dependency_graph_add_task() {
         let mut graph = AdvancedDependencyGraph::new();
-        let task = TaskNode::new(
-            "task1".to_string(),
-            "Test Task".to_string(),
-            None,
-            None,
-            None,
-        );
+        let task = TaskNode::new("task1".to_string(), "Test Task".to_string(), None, None, None);
 
         graph.add_task(task);
         assert!(graph.nodes.contains_key("task1"));
@@ -600,11 +602,11 @@ mod tests {
     #[test]
     fn test_dependency_graph_add_dependency() {
         let mut graph = AdvancedDependencyGraph::new();
-        
+
         // Adicionar tarefas
         let task1 = TaskNode::new("task1".to_string(), "Task 1".to_string(), None, None, None);
         let task2 = TaskNode::new("task2".to_string(), "Task 2".to_string(), None, None, None);
-        
+
         graph.add_task(task1);
         graph.add_task(task2);
 
@@ -625,10 +627,10 @@ mod tests {
     #[test]
     fn test_dependency_graph_circular_dependency() {
         let mut graph = AdvancedDependencyGraph::new();
-        
+
         let task1 = TaskNode::new("task1".to_string(), "Task 1".to_string(), None, None, None);
         let task2 = TaskNode::new("task2".to_string(), "Task 2".to_string(), None, None, None);
-        
+
         graph.add_task(task1);
         graph.add_task(task2);
 
@@ -658,10 +660,10 @@ mod tests {
     #[test]
     fn test_dependency_graph_validation() {
         let mut graph = AdvancedDependencyGraph::new();
-        
+
         let task1 = TaskNode::new("task1".to_string(), "Task 1".to_string(), None, None, None);
         let task2 = TaskNode::new("task2".to_string(), "Task 2".to_string(), None, None, None);
-        
+
         graph.add_task(task1);
         graph.add_task(task2);
 
@@ -681,10 +683,10 @@ mod tests {
     #[test]
     fn test_dependency_graph_validation_with_cycle() {
         let mut graph = AdvancedDependencyGraph::new();
-        
+
         let task1 = TaskNode::new("task1".to_string(), "Task 1".to_string(), None, None, None);
         let task2 = TaskNode::new("task2".to_string(), "Task 2".to_string(), None, None, None);
-        
+
         graph.add_task(task1);
         graph.add_task(task2);
 

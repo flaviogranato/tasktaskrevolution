@@ -94,7 +94,7 @@ impl ProjectTemplate {
         if self.metadata.name.is_empty() {
             return Err("Template name cannot be empty".to_string());
         }
-        
+
         if self.metadata.version.is_empty() {
             return Err("Template version cannot be empty".to_string());
         }
@@ -178,7 +178,11 @@ impl ProjectTemplate {
         })
     }
 
-    fn render_resource(&self, resource: &TemplateResource, variables: &HashMap<String, String>) -> Result<RenderedResource, String> {
+    fn render_resource(
+        &self,
+        resource: &TemplateResource,
+        variables: &HashMap<String, String>,
+    ) -> Result<RenderedResource, String> {
         Ok(RenderedResource {
             name: self.render_string(&resource.name, variables)?,
             r#type: self.render_string(&resource.r#type, variables)?,
@@ -200,7 +204,7 @@ impl ProjectTemplate {
 
     fn render_string(&self, template: &str, variables: &HashMap<String, String>) -> Result<String, String> {
         let mut result = template.to_string();
-        
+
         for (key, value) in variables {
             let placeholder = format!("{{{{{}}}}}", key);
             result = result.replace(&placeholder, value);

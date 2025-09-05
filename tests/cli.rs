@@ -1,5 +1,5 @@
 //! Testes funcionais do CLI TTR usando assert_cmd e predicates
-//! 
+//!
 //! Estes testes executam o binário CLI compilado e validam:
 //! - Comandos CLI funcionam corretamente
 //! - Saídas são as esperadas
@@ -7,11 +7,11 @@
 //! - Arquivos são gerados corretamente
 
 use assert_cmd::prelude::*;
-use predicates::prelude::*;
 use assert_fs::prelude::*;
-use std::process::Command;
+use predicates::prelude::*;
 use serde_yaml::Value;
 use std::fs;
+use std::process::Command;
 
 /// Validador YAML robusto para verificar campos obrigatórios
 struct YamlValidator {
@@ -25,12 +25,12 @@ impl YamlValidator {
         let parsed: Value = serde_yaml::from_str(&content)?;
         Ok(Self { content, parsed })
     }
-    
+
     /// Verifica se um campo existe no caminho especificado
     fn has_field(&self, path: &str) -> bool {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = &self.parsed;
-        
+
         for part in parts {
             if let Some(map) = current.as_mapping() {
                 if let Some(value) = map.get(part) {
@@ -44,12 +44,12 @@ impl YamlValidator {
         }
         true
     }
-    
+
     /// Verifica se um campo tem um valor específico
     fn field_equals(&self, path: &str, expected: &str) -> bool {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = &self.parsed;
-        
+
         for part in parts {
             if let Some(map) = current.as_mapping() {
                 if let Some(value) = map.get(part) {
@@ -61,19 +61,19 @@ impl YamlValidator {
                 return false;
             }
         }
-        
+
         if let Some(str_value) = current.as_str() {
             str_value == expected
         } else {
             false
         }
     }
-    
+
     /// Verifica se um campo não está vazio
     fn field_not_empty(&self, path: &str) -> bool {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = &self.parsed;
-        
+
         for part in parts {
             if let Some(map) = current.as_mapping() {
                 if let Some(value) = map.get(part) {
@@ -85,25 +85,22 @@ impl YamlValidator {
                 return false;
             }
         }
-        
+
         if let Some(str_value) = current.as_str() {
             !str_value.is_empty()
         } else {
             false
         }
     }
-    
+
     /// Verifica se o arquivo contém uma string específica
     fn contains(&self, text: &str) -> bool {
         self.content.contains(text)
     }
-    
+
     /// Valida estrutura básica do YAML (apiVersion, kind, metadata, spec)
     fn validate_basic_structure(&self) -> bool {
-        self.has_field("apiVersion") && 
-        self.has_field("kind") && 
-        self.has_field("metadata") && 
-        self.has_field("spec")
+        self.has_field("apiVersion") && self.has_field("kind") && self.has_field("metadata") && self.has_field("spec")
     }
 }
 
@@ -111,13 +108,13 @@ impl YamlValidator {
 #[test]
 fn test_help_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
-    
+
     cmd.arg("--help");
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("utilitário de linha de comando"))
         .stdout(predicate::str::contains("Usage: ttr"));
-    
+
     Ok(())
 }
 
@@ -125,12 +122,10 @@ fn test_help_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_version_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
-    
+
     cmd.arg("--version");
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("0.5.6"));
-    
+    cmd.assert().success().stdout(predicate::str::contains("0.5.6"));
+
     Ok(())
 }
 
@@ -139,56 +134,89 @@ fn test_version_command() -> Result<(), Box<dyn std::error::Error>> {
 fn test_init_command() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let config_file = temp.child("config.yaml");
-    
+
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Manager/Consultant configured successfully"))
         .stdout(predicate::str::contains("Test Manager"))
         .stdout(predicate::str::contains("test@example.com"))
         .stdout(predicate::str::contains("Test Company"));
-    
+
     // Verificar se o arquivo de configuração foi criado
     config_file.assert(predicate::path::exists());
-    
+
     // Validar conteúdo YAML do config.yaml
     let validator = YamlValidator::new(config_file.path())?;
-    
+
     // Validar estrutura básica
-    assert!(validator.validate_basic_structure(), "Config YAML deve ter estrutura básica (apiVersion, kind, metadata, spec)");
-    
+    assert!(
+        validator.validate_basic_structure(),
+        "Config YAML deve ter estrutura básica (apiVersion, kind, metadata, spec)"
+    );
+
     // Validar campos obrigatórios do config.yaml
     assert!(validator.has_field("apiVersion"), "Config deve ter apiVersion");
     assert!(validator.has_field("kind"), "Config deve ter kind");
     assert!(validator.has_field("metadata"), "Config deve ter metadata");
     assert!(validator.has_field("spec"), "Config deve ter spec");
-    
+
     // Validar campos específicos do spec
-    assert!(validator.has_field("spec.managerName"), "Config deve ter spec.managerName");
-    assert!(validator.has_field("spec.managerEmail"), "Config deve ter spec.managerEmail");
-    assert!(validator.has_field("spec.defaultTimezone"), "Config deve ter spec.defaultTimezone");
-    
+    assert!(
+        validator.has_field("spec.managerName"),
+        "Config deve ter spec.managerName"
+    );
+    assert!(
+        validator.has_field("spec.managerEmail"),
+        "Config deve ter spec.managerEmail"
+    );
+    assert!(
+        validator.has_field("spec.defaultTimezone"),
+        "Config deve ter spec.defaultTimezone"
+    );
+
     // Validar valores específicos
-    assert!(validator.field_equals("spec.managerName", "Test Manager"), "managerName deve ser 'Test Manager'");
-    assert!(validator.field_equals("spec.managerEmail", "test@example.com"), "managerEmail deve ser 'test@example.com'");
-    
+    assert!(
+        validator.field_equals("spec.managerName", "Test Manager"),
+        "managerName deve ser 'Test Manager'"
+    );
+    assert!(
+        validator.field_equals("spec.managerEmail", "test@example.com"),
+        "managerEmail deve ser 'test@example.com'"
+    );
+
     // Validar que os campos não estão vazios
-    assert!(validator.field_not_empty("spec.managerName"), "managerName não deve estar vazio");
-    assert!(validator.field_not_empty("spec.managerEmail"), "managerEmail não deve estar vazio");
-    assert!(validator.field_not_empty("spec.defaultTimezone"), "defaultTimezone não deve estar vazio");
-    
+    assert!(
+        validator.field_not_empty("spec.managerName"),
+        "managerName não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.managerEmail"),
+        "managerEmail não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.defaultTimezone"),
+        "defaultTimezone não deve estar vazio"
+    );
+
     // Validar que contém strings esperadas
     assert!(validator.contains("Test Manager"), "Config deve conter 'Test Manager'");
-    assert!(validator.contains("test@example.com"), "Config deve conter 'test@example.com'");
-    
+    assert!(
+        validator.contains("test@example.com"),
+        "Config deve conter 'test@example.com'"
+    );
+
     temp.close()?;
     Ok(())
 }
@@ -197,21 +225,25 @@ fn test_init_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_init_command_with_timezone() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company",
-        "--timezone", "America/Sao_Paulo"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "America/Sao_Paulo",
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("America/Sao_Paulo"));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -222,78 +254,136 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let company_dir = temp.child("companies").child("TECH-CORP");
     let company_file = company_dir.child("company.yaml");
-    
+
     // Primeiro inicializar
     let mut init_cmd = Command::cargo_bin("ttr")?;
     init_cmd.current_dir(temp.path());
     init_cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     init_cmd.assert().success();
-    
+
     // Depois criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "company",
-        "--name", "Tech Corp",
-        "--code", "TECH-CORP",
-        "--description", "Technology company"
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Company created successfully"))
         .stdout(predicate::str::contains("Tech Corp"))
         .stdout(predicate::str::contains("TECH-CORP"));
-    
+
     // Verificar se os arquivos foram criados
     company_dir.assert(predicate::path::is_dir());
     company_file.assert(predicate::path::exists());
-    
+
     // Validar conteúdo YAML do company.yaml
     let validator = YamlValidator::new(company_file.path())?;
-    
+
     // Validar estrutura básica
-    assert!(validator.validate_basic_structure(), "Company YAML deve ter estrutura básica");
-    
+    assert!(
+        validator.validate_basic_structure(),
+        "Company YAML deve ter estrutura básica"
+    );
+
     // Validar campos obrigatórios do metadata
     assert!(validator.has_field("metadata.id"), "Company deve ter metadata.id");
     assert!(validator.has_field("metadata.code"), "Company deve ter metadata.code");
     assert!(validator.has_field("metadata.name"), "Company deve ter metadata.name");
-    assert!(validator.has_field("metadata.createdAt"), "Company deve ter metadata.createdAt");
-    assert!(validator.has_field("metadata.updatedAt"), "Company deve ter metadata.updatedAt");
-    assert!(validator.has_field("metadata.createdBy"), "Company deve ter metadata.createdBy");
-    
+    assert!(
+        validator.has_field("metadata.createdAt"),
+        "Company deve ter metadata.createdAt"
+    );
+    assert!(
+        validator.has_field("metadata.updatedAt"),
+        "Company deve ter metadata.updatedAt"
+    );
+    assert!(
+        validator.has_field("metadata.createdBy"),
+        "Company deve ter metadata.createdBy"
+    );
+
     // Validar campos obrigatórios do spec
-    assert!(validator.has_field("spec.description"), "Company deve ter spec.description");
+    assert!(
+        validator.has_field("spec.description"),
+        "Company deve ter spec.description"
+    );
     assert!(validator.has_field("spec.status"), "Company deve ter spec.status");
     assert!(validator.has_field("spec.size"), "Company deve ter spec.size");
-    
+
     // Validar valores específicos
-    assert!(validator.field_equals("metadata.code", "TECH-CORP"), "metadata.code deve ser 'TECH-CORP'");
-    assert!(validator.field_equals("metadata.name", "Tech Corp"), "metadata.name deve ser 'Tech Corp'");
-    assert!(validator.field_equals("spec.description", "Technology company"), "spec.description deve ser 'Technology company'");
-    
+    assert!(
+        validator.field_equals("metadata.code", "TECH-CORP"),
+        "metadata.code deve ser 'TECH-CORP'"
+    );
+    assert!(
+        validator.field_equals("metadata.name", "Tech Corp"),
+        "metadata.name deve ser 'Tech Corp'"
+    );
+    assert!(
+        validator.field_equals("spec.description", "Technology company"),
+        "spec.description deve ser 'Technology company'"
+    );
+
     // Validar que os campos não estão vazios
-    assert!(validator.field_not_empty("metadata.id"), "metadata.id não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.code"), "metadata.code não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.name"), "metadata.name não deve estar vazio");
-    assert!(validator.field_not_empty("spec.description"), "spec.description não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.createdAt"), "metadata.createdAt não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.updatedAt"), "metadata.updatedAt não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.createdBy"), "metadata.createdBy não deve estar vazio");
-    assert!(validator.field_not_empty("spec.status"), "spec.status não deve estar vazio");
+    assert!(
+        validator.field_not_empty("metadata.id"),
+        "metadata.id não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.code"),
+        "metadata.code não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.name"),
+        "metadata.name não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.description"),
+        "spec.description não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.createdAt"),
+        "metadata.createdAt não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.updatedAt"),
+        "metadata.updatedAt não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.createdBy"),
+        "metadata.createdBy não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.status"),
+        "spec.status não deve estar vazio"
+    );
     assert!(validator.field_not_empty("spec.size"), "spec.size não deve estar vazio");
-    
+
     // Validar que contém strings esperadas
     assert!(validator.contains("Tech Corp"), "Company deve conter 'Tech Corp'");
     assert!(validator.contains("TECH-CORP"), "Company deve conter 'TECH-CORP'");
-    assert!(validator.contains("Technology company"), "Company deve conter 'Technology company'");
-    
+    assert!(
+        validator.contains("Technology company"),
+        "Company deve conter 'Technology company'"
+    );
+
     temp.close()?;
     Ok(())
 }
@@ -302,56 +392,90 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let resource_file = temp.child("companies").child("TECH-CORP").child("resources").child("john_doe.yaml");
-    
+    let resource_file = temp
+        .child("companies")
+        .child("TECH-CORP")
+        .child("resources")
+        .child("john_doe.yaml");
+
     // Inicializar e criar empresa
     setup_test_environment(&temp)?;
-    
+
     // Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "resource",
-        "John Doe", "Developer",
-        "--company-code", "TECH-CORP"
+        "create",
+        "resource",
+        "John Doe",
+        "Developer",
+        "--company-code",
+        "TECH-CORP",
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Resource John Doe created"));
-    
+
     // Verificar se o arquivo foi criado
     resource_file.assert(predicate::path::exists());
-    
+
     // Validar conteúdo YAML do resource.yaml
     let validator = YamlValidator::new(resource_file.path())?;
-    
+
     // Validar estrutura básica
-    assert!(validator.validate_basic_structure(), "Resource YAML deve ter estrutura básica");
-    
+    assert!(
+        validator.validate_basic_structure(),
+        "Resource YAML deve ter estrutura básica"
+    );
+
     // Validar campos obrigatórios do metadata
     assert!(validator.has_field("metadata.id"), "Resource deve ter metadata.id");
     assert!(validator.has_field("metadata.code"), "Resource deve ter metadata.code");
     assert!(validator.has_field("metadata.name"), "Resource deve ter metadata.name");
-    assert!(validator.has_field("metadata.resourceType"), "Resource deve ter metadata.resourceType");
-    
+    assert!(
+        validator.has_field("metadata.resourceType"),
+        "Resource deve ter metadata.resourceType"
+    );
+
     // Validar campos obrigatórios do spec
-    assert!(validator.has_field("spec.timeOffBalance"), "Resource deve ter spec.timeOffBalance");
-    
+    assert!(
+        validator.has_field("spec.timeOffBalance"),
+        "Resource deve ter spec.timeOffBalance"
+    );
+
     // Validar valores específicos
-    assert!(validator.field_equals("metadata.name", "John Doe"), "metadata.name deve ser 'John Doe'");
-    assert!(validator.field_equals("metadata.resourceType", "Developer"), "metadata.resourceType deve ser 'Developer'");
-    
+    assert!(
+        validator.field_equals("metadata.name", "John Doe"),
+        "metadata.name deve ser 'John Doe'"
+    );
+    assert!(
+        validator.field_equals("metadata.resourceType", "Developer"),
+        "metadata.resourceType deve ser 'Developer'"
+    );
+
     // Validar que os campos não estão vazios
-    assert!(validator.field_not_empty("metadata.id"), "metadata.id não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.code"), "metadata.code não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.name"), "metadata.name não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.resourceType"), "metadata.resourceType não deve estar vazio");
-    
+    assert!(
+        validator.field_not_empty("metadata.id"),
+        "metadata.id não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.code"),
+        "metadata.code não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.name"),
+        "metadata.name não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.resourceType"),
+        "metadata.resourceType não deve estar vazio"
+    );
+
     // Validar que contém strings esperadas
     assert!(validator.contains("John Doe"), "Resource deve conter 'John Doe'");
     assert!(validator.contains("Developer"), "Resource deve conter 'Developer'");
-    
+
     temp.close()?;
     Ok(())
 }
@@ -360,23 +484,26 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Inicializar e criar empresa
     setup_test_environment(&temp)?;
-    
+
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "project",
-        "Web App", "Web application project",
-        "--company-code", "TECH-CORP"
+        "create",
+        "project",
+        "Web App",
+        "Web application project",
+        "--company-code",
+        "TECH-CORP",
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Project Web App created"));
-    
+
     // Encontrar o arquivo do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_file = None;
@@ -391,44 +518,77 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let project_file = project_file.expect("Project file not found");
-    
+
     // Verificar se o arquivo foi criado
     assert!(project_file.exists(), "Project file should exist");
-    
+
     // Validar conteúdo YAML do project.yaml
     let validator = YamlValidator::new(&project_file)?;
-    
+
     // Validar estrutura básica
-    assert!(validator.validate_basic_structure(), "Project YAML deve ter estrutura básica");
-    
+    assert!(
+        validator.validate_basic_structure(),
+        "Project YAML deve ter estrutura básica"
+    );
+
     // Validar campos obrigatórios do metadata
     assert!(validator.has_field("metadata.id"), "Project deve ter metadata.id");
     assert!(validator.has_field("metadata.code"), "Project deve ter metadata.code");
     assert!(validator.has_field("metadata.name"), "Project deve ter metadata.name");
-    assert!(validator.has_field("metadata.description"), "Project deve ter metadata.description");
-    
+    assert!(
+        validator.has_field("metadata.description"),
+        "Project deve ter metadata.description"
+    );
+
     // Validar campos obrigatórios do spec
     assert!(validator.has_field("spec.status"), "Project deve ter spec.status");
     assert!(validator.has_field("spec.endDate"), "Project deve ter spec.endDate");
-    
+
     // Validar valores específicos
-    assert!(validator.field_equals("metadata.name", "Web App"), "metadata.name deve ser 'Web App'");
-    assert!(validator.field_equals("metadata.description", "Web application project"), "metadata.description deve ser 'Web application project'");
-    
+    assert!(
+        validator.field_equals("metadata.name", "Web App"),
+        "metadata.name deve ser 'Web App'"
+    );
+    assert!(
+        validator.field_equals("metadata.description", "Web application project"),
+        "metadata.description deve ser 'Web application project'"
+    );
+
     // Validar que os campos não estão vazios
-    assert!(validator.field_not_empty("metadata.id"), "metadata.id não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.code"), "metadata.code não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.name"), "metadata.name não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.description"), "metadata.description não deve estar vazio");
-    assert!(validator.field_not_empty("spec.status"), "spec.status não deve estar vazio");
-    assert!(validator.field_not_empty("spec.endDate"), "spec.endDate não deve estar vazio");
-    
+    assert!(
+        validator.field_not_empty("metadata.id"),
+        "metadata.id não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.code"),
+        "metadata.code não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.name"),
+        "metadata.name não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.description"),
+        "metadata.description não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.status"),
+        "spec.status não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.endDate"),
+        "spec.endDate não deve estar vazio"
+    );
+
     // Validar que contém strings esperadas
     assert!(validator.contains("Web App"), "Project deve conter 'Web App'");
-    assert!(validator.contains("Web application project"), "Project deve conter 'Web application project'");
-    
+    assert!(
+        validator.contains("Web application project"),
+        "Project deve conter 'Web application project'"
+    );
+
     temp.close()?;
     Ok(())
 }
@@ -437,11 +597,11 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Inicializar, criar empresa e projeto
     setup_test_environment(&temp)?;
     create_test_project(&temp)?;
-    
+
     // Encontrar o código do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_code = None;
@@ -453,7 +613,11 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml) {
                         if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                            if let Some(code) = yaml
+                                .get("metadata")
+                                .and_then(|m| m.get("code"))
+                                .and_then(|c| c.as_str())
+                            {
                                 project_code = Some(code.to_string());
                                 break;
                             }
@@ -463,28 +627,41 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let project_code = project_code.expect("Project code not found");
-    
+
     // Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "task",
-        "--name", "Setup Environment",
-        "--description", "Setup development environment",
-        "--start-date", "2024-01-15",
-        "--due-date", "2024-01-22",
-        "--project-code", &project_code,
-        "--company-code", "TECH-CORP"
+        "create",
+        "task",
+        "--name",
+        "Setup Environment",
+        "--description",
+        "Setup development environment",
+        "--start-date",
+        "2024-01-15",
+        "--due-date",
+        "2024-01-22",
+        "--project-code",
+        &project_code,
+        "--company-code",
+        "TECH-CORP",
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Task Setup Environment created"));
-    
+
     // Encontrar o arquivo da tarefa criada
-    let tasks_dir = temp.path().join("companies").join("TECH-CORP").join("projects").join(&project_code).join("tasks");
+    let tasks_dir = temp
+        .path()
+        .join("companies")
+        .join("TECH-CORP")
+        .join("projects")
+        .join(&project_code)
+        .join("tasks");
     let mut task_file = None;
     if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
         for entry in entries.flatten() {
@@ -494,51 +671,96 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let task_file = task_file.expect("Task file not found");
-    
+
     // Verificar se o arquivo foi criado
     assert!(task_file.exists(), "Task file should exist");
-    
+
     // Validar conteúdo YAML do task.yaml
     let validator = YamlValidator::new(&task_file)?;
-    
+
     // Validar estrutura básica (task usa api_version em vez de apiVersion)
     assert!(validator.has_field("api_version"), "Task deve ter api_version");
     assert!(validator.has_field("kind"), "Task deve ter kind");
     assert!(validator.has_field("metadata"), "Task deve ter metadata");
     assert!(validator.has_field("spec"), "Task deve ter spec");
-    
+
     // Validar campos obrigatórios do metadata
     assert!(validator.has_field("metadata.id"), "Task deve ter metadata.id");
     assert!(validator.has_field("metadata.code"), "Task deve ter metadata.code");
     assert!(validator.has_field("metadata.name"), "Task deve ter metadata.name");
-    
+
     // Validar campos obrigatórios do spec
-    assert!(validator.has_field("spec.projectCode"), "Task deve ter spec.projectCode");
+    assert!(
+        validator.has_field("spec.projectCode"),
+        "Task deve ter spec.projectCode"
+    );
     assert!(validator.has_field("spec.status"), "Task deve ter spec.status");
     assert!(validator.has_field("spec.priority"), "Task deve ter spec.priority");
-    assert!(validator.has_field("spec.estimatedStartDate"), "Task deve ter spec.estimatedStartDate");
-    assert!(validator.has_field("spec.estimatedEndDate"), "Task deve ter spec.estimatedEndDate");
-    
+    assert!(
+        validator.has_field("spec.estimatedStartDate"),
+        "Task deve ter spec.estimatedStartDate"
+    );
+    assert!(
+        validator.has_field("spec.estimatedEndDate"),
+        "Task deve ter spec.estimatedEndDate"
+    );
+
     // Validar valores específicos
-    assert!(validator.field_equals("metadata.name", "Setup Environment"), "metadata.name deve ser 'Setup Environment'");
-    assert!(validator.field_equals("spec.projectCode", &project_code), "spec.projectCode deve ser o código correto do projeto");
-    
+    assert!(
+        validator.field_equals("metadata.name", "Setup Environment"),
+        "metadata.name deve ser 'Setup Environment'"
+    );
+    assert!(
+        validator.field_equals("spec.projectCode", &project_code),
+        "spec.projectCode deve ser o código correto do projeto"
+    );
+
     // Validar que os campos não estão vazios
-    assert!(validator.field_not_empty("metadata.id"), "metadata.id não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.code"), "metadata.code não deve estar vazio");
-    assert!(validator.field_not_empty("metadata.name"), "metadata.name não deve estar vazio");
-    assert!(validator.field_not_empty("spec.projectCode"), "spec.projectCode não deve estar vazio");
-    assert!(validator.field_not_empty("spec.status"), "spec.status não deve estar vazio");
-    assert!(validator.field_not_empty("spec.priority"), "spec.priority não deve estar vazio");
-    assert!(validator.field_not_empty("spec.estimatedStartDate"), "spec.estimatedStartDate não deve estar vazio");
-    assert!(validator.field_not_empty("spec.estimatedEndDate"), "spec.estimatedEndDate não deve estar vazio");
-    
+    assert!(
+        validator.field_not_empty("metadata.id"),
+        "metadata.id não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.code"),
+        "metadata.code não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("metadata.name"),
+        "metadata.name não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.projectCode"),
+        "spec.projectCode não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.status"),
+        "spec.status não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.priority"),
+        "spec.priority não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.estimatedStartDate"),
+        "spec.estimatedStartDate não deve estar vazio"
+    );
+    assert!(
+        validator.field_not_empty("spec.estimatedEndDate"),
+        "spec.estimatedEndDate não deve estar vazio"
+    );
+
     // Validar que contém strings esperadas
-    assert!(validator.contains("Setup Environment"), "Task deve conter 'Setup Environment'");
-    assert!(validator.contains(&project_code), "Task deve conter o código do projeto");
-    
+    assert!(
+        validator.contains("Setup Environment"),
+        "Task deve conter 'Setup Environment'"
+    );
+    assert!(
+        validator.contains(&project_code),
+        "Task deve conter o código do projeto"
+    );
+
     temp.close()?;
     Ok(())
 }
@@ -547,41 +769,37 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_list_commands() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Configurar ambiente de teste
     setup_test_environment(&temp)?;
     create_test_project(&temp)?;
     create_test_resource(&temp)?;
     create_test_task(&temp)?;
-    
+
     // Testar list projects
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("list").arg("projects");
-    
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Web App"));
-    
+
+    cmd.assert().success().stdout(predicate::str::contains("Web App"));
+
     // Testar list resources
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("list").arg("resources");
-    
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("John Doe"));
-    
+
+    cmd.assert().success().stdout(predicate::str::contains("John Doe"));
+
     // Testar list tasks (pode falhar se não houver projeto configurado)
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("list").arg("tasks");
-    
+
     // Este comando pode falhar se não houver projeto configurado
     // Vamos apenas verificar se executa sem crash
     let _result = cmd.output()?;
     // Não fazemos assert de sucesso pois pode falhar
-    
+
     temp.close()?;
     Ok(())
 }
@@ -590,18 +808,17 @@ fn test_list_commands() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_validate_command() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Configurar ambiente de teste
     setup_test_environment(&temp)?;
-    
+
     // Testar validação do sistema
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("validate").arg("system");
-    
-    cmd.assert()
-        .success();
-    
+
+    cmd.assert().success();
+
     temp.close()?;
     Ok(())
 }
@@ -612,24 +829,23 @@ fn test_build_command() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let public_dir = temp.child("public");
     let index_file = public_dir.child("index.html");
-    
+
     // Configurar ambiente de teste
     setup_test_environment(&temp)?;
     create_test_project(&temp)?;
-    
+
     // Gerar HTML
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("build");
-    
-    cmd.assert()
-        .success();
-    
+
+    cmd.assert().success();
+
     // Verificar se os arquivos HTML foram criados
     public_dir.assert(predicate::path::is_dir());
     index_file.assert(predicate::path::exists());
     index_file.assert(predicate::str::contains("TaskTaskRevolution"));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -638,24 +854,23 @@ fn test_build_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_error_handling() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Testar comando inválido
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("invalid-command");
-    
-    cmd.assert()
-        .failure();
-    
+
+    cmd.assert().failure();
+
     // Testar comando que retorna erro na saída
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("list").arg("tasks");
-    
+
     cmd.assert()
         .success() // O comando executa com sucesso
         .stdout(predicate::str::contains("Error listing tasks")); // Mas retorna erro na saída
-    
+
     temp.close()?;
     Ok(())
 }
@@ -666,49 +881,62 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let public_dir = temp.child("public");
     let index_file = public_dir.child("index.html");
-    
+
     // 1. Inicializar
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     // 2. Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "company",
-        "--name", "Tech Corp",
-        "--code", "TECH-CORP",
-        "--description", "Technology company"
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
     ]);
     cmd.assert().success();
-    
+
     // 3. Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "resource",
-        "John Doe", "Developer",
-        "--company-code", "TECH-CORP"
+        "create",
+        "resource",
+        "John Doe",
+        "Developer",
+        "--company-code",
+        "TECH-CORP",
     ]);
     cmd.assert().success();
-    
+
     // 4. Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "project",
-        "Web App", "Web application project",
-        "--company-code", "TECH-CORP"
+        "create",
+        "project",
+        "Web App",
+        "Web application project",
+        "--company-code",
+        "TECH-CORP",
     ]);
     cmd.assert().success();
-    
+
     // 5. Encontrar o código do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_code = None;
@@ -720,7 +948,11 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml) {
                         if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                            if let Some(code) = yaml
+                                .get("metadata")
+                                .and_then(|m| m.get("code"))
+                                .and_then(|c| c.as_str())
+                            {
                                 project_code = Some(code.to_string());
                                 break;
                             }
@@ -730,34 +962,41 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let project_code = project_code.expect("Project code not found");
-    
+
     // 6. Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "task",
-        "--name", "Setup Environment",
-        "--description", "Setup development environment",
-        "--start-date", "2024-01-15",
-        "--due-date", "2024-01-22",
-        "--project-code", &project_code,
-        "--company-code", "TECH-CORP"
+        "create",
+        "task",
+        "--name",
+        "Setup Environment",
+        "--description",
+        "Setup development environment",
+        "--start-date",
+        "2024-01-15",
+        "--due-date",
+        "2024-01-22",
+        "--project-code",
+        &project_code,
+        "--company-code",
+        "TECH-CORP",
     ]);
     cmd.assert().success();
-    
+
     // 6. Gerar HTML
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("build");
     cmd.assert().success();
-    
+
     // 7. Verificar resultado
     public_dir.assert(predicate::path::is_dir());
     index_file.assert(predicate::path::exists());
     index_file.assert(predicate::str::contains("Tech Corp"));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -767,49 +1006,53 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
 fn test_config_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let config_file = temp.child("config.yaml");
-    
+
     // Inicializar
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "YAML Test Manager",
-        "--email", "yaml@test.com",
-        "--company-name", "YAML Test Company",
-        "--timezone", "America/New_York"
+        "--name",
+        "YAML Test Manager",
+        "--email",
+        "yaml@test.com",
+        "--company-name",
+        "YAML Test Company",
+        "--timezone",
+        "America/New_York",
     ]);
-    
+
     cmd.assert().success();
     config_file.assert(predicate::path::exists());
-    
+
     // Validar config.yaml com validador robusto
     let validator = YamlValidator::new(config_file.path())?;
-    
+
     // Estrutura básica obrigatória
     assert!(validator.validate_basic_structure(), "Config deve ter estrutura básica");
-    
+
     // Campos obrigatórios do spec
-    let required_fields = [
-        "spec.managerName",
-        "spec.managerEmail", 
-        "spec.defaultTimezone"
-    ];
-    
+    let required_fields = ["spec.managerName", "spec.managerEmail", "spec.defaultTimezone"];
+
     for field in &required_fields {
-        assert!(validator.has_field(field), "Config deve ter campo obrigatório: {}", field);
+        assert!(
+            validator.has_field(field),
+            "Config deve ter campo obrigatório: {}",
+            field
+        );
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Valores específicos
     assert!(validator.field_equals("spec.managerName", "YAML Test Manager"));
     assert!(validator.field_equals("spec.managerEmail", "yaml@test.com"));
     assert!(validator.field_equals("spec.defaultTimezone", "America/New_York"));
-    
+
     // Validação de conteúdo
     assert!(validator.contains("YAML Test Manager"));
     assert!(validator.contains("yaml@test.com"));
     assert!(validator.contains("America/New_York"));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -819,29 +1062,36 @@ fn test_config_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let company_file = temp.child("companies").child("YAML-CORP").child("company.yaml");
-    
+
     // Setup
     setup_test_environment(&temp)?;
-    
+
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "company",
-        "--name", "YAML Corporation",
-        "--code", "YAML-CORP",
-        "--description", "YAML validation test company"
+        "create",
+        "company",
+        "--name",
+        "YAML Corporation",
+        "--code",
+        "YAML-CORP",
+        "--description",
+        "YAML validation test company",
     ]);
-    
+
     cmd.assert().success();
     company_file.assert(predicate::path::exists());
-    
+
     // Validar company.yaml com validador robusto
     let validator = YamlValidator::new(company_file.path())?;
-    
+
     // Estrutura básica obrigatória
-    assert!(validator.validate_basic_structure(), "Company deve ter estrutura básica");
-    
+    assert!(
+        validator.validate_basic_structure(),
+        "Company deve ter estrutura básica"
+    );
+
     // Campos obrigatórios do metadata
     let metadata_fields = [
         "metadata.id",
@@ -849,31 +1099,35 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         "metadata.name",
         "metadata.createdAt",
         "metadata.updatedAt",
-        "metadata.createdBy"
+        "metadata.createdBy",
     ];
-    
+
     for field in &metadata_fields {
-        assert!(validator.has_field(field), "Company deve ter campo obrigatório: {}", field);
+        assert!(
+            validator.has_field(field),
+            "Company deve ter campo obrigatório: {}",
+            field
+        );
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Campos obrigatórios do spec
-    let spec_fields = [
-        "spec.description",
-        "spec.status",
-        "spec.size"
-    ];
-    
+    let spec_fields = ["spec.description", "spec.status", "spec.size"];
+
     for field in &spec_fields {
-        assert!(validator.has_field(field), "Company deve ter campo obrigatório: {}", field);
+        assert!(
+            validator.has_field(field),
+            "Company deve ter campo obrigatório: {}",
+            field
+        );
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Valores específicos
     assert!(validator.field_equals("metadata.code", "YAML-CORP"));
     assert!(validator.field_equals("metadata.name", "YAML Corporation"));
     assert!(validator.field_equals("spec.description", "YAML validation test company"));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -882,55 +1136,66 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let resource_file = temp.child("companies").child("TECH-CORP").child("resources").child("yaml_developer.yaml");
-    
+    let resource_file = temp
+        .child("companies")
+        .child("TECH-CORP")
+        .child("resources")
+        .child("yaml_developer.yaml");
+
     // Setup
     setup_test_environment(&temp)?;
-    
+
     // Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "resource",
-        "YAML Developer", "Senior Developer",
-        "--company-code", "TECH-CORP"
+        "create",
+        "resource",
+        "YAML Developer",
+        "Senior Developer",
+        "--company-code",
+        "TECH-CORP",
     ]);
-    
+
     cmd.assert().success();
     resource_file.assert(predicate::path::exists());
-    
+
     // Validar resource.yaml com validador robusto
     let validator = YamlValidator::new(resource_file.path())?;
-    
+
     // Estrutura básica obrigatória
-    assert!(validator.validate_basic_structure(), "Resource deve ter estrutura básica");
-    
+    assert!(
+        validator.validate_basic_structure(),
+        "Resource deve ter estrutura básica"
+    );
+
     // Campos obrigatórios do metadata
-    let metadata_fields = [
-        "metadata.id",
-        "metadata.name",
-        "metadata.code",
-        "metadata.resourceType"
-    ];
-    
+    let metadata_fields = ["metadata.id", "metadata.name", "metadata.code", "metadata.resourceType"];
+
     for field in &metadata_fields {
-        assert!(validator.has_field(field), "Resource deve ter campo obrigatório: {}", field);
+        assert!(
+            validator.has_field(field),
+            "Resource deve ter campo obrigatório: {}",
+            field
+        );
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Campos obrigatórios do spec
-    let spec_fields = [
-        "spec.timeOffBalance"
-    ];
-    
+    let spec_fields = ["spec.timeOffBalance"];
+
     for field in &spec_fields {
-        assert!(validator.has_field(field), "Resource deve ter campo obrigatório: {}", field);
+        assert!(
+            validator.has_field(field),
+            "Resource deve ter campo obrigatório: {}",
+            field
+        );
     }
-    
+
     // Valores específicos
     assert!(validator.field_equals("metadata.name", "YAML Developer"));
     assert!(validator.field_equals("metadata.resourceType", "Senior Developer"));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -939,21 +1204,24 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup
     setup_test_environment(&temp)?;
-    
+
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "project",
-        "YAML Project", "YAML validation test project",
-        "--company-code", "TECH-CORP"
+        "create",
+        "project",
+        "YAML Project",
+        "YAML validation test project",
+        "--company-code",
+        "TECH-CORP",
     ]);
-    
+
     cmd.assert().success();
-    
+
     // Encontrar o arquivo do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_file = None;
@@ -968,44 +1236,47 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let project_file = project_file.expect("Project file not found");
     assert!(project_file.exists(), "Project file should exist");
-    
+
     // Validar project.yaml com validador robusto
     let validator = YamlValidator::new(&project_file)?;
-    
+
     // Estrutura básica obrigatória
-    assert!(validator.validate_basic_structure(), "Project deve ter estrutura básica");
-    
+    assert!(
+        validator.validate_basic_structure(),
+        "Project deve ter estrutura básica"
+    );
+
     // Campos obrigatórios do metadata
-    let metadata_fields = [
-        "metadata.id",
-        "metadata.code",
-        "metadata.name",
-        "metadata.description"
-    ];
-    
+    let metadata_fields = ["metadata.id", "metadata.code", "metadata.name", "metadata.description"];
+
     for field in &metadata_fields {
-        assert!(validator.has_field(field), "Project deve ter campo obrigatório: {}", field);
+        assert!(
+            validator.has_field(field),
+            "Project deve ter campo obrigatório: {}",
+            field
+        );
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Campos obrigatórios do spec
-    let spec_fields = [
-        "spec.status",
-        "spec.endDate"
-    ];
-    
+    let spec_fields = ["spec.status", "spec.endDate"];
+
     for field in &spec_fields {
-        assert!(validator.has_field(field), "Project deve ter campo obrigatório: {}", field);
+        assert!(
+            validator.has_field(field),
+            "Project deve ter campo obrigatório: {}",
+            field
+        );
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Valores específicos
     assert!(validator.field_equals("metadata.name", "YAML Project"));
     assert!(validator.field_equals("metadata.description", "YAML validation test project"));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -1014,11 +1285,11 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup
     setup_test_environment(&temp)?;
     create_test_project(&temp)?;
-    
+
     // Encontrar o código do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_code = None;
@@ -1030,7 +1301,11 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml) {
                         if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                            if let Some(code) = yaml
+                                .get("metadata")
+                                .and_then(|m| m.get("code"))
+                                .and_then(|c| c.as_str())
+                            {
                                 project_code = Some(code.to_string());
                                 break;
                             }
@@ -1040,26 +1315,39 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let project_code = project_code.expect("Project code not found");
-    
+
     // Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "task",
-        "--name", "YAML Validation Task",
-        "--description", "Task for YAML validation testing",
-        "--start-date", "2024-02-01",
-        "--due-date", "2024-02-15",
-        "--project-code", &project_code,
-        "--company-code", "TECH-CORP"
+        "create",
+        "task",
+        "--name",
+        "YAML Validation Task",
+        "--description",
+        "Task for YAML validation testing",
+        "--start-date",
+        "2024-02-01",
+        "--due-date",
+        "2024-02-15",
+        "--project-code",
+        &project_code,
+        "--company-code",
+        "TECH-CORP",
     ]);
-    
+
     cmd.assert().success();
-    
+
     // Encontrar o arquivo da tarefa criada
-    let tasks_dir = temp.path().join("companies").join("TECH-CORP").join("projects").join(&project_code).join("tasks");
+    let tasks_dir = temp
+        .path()
+        .join("companies")
+        .join("TECH-CORP")
+        .join("projects")
+        .join(&project_code)
+        .join("tasks");
     let mut task_file = None;
     if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
         for entry in entries.flatten() {
@@ -1069,49 +1357,45 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let task_file = task_file.expect("Task file not found");
     assert!(task_file.exists(), "Task file should exist");
-    
+
     // Validar task.yaml com validador robusto
     let validator = YamlValidator::new(&task_file)?;
-    
+
     // Estrutura básica obrigatória (task usa api_version em vez de apiVersion)
     assert!(validator.has_field("api_version"), "Task deve ter api_version");
     assert!(validator.has_field("kind"), "Task deve ter kind");
     assert!(validator.has_field("metadata"), "Task deve ter metadata");
     assert!(validator.has_field("spec"), "Task deve ter spec");
-    
+
     // Campos obrigatórios do metadata
-    let metadata_fields = [
-        "metadata.id",
-        "metadata.code",
-        "metadata.name"
-    ];
-    
+    let metadata_fields = ["metadata.id", "metadata.code", "metadata.name"];
+
     for field in &metadata_fields {
         assert!(validator.has_field(field), "Task deve ter campo obrigatório: {}", field);
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Campos obrigatórios do spec
     let spec_fields = [
         "spec.projectCode",
         "spec.status",
         "spec.priority",
         "spec.estimatedStartDate",
-        "spec.estimatedEndDate"
+        "spec.estimatedEndDate",
     ];
-    
+
     for field in &spec_fields {
         assert!(validator.has_field(field), "Task deve ter campo obrigatório: {}", field);
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
-    
+
     // Valores específicos
     assert!(validator.field_equals("metadata.name", "YAML Validation Task"));
     assert!(validator.field_equals("spec.projectCode", &project_code));
-    
+
     temp.close()?;
     Ok(())
 }
@@ -1123,22 +1407,29 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "company",
-        "--name", "Tech Corp",
-        "--code", "TECH-CORP",
-        "--description", "Technology company"
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
     ]);
     cmd.assert().success();
-    
+
     Ok(())
 }
 
@@ -1146,9 +1437,12 @@ fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "project",
-        "Web App", "Web application project",
-        "--company-code", "TECH-CORP"
+        "create",
+        "project",
+        "Web App",
+        "Web application project",
+        "--company-code",
+        "TECH-CORP",
     ]);
     cmd.assert().success();
     Ok(())
@@ -1158,9 +1452,12 @@ fn create_test_resource(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::er
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "resource",
-        "John Doe", "Developer",
-        "--company-code", "TECH-CORP"
+        "create",
+        "resource",
+        "John Doe",
+        "Developer",
+        "--company-code",
+        "TECH-CORP",
     ]);
     cmd.assert().success();
     Ok(())
@@ -1178,7 +1475,11 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml) {
                         if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                            if let Some(code) = yaml
+                                .get("metadata")
+                                .and_then(|m| m.get("code"))
+                                .and_then(|c| c.as_str())
+                            {
                                 project_code = Some(code.to_string());
                                 break;
                             }
@@ -1188,19 +1489,26 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
             }
         }
     }
-    
+
     let project_code = project_code.expect("Project code not found");
-    
+
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "task",
-        "--name", "Setup Environment",
-        "--description", "Setup development environment",
-        "--start-date", "2024-01-15",
-        "--due-date", "2024-01-22",
-        "--project-code", &project_code,
-        "--company-code", "TECH-CORP"
+        "create",
+        "task",
+        "--name",
+        "Setup Environment",
+        "--description",
+        "Setup development environment",
+        "--start-date",
+        "2024-01-15",
+        "--due-date",
+        "2024-01-22",
+        "--project-code",
+        &project_code,
+        "--company-code",
+        "TECH-CORP",
     ]);
     cmd.assert().success();
     Ok(())
@@ -1210,9 +1518,18 @@ fn copy_templates_to_temp(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
     let templates_dir = temp.path().join("templates").join("projects");
     std::fs::create_dir_all(&templates_dir)?;
     std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
-    std::fs::copy("templates/projects/mobile-app.yaml", templates_dir.join("mobile-app.yaml"))?;
-    std::fs::copy("templates/projects/microservice.yaml", templates_dir.join("microservice.yaml"))?;
-    std::fs::copy("templates/projects/data-pipeline.yaml", templates_dir.join("data-pipeline.yaml"))?;
+    std::fs::copy(
+        "templates/projects/mobile-app.yaml",
+        templates_dir.join("mobile-app.yaml"),
+    )?;
+    std::fs::copy(
+        "templates/projects/microservice.yaml",
+        templates_dir.join("microservice.yaml"),
+    )?;
+    std::fs::copy(
+        "templates/projects/data-pipeline.yaml",
+        templates_dir.join("data-pipeline.yaml"),
+    )?;
     Ok(())
 }
 
@@ -1224,7 +1541,7 @@ fn copy_templates_to_temp(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(&["template", "list"]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Available project templates"))
@@ -1232,7 +1549,7 @@ fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("Mobile Application"))
         .stdout(predicate::str::contains("Microservice"))
         .stdout(predicate::str::contains("Data Pipeline"));
-    
+
     Ok(())
 }
 
@@ -1240,18 +1557,20 @@ fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
 fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(&["template", "show", "web-app"]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Template: Web Application"))
-        .stdout(predicate::str::contains("Description: Template for modern web applications"))
+        .stdout(predicate::str::contains(
+            "Description: Template for modern web applications",
+        ))
         .stdout(predicate::str::contains("Version: 1.0.0"))
         .stdout(predicate::str::contains("Category: application"))
         .stdout(predicate::str::contains("Resources (4):"))
         .stdout(predicate::str::contains("Tasks (8):"))
         .stdout(predicate::str::contains("Phases (4):"))
         .stdout(predicate::str::contains("Variables:"));
-    
+
     Ok(())
 }
 
@@ -1259,32 +1578,35 @@ fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
 fn test_template_show_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(&["template", "show", "nonexistent-template"]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Error loading template"));
-    
+
     Ok(())
 }
 
 #[test]
 fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     // Copy templates to temp directory
     copy_templates_to_temp(&temp)?;
-    
+
     // Create project from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
@@ -1296,7 +1618,7 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
         "--company-code", "DEFAULT",
         "--variables", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A test web application"
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Project My Web App created"))
@@ -1305,66 +1627,77 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
         .stdout(predicate::str::contains("Task Project Setup & Planning created"))
-        .stdout(predicate::str::contains("Project 'My Web App' created successfully with 4 resources, 8 tasks, and 4 phases"));
-    
+        .stdout(predicate::str::contains(
+            "Project 'My Web App' created successfully with 4 resources, 8 tasks, and 4 phases",
+        ));
+
     Ok(())
 }
 
 #[test]
 fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     // Copy templates to temp directory
     copy_templates_to_temp(&temp)?;
-    
+
     // Create project from template with missing variables
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "template", "create",
+        "template",
+        "create",
         "web-app",
         "My Web App",
         "A test web application",
-        "--company-code", "DEFAULT",
-        "--variables", "frontend_developer=Alice,backend_developer=Bob"
+        "--company-code",
+        "DEFAULT",
+        "--variables",
+        "frontend_developer=Alice,backend_developer=Bob",
     ]);
-    
+
     cmd.assert()
         .failure()
         .stderr(predicate::str::contains("Template rendering failed"));
-    
+
     Ok(())
 }
 
 #[test]
 fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     // Copy templates to temp directory
     copy_templates_to_temp(&temp)?;
-    
+
     // Create project using --from-template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
@@ -1374,7 +1707,7 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
         "--from-template", "web-app",
         "--template-vars", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-02-01,end_date=2024-04-01,timezone=UTC,project_description=Another test web application"
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Project Another Web App created"))
@@ -1382,29 +1715,34 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
         .stdout(predicate::str::contains("Resource Bob created"))
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
-        .stdout(predicate::str::contains("Project 'Another Web App' created successfully with 4 resources, 8 tasks, and 4 phases"));
-    
+        .stdout(predicate::str::contains(
+            "Project 'Another Web App' created successfully with 4 resources, 8 tasks, and 4 phases",
+        ));
+
     Ok(())
 }
 
 #[test]
 fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     // Copy templates to temp directory
     copy_templates_to_temp(&temp)?;
-    
+
     // Create mobile app from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
@@ -1416,7 +1754,7 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
         "--company-code", "DEFAULT",
         "--variables", "mobile_developer=Alice,backend_developer=Bob,ui_designer=Charlie,qa_engineer=Diana,start_date=2024-01-15,end_date=2024-04-15,timezone=UTC,project_description=A test mobile application"
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Project My Mobile App created"))
@@ -1424,29 +1762,34 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("Resource Bob created"))
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
-        .stdout(predicate::str::contains("Project 'My Mobile App' created successfully with 4 resources, 9 tasks, and 4 phases"));
-    
+        .stdout(predicate::str::contains(
+            "Project 'My Mobile App' created successfully with 4 resources, 9 tasks, and 4 phases",
+        ));
+
     Ok(())
 }
 
 #[test]
 fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     // Copy templates to temp directory
     copy_templates_to_temp(&temp)?;
-    
+
     // Create microservice from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
@@ -1458,36 +1801,41 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
         "--company-code", "DEFAULT",
         "--variables", "backend_developer=Alice,devops_engineer=Bob,api_designer=Charlie,start_date=2024-01-15,end_date=2024-02-28,timezone=UTC,project_description=A microservice for user management"
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Project User Service created"))
         .stdout(predicate::str::contains("Resource Alice created"))
         .stdout(predicate::str::contains("Resource Bob created"))
         .stdout(predicate::str::contains("Resource Charlie created"))
-        .stdout(predicate::str::contains("Project 'User Service' created successfully with 3 resources, 9 tasks, and 4 phases"));
-    
+        .stdout(predicate::str::contains(
+            "Project 'User Service' created successfully with 3 resources, 9 tasks, and 4 phases",
+        ));
+
     Ok(())
 }
 
 #[test]
 fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     // Copy templates to temp directory
     copy_templates_to_temp(&temp)?;
-    
+
     // Create data pipeline from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
@@ -1499,7 +1847,7 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
         "--company-code", "DEFAULT",
         "--variables", "data_engineer=Alice,data_analyst=Bob,devops_engineer=Charlie,data_scientist=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A data pipeline for analytics"
     ]);
-    
+
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Project Analytics Pipeline created"))
@@ -1507,8 +1855,10 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
         .stdout(predicate::str::contains("Resource Bob created"))
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
-        .stdout(predicate::str::contains("Project 'Analytics Pipeline' created successfully with 4 resources, 9 tasks, and 4 phases"));
-    
+        .stdout(predicate::str::contains(
+            "Project 'Analytics Pipeline' created successfully with 4 resources, 9 tasks, and 4 phases",
+        ));
+
     Ok(())
 }
 
@@ -1520,27 +1870,27 @@ fn test_template_help_commands() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Manage project templates"));
-    
+
     // Test template list help
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(&["template", "list", "--help"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("List available project templates"));
-    
+
     // Test template show help
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(&["template", "show", "--help"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Show details of a specific template"));
-    
+
     // Test template create help
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(&["template", "create", "--help"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Create a new project from a template"));
-    
+
     Ok(())
 }

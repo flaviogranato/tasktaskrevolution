@@ -1,4 +1,4 @@
-use crate::application::build_context::BuildContext;
+use crate::application::{build_context::BuildContext, gantt_use_case::GanttUseCase};
 use crate::domain::{
     company_management::repository::CompanyRepository, company_settings::repository::ConfigRepository,
     project_management::AnyProject, task_management::repository::TaskRepository,
@@ -239,6 +239,9 @@ impl BuildUseCase {
         fs::create_dir_all(&companies_base_dir)?;
         println!("[INFO] Companies base directory created successfully");
 
+        // Gerar gráficos Gantt para cada empresa
+        let gantt_use_case = GanttUseCase::new(self.base_path.clone());
+
         for (company, company_projects, project_count, resource_count) in &companies_with_data {
             let company_code = company.code();
             let company_name = company.name();
@@ -246,6 +249,15 @@ impl BuildUseCase {
             println!("[INFO] Company projects count: {}", company_projects.len());
             println!("[INFO] Project count: {}", project_count);
             println!("[INFO] Resource count: {}", resource_count);
+
+            // Gerar gráfico Gantt demo da empresa
+            let company_gantt_path = self.output_dir.join("companies").join(company_code).join("gantt.html");
+            if let Err(e) = gantt_use_case.generate_and_save_demo_gantt_html(&company_gantt_path) {
+                println!(
+                    "⚠️  Warning: Failed to generate Gantt chart for company {}: {}",
+                    company_code, e
+                );
+            }
 
             let company_output_dir = companies_base_dir.join(company_code);
             println!("[INFO] Creating company output directory: {:?}", company_output_dir);
@@ -551,6 +563,15 @@ impl BuildUseCase {
                 let project_detail_path = project_output_dir.join("detail.html");
                 fs::write(project_detail_path, project_detail_html)?;
                 println!("✅ Project '{project_name}' detail page generated successfully.");
+
+                // Gerar gráfico Gantt demo para o projeto
+                let project_gantt_path = project_output_dir.join("gantt.html");
+                if let Err(e) = gantt_use_case.generate_and_save_demo_gantt_html(&project_gantt_path) {
+                    println!(
+                        "⚠️  Warning: Failed to generate Gantt chart for project {}: {}",
+                        project_code, e
+                    );
+                }
 
                 // Generate task detail pages
                 println!("[INFO] About to generate task pages for project: {}", project_name);

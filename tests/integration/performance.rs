@@ -1,5 +1,5 @@
 //! Testes de integração para performance e stress
-//! 
+//!
 //! Estes testes cobrem:
 //! - Testes de carga com grandes volumes de dados
 //! - Validação de uso de memória
@@ -8,48 +8,54 @@
 //! - Validação de limpeza de recursos
 
 use assert_cmd::prelude::*;
-use predicates::prelude::*;
 use assert_fs::prelude::*;
+use predicates::prelude::*;
 use std::process::Command;
-use std::time::Instant;
-use std::thread;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::thread;
+use std::time::Instant;
 
 /// Teste de performance - criação de grandes volumes de dados
 #[test]
 fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial
     setup_test_environment(&temp)?;
-    
+
     let start_time = Instant::now();
-    
+
     // Criar 100 recursos
     for i in 1..=100 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "resource",
-            &format!("Resource {}", i), "Developer",
-            "--company-code", "TECH-CORP"
+            "create",
+            "resource",
+            &format!("Resource {}", i),
+            "Developer",
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     // Criar 50 projetos
     for i in 1..=50 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "project",
-            &format!("Project {}", i), &format!("Description for project {}", i),
-            "--company-code", "TECH-CORP"
+            "create",
+            "project",
+            &format!("Project {}", i),
+            &format!("Description for project {}", i),
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     // Descobrir o primeiro projeto criado dinamicamente
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_code = None;
@@ -60,7 +66,11 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
                 if project_yaml.exists() {
                     if let Ok(content) = std::fs::read_to_string(&project_yaml) {
                         if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                            if let Some(code) = yaml
+                                .get("metadata")
+                                .and_then(|m| m.get("code"))
+                                .and_then(|c| c.as_str())
+                            {
                                 project_code = Some(code.to_string());
                                 break;
                             }
@@ -71,39 +81,55 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     let project_code = project_code.expect("Project code not found");
-    
+
     // Criar 200 tarefas
     for i in 1..=200 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "task",
-            "--name", &format!("Task {}", i),
-            "--description", &format!("Description for task {}", i),
-            "--start-date", "2024-01-01",
-            "--due-date", "2024-12-31",
-            "--project-code", &project_code,
-            "--company-code", "TECH-CORP"
+            "create",
+            "task",
+            "--name",
+            &format!("Task {}", i),
+            "--description",
+            &format!("Description for task {}", i),
+            "--start-date",
+            "2024-01-01",
+            "--due-date",
+            "2024-12-31",
+            "--project-code",
+            &project_code,
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     let elapsed = start_time.elapsed();
-    
+
     // Validar que todos os dados foram criados
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let projects_dir = temp.child("companies").child("TECH-CORP").child("projects");
-    let tasks_dir = temp.child("companies").child("TECH-CORP").child("projects").child(&project_code).child("tasks");
-    
+    let tasks_dir = temp
+        .child("companies")
+        .child("TECH-CORP")
+        .child("projects")
+        .child(&project_code)
+        .child("tasks");
+
     resources_dir.assert(predicate::path::is_dir());
     projects_dir.assert(predicate::path::is_dir());
     tasks_dir.assert(predicate::path::is_dir());
-    
+
     // Validar performance (deve completar em menos de 30 segundos)
-    assert!(elapsed.as_secs() < 30, "Large dataset creation took too long: {:?}", elapsed);
-    
+    assert!(
+        elapsed.as_secs() < 30,
+        "Large dataset creation took too long: {:?}",
+        elapsed
+    );
+
     println!("Large dataset creation completed in: {:?}", elapsed);
-    
+
     temp.close()?;
     Ok(())
 }
@@ -112,30 +138,30 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_large_report_generation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial com dados grandes
     setup_large_dataset(&temp)?;
-    
+
     let start_time = Instant::now();
-    
+
     // Gerar relatório HTML
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("build");
     cmd.assert().success();
-    
+
     let elapsed = start_time.elapsed();
-    
+
     // Validar que o relatório foi gerado
     let public_dir = temp.child("public");
     let index_file = public_dir.child("index.html");
     index_file.assert(predicate::path::exists());
-    
+
     // Validar performance (deve completar em menos de 10 segundos)
     assert!(elapsed.as_secs() < 10, "Report generation took too long: {:?}", elapsed);
-    
+
     println!("Large report generation completed in: {:?}", elapsed);
-    
+
     temp.close()?;
     Ok(())
 }
@@ -144,25 +170,25 @@ fn test_large_report_generation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_large_system_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial com dados grandes
     setup_large_dataset(&temp)?;
-    
+
     let start_time = Instant::now();
-    
+
     // Validar sistema
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("validate").arg("system");
     cmd.assert().success();
-    
+
     let elapsed = start_time.elapsed();
-    
+
     // Validar performance (deve completar em menos de 5 segundos)
     assert!(elapsed.as_secs() < 5, "System validation took too long: {:?}", elapsed);
-    
+
     println!("Large system validation completed in: {:?}", elapsed);
-    
+
     temp.close()?;
     Ok(())
 }
@@ -171,54 +197,68 @@ fn test_large_system_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_concurrent_stress() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial
     setup_test_environment(&temp)?;
-    
+
     let start_time = Instant::now();
     let success_count = Arc::new(AtomicUsize::new(0));
     let mut handles = vec![];
-    
+
     // Simular 10 operações concorrentes
     for i in 0..10 {
         let temp_path = temp.path().to_path_buf();
         let success_count = Arc::clone(&success_count);
-        
+
         let handle = thread::spawn(move || {
             for j in 0..10 {
                 let mut cmd = Command::cargo_bin("ttr").unwrap();
                 cmd.current_dir(&temp_path);
                 cmd.args(&[
-                    "create", "resource",
-                    &format!("Concurrent Resource {}-{}", i, j), "Developer",
-                    "--company-code", "TECH-CORP"
+                    "create",
+                    "resource",
+                    &format!("Concurrent Resource {}-{}", i, j),
+                    "Developer",
+                    "--company-code",
+                    "TECH-CORP",
                 ]);
-                
+
                 if cmd.output().is_ok() {
                     success_count.fetch_add(1, Ordering::Relaxed);
                 }
             }
         });
-        
+
         handles.push(handle);
     }
-    
+
     // Aguardar todas as threads
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     let elapsed = start_time.elapsed();
     let total_successes = success_count.load(Ordering::Relaxed);
-    
+
     // Validar que pelo menos 80% das operações foram bem-sucedidas
-    assert!(total_successes >= 80, "Only {} out of 100 operations succeeded", total_successes);
-    
+    assert!(
+        total_successes >= 80,
+        "Only {} out of 100 operations succeeded",
+        total_successes
+    );
+
     // Validar performance (deve completar em menos de 15 segundos)
-    assert!(elapsed.as_secs() < 15, "Concurrent stress test took too long: {:?}", elapsed);
-    
-    println!("Concurrent stress test completed in: {:?} with {} successes", elapsed, total_successes);
-    
+    assert!(
+        elapsed.as_secs() < 15,
+        "Concurrent stress test took too long: {:?}",
+        elapsed
+    );
+
+    println!(
+        "Concurrent stress test completed in: {:?} with {} successes",
+        elapsed, total_successes
+    );
+
     temp.close()?;
     Ok(())
 }
@@ -227,25 +267,25 @@ fn test_concurrent_stress() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_large_listing_performance() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial com dados grandes
     setup_large_dataset(&temp)?;
-    
+
     let start_time = Instant::now();
-    
+
     // Testar listagem de recursos
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("list").arg("resources");
     cmd.assert().success();
-    
+
     let elapsed = start_time.elapsed();
-    
+
     // Validar performance (deve completar em menos de 3 segundos)
     assert!(elapsed.as_secs() < 3, "Resource listing took too long: {:?}", elapsed);
-    
+
     println!("Large resource listing completed in: {:?}", elapsed);
-    
+
     temp.close()?;
     Ok(())
 }
@@ -254,46 +294,60 @@ fn test_large_listing_performance() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Batch Manager",
-        "--email", "batch@example.com",
-        "--company-name", "Batch Company"
+        "--name",
+        "Batch Manager",
+        "--email",
+        "batch@example.com",
+        "--company-name",
+        "Batch Company",
     ]);
     cmd.assert().success();
-    
+
     let start_time = Instant::now();
-    
+
     // Criar 50 empresas
     for i in 1..=50 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "company",
-            "--name", &format!("Company {}", i),
-            "--code", &format!("COMP-{}", i),
-            "--description", &format!("Description for company {}", i)
+            "create",
+            "company",
+            "--name",
+            &format!("Company {}", i),
+            "--code",
+            &format!("COMP-{}", i),
+            "--description",
+            &format!("Description for company {}", i),
         ]);
         cmd.assert().success();
     }
-    
+
     let elapsed = start_time.elapsed();
-    
+
     // Validar que todas as empresas foram criadas
     for i in 1..=50 {
-        let company_file = temp.child("companies").child(&format!("COMP-{}", i)).child("company.yaml");
+        let company_file = temp
+            .child("companies")
+            .child(&format!("COMP-{}", i))
+            .child("company.yaml");
         company_file.assert(predicate::path::exists());
     }
-    
+
     // Validar performance (deve completar em menos de 20 segundos)
-    assert!(elapsed.as_secs() < 20, "Batch company creation took too long: {:?}", elapsed);
-    
+    assert!(
+        elapsed.as_secs() < 20,
+        "Batch company creation took too long: {:?}",
+        elapsed
+    );
+
     println!("Batch company creation completed in: {:?}", elapsed);
-    
+
     temp.close()?;
     Ok(())
 }
@@ -302,45 +356,48 @@ fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial
     setup_test_environment(&temp)?;
-    
+
     // Criar dados para testar uso de memória
     for i in 1..=1000 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "resource",
-            &format!("Memory Test Resource {}", i), "Developer",
-            "--company-code", "TECH-CORP"
+            "create",
+            "resource",
+            &format!("Memory Test Resource {}", i),
+            "Developer",
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     // Validar que todos os recursos foram criados
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     resources_dir.assert(predicate::path::is_dir());
-    
+
     // Testar operações que consomem memória
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("list").arg("resources");
     cmd.assert().success();
-    
+
     // Testar geração de relatório
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("build");
     cmd.assert().success();
-    
+
     // Validar que o relatório foi gerado
     let public_dir = temp.child("public");
     let index_file = public_dir.child("index.html");
     index_file.assert(predicate::path::exists());
-    
+
     println!("Memory usage validation completed successfully");
-    
+
     temp.close()?;
     Ok(())
 }
@@ -349,36 +406,39 @@ fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_resource_cleanup_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial
     setup_test_environment(&temp)?;
-    
+
     // Criar dados temporários
     for i in 1..=100 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "resource",
-            &format!("Temp Resource {}", i), "Developer",
-            "--company-code", "TECH-CORP"
+            "create",
+            "resource",
+            &format!("Temp Resource {}", i),
+            "Developer",
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     // Validar que os recursos foram criados
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     resources_dir.assert(predicate::path::is_dir());
-    
+
     // Simular limpeza (fechando o diretório temporário)
     let start_time = Instant::now();
     temp.close()?;
     let elapsed = start_time.elapsed();
-    
+
     // Validar que a limpeza foi rápida (deve completar em menos de 1 segundo)
     assert!(elapsed.as_secs() < 1, "Resource cleanup took too long: {:?}", elapsed);
-    
+
     println!("Resource cleanup completed in: {:?}", elapsed);
-    
+
     Ok(())
 }
 
@@ -386,60 +446,73 @@ fn test_resource_cleanup_validation() -> Result<(), Box<dyn std::error::Error>> 
 #[test]
 fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    
+
     // Setup inicial
     setup_test_environment(&temp)?;
-    
+
     // Benchmark do comando init
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Benchmark Manager",
-        "--email", "benchmark@example.com",
-        "--company-name", "Benchmark Company"
+        "--name",
+        "Benchmark Manager",
+        "--email",
+        "benchmark@example.com",
+        "--company-name",
+        "Benchmark Company",
     ]);
     cmd.assert().success();
     let init_time = start_time.elapsed();
-    
+
     // Benchmark do comando create company
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "company",
-        "--name", "Benchmark Corp",
-        "--code", "BENCH-CORP",
-        "--description", "Benchmark company"
+        "create",
+        "company",
+        "--name",
+        "Benchmark Corp",
+        "--code",
+        "BENCH-CORP",
+        "--description",
+        "Benchmark company",
     ]);
     cmd.assert().success();
     let company_time = start_time.elapsed();
-    
+
     // Benchmark do comando create resource
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "resource",
-        "Benchmark Resource", "Developer",
-        "--company-code", "BENCH-CORP"
+        "create",
+        "resource",
+        "Benchmark Resource",
+        "Developer",
+        "--company-code",
+        "BENCH-CORP",
     ]);
     cmd.assert().success();
     let resource_time = start_time.elapsed();
-    
+
     // Benchmark do comando create project
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "project",
-        "Benchmark Project", "Benchmark project description",
-        "--company-code", "BENCH-CORP"
+        "create",
+        "project",
+        "Benchmark Project",
+        "Benchmark project description",
+        "--company-code",
+        "BENCH-CORP",
     ]);
     cmd.assert().success();
     let project_time = start_time.elapsed();
-    
+
     // Benchmark do comando build
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -447,21 +520,37 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("build");
     cmd.assert().success();
     let build_time = start_time.elapsed();
-    
+
     // Validar que todos os comandos foram executados rapidamente
     assert!(init_time.as_millis() < 1000, "Init command too slow: {:?}", init_time);
-    assert!(company_time.as_millis() < 1000, "Company creation too slow: {:?}", company_time);
-    assert!(resource_time.as_millis() < 1000, "Resource creation too slow: {:?}", resource_time);
-    assert!(project_time.as_millis() < 1000, "Project creation too slow: {:?}", project_time);
-    assert!(build_time.as_millis() < 2000, "Build command too slow: {:?}", build_time);
-    
+    assert!(
+        company_time.as_millis() < 1000,
+        "Company creation too slow: {:?}",
+        company_time
+    );
+    assert!(
+        resource_time.as_millis() < 1000,
+        "Resource creation too slow: {:?}",
+        resource_time
+    );
+    assert!(
+        project_time.as_millis() < 1000,
+        "Project creation too slow: {:?}",
+        project_time
+    );
+    assert!(
+        build_time.as_millis() < 2000,
+        "Build command too slow: {:?}",
+        build_time
+    );
+
     println!("Command benchmarks:");
     println!("  Init: {:?}", init_time);
     println!("  Company: {:?}", company_time);
     println!("  Resource: {:?}", resource_time);
     println!("  Project: {:?}", project_time);
     println!("  Build: {:?}", build_time);
-    
+
     temp.close()?;
     Ok(())
 }
@@ -473,67 +562,87 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
     cmd.current_dir(temp.path());
     cmd.args(&[
         "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Company"
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
     ]);
     cmd.assert().success();
-    
+
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create", "company",
-        "--name", "Tech Corp",
-        "--code", "TECH-CORP",
-        "--description", "Technology company"
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
     ]);
     cmd.assert().success();
-    
+
     Ok(())
 }
 
 fn setup_large_dataset(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     setup_test_environment(temp)?;
-    
+
     // Criar 50 recursos
     for i in 1..=50 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "resource",
-            &format!("Resource {}", i), "Developer",
-            "--company-code", "TECH-CORP"
+            "create",
+            "resource",
+            &format!("Resource {}", i),
+            "Developer",
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     // Criar 25 projetos
     for i in 1..=25 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "project",
-            &format!("Project {}", i), &format!("Description for project {}", i),
-            "--company-code", "TECH-CORP"
+            "create",
+            "project",
+            &format!("Project {}", i),
+            &format!("Description for project {}", i),
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     // Criar 100 tarefas
     for i in 1..=100 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create", "task",
-            "--name", &format!("Task {}", i),
-            "--description", &format!("Description for task {}", i),
-            "--start-date", "2024-01-01",
-            "--due-date", "2024-12-31",
-            "--project-code", "proj-1",
-            "--company-code", "TECH-CORP"
+            "create",
+            "task",
+            "--name",
+            &format!("Task {}", i),
+            "--description",
+            &format!("Description for task {}", i),
+            "--start-date",
+            "2024-01-01",
+            "--due-date",
+            "2024-12-31",
+            "--project-code",
+            "proj-1",
+            "--company-code",
+            "TECH-CORP",
         ]);
         cmd.assert().success();
     }
-    
+
     Ok(())
 }

@@ -1,7 +1,7 @@
-use std::path::Path;
-use std::fs;
 use crate::domain::project_management::ProjectTemplate;
 use serde_yaml;
+use std::fs;
+use std::path::Path;
 
 pub struct ListTemplatesUseCase;
 
@@ -36,14 +36,14 @@ impl ListTemplatesUseCase {
     }
 
     fn load_template_info(&self, path: &Path) -> Result<TemplateInfo, String> {
-        let content = fs::read_to_string(path)
-            .map_err(|e| format!("Failed to read template file: {}", e))?;
+        let content = fs::read_to_string(path).map_err(|e| format!("Failed to read template file: {}", e))?;
 
-        let template: ProjectTemplate = serde_yaml::from_str(&content)
-            .map_err(|e| format!("Failed to parse template YAML: {}", e))?;
+        let template: ProjectTemplate =
+            serde_yaml::from_str(&content).map_err(|e| format!("Failed to parse template YAML: {}", e))?;
 
         // Validate template
-        template.validate()
+        template
+            .validate()
             .map_err(|e| format!("Template validation failed: {}", e))?;
 
         Ok(TemplateInfo {
@@ -85,10 +85,7 @@ impl TemplateInfo {
     pub fn display_summary(&self) -> String {
         format!(
             "{} - {} resources, {} tasks, {} phases",
-            self.description,
-            self.resource_count,
-            self.task_count,
-            self.phase_count
+            self.description, self.resource_count, self.task_count, self.phase_count
         )
     }
 }
@@ -114,6 +111,9 @@ mod tests {
 
         assert_eq!(info.display_name(), "Web App (v1.0.0)");
         assert_eq!(info.display_tags(), "web, frontend");
-        assert_eq!(info.display_summary(), "A web application template - 3 resources, 5 tasks, 2 phases");
+        assert_eq!(
+            info.display_summary(),
+            "A web application template - 3 resources, 5 tasks, 2 phases"
+        );
     }
 }
