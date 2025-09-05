@@ -1,0 +1,153 @@
+use crate::{
+    application::{
+        create::{
+            resource::CreateResourceUseCase,
+            time_off::CreateTimeOffUseCase,
+            vacation::CreateVacationUseCase,
+        },
+        resource::{
+            deactivate_resource::DeactivateResourceUseCase,
+            describe_resource::DescribeResourceUseCase,
+            update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
+        },
+    },
+    infrastructure::persistence::resource_repository::FileResourceRepository,
+};
+use super::super::commands::ResourceCommand;
+use chrono::NaiveDate;
+
+pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn std::error::Error>> {
+    match command {
+        ResourceCommand::Create {
+            name,
+            code,
+            email,
+            description,
+        } => {
+            let resource_repository = FileResourceRepository::new(".");
+            let create_use_case = CreateResourceUseCase::new(resource_repository);
+
+            match create_use_case.execute(name, code, email, description) {
+                Ok(resource) => {
+                    println!("✅ Resource created successfully!");
+                    println!("   Name: {}", resource.name());
+                    println!("   Code: {}", resource.code());
+                    println!("   Email: {}", resource.email());
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to create resource: {}", e);
+                    Err(e.into())
+                }
+            }
+        }
+        ResourceCommand::TimeOff {
+            resource,
+            start_date,
+            end_date,
+            hours,
+            description,
+        } => {
+            let resource_repository = FileResourceRepository::new(".");
+            let create_use_case = CreateTimeOffUseCase::new(resource_repository);
+
+            let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid start date format: {}", e))?;
+            let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid end date format: {}", e))?;
+
+            match create_use_case.execute(resource, start, end, hours, description) {
+                Ok(_) => {
+                    println!("✅ Time off created successfully!");
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to create time off: {}", e);
+                    Err(e.into())
+                }
+            }
+        }
+        ResourceCommand::Vacation {
+            resource,
+            start_date,
+            end_date,
+            description,
+            with_compensation,
+        } => {
+            let resource_repository = FileResourceRepository::new(".");
+            let create_use_case = CreateVacationUseCase::new(resource_repository);
+
+            let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid start date format: {}", e))?;
+            let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+                .map_err(|e| format!("Invalid end date format: {}", e))?;
+
+            match create_use_case.execute(resource, start, end, description, with_compensation) {
+                Ok(_) => {
+                    println!("✅ Vacation created successfully!");
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to create vacation: {}", e);
+                    Err(e.into())
+                }
+            }
+        }
+        ResourceCommand::Describe { code } => {
+            let resource_repository = FileResourceRepository::new(".");
+            let describe_use_case = DescribeResourceUseCase::new(resource_repository);
+
+            match describe_use_case.execute(code) {
+                Ok(description) => {
+                    println!("{}", description);
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to describe resource: {}", e);
+                    Err(e.into())
+                }
+            }
+        }
+        ResourceCommand::Update {
+            code,
+            name,
+            email,
+            description,
+        } => {
+            let resource_repository = FileResourceRepository::new(".");
+            let update_use_case = UpdateResourceUseCase::new(resource_repository);
+
+            let args = UpdateResourceArgs {
+                name,
+                email,
+                description,
+            };
+
+            match update_use_case.execute(code, args) {
+                Ok(_) => {
+                    println!("✅ Resource updated successfully!");
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to update resource: {}", e);
+                    Err(e.into())
+                }
+            }
+        }
+        ResourceCommand::Deactivate { code } => {
+            let resource_repository = FileResourceRepository::new(".");
+            let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository);
+
+            match deactivate_use_case.execute(code) {
+                Ok(_) => {
+                    println!("✅ Resource deactivated successfully!");
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to deactivate resource: {}", e);
+                    Err(e.into())
+                }
+            }
+        }
+    }
+}

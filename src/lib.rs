@@ -15,7 +15,7 @@ pub mod interface;
 /// tanto pela CLI quanto por testes
 pub fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     let cli = interface::cli::Cli::parse();
-    interface::cli::run(cli)
+    cli.execute().map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync + 'static>)
 }
 
 /// Configuração da aplicação
