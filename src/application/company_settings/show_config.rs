@@ -9,7 +9,15 @@ impl ShowCompanyConfigUseCase {
     pub fn new() -> Self {
         Self
     }
+}
 
+impl Default for ShowCompanyConfigUseCase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ShowCompanyConfigUseCase {
     pub fn execute(&self, config: &Config) -> String {
         config.summary()
     }

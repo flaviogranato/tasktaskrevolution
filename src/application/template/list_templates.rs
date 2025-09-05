@@ -9,7 +9,15 @@ impl ListTemplatesUseCase {
     pub fn new() -> Self {
         Self
     }
+}
 
+impl Default for ListTemplatesUseCase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ListTemplatesUseCase {
     pub fn execute(&self, templates_dir: &Path) -> Result<Vec<TemplateInfo>, String> {
         if !templates_dir.exists() {
             return Err(format!("Templates directory does not exist: {:?}", templates_dir));

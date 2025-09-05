@@ -28,7 +28,7 @@ pub enum WorkDay {
 }
 
 impl WorkDay {
-    pub fn from_str(day: &str) -> Option<Self> {
+    pub fn parse_day(day: &str) -> Option<Self> {
         match day.to_lowercase().as_str() {
             "monday" | "segunda" | "seg" => Some(WorkDay::Monday),
             "tuesday" | "terça" | "ter" => Some(WorkDay::Tuesday),
@@ -242,11 +242,11 @@ mod tests {
     }
 
     #[test]
-    fn test_work_day_from_str() {
-        assert_eq!(WorkDay::from_str("monday"), Some(WorkDay::Monday));
-        assert_eq!(WorkDay::from_str("segunda"), Some(WorkDay::Monday));
-        assert_eq!(WorkDay::from_str("seg"), Some(WorkDay::Monday));
-        assert_eq!(WorkDay::from_str("invalid"), None);
+    fn test_work_day_parse_day() {
+        assert_eq!(WorkDay::parse_day("monday"), Some(WorkDay::Monday));
+        assert_eq!(WorkDay::parse_day("segunda"), Some(WorkDay::Monday));
+        assert_eq!(WorkDay::parse_day("seg"), Some(WorkDay::Monday));
+        assert_eq!(WorkDay::parse_day("invalid"), None);
     }
 
     #[test]

@@ -69,7 +69,7 @@ where
 
         if let Some(work_days) = updates.work_days {
             // Convert string work days to WorkDay enum
-            let work_days_enum: Vec<WorkDay> = work_days.iter().filter_map(|day| WorkDay::from_str(day)).collect();
+            let work_days_enum: Vec<WorkDay> = work_days.iter().filter_map(|day| WorkDay::parse_day(day)).collect();
 
             if !work_days_enum.is_empty() {
                 config.update_work_days(work_days_enum);
@@ -139,7 +139,7 @@ where
             if !work_days_strings.is_empty() {
                 let work_days_enum: Vec<WorkDay> = work_days_strings
                     .iter()
-                    .filter_map(|day| WorkDay::from_str(day))
+                    .filter_map(|day| WorkDay::parse_day(day))
                     .collect();
 
                 if !work_days_enum.is_empty() {
@@ -294,7 +294,15 @@ impl CompanyConfigUpdates {
             source: UpdateSource::Cli,
         }
     }
+}
 
+impl Default for CompanyConfigUpdates {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CompanyConfigUpdates {
     pub fn from_yaml() -> Self {
         Self {
             company_name: None,

@@ -9,7 +9,15 @@ impl LoadTemplateUseCase {
     pub fn new() -> Self {
         Self
     }
+}
 
+impl Default for LoadTemplateUseCase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl LoadTemplateUseCase {
     pub fn execute(&self, template_path: &Path) -> Result<ProjectTemplate, String> {
         if !template_path.exists() {
             return Err(format!("Template file does not exist: {:?}", template_path));
