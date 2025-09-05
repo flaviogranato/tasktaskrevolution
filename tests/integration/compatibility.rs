@@ -220,10 +220,24 @@ fn test_project_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
     
     // Validar que o projeto foi criado com formato atual
-    let project_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("project.yaml");
-    project_file.assert(predicate::path::exists());
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_file = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    project_file = Some(project_yaml);
+                    break;
+                }
+            }
+        }
+    }
     
-    let validator = YamlValidator::new(project_file.path())?;
+    let project_file = project_file.expect("Project file not found");
+    assert!(project_file.exists(), "Project file should exist");
+    
+    let validator = YamlValidator::new(&project_file)?;
     assert!(validator.has_field("apiVersion"));
     assert!(validator.has_field("kind"));
     assert!(validator.has_field("metadata"));
@@ -244,6 +258,30 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     setup_test_environment(&temp)?;
     create_test_project(&temp)?;
     
+    // Encontrar o código do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    // Ler o código do projeto do YAML
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let project_code = project_code.expect("Project code not found");
+    
     // Criar tarefa com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
@@ -253,22 +291,33 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
         "--description", "Modern task description",
         "--start-date", "2024-01-01",
         "--due-date", "2024-12-31",
-        "--project-code", "proj-1",
+        "--project-code", &project_code,
         "--company-code", "TECH-CORP"
     ]);
     cmd.assert().success();
     
     // Validar que a tarefa foi criada com formato atual
-    let task_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("tasks").child("task-1.yaml");
-    task_file.assert(predicate::path::exists());
+    let tasks_dir = temp.path().join("companies").join("TECH-CORP").join("projects").join(&project_code).join("tasks");
+    let mut task_file = None;
+    if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+        for entry in entries.flatten() {
+            if entry.path().extension().map_or(false, |ext| ext == "yaml") {
+                task_file = Some(entry.path());
+                break;
+            }
+        }
+    }
     
-    let validator = YamlValidator::new(task_file.path())?;
+    let task_file = task_file.expect("Task file not found");
+    assert!(task_file.exists(), "Task file should exist");
+    
+    let validator = YamlValidator::new(&task_file)?;
     assert!(validator.has_field("api_version")); // Tarefas usam api_version
     assert!(validator.has_field("kind"));
     assert!(validator.has_field("metadata"));
     assert!(validator.has_field("spec"));
     assert!(validator.field_equals("metadata.name", "Modern Task"));
-    assert!(validator.field_equals("spec.projectCode", "proj-1"));
+    assert!(validator.field_equals("spec.projectCode", &project_code));
     
     temp.close()?;
     Ok(())
@@ -368,10 +417,26 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
     
     // Validar versões de API
     let resource_file = temp.child("companies").child("TECH-CORP").child("resources").child("api_test_resource.yaml");
-    let project_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("project.yaml");
+    
+    // Encontrar o arquivo do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_file = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    project_file = Some(project_yaml);
+                    break;
+                }
+            }
+        }
+    }
+    
+    let project_file = project_file.expect("Project file not found");
     
     let resource_validator = YamlValidator::new(resource_file.path())?;
-    let project_validator = YamlValidator::new(project_file.path())?;
+    let project_validator = YamlValidator::new(&project_file)?;
     
     // Recursos usam apiVersion (camelCase)
     assert!(resource_validator.has_field("apiVersion"));
@@ -454,20 +519,47 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
     let tech_corp_dir = companies_dir.child("TECH-CORP");
     let resources_dir = tech_corp_dir.child("resources");
     let projects_dir = tech_corp_dir.child("projects");
-    let proj_1_dir = projects_dir.child("proj-1");
     
     companies_dir.assert(predicate::path::is_dir());
     tech_corp_dir.assert(predicate::path::is_dir());
     resources_dir.assert(predicate::path::is_dir());
     projects_dir.assert(predicate::path::is_dir());
-    proj_1_dir.assert(predicate::path::is_dir());
+    
+    // Verificar se existe pelo menos um projeto
+    let projects_path = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_found = false;
+    if let Ok(entries) = std::fs::read_dir(&projects_path) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                project_found = true;
+                break;
+            }
+        }
+    }
+    assert!(project_found, "No project directory found");
     
     // Validar arquivos específicos
     let resource_file = resources_dir.child("structure_test_resource.yaml");
-    let project_file = proj_1_dir.child("project.yaml");
+    
+    // Encontrar o arquivo do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_file = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    project_file = Some(project_yaml);
+                    break;
+                }
+            }
+        }
+    }
+    
+    let project_file = project_file.expect("Project file not found");
     
     resource_file.assert(predicate::path::exists());
-    project_file.assert(predicate::path::exists());
+    assert!(project_file.exists(), "Project file should exist");
     
     temp.close()?;
     Ok(())
