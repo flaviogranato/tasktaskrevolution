@@ -15,10 +15,10 @@ use super::super::commands::ListCommand;
 pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         ListCommand::Projects { company } => {
-            let project_repository = FileProjectRepository::new();
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let list_use_case = ListProjectsUseCase::new(project_repository);
 
-            match list_use_case.execute(company) {
+            match list_use_case.execute() {
                 Ok(projects) => {
                     if projects.is_empty() {
                         println!("No projects found.");
@@ -37,17 +37,17 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
             }
         }
         ListCommand::Tasks { project, company } => {
-            let task_repository = FileTaskRepository::new(".");
-            let list_use_case = ListTasksUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let list_use_case = ListTasksUseCase::new(project_repository);
 
-            match list_use_case.execute(project, company) {
+            match list_use_case.execute() {
                 Ok(tasks) => {
                     if tasks.is_empty() {
                         println!("No tasks found.");
                     } else {
                         println!("Tasks:");
                         for task in tasks {
-                            println!("  - {} ({}) - {}", task.name(), task.code(), task.state());
+                            println!("  - {} ({})", task.name(), task.code());
                         }
                     }
                     Ok(())
@@ -69,7 +69,7 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                     } else {
                         println!("Resources:");
                         for resource in resources {
-                            println!("  - {} ({}) - {}", resource.name(), resource.code(), resource.email());
+                            println!("  - {} ({}) - {}", resource.name(), resource.code(), resource.email().unwrap_or("N/A"));
                         }
                     }
                     Ok(())

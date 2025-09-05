@@ -1,3 +1,4 @@
+pub mod di_handler;
 pub mod init_handler;
 pub mod company_handler;
 pub mod project_handler;
@@ -12,3 +13,5 @@ pub mod report_handler;
 pub mod validate_handler;
 pub mod build_handler;
 pub mod template_handler;
+
+pub use di_handler::*;

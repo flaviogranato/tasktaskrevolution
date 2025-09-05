@@ -18,7 +18,7 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
             let project_repository = FileProjectRepository::new();
             let cancel_use_case = CancelProjectUseCase::new(project_repository);
 
-            match cancel_use_case.execute(code, company) {
+            match cancel_use_case.execute(&code) {
                 Ok(_) => {
                     println!("✅ Project cancelled successfully!");
                     Ok(())
@@ -30,10 +30,10 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
             }
         }
         DeleteCommand::Task { code, project, company } => {
-            let task_repository = FileTaskRepository::new(".");
-            let delete_use_case = DeleteTaskUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let delete_use_case = DeleteTaskUseCase::new(project_repository);
 
-            match delete_use_case.execute(code, project, company) {
+            match delete_use_case.execute(&code, &project) {
                 Ok(_) => {
                     println!("✅ Task deleted successfully!");
                     Ok(())
@@ -48,7 +48,7 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
             let resource_repository = FileResourceRepository::new(".");
             let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository);
 
-            match deactivate_use_case.execute(code) {
+            match deactivate_use_case.execute(&code) {
                 Ok(_) => {
                     println!("✅ Resource deactivated successfully!");
                     Ok(())

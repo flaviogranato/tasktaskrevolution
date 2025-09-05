@@ -2,7 +2,7 @@ use crate::{
     application::{
         create::task::{CreateTaskArgs, CreateTaskUseCase},
         task::{
-            assign_resource::AssignResourceUseCase,
+            assign_resource::AssignResourceToTaskUseCase,
             delete_task::DeleteTaskUseCase,
             describe_task::DescribeTaskUseCase,
             link_task::LinkTaskUseCase,
@@ -29,9 +29,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             due_date,
             assigned_resources,
         } => {
-            let task_repository = FileTaskRepository::new(".");
-            let project_repository = FileProjectRepository::new();
-            let create_use_case = CreateTaskUseCase::new(task_repository, project_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let create_use_case = CreateTaskUseCase::new(project_repository);
 
             let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
@@ -44,23 +43,18 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             let args = CreateTaskArgs {
                 name,
-                code,
                 project_code: project,
                 company_code: company,
-                description,
                 start_date: start,
                 due_date: due,
                 assigned_resources: assigned_resources_vec,
             };
 
             match create_use_case.execute(args) {
-                Ok(task) => {
+                Ok(_) => {
                     println!("✅ Task created successfully!");
-                    println!("   Name: {}", task.name());
-                    println!("   Code: {}", task.code());
+                    println!("   Name: {}", name);
                     println!("   Project: {}", project);
-                    println!("   Start: {}", task.start_date());
-                    println!("   Due: {}", task.due_date());
                     Ok(())
                 }
                 Err(e) => {
@@ -70,10 +64,10 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             }
         }
         TaskCommand::Describe { code, project, company } => {
-            let task_repository = FileTaskRepository::new(".");
-            let describe_use_case = DescribeTaskUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let describe_use_case = DescribeTaskUseCase::new(project_repository);
 
-            match describe_use_case.execute(code, project, company) {
+            match describe_use_case.execute(&code, &project, &company) {
                 Ok(description) => {
                     println!("{}", description);
                     Ok(())
@@ -93,8 +87,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             start_date,
             due_date,
         } => {
-            let task_repository = FileTaskRepository::new(".");
-            let update_use_case = UpdateTaskUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let update_use_case = UpdateTaskUseCase::new(project_repository);
 
             let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
@@ -110,7 +104,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 due_date: due,
             };
 
-            match update_use_case.execute(code, project, company, args) {
+            match update_use_case.execute(&code, &project, args) {
                 Ok(_) => {
                     println!("✅ Task updated successfully!");
                     Ok(())
@@ -122,10 +116,10 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             }
         }
         TaskCommand::Delete { code, project, company } => {
-            let task_repository = FileTaskRepository::new(".");
-            let delete_use_case = DeleteTaskUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let delete_use_case = DeleteTaskUseCase::new(project_repository);
 
-            match delete_use_case.execute(code, project, company) {
+            match delete_use_case.execute(&code, &project) {
                 Ok(_) => {
                     println!("✅ Task deleted successfully!");
                     Ok(())
@@ -137,10 +131,10 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             }
         }
         TaskCommand::Link { from, to, project, company } => {
-            let project_repository = FileProjectRepository::new();
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let link_use_case = LinkTaskUseCase::new(project_repository);
 
-            match link_use_case.execute(from, to, project, company) {
+            match link_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
                     println!("✅ Tasks linked successfully!");
                     Ok(())
@@ -153,9 +147,9 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
         }
         TaskCommand::Unlink { from, to, project, company } => {
             let task_repository = FileTaskRepository::new(".");
-            let unlink_use_case = crate::application::task::remove_dependency::RemoveDependencyUseCase::new(task_repository);
+            let unlink_use_case = crate::application::task::remove_dependency::RemoveTaskDependencyUseCase::new(task_repository);
 
-            match unlink_use_case.execute(from, to, project, company) {
+            match unlink_use_case.execute(&from, &to, &project, &company) {
                 Ok(_) => {
                     println!("✅ Task link removed successfully!");
                     Ok(())
@@ -167,10 +161,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             }
         }
         TaskCommand::AssignResource { task, project, company, resource } => {
-            let task_repository = FileTaskRepository::new(".");
-            let assign_use_case = AssignResourceUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let resource_repository = crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
+            let assign_use_case = AssignResourceToTaskUseCase::new(project_repository, resource_repository);
 
-            match assign_use_case.execute(task, project, company, resource) {
+            match assign_use_case.execute(&project, &task, &resource) {
                 Ok(_) => {
                     println!("✅ Resource assigned to task successfully!");
                     Ok(())

@@ -1,6 +1,9 @@
 use crate::{
-    application::init::{InitManagerData, InitManagerUseCase},
-    infrastructure::persistence::config_repository::FileConfigRepository,
+    application::{
+        di::DIFactory,
+        init::InitManagerData,
+    },
+    interface::cli::handlers::DI_HANDLER,
 };
 
 pub fn handle_init(
@@ -11,8 +14,8 @@ pub fn handle_init(
     work_hours_end: String,
     work_days: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let config_repository = FileConfigRepository::new();
-    let init_use_case = InitManagerUseCase::new(config_repository);
+    let container = DI_HANDLER.get_container()?;
+    let init_service: std::sync::Arc<crate::application::di::InitService> = container.resolve()?;
 
     let work_days_vec: Vec<String> = work_days
         .split(',')
@@ -28,7 +31,7 @@ pub fn handle_init(
         work_days: work_days_vec,
     };
 
-    match init_use_case.execute(init_data) {
+    match init_service.init_manager.execute(init_data) {
         Ok(_) => {
             println!("✅ Project management system initialized successfully!");
             Ok(())

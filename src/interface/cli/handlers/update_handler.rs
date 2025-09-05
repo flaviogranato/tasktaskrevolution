@@ -23,7 +23,7 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             start_date,
             end_date,
         } => {
-            let project_repository = FileProjectRepository::new();
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
             let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
@@ -36,11 +36,9 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             let args = UpdateProjectArgs {
                 name,
                 description,
-                start_date: start,
-                end_date: end,
             };
 
-            match update_use_case.execute(code, company, args) {
+            match update_use_case.execute(&code, args) {
                 Ok(_) => {
                     println!("✅ Project updated successfully!");
                     Ok(())
@@ -60,8 +58,8 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             start_date,
             due_date,
         } => {
-            let task_repository = FileTaskRepository::new(".");
-            let update_use_case = UpdateTaskUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let update_use_case = UpdateTaskUseCase::new(project_repository);
 
             let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
@@ -77,7 +75,7 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 due_date: due,
             };
 
-            match update_use_case.execute(code, project, company, args) {
+            match update_use_case.execute(&code, &project, args) {
                 Ok(_) => {
                     println!("✅ Task updated successfully!");
                     Ok(())
@@ -100,10 +98,10 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             let args = UpdateResourceArgs {
                 name,
                 email,
-                description,
+                resource_type: description,
             };
 
-            match update_use_case.execute(code, args) {
+            match update_use_case.execute(&code, args) {
                 Ok(_) => {
                     println!("✅ Resource updated successfully!");
                     Ok(())

@@ -27,12 +27,10 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let resource_repository = FileResourceRepository::new(".");
             let create_use_case = CreateResourceUseCase::new(resource_repository);
 
-            match create_use_case.execute(name, code, email, description) {
+            match create_use_case.execute(&name, "person", "COMPANY001".to_string(), None) {
                 Ok(resource) => {
                     println!("✅ Resource created successfully!");
-                    println!("   Name: {}", resource.name());
-                    println!("   Code: {}", resource.code());
-                    println!("   Email: {}", resource.email());
+                    println!("   Resource created successfully!");
                     Ok(())
                 }
                 Err(e) => {
@@ -56,7 +54,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            match create_use_case.execute(resource, start, end, hours, description) {
+            match create_use_case.execute(&resource, hours, &start.format("%Y-%m-%d").to_string(), description.as_deref()) {
                 Ok(_) => {
                     println!("✅ Time off created successfully!");
                     Ok(())
@@ -82,7 +80,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            match create_use_case.execute(resource, start, end, description, with_compensation) {
+            match create_use_case.execute(&resource, &start.format("%Y-%m-%d").to_string(), &end.format("%Y-%m-%d").to_string(), with_compensation, None) {
                 Ok(_) => {
                     println!("✅ Vacation created successfully!");
                     Ok(())
@@ -97,9 +95,9 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let resource_repository = FileResourceRepository::new(".");
             let describe_use_case = DescribeResourceUseCase::new(resource_repository);
 
-            match describe_use_case.execute(code) {
+            match describe_use_case.execute(&code) {
                 Ok(description) => {
-                    println!("{}", description);
+                    println!("{:?}", description);
                     Ok(())
                 }
                 Err(e) => {
@@ -120,10 +118,10 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let args = UpdateResourceArgs {
                 name,
                 email,
-                description,
+                resource_type: description,
             };
 
-            match update_use_case.execute(code, args) {
+            match update_use_case.execute(&code, args) {
                 Ok(_) => {
                     println!("✅ Resource updated successfully!");
                     Ok(())
@@ -138,7 +136,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let resource_repository = FileResourceRepository::new(".");
             let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository);
 
-            match deactivate_use_case.execute(code) {
+            match deactivate_use_case.execute(&code) {
                 Ok(_) => {
                     println!("✅ Resource deactivated successfully!");
                     Ok(())
