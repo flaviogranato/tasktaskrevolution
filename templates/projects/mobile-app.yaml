@@ -1,0 +1,147 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: ProjectTemplate
+metadata:
+  name: "Mobile Application"
+  description: "Template for mobile applications (iOS/Android) with backend API"
+  version: "1.0.0"
+  tags: ["mobile", "ios", "android", "react-native", "flutter"]
+  category: "application"
+spec:
+  project:
+    name: "{{project_name}}"
+    description: "{{project_description}}"
+    start_date: "{{start_date}}"
+    end_date: "{{end_date}}"
+    timezone: "{{timezone}}"
+  resources:
+    - name: "{{mobile_developer}}"
+      type: "Mobile Developer"
+      skills: ["React Native", "TypeScript", "iOS", "Android", "Mobile UI"]
+      capacity: 8
+    - name: "{{backend_developer}}"
+      type: "Backend Developer"
+      skills: ["Rust", "PostgreSQL", "API Design", "Docker", "Mobile APIs"]
+      capacity: 8
+    - name: "{{ui_designer}}"
+      type: "Mobile UI/UX Designer"
+      skills: ["Figma", "Mobile Design", "iOS HIG", "Material Design", "User Research"]
+      capacity: 6
+    - name: "{{qa_engineer}}"
+      type: "QA Engineer"
+      skills: ["Mobile Testing", "Automation", "Device Testing", "Performance Testing"]
+      capacity: 6
+  tasks:
+    - name: "Project Setup & Planning"
+      description: "Initialize mobile project, setup development environment, and create project documentation"
+      priority: "high"
+      category: "setup"
+      estimated_hours: 20
+      dependencies: []
+    - name: "Mobile UI/UX Design"
+      description: "Create mobile wireframes, mockups, and design system following platform guidelines"
+      priority: "high"
+      category: "design"
+      estimated_hours: 50
+      dependencies: ["Project Setup & Planning"]
+    - name: "Backend API Development"
+      description: "Develop mobile-optimized REST API with authentication and core business logic"
+      priority: "high"
+      category: "development"
+      estimated_hours: 70
+      dependencies: ["Project Setup & Planning"]
+    - name: "Mobile App Development"
+      description: "Build cross-platform mobile application with native performance"
+      priority: "high"
+      category: "development"
+      estimated_hours: 120
+      dependencies: ["Mobile UI/UX Design", "Backend API Development"]
+    - name: "Database Design & Setup"
+      description: "Design mobile-optimized database schema and setup production database"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 20
+      dependencies: ["Backend API Development"]
+    - name: "Mobile Testing & QA"
+      description: "Implement mobile-specific testing, device testing, and performance optimization"
+      priority: "medium"
+      category: "testing"
+      estimated_hours: 80
+      dependencies: ["Mobile App Development"]
+    - name: "App Store Preparation"
+      description: "Prepare app for store submission, create store assets, and handle review process"
+      priority: "medium"
+      category: "deployment"
+      estimated_hours: 40
+      dependencies: ["Mobile Testing & QA"]
+    - name: "DevOps & CI/CD"
+      description: "Setup mobile CI/CD pipeline, automated testing, and deployment"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 30
+      dependencies: ["Database Design & Setup", "Mobile Testing & QA"]
+    - name: "Documentation & Handover"
+      description: "Create user documentation, technical docs, and app store descriptions"
+      priority: "low"
+      category: "documentation"
+      estimated_hours: 20
+      dependencies: ["App Store Preparation"]
+  phases:
+    - name: "Planning & Design"
+      duration: 3
+      tasks: ["Project Setup & Planning", "Mobile UI/UX Design"]
+    - name: "Development"
+      duration: 5
+      tasks: ["Backend API Development", "Mobile App Development", "Database Design & Setup"]
+    - name: "Testing & Deployment"
+      duration: 3
+      tasks: ["Mobile Testing & QA", "App Store Preparation", "DevOps & CI/CD"]
+    - name: "Finalization"
+      duration: 1
+      tasks: ["Documentation & Handover"]
+  variables:
+    project_name:
+      type: "string"
+      required: true
+      description: "Name of the mobile project"
+      example: "My Mobile App"
+    project_description:
+      type: "string"
+      required: true
+      description: "Brief description of the mobile project"
+      example: "A mobile application for task management"
+    start_date:
+      type: "date"
+      required: true
+      description: "Project start date"
+      example: "2024-01-15"
+    end_date:
+      type: "date"
+      required: true
+      description: "Project end date"
+      example: "2024-04-15"
+    timezone:
+      type: "string"
+      required: false
+      default: "UTC"
+      description: "Project timezone"
+      example: "America/Sao_Paulo"
+    mobile_developer:
+      type: "string"
+      required: true
+      description: "Name of the mobile developer"
+      example: "Alice Johnson"
+    backend_developer:
+      type: "string"
+      required: true
+      description: "Name of the backend developer"
+      example: "Bob Smith"
+    ui_designer:
+      type: "string"
+      required: true
+      description: "Name of the mobile UI/UX designer"
+      example: "Diana Prince"
+    qa_engineer:
+      type: "string"
+      required: true
+      description: "Name of the QA engineer"
+      example: "Eve Wilson"

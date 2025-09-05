@@ -1,0 +1,141 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: ProjectTemplate
+metadata:
+  name: "Web Application"
+  description: "Template for modern web applications with frontend and backend"
+  version: "1.0.0"
+  tags: ["web", "frontend", "backend", "fullstack"]
+  category: "application"
+spec:
+  project:
+    name: "{{project_name}}"
+    description: "{{project_description}}"
+    start_date: "{{start_date}}"
+    end_date: "{{end_date}}"
+    timezone: "{{timezone}}"
+  resources:
+    - name: "{{frontend_developer}}"
+      type: "Frontend Developer"
+      skills: ["React", "TypeScript", "CSS", "HTML"]
+      capacity: 8
+    - name: "{{backend_developer}}"
+      type: "Backend Developer"
+      skills: ["Rust", "PostgreSQL", "API Design", "Docker"]
+      capacity: 8
+    - name: "{{devops_engineer}}"
+      type: "DevOps Engineer"
+      skills: ["Docker", "Kubernetes", "CI/CD", "AWS"]
+      capacity: 4
+    - name: "{{ui_designer}}"
+      type: "UI/UX Designer"
+      skills: ["Figma", "Design Systems", "User Research", "Prototyping"]
+      capacity: 6
+  tasks:
+    - name: "Project Setup & Planning"
+      description: "Initialize project structure, setup repositories, and create initial documentation"
+      priority: "high"
+      category: "setup"
+      estimated_hours: 16
+      dependencies: []
+    - name: "UI/UX Design"
+      description: "Create wireframes, mockups, and design system"
+      priority: "high"
+      category: "design"
+      estimated_hours: 40
+      dependencies: ["Project Setup & Planning"]
+    - name: "Backend API Development"
+      description: "Develop REST API with authentication and core business logic"
+      priority: "high"
+      category: "development"
+      estimated_hours: 80
+      dependencies: ["Project Setup & Planning"]
+    - name: "Frontend Development"
+      description: "Build responsive web interface with modern framework"
+      priority: "high"
+      category: "development"
+      estimated_hours: 100
+      dependencies: ["UI/UX Design", "Backend API Development"]
+    - name: "Database Design & Setup"
+      description: "Design database schema and setup production database"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 24
+      dependencies: ["Backend API Development"]
+    - name: "Testing & Quality Assurance"
+      description: "Implement unit tests, integration tests, and QA processes"
+      priority: "medium"
+      category: "testing"
+      estimated_hours: 60
+      dependencies: ["Frontend Development", "Backend API Development"]
+    - name: "DevOps & Deployment"
+      description: "Setup CI/CD pipeline, containerization, and deployment"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 32
+      dependencies: ["Database Design & Setup", "Testing & Quality Assurance"]
+    - name: "Documentation & Handover"
+      description: "Create user documentation and technical handover"
+      priority: "low"
+      category: "documentation"
+      estimated_hours: 16
+      dependencies: ["DevOps & Deployment"]
+  phases:
+    - name: "Planning & Design"
+      duration: 2
+      tasks: ["Project Setup & Planning", "UI/UX Design"]
+    - name: "Development"
+      duration: 4
+      tasks: ["Backend API Development", "Frontend Development", "Database Design & Setup"]
+    - name: "Testing & Deployment"
+      duration: 2
+      tasks: ["Testing & Quality Assurance", "DevOps & Deployment"]
+    - name: "Finalization"
+      duration: 1
+      tasks: ["Documentation & Handover"]
+  variables:
+    project_name:
+      type: "string"
+      required: true
+      description: "Name of the project"
+      example: "My Web App"
+    project_description:
+      type: "string"
+      required: true
+      description: "Brief description of the project"
+      example: "A modern web application for managing tasks"
+    start_date:
+      type: "date"
+      required: true
+      description: "Project start date"
+      example: "2024-01-15"
+    end_date:
+      type: "date"
+      required: true
+      description: "Project end date"
+      example: "2024-03-15"
+    timezone:
+      type: "string"
+      required: false
+      default: "UTC"
+      description: "Project timezone"
+      example: "America/Sao_Paulo"
+    frontend_developer:
+      type: "string"
+      required: true
+      description: "Name of the frontend developer"
+      example: "Alice Johnson"
+    backend_developer:
+      type: "string"
+      required: true
+      description: "Name of the backend developer"
+      example: "Bob Smith"
+    devops_engineer:
+      type: "string"
+      required: true
+      description: "Name of the DevOps engineer"
+      example: "Charlie Brown"
+    ui_designer:
+      type: "string"
+      required: true
+      description: "Name of the UI/UX designer"
+      example: "Diana Prince"
