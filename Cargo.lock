@@ -16,6 +16,7 @@ dependencies = [
  "globwalk",
  "mockall",
  "predicates",
+ "rand",
  "regex",
  "rust-embed",
  "serde",
