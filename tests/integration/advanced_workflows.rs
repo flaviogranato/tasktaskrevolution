@@ -165,6 +165,30 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         ("Deployment", "Deploy to production environment", "2024-03-11", "2024-03-15")
     ];
     
+    // Primeiro, encontrar o código do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-SOL").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    // Ler o código do projeto do YAML
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let project_code = project_code.expect("Project code not found");
+    
     for (name, description, start_date, end_date) in tasks {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
@@ -174,7 +198,7 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
             "--description", description,
             "--start-date", start_date,
             "--due-date", end_date,
-            "--project-code", "proj-1",
+            "--project-code", &project_code,
             "--company-code", "TECH-SOL"
         ]);
         cmd.assert().success();
@@ -183,7 +207,7 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     // 6. Validar estrutura criada
     let config_file = temp.child("config.yaml");
     let company_file = temp.child("companies").child("TECH-SOL").child("company.yaml");
-    let project_file = temp.child("companies").child("TECH-SOL").child("projects").child("proj-1").child("project.yaml");
+    let project_file = temp.child("companies").child("TECH-SOL").child("projects").child(&project_code).child("project.yaml");
     
     // Validar config
     let validator = YamlValidator::new(config_file.path())?;
@@ -267,12 +291,25 @@ fn test_multi_company_management() -> Result<(), Box<dyn std::error::Error>> {
     // Validar que todas as empresas foram criadas
     for (name, code, _) in &companies {
         let company_file = temp.child("companies").child(code).child("company.yaml");
-        let project_file = temp.child("companies").child(code).child("projects").child("proj-1").child("project.yaml");
-        
         company_file.assert(predicate::path::exists());
-        project_file.assert(predicate::path::exists());
         
-        // Validar conteúdo
+        // Verificar se existe pelo menos um projeto (código pode variar)
+        let projects_dir = temp.path().join("companies").join(code).join("projects");
+        let mut project_found = false;
+        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+            for entry in entries.flatten() {
+                if entry.path().is_dir() {
+                    let project_yaml = entry.path().join("project.yaml");
+                    if project_yaml.exists() {
+                        project_found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        assert!(project_found, "No project found for company {}", code);
+        
+        // Validar conteúdo da empresa
         let validator = YamlValidator::new(company_file.path())?;
         assert!(validator.field_equals("metadata.code", code));
         assert!(validator.field_equals("metadata.name", name));
@@ -357,15 +394,26 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     
     // Validar que todos os projetos foram criados
     for (_name, _description, company_code) in &projects {
-        let project_file = temp.child("companies").child(company_code).child("projects").child("proj-1").child("project.yaml");
-        project_file.assert(predicate::path::exists());
-        
-        // Validar estrutura básica do arquivo
-        let validator = YamlValidator::new(project_file.path())?;
-        assert!(validator.has_field("metadata.name"));
-        assert!(validator.has_field("metadata.description"));
-        assert!(validator.field_not_empty("metadata.name"));
-        assert!(validator.field_not_empty("metadata.description"));
+        let projects_dir = temp.path().join("companies").join(company_code).join("projects");
+        let mut project_found = false;
+        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+            for entry in entries.flatten() {
+                if entry.path().is_dir() {
+                    let project_yaml = entry.path().join("project.yaml");
+                    if project_yaml.exists() {
+                        project_found = true;
+                        // Validar estrutura básica do arquivo
+                        let validator = YamlValidator::new(&project_yaml)?;
+                        assert!(validator.has_field("metadata.name"));
+                        assert!(validator.has_field("metadata.description"));
+                        assert!(validator.field_not_empty("metadata.name"));
+                        assert!(validator.field_not_empty("metadata.description"));
+                        break;
+                    }
+                }
+            }
+        }
+        assert!(project_found, "No project found for company {}", company_code);
     }
     
     // Testar listagem de recursos
@@ -403,6 +451,30 @@ fn test_task_dependency_management() -> Result<(), Box<dyn std::error::Error>> {
         ("Task 8: Deployment", "Deploy to production", "2024-02-26", "2024-02-28")
     ];
     
+    // Primeiro, encontrar o código do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    // Ler o código do projeto do YAML
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let project_code = project_code.expect("Project code not found");
+    
     for (name, description, start_date, end_date) in tasks {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
@@ -412,23 +484,28 @@ fn test_task_dependency_management() -> Result<(), Box<dyn std::error::Error>> {
             "--description", description,
             "--start-date", start_date,
             "--due-date", end_date,
-            "--project-code", "proj-1",
+            "--project-code", &project_code,
             "--company-code", "TECH-CORP"
         ]);
         cmd.assert().success();
     }
     
     // Validar que todas as tarefas foram criadas
-    for i in 1..=8 {
-        let task_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("tasks").child(&format!("task-{}.yaml", i));
-        task_file.assert(predicate::path::exists());
-        
-        let validator = YamlValidator::new(task_file.path())?;
-        assert!(validator.field_equals("spec.projectCode", "proj-1"));
-        assert!(validator.field_not_empty("metadata.name"));
-        assert!(validator.field_not_empty("spec.status"));
-        assert!(validator.field_not_empty("spec.priority"));
+    let tasks_dir = temp.path().join("companies").join("TECH-CORP").join("projects").join(&project_code).join("tasks");
+    let mut task_count = 0;
+    if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+        for entry in entries.flatten() {
+            if entry.path().extension().map_or(false, |ext| ext == "yaml") {
+                task_count += 1;
+                let validator = YamlValidator::new(&entry.path())?;
+                assert!(validator.field_equals("spec.projectCode", &project_code));
+                assert!(validator.field_not_empty("metadata.name"));
+                assert!(validator.field_not_empty("spec.status"));
+                assert!(validator.field_not_empty("spec.priority"));
+            }
+        }
     }
+    assert!(task_count >= 8, "Expected at least 8 tasks, found {}", task_count);
     
     // Testar listagem de tarefas
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -491,8 +568,20 @@ fn test_concurrent_operations() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     // Verificar que pelo menos um projeto foi criado
-    let project_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("project.yaml");
-    project_file.assert(predicate::path::exists());
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_found = false;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    project_found = true;
+                    break;
+                }
+            }
+        }
+    }
+    assert!(project_found, "No project found");
     
     // Testar validação do sistema
     let mut cmd = Command::cargo_bin("ttr")?;
