@@ -1,0 +1,147 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: ProjectTemplate
+metadata:
+  name: "Data Pipeline"
+  description: "Template for data processing pipelines with ETL/ELT workflows"
+  version: "1.0.0"
+  tags: ["data", "pipeline", "etl", "analytics", "big-data"]
+  category: "data"
+spec:
+  project:
+    name: "{{project_name}}"
+    description: "{{project_description}}"
+    start_date: "{{start_date}}"
+    end_date: "{{end_date}}"
+    timezone: "{{timezone}}"
+  resources:
+    - name: "{{data_engineer}}"
+      type: "Data Engineer"
+      skills: ["Python", "SQL", "Apache Airflow", "Docker", "Data Warehousing"]
+      capacity: 8
+    - name: "{{data_analyst}}"
+      type: "Data Analyst"
+      skills: ["SQL", "Python", "Data Visualization", "Statistics", "Business Intelligence"]
+      capacity: 6
+    - name: "{{devops_engineer}}"
+      type: "DevOps Engineer"
+      skills: ["Docker", "Kubernetes", "CI/CD", "Monitoring", "Data Infrastructure"]
+      capacity: 6
+    - name: "{{data_scientist}}"
+      type: "Data Scientist"
+      skills: ["Python", "Machine Learning", "Statistics", "Data Modeling", "Jupyter"]
+      capacity: 6
+  tasks:
+    - name: "Data Architecture Design"
+      description: "Design data pipeline architecture, data flow, and processing requirements"
+      priority: "high"
+      category: "architecture"
+      estimated_hours: 32
+      dependencies: []
+    - name: "Data Source Analysis"
+      description: "Analyze data sources, data quality, and integration requirements"
+      priority: "high"
+      category: "analysis"
+      estimated_hours: 24
+      dependencies: ["Data Architecture Design"]
+    - name: "Data Warehouse Setup"
+      description: "Setup data warehouse, configure databases, and create data models"
+      priority: "high"
+      category: "infrastructure"
+      estimated_hours: 28
+      dependencies: ["Data Architecture Design"]
+    - name: "ETL Pipeline Development"
+      description: "Develop data extraction, transformation, and loading processes"
+      priority: "high"
+      category: "development"
+      estimated_hours: 80
+      dependencies: ["Data Source Analysis", "Data Warehouse Setup"]
+    - name: "Data Quality & Validation"
+      description: "Implement data quality checks, validation rules, and monitoring"
+      priority: "medium"
+      category: "development"
+      estimated_hours: 40
+      dependencies: ["ETL Pipeline Development"]
+    - name: "Data Visualization & Reporting"
+      description: "Create dashboards, reports, and data visualization tools"
+      priority: "medium"
+      category: "development"
+      estimated_hours: 50
+      dependencies: ["ETL Pipeline Development"]
+    - name: "Pipeline Orchestration"
+      description: "Setup workflow orchestration, scheduling, and monitoring"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 35
+      dependencies: ["Data Quality & Validation"]
+    - name: "Performance Optimization"
+      description: "Optimize pipeline performance, scalability, and resource usage"
+      priority: "medium"
+      category: "optimization"
+      estimated_hours: 30
+      dependencies: ["Pipeline Orchestration"]
+    - name: "Documentation & Handover"
+      description: "Create data documentation, pipeline docs, and user guides"
+      priority: "low"
+      category: "documentation"
+      estimated_hours: 20
+      dependencies: ["Performance Optimization"]
+  phases:
+    - name: "Architecture & Analysis"
+      duration: 2
+      tasks: ["Data Architecture Design", "Data Source Analysis", "Data Warehouse Setup"]
+    - name: "Development"
+      duration: 4
+      tasks: ["ETL Pipeline Development", "Data Quality & Validation", "Data Visualization & Reporting"]
+    - name: "Infrastructure & Optimization"
+      duration: 2
+      tasks: ["Pipeline Orchestration", "Performance Optimization"]
+    - name: "Finalization"
+      duration: 1
+      tasks: ["Documentation & Handover"]
+  variables:
+    project_name:
+      type: "string"
+      required: true
+      description: "Name of the data pipeline project"
+      example: "Customer Analytics Pipeline"
+    project_description:
+      type: "string"
+      required: true
+      description: "Brief description of the data pipeline"
+      example: "A data pipeline for processing customer analytics and generating insights"
+    start_date:
+      type: "date"
+      required: true
+      description: "Project start date"
+      example: "2024-01-15"
+    end_date:
+      type: "date"
+      required: true
+      description: "Project end date"
+      example: "2024-03-15"
+    timezone:
+      type: "string"
+      required: false
+      default: "UTC"
+      description: "Project timezone"
+      example: "America/Sao_Paulo"
+    data_engineer:
+      type: "string"
+      required: true
+      description: "Name of the data engineer"
+      example: "Alice Johnson"
+    data_analyst:
+      type: "string"
+      required: true
+      description: "Name of the data analyst"
+      example: "Bob Smith"
+    devops_engineer:
+      type: "string"
+      required: true
+      description: "Name of the DevOps engineer"
+      example: "Charlie Brown"
+    data_scientist:
+      type: "string"
+      required: true
+      description: "Name of the data scientist"
+      example: "Diana Prince"

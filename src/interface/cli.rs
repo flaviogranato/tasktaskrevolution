@@ -27,6 +27,11 @@ use crate::{
             link_task::LinkTaskUseCase,
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
+        template::{
+            list_templates::ListTemplatesUseCase,
+            load_template::LoadTemplateUseCase,
+            create_from_template::CreateFromTemplateUseCase,
+        },
         validate::{
             business_rules::ValidateBusinessRulesUseCase, data_integrity::ValidateDataIntegrityUseCase,
             entities::ValidateEntitiesUseCase, system::ValidateSystemUseCase,
@@ -40,7 +45,7 @@ use crate::{
 use clap::{Parser, Subcommand};
 use csv::Writer;
 use serde::Deserialize;
-use std::{env, path::PathBuf};
+use std::{collections::HashMap, env, path::PathBuf};
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"),
@@ -134,6 +139,11 @@ enum Commands {
         #[clap(subcommand)]
         describe_command: DescribeCommands,
     },
+    /// Manage project templates
+    Template {
+        #[clap(subcommand)]
+        template_command: TemplateCommands,
+    },
     /// Manage tasks within a project
     Task {
         #[clap(subcommand)]
@@ -153,6 +163,12 @@ pub enum CreateCommands {
         /// Company code (required for new structure)
         #[clap(long, value_name = "COMPANY_CODE")]
         company_code: Option<String>,
+        /// Create project from template
+        #[clap(long, value_name = "TEMPLATE_NAME")]
+        from_template: Option<String>,
+        /// Template variables (key=value pairs)
+        #[clap(long, value_delimiter = ',')]
+        template_vars: Vec<String>,
     },
     /// Create a new resource (person)
     #[clap(alias = "res")]
@@ -377,6 +393,32 @@ enum TaskCommands {
     },
 }
 
+#[derive(Subcommand)]
+enum TemplateCommands {
+    /// List available project templates
+    List,
+    /// Show details of a specific template
+    Show {
+        /// Template name
+        name: String,
+    },
+    /// Create a new project from a template
+    Create {
+        /// Template name
+        template: String,
+        /// Project name
+        name: String,
+        /// Project description
+        description: Option<String>,
+        /// Company code
+        #[clap(long, value_name = "COMPANY_CODE")]
+        company_code: Option<String>,
+        /// Template variables (key=value pairs)
+        #[clap(long, value_delimiter = ',')]
+        variables: Vec<String>,
+    },
+}
+
 fn start_dev_server(
     public_dir: &std::path::Path,
     host: &str,
@@ -559,6 +601,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 name,
                 description,
                 company_code,
+                from_template,
+                template_vars,
             } => {
                 let repository = FileProjectRepository::new();
                 let use_case = CreateProjectUseCase::new(repository);
@@ -567,7 +611,42 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 // TODO: In the future, we should require company_code or detect from context
                 let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
 
-                use_case.execute(name, description.as_deref(), company_code)?;
+                if let Some(template_name) = from_template {
+                    // Create project from template
+                    let templates_dir = std::path::Path::new("templates/projects");
+                    let load_use_case = LoadTemplateUseCase::new();
+                    let template = load_use_case.load_by_name(templates_dir, &template_name)?;
+
+                    // Parse template variables
+                    let mut variables = HashMap::new();
+                    for var in template_vars {
+                        if let Some((key, value)) = var.split_once('=') {
+                            variables.insert(key.to_string(), value.to_string());
+                        }
+                    }
+
+                    // Add default variables
+                    variables.insert("project_name".to_string(), name.clone());
+                    if let Some(desc) = description {
+                        variables.insert("project_description".to_string(), desc.to_string());
+                    }
+
+                    let create_from_template_use_case = CreateFromTemplateUseCase::new(
+                        use_case,
+                        CreateResourceUseCase::new(FileResourceRepository::new(".")),
+                        CreateTaskUseCase::new(FileProjectRepository::new()),
+                    );
+
+                    let created_project = create_from_template_use_case.execute(&template, &variables, company_code)?;
+                    println!("{}", created_project.display_summary());
+                    println!("\nResources:");
+                    println!("{}", created_project.display_resources());
+                    println!("\nTasks:");
+                    println!("{}", created_project.display_tasks());
+                } else {
+                    // Create project normally
+                    use_case.execute(name, description.as_deref(), company_code)?;
+                }
                 Ok(())
             }
             CreateCommands::Resource {
@@ -1413,6 +1492,134 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 }
             }
             Ok(())
+        }
+        Commands::Template { template_command } => {
+            match template_command {
+                TemplateCommands::List => {
+                    let templates_dir = std::path::Path::new("templates/projects");
+                    let use_case = ListTemplatesUseCase::new();
+                    
+                    match use_case.execute(templates_dir) {
+                        Ok(templates) => {
+                            if templates.is_empty() {
+                                println!("No templates found in templates/projects/");
+                            } else {
+                                println!("Available project templates:");
+                                println!();
+                                for template in templates {
+                                    println!("  {} - {}", template.display_name(), template.display_summary());
+                                    if !template.tags.is_empty() {
+                                        println!("    Tags: {}", template.display_tags());
+                                    }
+                                    println!();
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            println!("Error listing templates: {}", e);
+                        }
+                    }
+                    Ok(())
+                }
+                TemplateCommands::Show { name } => {
+                    let templates_dir = std::path::Path::new("templates/projects");
+                    let use_case = LoadTemplateUseCase::new();
+                    
+                    match use_case.load_by_name(templates_dir, &name) {
+                        Ok(template) => {
+                            println!("Template: {}", template.metadata.name);
+                            println!("Description: {}", template.metadata.description);
+                            println!("Version: {}", template.metadata.version);
+                            println!("Category: {}", template.metadata.category);
+                            println!("Tags: {}", template.metadata.tags.join(", "));
+                            println!();
+                            println!("Resources ({}):", template.spec.resources.len());
+                            for resource in &template.spec.resources {
+                                println!("  - {} ({})", resource.name, resource.r#type);
+                                println!("    Skills: {}", resource.skills.join(", "));
+                                println!("    Capacity: {} hours/day", resource.capacity);
+                            }
+                            println!();
+                            println!("Tasks ({}):", template.spec.tasks.len());
+                            for task in &template.spec.tasks {
+                                println!("  - {} ({}h, {})", task.name, task.estimated_hours, task.priority);
+                                println!("    Category: {}", task.category);
+                                if !task.dependencies.is_empty() {
+                                    println!("    Dependencies: {}", task.dependencies.join(", "));
+                                }
+                            }
+                            println!();
+                            println!("Phases ({}):", template.spec.phases.len());
+                            for phase in &template.spec.phases {
+                                println!("  - {} ({} weeks)", phase.name, phase.duration);
+                                println!("    Tasks: {}", phase.tasks.join(", "));
+                            }
+                            println!();
+                            println!("Variables:");
+                            for (name, var) in &template.spec.variables {
+                                println!("  - {} ({})", name, var.r#type);
+                                println!("    Description: {}", var.description);
+                                println!("    Example: {}", var.example);
+                                if var.required {
+                                    println!("    Required: Yes");
+                                } else {
+                                    println!("    Required: No");
+                                    if let Some(default) = &var.default {
+                                        println!("    Default: {}", default);
+                                    }
+                                }
+                                println!();
+                            }
+                        }
+                        Err(e) => {
+                            println!("Error loading template '{}': {}", name, e);
+                        }
+                    }
+                    Ok(())
+                }
+                TemplateCommands::Create {
+                    template,
+                    name,
+                    description,
+                    company_code,
+                    variables,
+                } => {
+                    let templates_dir = std::path::Path::new("templates/projects");
+                    let load_use_case = LoadTemplateUseCase::new();
+                    let template = load_use_case.load_by_name(templates_dir, &template)?;
+
+                    // Parse template variables
+                    let mut template_vars = HashMap::new();
+                    for var in variables {
+                        if let Some((key, value)) = var.split_once('=') {
+                            template_vars.insert(key.to_string(), value.to_string());
+                        }
+                    }
+
+                    // Add default variables
+                    template_vars.insert("project_name".to_string(), name.clone());
+                    if let Some(desc) = description {
+                        template_vars.insert("project_description".to_string(), desc.to_string());
+                    }
+
+                    let company_code = company_code.clone().unwrap_or_else(|| "DEFAULT".to_string());
+
+                    let _repository = FileProjectRepository::new();
+                    let create_from_template_use_case = CreateFromTemplateUseCase::new(
+                        CreateProjectUseCase::new(FileProjectRepository::new()),
+                        CreateResourceUseCase::new(FileResourceRepository::new(".")),
+                        CreateTaskUseCase::new(FileProjectRepository::new()),
+                    );
+
+                    let created_project = create_from_template_use_case.execute(&template, &template_vars, company_code)?;
+                    println!("{}", created_project.display_summary());
+                    println!("\nResources:");
+                    println!("{}", created_project.display_resources());
+                    println!("\nTasks:");
+                    println!("{}", created_project.display_tasks());
+                    Ok(())
+                }
+            }
         }
         Commands::Task { task_command } => {
             match task_command {

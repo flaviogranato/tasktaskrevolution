@@ -1,0 +1,138 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: ProjectTemplate
+metadata:
+  name: "Microservice"
+  description: "Template for microservice development with containerization and API design"
+  version: "1.0.0"
+  tags: ["microservice", "api", "container", "kubernetes", "backend"]
+  category: "service"
+spec:
+  project:
+    name: "{{project_name}}"
+    description: "{{project_description}}"
+    start_date: "{{start_date}}"
+    end_date: "{{end_date}}"
+    timezone: "{{timezone}}"
+  resources:
+    - name: "{{backend_developer}}"
+      type: "Backend Developer"
+      skills: ["Rust", "API Design", "Microservices", "Docker", "PostgreSQL"]
+      capacity: 8
+    - name: "{{devops_engineer}}"
+      type: "DevOps Engineer"
+      skills: ["Docker", "Kubernetes", "CI/CD", "Monitoring", "Infrastructure"]
+      capacity: 6
+    - name: "{{api_designer}}"
+      type: "API Designer"
+      skills: ["OpenAPI", "REST", "GraphQL", "API Documentation", "API Testing"]
+      capacity: 6
+  tasks:
+    - name: "Service Architecture Design"
+      description: "Design microservice architecture, API contracts, and service boundaries"
+      priority: "high"
+      category: "architecture"
+      estimated_hours: 24
+      dependencies: []
+    - name: "API Design & Documentation"
+      description: "Design REST API endpoints, create OpenAPI specification, and API documentation"
+      priority: "high"
+      category: "design"
+      estimated_hours: 32
+      dependencies: ["Service Architecture Design"]
+    - name: "Database Design & Setup"
+      description: "Design database schema, setup databases, and implement data access layer"
+      priority: "high"
+      category: "infrastructure"
+      estimated_hours: 20
+      dependencies: ["Service Architecture Design"]
+    - name: "Core Service Development"
+      description: "Implement core business logic, API endpoints, and service functionality"
+      priority: "high"
+      category: "development"
+      estimated_hours: 80
+      dependencies: ["API Design & Documentation", "Database Design & Setup"]
+    - name: "Containerization & Orchestration"
+      description: "Create Docker containers, Kubernetes manifests, and service orchestration"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 40
+      dependencies: ["Core Service Development"]
+    - name: "Testing & Quality Assurance"
+      description: "Implement unit tests, integration tests, and API testing"
+      priority: "medium"
+      category: "testing"
+      estimated_hours: 50
+      dependencies: ["Core Service Development"]
+    - name: "Monitoring & Observability"
+      description: "Setup logging, metrics, tracing, and monitoring dashboards"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 30
+      dependencies: ["Containerization & Orchestration"]
+    - name: "CI/CD Pipeline Setup"
+      description: "Setup automated testing, building, and deployment pipeline"
+      priority: "medium"
+      category: "infrastructure"
+      estimated_hours: 25
+      dependencies: ["Testing & Quality Assurance", "Monitoring & Observability"]
+    - name: "Documentation & Handover"
+      description: "Create technical documentation, API docs, and deployment guides"
+      priority: "low"
+      category: "documentation"
+      estimated_hours: 20
+      dependencies: ["CI/CD Pipeline Setup"]
+  phases:
+    - name: "Architecture & Design"
+      duration: 2
+      tasks: ["Service Architecture Design", "API Design & Documentation", "Database Design & Setup"]
+    - name: "Development"
+      duration: 3
+      tasks: ["Core Service Development"]
+    - name: "Infrastructure & Testing"
+      duration: 2
+      tasks: ["Containerization & Orchestration", "Testing & Quality Assurance", "Monitoring & Observability"]
+    - name: "Deployment & Documentation"
+      duration: 1
+      tasks: ["CI/CD Pipeline Setup", "Documentation & Handover"]
+  variables:
+    project_name:
+      type: "string"
+      required: true
+      description: "Name of the microservice"
+      example: "User Service"
+    project_description:
+      type: "string"
+      required: true
+      description: "Brief description of the microservice"
+      example: "A microservice for user management and authentication"
+    start_date:
+      type: "date"
+      required: true
+      description: "Project start date"
+      example: "2024-01-15"
+    end_date:
+      type: "date"
+      required: true
+      description: "Project end date"
+      example: "2024-02-28"
+    timezone:
+      type: "string"
+      required: false
+      default: "UTC"
+      description: "Project timezone"
+      example: "America/Sao_Paulo"
+    backend_developer:
+      type: "string"
+      required: true
+      description: "Name of the backend developer"
+      example: "Alice Johnson"
+    devops_engineer:
+      type: "string"
+      required: true
+      description: "Name of the DevOps engineer"
+      example: "Bob Smith"
+    api_designer:
+      type: "string"
+      required: true
+      description: "Name of the API designer"
+      example: "Charlie Brown"
