@@ -28,9 +28,8 @@ use crate::{
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
         template::{
-            list_templates::ListTemplatesUseCase,
+            create_from_template::CreateFromTemplateUseCase, list_templates::ListTemplatesUseCase,
             load_template::LoadTemplateUseCase,
-            create_from_template::CreateFromTemplateUseCase,
         },
         validate::{
             business_rules::ValidateBusinessRulesUseCase, data_integrity::ValidateDataIntegrityUseCase,
@@ -615,7 +614,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                     // Create project from template
                     let templates_dir = std::path::Path::new("templates/projects");
                     let load_use_case = LoadTemplateUseCase::new();
-                    let template = load_use_case.load_by_name(templates_dir, &template_name)?;
+                    let template = load_use_case.load_by_name(templates_dir, template_name)?;
 
                     // Parse template variables
                     let mut variables = HashMap::new();
@@ -1498,7 +1497,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 TemplateCommands::List => {
                     let templates_dir = std::path::Path::new("templates/projects");
                     let use_case = ListTemplatesUseCase::new();
-                    
+
                     match use_case.execute(templates_dir) {
                         Ok(templates) => {
                             if templates.is_empty() {
@@ -1524,8 +1523,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 TemplateCommands::Show { name } => {
                     let templates_dir = std::path::Path::new("templates/projects");
                     let use_case = LoadTemplateUseCase::new();
-                    
-                    match use_case.load_by_name(templates_dir, &name) {
+
+                    match use_case.load_by_name(templates_dir, name) {
                         Ok(template) => {
                             println!("Template: {}", template.metadata.name);
                             println!("Description: {}", template.metadata.description);
@@ -1586,7 +1585,7 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                 } => {
                     let templates_dir = std::path::Path::new("templates/projects");
                     let load_use_case = LoadTemplateUseCase::new();
-                    let template = load_use_case.load_by_name(templates_dir, &template)?;
+                    let template = load_use_case.load_by_name(templates_dir, template)?;
 
                     // Parse template variables
                     let mut template_vars = HashMap::new();
@@ -1611,7 +1610,8 @@ pub fn run(cli: Cli) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'st
                         CreateTaskUseCase::new(FileProjectRepository::new()),
                     );
 
-                    let created_project = create_from_template_use_case.execute(&template, &template_vars, company_code)?;
+                    let created_project =
+                        create_from_template_use_case.execute(&template, &template_vars, company_code)?;
                     println!("{}", created_project.display_summary());
                     println!("\nResources:");
                     println!("{}", created_project.display_resources());

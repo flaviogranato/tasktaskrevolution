@@ -374,13 +374,14 @@ impl ProjectRepository for FileProjectRepository {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         // Add microseconds for better uniqueness
         let micros = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_micros() % 1000;
-        
+            .as_micros()
+            % 1000;
+
         Ok(format!("proj-{}{:03}", timestamp, micros))
     }
 }

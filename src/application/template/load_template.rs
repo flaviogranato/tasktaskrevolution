@@ -1,7 +1,7 @@
-use std::path::Path;
-use std::fs;
 use crate::domain::project_management::ProjectTemplate;
 use serde_yaml;
+use std::fs;
+use std::path::Path;
 
 pub struct LoadTemplateUseCase;
 
@@ -15,14 +15,14 @@ impl LoadTemplateUseCase {
             return Err(format!("Template file does not exist: {:?}", template_path));
         }
 
-        let content = fs::read_to_string(template_path)
-            .map_err(|e| format!("Failed to read template file: {}", e))?;
+        let content = fs::read_to_string(template_path).map_err(|e| format!("Failed to read template file: {}", e))?;
 
-        let template: ProjectTemplate = serde_yaml::from_str(&content)
-            .map_err(|e| format!("Failed to parse template YAML: {}", e))?;
+        let template: ProjectTemplate =
+            serde_yaml::from_str(&content).map_err(|e| format!("Failed to parse template YAML: {}", e))?;
 
         // Validate template
-        template.validate()
+        template
+            .validate()
             .map_err(|e| format!("Template validation failed: {}", e))?;
 
         Ok(template)

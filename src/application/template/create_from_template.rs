@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-use crate::domain::project_management::{ProjectTemplate, repository::ProjectRepository};
-use crate::domain::resource_management::repository::ResourceRepository;
-use crate::domain::shared::errors::DomainError;
 use crate::application::create::project::CreateProjectUseCase;
 use crate::application::create::resource::CreateResourceUseCase;
 use crate::application::create::task::CreateTaskUseCase;
+use crate::domain::project_management::{ProjectTemplate, repository::ProjectRepository};
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::shared::errors::DomainError;
 use chrono::NaiveDate;
+use std::collections::HashMap;
 
 pub struct CreateFromTemplateUseCase<PR: ProjectRepository, RR: ResourceRepository> {
     create_project_use_case: CreateProjectUseCase<PR>,
@@ -33,10 +33,11 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
         company_code: String,
     ) -> Result<CreatedProject, DomainError> {
         // Render template with variables
-        let rendered = template.render(variables)
-            .map_err(|e| DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
+        let rendered = template.render(variables).map_err(|e| {
+            DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
                 message: format!("Template rendering failed: {}", e),
-            }))?;
+            })
+        })?;
 
         // Create project
         let project_description = if rendered.project.description.is_empty() {
@@ -45,11 +46,9 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
             Some(rendered.project.description.as_str())
         };
 
-        let project = self.create_project_use_case.execute(
-            &rendered.project.name,
-            project_description,
-            company_code.clone(),
-        )?;
+        let project =
+            self.create_project_use_case
+                .execute(&rendered.project.name, project_description, company_code.clone())?;
 
         let mut created_resources = Vec::new();
         let mut created_tasks = Vec::new();
@@ -74,15 +73,17 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
         // Create tasks
         for task in &rendered.tasks {
             // Parse dates
-            let start_date = NaiveDate::parse_from_str(&rendered.project.start_date, "%Y-%m-%d")
-                .map_err(|e| DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
+            let start_date = NaiveDate::parse_from_str(&rendered.project.start_date, "%Y-%m-%d").map_err(|e| {
+                DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
                     message: format!("Invalid start date format: {}", e),
-                }))?;
+                })
+            })?;
 
-            let due_date = NaiveDate::parse_from_str(&rendered.project.end_date, "%Y-%m-%d")
-                .map_err(|e| DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
+            let due_date = NaiveDate::parse_from_str(&rendered.project.end_date, "%Y-%m-%d").map_err(|e| {
+                DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
                     message: format!("Invalid end date format: {}", e),
-                }))?;
+                })
+            })?;
 
             let _task_description = if task.description.is_empty() {
                 None
@@ -90,16 +91,15 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
                 Some(task.description.as_str())
             };
 
-            self.create_task_use_case.execute(
-                crate::application::create::task::CreateTaskArgs {
+            self.create_task_use_case
+                .execute(crate::application::create::task::CreateTaskArgs {
                     company_code: company_code.clone(),
                     project_code: project.code().to_string(),
                     name: task.name.clone(),
                     start_date,
                     due_date,
                     assigned_resources: Vec::new(), // TODO: Assign resources based on template
-                },
-            )?;
+                })?;
 
             created_tasks.push(CreatedTask {
                 name: task.name.clone(),
@@ -193,7 +193,6 @@ impl CreatedProject {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     #[test]
     fn test_created_project_display() {
@@ -203,24 +202,20 @@ mod tests {
             start_date: "2024-01-01".to_string(),
             end_date: "2024-12-31".to_string(),
             timezone: "UTC".to_string(),
-            resources: vec![
-                CreatedResource {
-                    name: "Alice".to_string(),
-                    r#type: "Developer".to_string(),
-                    skills: vec!["Rust".to_string()],
-                    capacity: 8,
-                },
-            ],
-            tasks: vec![
-                CreatedTask {
-                    name: "Setup".to_string(),
-                    description: "Project setup".to_string(),
-                    priority: "high".to_string(),
-                    category: "setup".to_string(),
-                    estimated_hours: 8,
-                    dependencies: vec![],
-                },
-            ],
+            resources: vec![CreatedResource {
+                name: "Alice".to_string(),
+                r#type: "Developer".to_string(),
+                skills: vec!["Rust".to_string()],
+                capacity: 8,
+            }],
+            tasks: vec![CreatedTask {
+                name: "Setup".to_string(),
+                description: "Project setup".to_string(),
+                priority: "high".to_string(),
+                category: "setup".to_string(),
+                estimated_hours: 8,
+                dependencies: vec![],
+            }],
             phases: vec![],
         };
 

@@ -1,5 +1,5 @@
 //! TaskTaskRevolution CLI
-//! 
+//!
 //! Interface de linha de comando para o TTR.
 //! A lógica principal está em lib.rs para facilitar testes.
 

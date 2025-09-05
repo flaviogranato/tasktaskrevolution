@@ -12,7 +12,12 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self, name: &str, description: Option<&str>, company_code: String) -> Result<AnyProject, DomainError> {
+    pub fn execute(
+        &self,
+        name: &str,
+        description: Option<&str>,
+        company_code: String,
+    ) -> Result<AnyProject, DomainError> {
         // Get the next available code
         let code = self.repository.get_next_code()?;
 
