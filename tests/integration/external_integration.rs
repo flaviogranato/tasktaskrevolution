@@ -11,7 +11,6 @@ use assert_cmd::prelude::*;
 use predicates::prelude::*;
 use assert_fs::prelude::*;
 use std::process::Command;
-use std::fs;
 
 /// Teste de exportação - formato JSON
 #[test]

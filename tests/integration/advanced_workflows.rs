@@ -343,7 +343,7 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     }
     
     // Validar que todos os recursos foram criados
-    for (name, role, company_code) in &resources {
+    for (name, _role, company_code) in &resources {
         let resource_file = temp.child("companies").child(company_code).child("resources").child(&format!("{}.yaml", name.to_lowercase().replace(" ", "_")));
         resource_file.assert(predicate::path::exists());
         
@@ -356,7 +356,7 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     }
     
     // Validar que todos os projetos foram criados
-    for (name, description, company_code) in &projects {
+    for (_name, _description, company_code) in &projects {
         let project_file = temp.child("companies").child(company_code).child("projects").child("proj-1").child("project.yaml");
         project_file.assert(predicate::path::exists());
         

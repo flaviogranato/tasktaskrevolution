@@ -526,7 +526,7 @@ fn test_list_commands() -> Result<(), Box<dyn std::error::Error>> {
     
     // Este comando pode falhar se não houver projeto configurado
     // Vamos apenas verificar se executa sem crash
-    let result = cmd.output()?;
+    let _result = cmd.output()?;
     // Não fazemos assert de sucesso pois pode falhar
     
     temp.close()?;
