@@ -50,6 +50,28 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
         cmd.assert().success();
     }
     
+    // Descobrir o primeiro projeto criado dinamicamente
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    let project_code = project_code.expect("Project code not found");
+    
     // Criar 200 tarefas
     for i in 1..=200 {
         let mut cmd = Command::cargo_bin("ttr")?;
@@ -60,7 +82,7 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
             "--description", &format!("Description for task {}", i),
             "--start-date", "2024-01-01",
             "--due-date", "2024-12-31",
-            "--project-code", "proj-1",
+            "--project-code", &project_code,
             "--company-code", "TECH-CORP"
         ]);
         cmd.assert().success();
@@ -71,7 +93,7 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     // Validar que todos os dados foram criados
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let projects_dir = temp.child("companies").child("TECH-CORP").child("projects");
-    let tasks_dir = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("tasks");
+    let tasks_dir = temp.child("companies").child("TECH-CORP").child("projects").child(&project_code).child("tasks");
     
     resources_dir.assert(predicate::path::is_dir());
     projects_dir.assert(predicate::path::is_dir());
