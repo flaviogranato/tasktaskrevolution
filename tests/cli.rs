@@ -1051,3 +1051,342 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
     cmd.assert().success();
     Ok(())
 }
+
+fn copy_templates_to_temp(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
+    let templates_dir = temp.path().join("templates").join("projects");
+    std::fs::create_dir_all(&templates_dir)?;
+    std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
+    std::fs::copy("templates/projects/mobile-app.yaml", templates_dir.join("mobile-app.yaml"))?;
+    std::fs::copy("templates/projects/microservice.yaml", templates_dir.join("microservice.yaml"))?;
+    std::fs::copy("templates/projects/data-pipeline.yaml", templates_dir.join("data-pipeline.yaml"))?;
+    Ok(())
+}
+
+// ============================================================================
+// TEMPLATE COMMAND TESTS
+// ============================================================================
+
+#[test]
+fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(&["template", "list"]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Available project templates"))
+        .stdout(predicate::str::contains("Web Application"))
+        .stdout(predicate::str::contains("Mobile Application"))
+        .stdout(predicate::str::contains("Microservice"))
+        .stdout(predicate::str::contains("Data Pipeline"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(&["template", "show", "web-app"]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Template: Web Application"))
+        .stdout(predicate::str::contains("Description: Template for modern web applications"))
+        .stdout(predicate::str::contains("Version: 1.0.0"))
+        .stdout(predicate::str::contains("Category: application"))
+        .stdout(predicate::str::contains("Resources (4):"))
+        .stdout(predicate::str::contains("Tasks (8):"))
+        .stdout(predicate::str::contains("Phases (4):"))
+        .stdout(predicate::str::contains("Variables:"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_show_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(&["template", "show", "nonexistent-template"]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Error loading template"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Test Manager",
+        "--email", "test@example.com",
+        "--company-name", "Test Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    copy_templates_to_temp(&temp)?;
+    
+    // Create project from template
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "web-app",
+        "My Web App",
+        "A test web application",
+        "--company-code", "DEFAULT",
+        "--variables", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A test web application"
+    ]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project My Web App created"))
+        .stdout(predicate::str::contains("Resource Alice created"))
+        .stdout(predicate::str::contains("Resource Bob created"))
+        .stdout(predicate::str::contains("Resource Charlie created"))
+        .stdout(predicate::str::contains("Resource Diana created"))
+        .stdout(predicate::str::contains("Task Project Setup & Planning created"))
+        .stdout(predicate::str::contains("Project 'My Web App' created successfully with 4 resources, 8 tasks, and 4 phases"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Test Manager",
+        "--email", "test@example.com",
+        "--company-name", "Test Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    copy_templates_to_temp(&temp)?;
+    
+    // Create project from template with missing variables
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "web-app",
+        "My Web App",
+        "A test web application",
+        "--company-code", "DEFAULT",
+        "--variables", "frontend_developer=Alice,backend_developer=Bob"
+    ]);
+    
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Template rendering failed"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Test Manager",
+        "--email", "test@example.com",
+        "--company-name", "Test Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    copy_templates_to_temp(&temp)?;
+    
+    // Create project using --from-template
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "create", "project",
+        "Another Web App",
+        "--from-template", "web-app",
+        "--template-vars", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-02-01,end_date=2024-04-01,timezone=UTC,project_description=Another test web application"
+    ]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project Another Web App created"))
+        .stdout(predicate::str::contains("Resource Alice created"))
+        .stdout(predicate::str::contains("Resource Bob created"))
+        .stdout(predicate::str::contains("Resource Charlie created"))
+        .stdout(predicate::str::contains("Resource Diana created"))
+        .stdout(predicate::str::contains("Project 'Another Web App' created successfully with 4 resources, 8 tasks, and 4 phases"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Test Manager",
+        "--email", "test@example.com",
+        "--company-name", "Test Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    copy_templates_to_temp(&temp)?;
+    
+    // Create mobile app from template
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "mobile-app",
+        "My Mobile App",
+        "A test mobile application",
+        "--company-code", "DEFAULT",
+        "--variables", "mobile_developer=Alice,backend_developer=Bob,ui_designer=Charlie,qa_engineer=Diana,start_date=2024-01-15,end_date=2024-04-15,timezone=UTC,project_description=A test mobile application"
+    ]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project My Mobile App created"))
+        .stdout(predicate::str::contains("Resource Alice created"))
+        .stdout(predicate::str::contains("Resource Bob created"))
+        .stdout(predicate::str::contains("Resource Charlie created"))
+        .stdout(predicate::str::contains("Resource Diana created"))
+        .stdout(predicate::str::contains("Project 'My Mobile App' created successfully with 4 resources, 9 tasks, and 4 phases"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Test Manager",
+        "--email", "test@example.com",
+        "--company-name", "Test Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    copy_templates_to_temp(&temp)?;
+    
+    // Create microservice from template
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "microservice",
+        "User Service",
+        "A microservice for user management",
+        "--company-code", "DEFAULT",
+        "--variables", "backend_developer=Alice,devops_engineer=Bob,api_designer=Charlie,start_date=2024-01-15,end_date=2024-02-28,timezone=UTC,project_description=A microservice for user management"
+    ]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project User Service created"))
+        .stdout(predicate::str::contains("Resource Alice created"))
+        .stdout(predicate::str::contains("Resource Bob created"))
+        .stdout(predicate::str::contains("Resource Charlie created"))
+        .stdout(predicate::str::contains("Project 'User Service' created successfully with 3 resources, 9 tasks, and 4 phases"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Test Manager",
+        "--email", "test@example.com",
+        "--company-name", "Test Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    copy_templates_to_temp(&temp)?;
+    
+    // Create data pipeline from template
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "data-pipeline",
+        "Analytics Pipeline",
+        "A data pipeline for analytics",
+        "--company-code", "DEFAULT",
+        "--variables", "data_engineer=Alice,data_analyst=Bob,devops_engineer=Charlie,data_scientist=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A data pipeline for analytics"
+    ]);
+    
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project Analytics Pipeline created"))
+        .stdout(predicate::str::contains("Resource Alice created"))
+        .stdout(predicate::str::contains("Resource Bob created"))
+        .stdout(predicate::str::contains("Resource Charlie created"))
+        .stdout(predicate::str::contains("Resource Diana created"))
+        .stdout(predicate::str::contains("Project 'Analytics Pipeline' created successfully with 4 resources, 9 tasks, and 4 phases"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_help_commands() -> Result<(), Box<dyn std::error::Error>> {
+    // Test template help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(&["template", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Manage project templates"));
+    
+    // Test template list help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(&["template", "list", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("List available project templates"));
+    
+    // Test template show help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(&["template", "show", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Show details of a specific template"));
+    
+    // Test template create help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(&["template", "create", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Create a new project from a template"));
+    
+    Ok(())
+}

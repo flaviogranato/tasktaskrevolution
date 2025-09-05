@@ -541,3 +541,296 @@ fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
     cmd.assert().success();
     Ok(())
 }
+
+// ============================================================================
+// TEMPLATE WORKFLOW TESTS
+// ============================================================================
+
+#[test]
+fn test_template_workflow_complete() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Template Manager",
+        "--email", "template@example.com",
+        "--company-name", "Template Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    let templates_dir = temp.path().join("templates").join("projects");
+    std::fs::create_dir_all(&templates_dir)?;
+    std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
+    std::fs::copy("templates/projects/mobile-app.yaml", templates_dir.join("mobile-app.yaml"))?;
+    std::fs::copy("templates/projects/microservice.yaml", templates_dir.join("microservice.yaml"))?;
+    std::fs::copy("templates/projects/data-pipeline.yaml", templates_dir.join("data-pipeline.yaml"))?;
+    
+    // List available templates
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&["template", "list"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Available project templates"))
+        .stdout(predicate::str::contains("Web Application"))
+        .stdout(predicate::str::contains("Mobile Application"));
+    
+    // Show template details
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&["template", "show", "web-app"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Template: Web Application"))
+        .stdout(predicate::str::contains("Resources (4):"))
+        .stdout(predicate::str::contains("Tasks (8):"));
+    
+    // Create project from template
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "web-app",
+        "Ecommerce Platform",
+        "A modern e-commerce platform",
+        "--company-code", "DEFAULT",
+        "--variables", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-06-15,timezone=UTC,project_description=A modern e-commerce platform"
+    ]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project Ecommerce Platform created"))
+        .stdout(predicate::str::contains("Project 'Ecommerce Platform' created successfully with 4 resources, 8 tasks, and 4 phases"));
+    
+    // Verify project was created
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&["list", "projects"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Ecommerce Platform"));
+    
+    // Verify resources were created
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&["list", "resources"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Bob"))
+        .stdout(predicate::str::contains("Charlie"))
+        .stdout(predicate::str::contains("Diana"));
+    
+    // Verify tasks were created by checking the tasks directory
+    let projects_dir = temp.path().join("companies").join("DEFAULT").join("projects");
+    let mut project_dir = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                project_dir = Some(entry.path());
+                break;
+            }
+        }
+    }
+    
+    if let Some(project_dir) = project_dir {
+        let tasks_dir = project_dir.join("tasks");
+        if tasks_dir.exists() {
+            let task_files: Vec<_> = std::fs::read_dir(&tasks_dir)
+                .unwrap()
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| entry.path().extension().map_or(false, |ext| ext == "yaml"))
+                .collect();
+            
+            // Verify that tasks were created (should have multiple task files)
+            assert!(task_files.len() > 0, "No task files found in tasks directory");
+        } else {
+            panic!("Tasks directory not found");
+        }
+    } else {
+        panic!("No project directory found");
+    }
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_multi_project_workflow() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Multi Project Manager",
+        "--email", "multi@example.com",
+        "--company-name", "Multi Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    let templates_dir = temp.path().join("templates").join("projects");
+    std::fs::create_dir_all(&templates_dir)?;
+    std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
+    std::fs::copy("templates/projects/mobile-app.yaml", templates_dir.join("mobile-app.yaml"))?;
+    std::fs::copy("templates/projects/microservice.yaml", templates_dir.join("microservice.yaml"))?;
+    std::fs::copy("templates/projects/data-pipeline.yaml", templates_dir.join("data-pipeline.yaml"))?;
+    
+    // Create multiple projects from different templates
+    let templates = vec![
+        ("web-app", "Web Store", "Online store platform", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana"),
+        ("mobile-app", "Mobile App", "Mobile shopping app", "mobile_developer=Alice,backend_developer=Bob,ui_designer=Diana,qa_engineer=Charlie"),
+        ("microservice", "Payment Service", "Payment processing microservice", "backend_developer=Bob,devops_engineer=Charlie,api_designer=Alice"),
+        ("data-pipeline", "Analytics Pipeline", "Customer analytics pipeline", "data_engineer=Alice,data_analyst=Bob,devops_engineer=Charlie,data_scientist=Diana")
+    ];
+    
+    for (template, name, description, variables) in templates {
+        let mut cmd = Command::cargo_bin("ttr")?;
+        cmd.current_dir(temp.path());
+        cmd.args(&[
+            "template", "create",
+            template,
+            name,
+            description,
+            "--company-code", "DEFAULT",
+            "--variables", &format!("{},start_date=2024-01-15,end_date=2024-06-15,timezone=UTC,project_description={}", variables, description)
+        ]);
+        cmd.assert()
+            .success()
+            .stdout(predicate::str::contains(&format!("Project {} created", name)));
+        
+        // Add a small delay to ensure projects are saved before the next one
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    
+    // Verify all projects were created
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&["list", "projects"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Web Store"))
+        .stdout(predicate::str::contains("Mobile App"))
+        .stdout(predicate::str::contains("Payment Service"))
+        .stdout(predicate::str::contains("Analytics Pipeline"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_variable_validation() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Validation Manager",
+        "--email", "validation@example.com",
+        "--company-name", "Validation Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    let templates_dir = temp.path().join("templates").join("projects");
+    std::fs::create_dir_all(&templates_dir)?;
+    std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
+    std::fs::copy("templates/projects/mobile-app.yaml", templates_dir.join("mobile-app.yaml"))?;
+    std::fs::copy("templates/projects/microservice.yaml", templates_dir.join("microservice.yaml"))?;
+    std::fs::copy("templates/projects/data-pipeline.yaml", templates_dir.join("data-pipeline.yaml"))?;
+    
+    // Test with missing required variables
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "web-app",
+        "Test Project",
+        "Test description",
+        "--company-code", "DEFAULT",
+        "--variables", "frontend_developer=Alice"
+    ]);
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Template rendering failed"));
+    
+    // Test with all required variables
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "template", "create",
+        "web-app",
+        "Test Project",
+        "Test description",
+        "--company-code", "DEFAULT",
+        "--variables", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=Test description"
+    ]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project Test Project created"));
+    
+    Ok(())
+}
+
+#[test]
+fn test_template_create_project_integration() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "init",
+        "--name", "Integration Manager",
+        "--email", "integration@example.com",
+        "--company-name", "Integration Company"
+    ]);
+    cmd.assert().success();
+    
+    // Copy templates to temp directory
+    let templates_dir = temp.path().join("templates").join("projects");
+    std::fs::create_dir_all(&templates_dir)?;
+    std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
+    std::fs::copy("templates/projects/mobile-app.yaml", templates_dir.join("mobile-app.yaml"))?;
+    std::fs::copy("templates/projects/microservice.yaml", templates_dir.join("microservice.yaml"))?;
+    std::fs::copy("templates/projects/data-pipeline.yaml", templates_dir.join("data-pipeline.yaml"))?;
+    
+    // Test create project with --from-template
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&[
+        "create", "project",
+        "API Gateway",
+        "A microservice API gateway",
+        "--from-template", "microservice",
+        "--template-vars", "backend_developer=Alice,devops_engineer=Bob,api_designer=Charlie,start_date=2024-01-15,end_date=2024-02-28,timezone=UTC,project_description=A microservice API gateway"
+    ]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Project API Gateway created"))
+        .stdout(predicate::str::contains("Project 'API Gateway' created successfully with 3 resources, 9 tasks, and 4 phases"));
+    
+    // Verify the project was created with all components
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&["list", "projects"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("API Gateway"));
+    
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(&["list", "resources"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Alice"))
+        .stdout(predicate::str::contains("Bob"))
+        .stdout(predicate::str::contains("Charlie"));
+    
+    Ok(())
+}

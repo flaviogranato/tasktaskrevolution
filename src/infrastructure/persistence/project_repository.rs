@@ -369,25 +369,19 @@ impl ProjectRepository for FileProjectRepository {
     }
 
     fn get_next_code(&self) -> Result<String, DomainError> {
-        let pattern = self.base_path.join("**/project.yaml");
-        let walker = glob(pattern.to_str().unwrap())
-            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
-
-        let mut max_code = 0;
-
-        for entry in walker.flatten() {
-            let manifest_path = entry.path();
-            if let Ok(manifest) = self.load_manifest(manifest_path)
-                && let Some(code) = manifest.metadata.code
-                && let Some(num_str) = code.strip_prefix("proj-")
-                && let Ok(num) = num_str.parse::<u32>()
-                && num > max_code
-            {
-                max_code = num;
-            }
-        }
-
-        Ok(format!("proj-{}", max_code + 1))
+        // Use timestamp-based approach for better uniqueness in concurrent scenarios
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        
+        // Add microseconds for better uniqueness
+        let micros = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_micros() % 1000;
+        
+        Ok(format!("proj-{}{:03}", timestamp, micros))
     }
 }
 
