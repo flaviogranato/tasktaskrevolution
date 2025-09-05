@@ -9,6 +9,7 @@ use crate::infrastructure::persistence::manifests::config_manifest::ConfigManife
 use serde_yaml::to_string;
 use std::{fs, path::PathBuf};
 
+#[derive(Clone)]
 pub struct FileConfigRepository {
     base_path: PathBuf,
 }
