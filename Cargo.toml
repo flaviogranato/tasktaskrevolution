@@ -47,6 +47,10 @@ path = "tests/integration/data_validation.rs"
 name = "error_scenarios"
 path = "tests/integration/error_scenarios.rs"
 
+[[test]]
+name = "performance"
+path = "tests/integration/performance.rs"
+
 [profile.release]
 opt-level = 3
 lto = true
