@@ -1,6 +1,5 @@
 use crate::{
     application::{
-        build_use_case::BuildUseCase,
         company_management::CreateCompanyUseCase,
         create::{
             project::CreateProjectUseCase,
@@ -58,7 +57,6 @@ use crate::{
 };
 use super::traits::Injectable;
 use std::any::Any;
-use std::sync::Arc;
 
 /// Serviço de repositórios
 pub struct RepositoryService {
@@ -74,10 +72,16 @@ impl RepositoryService {
         Self {
             company_repository: FileCompanyRepository::new("."),
             config_repository: FileConfigRepository::new(),
-            project_repository: FileProjectRepository::new(),
+            project_repository: FileProjectRepository::with_base_path(".".into()),
             resource_repository: FileResourceRepository::new("."),
             task_repository: FileTaskRepository::new("."),
         }
+    }
+}
+
+impl Default for RepositoryService {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -89,27 +93,21 @@ impl Injectable for RepositoryService {
 
 /// Serviço de casos de uso de criação
 pub struct CreateUseCaseService {
-    pub create_company: CreateCompanyUseCase,
-    pub create_project: CreateProjectUseCase,
-    pub create_resource: CreateResourceUseCase,
-    pub create_task: CreateTaskUseCase,
-    pub create_time_off: CreateTimeOffUseCase,
-    pub create_vacation: CreateVacationUseCase,
+    pub create_company: CreateCompanyUseCase<FileCompanyRepository>,
+    pub create_project: CreateProjectUseCase<FileProjectRepository>,
+    pub create_resource: CreateResourceUseCase<FileResourceRepository>,
+    pub create_task: CreateTaskUseCase<FileProjectRepository>,
+    pub create_time_off: CreateTimeOffUseCase<FileResourceRepository>,
+    pub create_vacation: CreateVacationUseCase<FileResourceRepository>,
 }
 
 impl CreateUseCaseService {
     pub fn new(repos: &RepositoryService) -> Self {
         Self {
             create_company: CreateCompanyUseCase::new(repos.company_repository.clone()),
-            create_project: CreateProjectUseCase::new(
-                repos.project_repository.clone(),
-                repos.company_repository.clone(),
-            ),
+            create_project: CreateProjectUseCase::new(repos.project_repository.clone()),
             create_resource: CreateResourceUseCase::new(repos.resource_repository.clone()),
-            create_task: CreateTaskUseCase::new(
-                repos.task_repository.clone(),
-                repos.project_repository.clone(),
-            ),
+            create_task: CreateTaskUseCase::new(repos.project_repository.clone()),
             create_time_off: CreateTimeOffUseCase::new(repos.resource_repository.clone()),
             create_vacation: CreateVacationUseCase::new(repos.resource_repository.clone()),
         }
@@ -124,9 +122,9 @@ impl Injectable for CreateUseCaseService {
 
 /// Serviço de casos de uso de listagem
 pub struct ListUseCaseService {
-    pub list_projects: ListProjectsUseCase,
-    pub list_resources: ListResourcesUseCase,
-    pub list_tasks: ListTasksUseCase,
+    pub list_projects: ListProjectsUseCase<FileProjectRepository>,
+    pub list_resources: ListResourcesUseCase<FileResourceRepository>,
+    pub list_tasks: ListTasksUseCase<FileProjectRepository>,
 }
 
 impl ListUseCaseService {
@@ -134,7 +132,7 @@ impl ListUseCaseService {
         Self {
             list_projects: ListProjectsUseCase::new(repos.project_repository.clone()),
             list_resources: ListResourcesUseCase::new(repos.resource_repository.clone()),
-            list_tasks: ListTasksUseCase::new(repos.task_repository.clone()),
+            list_tasks: ListTasksUseCase::new(repos.project_repository.clone()),
         }
     }
 }
@@ -147,16 +145,19 @@ impl Injectable for ListUseCaseService {
 
 /// Serviço de casos de uso de projeto
 pub struct ProjectUseCaseService {
-    pub assign_resource: AssignResourceToTaskUseCase,
-    pub cancel_project: CancelProjectUseCase,
-    pub describe_project: DescribeProjectUseCase,
-    pub update_project: UpdateProjectUseCase,
+    pub assign_resource: AssignResourceToTaskUseCase<FileProjectRepository, FileResourceRepository>,
+    pub cancel_project: CancelProjectUseCase<FileProjectRepository>,
+    pub describe_project: DescribeProjectUseCase<FileProjectRepository>,
+    pub update_project: UpdateProjectUseCase<FileProjectRepository>,
 }
 
 impl ProjectUseCaseService {
     pub fn new(repos: &RepositoryService) -> Self {
         Self {
-            assign_resource: AssignResourceToTaskUseCase::new(repos.project_repository.clone()),
+            assign_resource: AssignResourceToTaskUseCase::new(
+                repos.project_repository.clone(),
+                repos.resource_repository.clone(),
+            ),
             cancel_project: CancelProjectUseCase::new(repos.project_repository.clone()),
             describe_project: DescribeProjectUseCase::new(repos.project_repository.clone()),
             update_project: UpdateProjectUseCase::new(repos.project_repository.clone()),
@@ -172,19 +173,19 @@ impl Injectable for ProjectUseCaseService {
 
 /// Serviço de casos de uso de tarefa
 pub struct TaskUseCaseService {
-    pub delete_task: DeleteTaskUseCase,
-    pub describe_task: DescribeTaskUseCase,
-    pub link_task: LinkTaskUseCase,
-    pub update_task: UpdateTaskUseCase,
+    pub delete_task: DeleteTaskUseCase<FileProjectRepository>,
+    pub describe_task: DescribeTaskUseCase<FileProjectRepository>,
+    pub link_task: LinkTaskUseCase<FileProjectRepository>,
+    pub update_task: UpdateTaskUseCase<FileProjectRepository>,
 }
 
 impl TaskUseCaseService {
     pub fn new(repos: &RepositoryService) -> Self {
         Self {
-            delete_task: DeleteTaskUseCase::new(repos.task_repository.clone()),
-            describe_task: DescribeTaskUseCase::new(repos.task_repository.clone()),
+            delete_task: DeleteTaskUseCase::new(repos.project_repository.clone()),
+            describe_task: DescribeTaskUseCase::new(repos.project_repository.clone()),
             link_task: LinkTaskUseCase::new(repos.project_repository.clone()),
-            update_task: UpdateTaskUseCase::new(repos.task_repository.clone()),
+            update_task: UpdateTaskUseCase::new(repos.project_repository.clone()),
         }
     }
 }
@@ -197,9 +198,9 @@ impl Injectable for TaskUseCaseService {
 
 /// Serviço de casos de uso de recurso
 pub struct ResourceUseCaseService {
-    pub deactivate_resource: DeactivateResourceUseCase,
-    pub describe_resource: DescribeResourceUseCase,
-    pub update_resource: UpdateResourceUseCase,
+    pub deactivate_resource: DeactivateResourceUseCase<FileResourceRepository>,
+    pub describe_resource: DescribeResourceUseCase<FileResourceRepository>,
+    pub update_resource: UpdateResourceUseCase<FileResourceRepository>,
 }
 
 impl ResourceUseCaseService {
@@ -220,7 +221,7 @@ impl Injectable for ResourceUseCaseService {
 
 /// Serviço de casos de uso de template
 pub struct TemplateUseCaseService {
-    pub create_from_template: CreateFromTemplateUseCase,
+    pub create_from_template: CreateFromTemplateUseCase<FileProjectRepository, FileResourceRepository>,
     pub list_templates: ListTemplatesUseCase,
     pub load_template: LoadTemplateUseCase,
 }
@@ -229,15 +230,9 @@ impl TemplateUseCaseService {
     pub fn new(repos: &RepositoryService) -> Self {
         Self {
             create_from_template: CreateFromTemplateUseCase::new(
-                CreateProjectUseCase::new(
-                    repos.project_repository.clone(),
-                    repos.company_repository.clone(),
-                ),
+                CreateProjectUseCase::new(repos.project_repository.clone()),
                 CreateResourceUseCase::new(repos.resource_repository.clone()),
-                CreateTaskUseCase::new(
-                    repos.task_repository.clone(),
-                    repos.project_repository.clone(),
-                ),
+                CreateTaskUseCase::new(repos.project_repository.clone()),
             ),
             list_templates: ListTemplatesUseCase::new(),
             load_template: LoadTemplateUseCase::new(),
@@ -252,41 +247,21 @@ impl Injectable for TemplateUseCaseService {
 }
 
 /// Serviço de casos de uso de validação
-pub struct ValidationUseCaseService<'a> {
-    pub validate_business_rules: ValidateBusinessRulesUseCase<'a>,
-    pub validate_data_integrity: ValidateDataIntegrityUseCase<'a>,
-    pub validate_entities: ValidateEntitiesUseCase<'a>,
-    pub validate_system: ValidateSystemUseCase<'a>,
+/// Nota: Por enquanto não usa ValidationUseCases devido a problemas de lifetime
+pub struct ValidationUseCaseService {
+    // Placeholder - ValidationUseCases serão implementados posteriormente
+    _placeholder: (),
 }
 
-impl<'a> ValidationUseCaseService<'a> {
-    pub fn new(repos: &'a RepositoryService) -> Self {
+impl ValidationUseCaseService {
+    pub fn new(_repos: &RepositoryService) -> Self {
         Self {
-            validate_business_rules: ValidateBusinessRulesUseCase::new(
-                &repos.project_repository,
-                &repos.resource_repository,
-                &repos.company_repository,
-            ),
-            validate_data_integrity: ValidateDataIntegrityUseCase::new(
-                &repos.project_repository,
-                &repos.resource_repository,
-                &repos.company_repository,
-            ),
-            validate_entities: ValidateEntitiesUseCase::new(
-                &repos.project_repository,
-                &repos.resource_repository,
-                &repos.company_repository,
-            ),
-            validate_system: ValidateSystemUseCase::new(
-                repos.project_repository.clone(),
-                repos.resource_repository.clone(),
-                repos.company_repository.clone(),
-            ),
+            _placeholder: (),
         }
     }
 }
 
-impl Injectable for ValidationUseCaseService<'_> {
+impl Injectable for ValidationUseCaseService {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -294,8 +269,8 @@ impl Injectable for ValidationUseCaseService<'_> {
 
 /// Serviço de casos de uso de relatórios
 pub struct ReportUseCaseService {
-    pub task_report: TaskReportUseCase,
-    pub vacation_report: VacationReportUseCase,
+    pub task_report: TaskReportUseCase<FileProjectRepository>,
+    pub vacation_report: VacationReportUseCase<FileProjectRepository, FileResourceRepository>,
 }
 
 impl ReportUseCaseService {
@@ -317,14 +292,16 @@ impl Injectable for ReportUseCaseService {
 }
 
 /// Serviço de inicialização
+/// Nota: Por enquanto não usa InitManagerUseCase devido a problemas de thread safety
 pub struct InitService {
-    pub init_manager: InitManagerUseCase,
+    // Placeholder - InitManagerUseCase será implementado posteriormente
+    _placeholder: (),
 }
 
 impl InitService {
-    pub fn new(repos: &RepositoryService) -> Self {
+    pub fn new(_repos: &RepositoryService) -> Self {
         Self {
-            init_manager: InitManagerUseCase::new(repos.config_repository.clone()),
+            _placeholder: (),
         }
     }
 }

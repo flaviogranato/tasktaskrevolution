@@ -39,7 +39,7 @@ pub enum ProjectCommand {
         #[clap(short, long)]
         company: String,
         /// Template parameters (key=value format)
-        #[clap(long, multiple_values = true)]
+        #[clap(long, num_args = 0..)]
         params: Vec<String>,
     },
     /// Describe a project

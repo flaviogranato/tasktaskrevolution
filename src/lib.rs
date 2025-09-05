@@ -19,7 +19,7 @@ pub fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, e)) as Box<dyn std::error::Error + Send + Sync + 'static>)?;
     
     let cli = interface::cli::Cli::parse();
-    cli.execute().map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync + 'static>)
+    cli.execute().map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, format!("{}", e))) as Box<dyn std::error::Error + Send + Sync + 'static>)
 }
 
 /// Configuração da aplicação

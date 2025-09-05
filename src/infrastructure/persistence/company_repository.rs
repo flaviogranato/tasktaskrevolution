@@ -8,6 +8,7 @@ use crate::domain::shared::errors::{DomainError, DomainErrorKind};
 use crate::infrastructure::persistence::manifests::company_manifest::CompanyManifest;
 
 /// File-based implementation of CompanyRepository.
+#[derive(Clone)]
 pub struct FileCompanyRepository {
     base_path: PathBuf,
     companies: Arc<RwLock<HashMap<String, Company>>>,

@@ -42,8 +42,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 .unwrap_or_default();
 
             let args = CreateTaskArgs {
-                name,
-                project_code: project,
+                name: name.clone(),
+                project_code: project.clone(),
                 company_code: company,
                 start_date: start,
                 due_date: due,
@@ -67,9 +67,9 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let describe_use_case = DescribeTaskUseCase::new(project_repository);
 
-            match describe_use_case.execute(&code, &project, &company) {
+            match describe_use_case.execute(&project, &code) {
                 Ok(description) => {
-                    println!("{}", description);
+                    println!("{:?}", description);
                     Ok(())
                 }
                 Err(e) => {
@@ -146,10 +146,10 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             }
         }
         TaskCommand::Unlink { from, to, project, company } => {
-            let task_repository = FileTaskRepository::new(".");
-            let unlink_use_case = crate::application::task::remove_dependency::RemoveTaskDependencyUseCase::new(task_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let unlink_use_case = crate::application::task::remove_dependency::RemoveTaskDependencyUseCase::new(project_repository);
 
-            match unlink_use_case.execute(&from, &to, &project, &company) {
+            match unlink_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
                     println!("✅ Task link removed successfully!");
                     Ok(())
@@ -161,11 +161,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             }
         }
         TaskCommand::AssignResource { task, project, company, resource } => {
-            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let task_repository = FileTaskRepository::new(".");
             let resource_repository = crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
-            let assign_use_case = AssignResourceToTaskUseCase::new(project_repository, resource_repository);
+            let assign_use_case = AssignResourceToTaskUseCase::new(task_repository, resource_repository);
 
-            match assign_use_case.execute(&project, &task, &resource) {
+            match assign_use_case.execute(&task, &resource) {
                 Ok(_) => {
                     println!("✅ Resource assigned to task successfully!");
                     Ok(())

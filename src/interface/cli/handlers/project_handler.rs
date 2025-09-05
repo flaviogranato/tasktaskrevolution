@@ -39,7 +39,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            match create_use_case.execute(&name, &code, &company, description.as_deref(), start, end) {
+            match create_use_case.execute(&name, description.as_deref(), company.clone()) {
                 Ok(_) => {
                     println!("✅ Project created successfully!");
                     println!("   Name: {}", name);
@@ -86,7 +86,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             start_date,
             end_date,
         } => {
-            let project_repository = FileProjectRepository::with_base_path("."into());
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
             let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
@@ -113,7 +113,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             }
         }
         ProjectCommand::Cancel { code, company } => {
-            let project_repository = FileProjectRepository::with_base_path("."into());
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let cancel_use_case = CancelProjectUseCase::new(project_repository);
 
             match cancel_use_case.execute(&code) {
@@ -133,7 +133,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             task,
             resource,
         } => {
-            let project_repository = FileProjectRepository::with_base_path("."into());
+            let project_repository = FileProjectRepository::with_base_path(".".into());
             let resource_repository = crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
             let assign_use_case = AssignResourceToTaskUseCase::new(project_repository, resource_repository);
 
