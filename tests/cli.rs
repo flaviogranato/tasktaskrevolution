@@ -360,7 +360,6 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let project_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("project.yaml");
     
     // Inicializar e criar empresa
     setup_test_environment(&temp)?;
@@ -378,11 +377,28 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
         .success()
         .stdout(predicate::str::contains("Project Web App created"));
     
+    // Encontrar o arquivo do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_file = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    project_file = Some(project_yaml);
+                    break;
+                }
+            }
+        }
+    }
+    
+    let project_file = project_file.expect("Project file not found");
+    
     // Verificar se o arquivo foi criado
-    project_file.assert(predicate::path::exists());
+    assert!(project_file.exists(), "Project file should exist");
     
     // Validar conteúdo YAML do project.yaml
-    let validator = YamlValidator::new(project_file.path())?;
+    let validator = YamlValidator::new(&project_file)?;
     
     // Validar estrutura básica
     assert!(validator.validate_basic_structure(), "Project YAML deve ter estrutura básica");
@@ -421,11 +437,34 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let task_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("tasks").child("task-1.yaml");
     
     // Inicializar, criar empresa e projeto
     setup_test_environment(&temp)?;
     create_test_project(&temp)?;
+    
+    // Encontrar o código do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    // Ler o código do projeto do YAML
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let project_code = project_code.expect("Project code not found");
     
     // Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -436,7 +475,7 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
         "--description", "Setup development environment",
         "--start-date", "2024-01-15",
         "--due-date", "2024-01-22",
-        "--project-code", "proj-1",
+        "--project-code", &project_code,
         "--company-code", "TECH-CORP"
     ]);
     
@@ -444,11 +483,25 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
         .success()
         .stdout(predicate::str::contains("Task Setup Environment created"));
     
+    // Encontrar o arquivo da tarefa criada
+    let tasks_dir = temp.path().join("companies").join("TECH-CORP").join("projects").join(&project_code).join("tasks");
+    let mut task_file = None;
+    if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+        for entry in entries.flatten() {
+            if entry.path().extension().map_or(false, |ext| ext == "yaml") {
+                task_file = Some(entry.path());
+                break;
+            }
+        }
+    }
+    
+    let task_file = task_file.expect("Task file not found");
+    
     // Verificar se o arquivo foi criado
-    task_file.assert(predicate::path::exists());
+    assert!(task_file.exists(), "Task file should exist");
     
     // Validar conteúdo YAML do task.yaml
-    let validator = YamlValidator::new(task_file.path())?;
+    let validator = YamlValidator::new(&task_file)?;
     
     // Validar estrutura básica (task usa api_version em vez de apiVersion)
     assert!(validator.has_field("api_version"), "Task deve ter api_version");
@@ -470,7 +523,7 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     
     // Validar valores específicos
     assert!(validator.field_equals("metadata.name", "Setup Environment"), "metadata.name deve ser 'Setup Environment'");
-    assert!(validator.field_equals("spec.projectCode", "proj-1"), "spec.projectCode deve ser 'proj-1'");
+    assert!(validator.field_equals("spec.projectCode", &project_code), "spec.projectCode deve ser o código correto do projeto");
     
     // Validar que os campos não estão vazios
     assert!(validator.field_not_empty("metadata.id"), "metadata.id não deve estar vazio");
@@ -484,7 +537,7 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     
     // Validar que contém strings esperadas
     assert!(validator.contains("Setup Environment"), "Task deve conter 'Setup Environment'");
-    assert!(validator.contains("proj-1"), "Task deve conter 'proj-1'");
+    assert!(validator.contains(&project_code), "Task deve conter o código do projeto");
     
     temp.close()?;
     Ok(())
@@ -656,7 +709,31 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
     
-    // 5. Criar tarefa
+    // 5. Encontrar o código do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    // Ler o código do projeto do YAML
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let project_code = project_code.expect("Project code not found");
+    
+    // 6. Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
@@ -665,7 +742,7 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
         "--description", "Setup development environment",
         "--start-date", "2024-01-15",
         "--due-date", "2024-01-22",
-        "--project-code", "proj-1",
+        "--project-code", &project_code,
         "--company-code", "TECH-CORP"
     ]);
     cmd.assert().success();
@@ -862,7 +939,6 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let project_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("project.yaml");
     
     // Setup
     setup_test_environment(&temp)?;
@@ -877,10 +953,27 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     
     cmd.assert().success();
-    project_file.assert(predicate::path::exists());
+    
+    // Encontrar o arquivo do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_file = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    project_file = Some(project_yaml);
+                    break;
+                }
+            }
+        }
+    }
+    
+    let project_file = project_file.expect("Project file not found");
+    assert!(project_file.exists(), "Project file should exist");
     
     // Validar project.yaml com validador robusto
-    let validator = YamlValidator::new(project_file.path())?;
+    let validator = YamlValidator::new(&project_file)?;
     
     // Estrutura básica obrigatória
     assert!(validator.validate_basic_structure(), "Project deve ter estrutura básica");
@@ -921,11 +1014,34 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let task_file = temp.child("companies").child("TECH-CORP").child("projects").child("proj-1").child("tasks").child("task-1.yaml");
     
     // Setup
     setup_test_environment(&temp)?;
     create_test_project(&temp)?;
+    
+    // Encontrar o código do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    // Ler o código do projeto do YAML
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let project_code = project_code.expect("Project code not found");
     
     // Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -936,15 +1052,29 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         "--description", "Task for YAML validation testing",
         "--start-date", "2024-02-01",
         "--due-date", "2024-02-15",
-        "--project-code", "proj-1",
+        "--project-code", &project_code,
         "--company-code", "TECH-CORP"
     ]);
     
     cmd.assert().success();
-    task_file.assert(predicate::path::exists());
+    
+    // Encontrar o arquivo da tarefa criada
+    let tasks_dir = temp.path().join("companies").join("TECH-CORP").join("projects").join(&project_code).join("tasks");
+    let mut task_file = None;
+    if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+        for entry in entries.flatten() {
+            if entry.path().extension().map_or(false, |ext| ext == "yaml") {
+                task_file = Some(entry.path());
+                break;
+            }
+        }
+    }
+    
+    let task_file = task_file.expect("Task file not found");
+    assert!(task_file.exists(), "Task file should exist");
     
     // Validar task.yaml com validador robusto
-    let validator = YamlValidator::new(task_file.path())?;
+    let validator = YamlValidator::new(&task_file)?;
     
     // Estrutura básica obrigatória (task usa api_version em vez de apiVersion)
     assert!(validator.has_field("api_version"), "Task deve ter api_version");
@@ -980,7 +1110,7 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     
     // Valores específicos
     assert!(validator.field_equals("metadata.name", "YAML Validation Task"));
-    assert!(validator.field_equals("spec.projectCode", "proj-1"));
+    assert!(validator.field_equals("spec.projectCode", &project_code));
     
     temp.close()?;
     Ok(())
@@ -1037,6 +1167,30 @@ fn create_test_resource(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::er
 }
 
 fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
+    // Encontrar o código do projeto criado
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let mut project_code = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let project_yaml = entry.path().join("project.yaml");
+                if project_yaml.exists() {
+                    // Ler o código do projeto do YAML
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
+                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                            if let Some(code) = yaml.get("metadata").and_then(|m| m.get("code")).and_then(|c| c.as_str()) {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    let project_code = project_code.expect("Project code not found");
+    
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
@@ -1045,7 +1199,7 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
         "--description", "Setup development environment",
         "--start-date", "2024-01-15",
         "--due-date", "2024-01-22",
-        "--project-code", "proj-1",
+        "--project-code", &project_code,
         "--company-code", "TECH-CORP"
     ]);
     cmd.assert().success();
