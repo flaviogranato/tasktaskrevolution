@@ -10,3 +10,5 @@ pub mod advanced_workflows;
 pub mod data_validation;
 pub mod error_scenarios;
 pub mod performance;
+pub mod compatibility;
+pub mod external_integration;
