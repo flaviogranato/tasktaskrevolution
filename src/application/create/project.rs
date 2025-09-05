@@ -1,5 +1,5 @@
 use crate::domain::{
-    project_management::{builder::ProjectBuilder, repository::ProjectRepository},
+    project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository},
     shared::errors::DomainError,
 };
 
@@ -12,7 +12,8 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self, name: &str, description: Option<&str>, company_code: String) -> Result<(), DomainError> {
+    pub fn execute(&self, name: &str, description: Option<&str>, company_code: String) -> Result<AnyProject, DomainError> {
+        // Get the next available code
         let code = self.repository.get_next_code()?;
 
         // Use the unified builder
@@ -29,10 +30,11 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         }
 
         let project = project.build()?; // This returns Result<Project, DomainError>
+        let any_project: AnyProject = project.into();
 
-        self.repository.save(project.into())?;
+        self.repository.save(any_project.clone())?;
         println!("Project {name} created");
-        Ok(())
+        Ok(any_project)
     }
 
     #[allow(dead_code)]

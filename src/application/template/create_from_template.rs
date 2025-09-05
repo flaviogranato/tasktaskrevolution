@@ -45,7 +45,7 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
             Some(rendered.project.description.as_str())
         };
 
-        self.create_project_use_case.execute(
+        let project = self.create_project_use_case.execute(
             &rendered.project.name,
             project_description,
             company_code.clone(),
@@ -93,7 +93,7 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
             self.create_task_use_case.execute(
                 crate::application::create::task::CreateTaskArgs {
                     company_code: company_code.clone(),
-                    project_code: "proj-1".to_string(), // TODO: Get actual project code
+                    project_code: project.code().to_string(),
                     name: task.name.clone(),
                     start_date,
                     due_date,
