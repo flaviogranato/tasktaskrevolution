@@ -28,7 +28,15 @@ impl FileProjectRepository {
             base_path: PathBuf::from("."),
         }
     }
+}
 
+impl Default for FileProjectRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl FileProjectRepository {
     /// Cria uma nova instância do repositório que opera a partir de um diretório base específico.
     /// Esta função é primariamente para uso em testes.
     pub fn with_base_path(base_path: PathBuf) -> Self {

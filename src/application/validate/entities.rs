@@ -118,8 +118,8 @@ where
 
         // Create composite specification for project completeness
         let project_completeness_spec = AndSpecification::new()
-            .add(Box::new(ProjectHasTasksSpec))
-            .add(Box::new(ProjectHasAssignedResourcesSpec));
+            .add_specification(Box::new(ProjectHasTasksSpec))
+            .add_specification(Box::new(ProjectHasAssignedResourcesSpec));
 
         for project in projects {
             if !project_completeness_spec.is_satisfied_by(project)

@@ -59,7 +59,7 @@ impl Priority {
     }
 
     /// Creates a priority from a string
-    pub fn from_str(s: &str) -> Result<Self, String> {
+    pub fn parse_priority(s: &str) -> Result<Self, String> {
         match s.to_lowercase().as_str() {
             "low" | "l" => Ok(Priority::Low),
             "medium" | "med" | "m" => Ok(Priority::Medium),
@@ -118,24 +118,24 @@ mod tests {
     }
 
     #[test]
-    fn test_priority_from_str() {
-        assert_eq!(Priority::from_str("low").unwrap(), Priority::Low);
-        assert_eq!(Priority::from_str("L").unwrap(), Priority::Low);
-        assert_eq!(Priority::from_str("medium").unwrap(), Priority::Medium);
-        assert_eq!(Priority::from_str("MED").unwrap(), Priority::Medium);
-        assert_eq!(Priority::from_str("m").unwrap(), Priority::Medium);
-        assert_eq!(Priority::from_str("high").unwrap(), Priority::High);
-        assert_eq!(Priority::from_str("H").unwrap(), Priority::High);
-        assert_eq!(Priority::from_str("critical").unwrap(), Priority::Critical);
-        assert_eq!(Priority::from_str("CRIT").unwrap(), Priority::Critical);
-        assert_eq!(Priority::from_str("c").unwrap(), Priority::Critical);
+    fn test_priority_parse_priority() {
+        assert_eq!(Priority::parse_priority("low").unwrap(), Priority::Low);
+        assert_eq!(Priority::parse_priority("L").unwrap(), Priority::Low);
+        assert_eq!(Priority::parse_priority("medium").unwrap(), Priority::Medium);
+        assert_eq!(Priority::parse_priority("MED").unwrap(), Priority::Medium);
+        assert_eq!(Priority::parse_priority("m").unwrap(), Priority::Medium);
+        assert_eq!(Priority::parse_priority("high").unwrap(), Priority::High);
+        assert_eq!(Priority::parse_priority("H").unwrap(), Priority::High);
+        assert_eq!(Priority::parse_priority("critical").unwrap(), Priority::Critical);
+        assert_eq!(Priority::parse_priority("CRIT").unwrap(), Priority::Critical);
+        assert_eq!(Priority::parse_priority("c").unwrap(), Priority::Critical);
     }
 
     #[test]
-    fn test_priority_from_str_invalid() {
-        assert!(Priority::from_str("invalid").is_err());
-        assert!(Priority::from_str("").is_err());
-        assert!(Priority::from_str("x").is_err());
+    fn test_priority_parse_priority_invalid() {
+        assert!(Priority::parse_priority("invalid").is_err());
+        assert!(Priority::parse_priority("").is_err());
+        assert!(Priority::parse_priority("x").is_err());
     }
 
     #[test]

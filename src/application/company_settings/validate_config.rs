@@ -9,7 +9,15 @@ impl ValidateCompanyConfigUseCase {
     pub fn new() -> Self {
         Self
     }
+}
 
+impl Default for ValidateCompanyConfigUseCase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ValidateCompanyConfigUseCase {
     pub fn execute(&self, config: &Config) -> bool {
         config.is_valid()
     }

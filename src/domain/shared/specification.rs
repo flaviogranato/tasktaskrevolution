@@ -32,7 +32,7 @@ impl<T> AndSpecification<T> {
         }
     }
 
-    pub fn add(mut self, spec: Box<dyn Specification<T>>) -> Self {
+    pub fn add_specification(mut self, spec: Box<dyn Specification<T>>) -> Self {
         self.specifications.push(spec);
         self
     }
@@ -85,7 +85,7 @@ impl<T> OrSpecification<T> {
         }
     }
 
-    pub fn add(mut self, spec: Box<dyn Specification<T>>) -> Self {
+    pub fn add_specification(mut self, spec: Box<dyn Specification<T>>) -> Self {
         self.specifications.push(spec);
         self
     }
@@ -198,7 +198,7 @@ pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {
     where
         S: Specification<T> + 'static, // 'static necessário para Box<dyn>
     {
-        AndSpecification::new().add(Box::new(self)).add(Box::new(other))
+        AndSpecification::new().add_specification(Box::new(self)).add_specification(Box::new(other))
     }
 
     /// Combine this specification with another using OR logic
@@ -206,7 +206,7 @@ pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {
     where
         S: Specification<T> + 'static, // 'static necessário para Box<dyn>
     {
-        OrSpecification::new().add(Box::new(self)).add(Box::new(other))
+        OrSpecification::new().add_specification(Box::new(self)).add_specification(Box::new(other))
     }
 
     /// Negate this specification
@@ -454,8 +454,8 @@ mod tests {
     #[test]
     fn test_and_specification_add() {
         let spec = AndSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         assert_eq!(spec.specifications.len(), 2);
     }
@@ -474,8 +474,8 @@ mod tests {
     #[test]
     fn test_and_specification_is_satisfied_by_all_true() {
         let spec = AndSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(10, "test entity", 42, true);
         assert!(spec.is_satisfied_by(&entity));
@@ -484,8 +484,8 @@ mod tests {
     #[test]
     fn test_and_specification_is_satisfied_by_some_false() {
         let spec = AndSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(10, "other entity", 42, true);
         assert!(!spec.is_satisfied_by(&entity));
@@ -494,8 +494,8 @@ mod tests {
     #[test]
     fn test_and_specification_is_satisfied_by_all_false() {
         let spec = AndSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(3, "other entity", 42, true);
         assert!(!spec.is_satisfied_by(&entity));
@@ -510,8 +510,8 @@ mod tests {
     #[test]
     fn test_and_specification_explain_why_not_satisfied() {
         let spec = AndSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(3, "other entity", 42, true);
         let explanation = spec.explain_why_not_satisfied(&entity);
@@ -522,8 +522,8 @@ mod tests {
     #[test]
     fn test_and_specification_explain_why_not_satisfied_all_passed() {
         let spec = AndSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(10, "test entity", 42, true);
         let explanation = spec.explain_why_not_satisfied(&entity);
@@ -546,8 +546,8 @@ mod tests {
     #[test]
     fn test_or_specification_add() {
         let spec = OrSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         assert_eq!(spec.specifications.len(), 2);
     }
@@ -566,8 +566,8 @@ mod tests {
     #[test]
     fn test_or_specification_is_satisfied_by_any_true() {
         let spec = OrSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(10, "other entity", 42, true);
         assert!(spec.is_satisfied_by(&entity));
@@ -576,8 +576,8 @@ mod tests {
     #[test]
     fn test_or_specification_is_satisfied_by_all_false() {
         let spec = OrSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(3, "other entity", 42, true);
         assert!(!spec.is_satisfied_by(&entity));
@@ -592,8 +592,8 @@ mod tests {
     #[test]
     fn test_or_specification_explain_why_not_satisfied() {
         let spec = OrSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(3, "other entity", 42, true);
         let explanation = spec.explain_why_not_satisfied(&entity);
@@ -608,8 +608,8 @@ mod tests {
     #[test]
     fn test_or_specification_explain_why_not_satisfied_some_passed() {
         let spec = OrSpecification::new()
-            .add(Box::new(IdGreaterThanSpec::new(5)))
-            .add(Box::new(NameContainsSpec::new("test")));
+            .add_specification(Box::new(IdGreaterThanSpec::new(5)))
+            .add_specification(Box::new(NameContainsSpec::new("test")));
 
         let entity = MockEntity::new(10, "other entity", 42, true);
         let explanation = spec.explain_why_not_satisfied(&entity);

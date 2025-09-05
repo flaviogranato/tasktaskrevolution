@@ -58,9 +58,9 @@ where
 
         // Create composite specification for projects
         let project_spec = AndSpecification::new()
-            .add(Box::new(ValidProjectDateRangeSpec))
-            .add(Box::new(TaskWithinProjectTimelineSpec))
-            .add(Box::new(ProjectHasTasksSpec));
+            .add_specification(Box::new(ValidProjectDateRangeSpec))
+            .add_specification(Box::new(TaskWithinProjectTimelineSpec))
+            .add_specification(Box::new(ProjectHasTasksSpec));
 
         for project in projects {
             if !project_spec.is_satisfied_by(project)

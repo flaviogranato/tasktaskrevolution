@@ -50,7 +50,7 @@ impl<T> CompositeValidator<T> {
         Self { validators: Vec::new() }
     }
 
-    pub fn add(mut self, validator: Box<dyn Validator<T>>) -> Self {
+    pub fn add_validator(mut self, validator: Box<dyn Validator<T>>) -> Self {
         self.validators.push(validator);
         self
     }
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_composite_validator_add() {
-        let validator = CompositeValidator::<MockValidatable>::new().add(Box::new(NameValidator));
+        let validator = CompositeValidator::<MockValidatable>::new().add_validator(Box::new(NameValidator));
         assert_eq!(validator.validators.len(), 1);
     }
 
@@ -292,8 +292,8 @@ mod tests {
     #[test]
     fn test_composite_validator_validate_success() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("test", 42, true);
         assert!(validator.validate(&item).is_ok());
@@ -302,8 +302,8 @@ mod tests {
     #[test]
     fn test_composite_validator_validate_first_failure() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("", 42, true);
         let result = validator.validate(&item);
@@ -317,8 +317,8 @@ mod tests {
     #[test]
     fn test_composite_validator_validate_second_failure() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("test", -1, true);
         let result = validator.validate(&item);
@@ -332,8 +332,8 @@ mod tests {
     #[test]
     fn test_composite_validator_validate_multiple_failures() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("", -1, true);
         let result = validator.validate(&item);
@@ -348,8 +348,8 @@ mod tests {
     #[test]
     fn test_composite_validator_is_valid_success() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("test", 42, true);
         assert!(validator.is_valid(&item));
@@ -358,8 +358,8 @@ mod tests {
     #[test]
     fn test_composite_validator_is_valid_failure() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("", 42, true);
         assert!(!validator.is_valid(&item));
@@ -368,8 +368,8 @@ mod tests {
     #[test]
     fn test_composite_validator_validation_errors_success() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("test", 42, true);
         let errors = validator.validation_errors(&item);
@@ -379,8 +379,8 @@ mod tests {
     #[test]
     fn test_composite_validator_validation_errors_failure() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("", 42, true);
         let errors = validator.validation_errors(&item);
@@ -426,9 +426,9 @@ mod tests {
     #[test]
     fn test_composite_validator_builder_pattern() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator))
-            .add(Box::new(CompositeTestValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator))
+            .add_validator(Box::new(CompositeTestValidator));
 
         assert_eq!(validator.validators.len(), 3);
 
@@ -458,8 +458,8 @@ mod tests {
     #[test]
     fn test_validation_error_propagation() {
         let validator = CompositeValidator::<MockValidatable>::new()
-            .add(Box::new(NameValidator))
-            .add(Box::new(ValueValidator));
+            .add_validator(Box::new(NameValidator))
+            .add_validator(Box::new(ValueValidator));
 
         let item = MockValidatable::new("", -1, true);
         let result = validator.validate(&item);
