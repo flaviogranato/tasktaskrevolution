@@ -51,6 +51,14 @@ path = "tests/integration/error_scenarios.rs"
 name = "performance"
 path = "tests/integration/performance.rs"
 
+[[test]]
+name = "compatibility"
+path = "tests/integration/compatibility.rs"
+
+[[test]]
+name = "external_integration"
+path = "tests/integration/external_integration.rs"
+
 [profile.release]
 opt-level = 3
 lto = true
