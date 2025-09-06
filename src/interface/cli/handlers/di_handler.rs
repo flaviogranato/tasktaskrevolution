@@ -62,7 +62,8 @@ mod tests {
     
     #[test]
     fn test_get_container() {
-        init_di_handler().unwrap();
+        // Inicializa o handler se não estiver inicializado
+        let _ = init_di_handler();
         let handler = get_di_handler();
         let container = handler.get_container();
         assert!(container.is_ok());
