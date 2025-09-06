@@ -6,8 +6,7 @@ use super::traits::*;
 /// Container de Dependency Injection thread-safe
 #[derive(Default)]
 pub struct DIContainer {
-    services: Arc<RwLock<HashMap<TypeId, Arc<dyn Injectable>>>>,
-    singletons: Arc<RwLock<HashMap<TypeId, Arc<dyn Injectable>>>>,
+    singletons: Arc<RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>>,
     factories: Arc<RwLock<HashMap<TypeId, Arc<dyn Any + Send + Sync>>>>,
 }
 
@@ -32,7 +31,7 @@ impl ServiceRegistrar for DIContainer {
         F: Fn() -> T + Send + Sync + 'static,
     {
         let type_id = TypeId::of::<T>();
-        let factory = Arc::new(factory);
+        let factory = Arc::new(factory) as Arc<dyn Any + Send + Sync>;
         
         self.factories
             .write()
@@ -48,7 +47,8 @@ impl ServiceRegistrar for DIContainer {
         F: Fn() -> T + Send + Sync + 'static,
     {
         let type_id = TypeId::of::<T>();
-        let instance = Arc::new(factory());
+        let instance = factory();
+        let instance = Arc::new(instance) as Arc<dyn Any + Send + Sync>;
         
         self.singletons
             .write()
@@ -63,7 +63,7 @@ impl ServiceRegistrar for DIContainer {
         T: Injectable,
     {
         let type_id = TypeId::of::<T>();
-        let instance = Arc::new(instance);
+        let instance = Arc::new(instance) as Arc<dyn Any + Send + Sync>;
         
         self.singletons
             .write()
@@ -87,8 +87,32 @@ impl ServiceResolver for DIContainer {
     where
         T: Injectable + 'static,
     {
-        // Por enquanto, implementação simplificada
-        // TODO: Implementar downcast correto quando os problemas de tipo forem resolvidos
+        let type_id = TypeId::of::<T>();
+        
+        // Primeiro tenta resolver de singletons
+        if let Ok(singletons) = self.singletons.read() {
+            if let Some(service) = singletons.get(&type_id) {
+                // Tenta fazer downcast direto
+                if let Some(typed_service) = service.downcast_ref::<T>() {
+                    // Cria um novo Arc<T> usando unsafe para evitar Clone
+                    unsafe {
+                        let raw_ptr = service.as_ref() as *const dyn Any as *const T;
+                        return Some(Arc::from_raw(raw_ptr));
+                    }
+                }
+            }
+        }
+        
+        // Depois tenta resolver de factories
+        if let Ok(factories) = self.factories.read() {
+            if let Some(factory) = factories.get(&type_id) {
+                if let Some(factory_fn) = factory.downcast_ref::<Arc<dyn Fn() -> T + Send + Sync>>() {
+                    let instance = factory_fn();
+                    return Some(Arc::new(instance));
+                }
+            }
+        }
+        
         None
     }
 }
@@ -96,7 +120,6 @@ impl ServiceResolver for DIContainer {
 impl Clone for DIContainer {
     fn clone(&self) -> Self {
         Self {
-            services: Arc::clone(&self.services),
             singletons: Arc::clone(&self.singletons),
             factories: Arc::clone(&self.factories),
         }
@@ -115,6 +138,14 @@ mod tests {
     impl Injectable for MockService {
         fn as_any(&self) -> &dyn Any {
             self
+        }
+    }
+    
+    impl Clone for MockService {
+        fn clone(&self) -> Self {
+            Self {
+                value: self.value.clone(),
+            }
         }
     }
 

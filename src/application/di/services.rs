@@ -91,6 +91,7 @@ impl Injectable for RepositoryService {
     }
 }
 
+
 /// Serviço de casos de uso de criação
 pub struct CreateUseCaseService {
     pub create_company: CreateCompanyUseCase<FileCompanyRepository>,
@@ -120,6 +121,7 @@ impl Injectable for CreateUseCaseService {
     }
 }
 
+
 /// Serviço de casos de uso de listagem
 pub struct ListUseCaseService {
     pub list_projects: ListProjectsUseCase<FileProjectRepository>,
@@ -142,6 +144,7 @@ impl Injectable for ListUseCaseService {
         self
     }
 }
+
 
 /// Serviço de casos de uso de projeto
 pub struct ProjectUseCaseService {
@@ -171,6 +174,7 @@ impl Injectable for ProjectUseCaseService {
     }
 }
 
+
 /// Serviço de casos de uso de tarefa
 pub struct TaskUseCaseService {
     pub delete_task: DeleteTaskUseCase<FileProjectRepository>,
@@ -196,6 +200,7 @@ impl Injectable for TaskUseCaseService {
     }
 }
 
+
 /// Serviço de casos de uso de recurso
 pub struct ResourceUseCaseService {
     pub deactivate_resource: DeactivateResourceUseCase<FileResourceRepository>,
@@ -218,6 +223,7 @@ impl Injectable for ResourceUseCaseService {
         self
     }
 }
+
 
 /// Serviço de casos de uso de template
 pub struct TemplateUseCaseService {
@@ -246,6 +252,7 @@ impl Injectable for TemplateUseCaseService {
     }
 }
 
+
 /// Serviço de casos de uso de validação
 /// Nota: Por enquanto não usa ValidationUseCases devido a problemas de lifetime
 pub struct ValidationUseCaseService {
@@ -266,6 +273,7 @@ impl Injectable for ValidationUseCaseService {
         self
     }
 }
+
 
 /// Serviço de casos de uso de relatórios
 pub struct ReportUseCaseService {
@@ -290,6 +298,7 @@ impl Injectable for ReportUseCaseService {
         self
     }
 }
+
 
 /// Serviço de inicialização
 /// Nota: Por enquanto não usa InitManagerUseCase devido a problemas de thread safety
