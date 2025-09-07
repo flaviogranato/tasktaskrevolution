@@ -1,5 +1,5 @@
 use super::super::commands::CompanyCommand;
-use crate::{application::company_management::CreateCompanyArgs, interface::cli::handlers::DI_HANDLER};
+use crate::{application::company_management::CreateCompanyArgs, interface::cli::handlers::get_app_handler};
 
 pub fn handle_company_command(command: CompanyCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -8,9 +8,9 @@ pub fn handle_company_command(command: CompanyCommand) -> Result<(), Box<dyn std
             code,
             description,
         } => {
-            let _container = DI_HANDLER.get().ok_or("DI container not initialized")?;
-            // Por enquanto, não usa DI - será implementado posteriormente
-            // let create_service: std::sync::Arc<CreateUseCaseService> = container.try_resolve().ok_or("Failed to resolve CreateUseCaseService")?;
+            let app = get_app_handler().get_app();
+            // Use the company repository directly
+            let _company_repo = &app.company_repository;
 
             let args = CreateCompanyArgs {
                 code: code.clone(),
