@@ -125,12 +125,9 @@ impl ServiceResolver for DIContainer {
             && let Some(service) = singletons.get(&type_id)
         {
             // Tenta fazer downcast direto
-            if let Some(typed_service) = service.downcast_ref::<T>() {
-                // Cria um novo Arc<T> usando unsafe para evitar Clone
-                unsafe {
-                    let raw_ptr = service.as_ref() as *const dyn Any as *const T;
-                    return Some(Arc::from_raw(raw_ptr));
-                }
+            if let Some(typed_service) = service.downcast_ref::<Arc<T>>() {
+                // Clona o Arc<T> de forma segura
+                return Some(Arc::clone(typed_service));
             }
         }
 

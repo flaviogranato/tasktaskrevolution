@@ -59,7 +59,7 @@ impl From<ResourceError> for DomainError {
                 field: "code".to_string(),
                 message: format!("Code '{}' is invalid: {}", code, reason),
             },
-            ResourceError::DeactivationFailed { reason } => DomainError::ResourceInvalidState {
+            ResourceError::DeactivationFailed { reason: _ } => DomainError::ResourceInvalidState {
                 current: "active".to_string(),
                 expected: "deactivated".to_string(),
             },

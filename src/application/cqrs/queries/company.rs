@@ -1,4 +1,4 @@
-use crate::application::cqrs::Query;
+use crate::application::cqrs::commands::Query;
 use crate::domain::company_management::company::Company;
 use serde::{Deserialize, Serialize};
 
