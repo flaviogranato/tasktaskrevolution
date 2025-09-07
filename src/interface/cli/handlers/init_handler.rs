@@ -1,4 +1,4 @@
-use crate::{application::init::InitManagerData, interface::cli::handlers::DI_HANDLER};
+use crate::{application::init::InitManagerData, interface::cli::handlers::get_app_handler};
 
 pub fn handle_init(
     name: String,
@@ -8,9 +8,9 @@ pub fn handle_init(
     work_hours_end: String,
     work_days: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let _container = DI_HANDLER.get().ok_or("DI container not initialized")?;
-    // Por enquanto, não usa DI - será implementado posteriormente
-    // let _init_service: std::sync::Arc<crate::application::di::InitService> = container.try_resolve().ok_or("Failed to resolve InitService")?;
+    let app = get_app_handler().get_app();
+    // Use the config repository directly
+    let _config_repo = &app.config_repository;
 
     let work_days_vec: Vec<String> = work_days.split(',').map(|s| s.trim().to_string()).collect();
 

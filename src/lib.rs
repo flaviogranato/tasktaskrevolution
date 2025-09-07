@@ -14,8 +14,8 @@ pub mod interface;
 /// Função principal da biblioteca que pode ser chamada
 /// tanto pela CLI quanto por testes
 pub fn run() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-    // Inicializa o sistema de Dependency Injection
-    interface::cli::handlers::init_di_handler()
+    // Inicializa o sistema de aplicação
+    interface::cli::handlers::init_app_handler()
         .map_err(|e| Box::new(std::io::Error::other(e)) as Box<dyn std::error::Error + Send + Sync + 'static>)?;
 
     let cli = interface::cli::Cli::parse();
