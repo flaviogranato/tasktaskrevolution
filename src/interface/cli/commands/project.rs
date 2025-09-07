@@ -8,7 +8,7 @@ pub enum ProjectCommand {
         #[clap(short, long)]
         name: String,
         /// Project code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Company code
         #[clap(short, long)]
@@ -32,7 +32,7 @@ pub enum ProjectCommand {
         #[clap(short, long)]
         name: String,
         /// Project code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Company code
         #[clap(short, long)]
@@ -44,7 +44,7 @@ pub enum ProjectCommand {
     /// Describe a project
     Describe {
         /// Project code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Company code
         #[clap(short, long)]
@@ -53,7 +53,7 @@ pub enum ProjectCommand {
     /// Update a project
     Update {
         /// Project code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Company code
         #[clap(short, long)]
@@ -74,7 +74,7 @@ pub enum ProjectCommand {
     /// Cancel a project
     Cancel {
         /// Project code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Company code
         #[clap(short, long)]
@@ -86,7 +86,7 @@ pub enum ProjectCommand {
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
         /// Task code
         #[clap(short, long)]
