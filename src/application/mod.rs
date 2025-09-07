@@ -1,6 +1,5 @@
 pub mod build_context;
 pub mod build_use_case;
-pub mod cqrs;
 pub mod di;
 pub mod gantt_use_case;
 pub mod initialize_repository_use_case;
