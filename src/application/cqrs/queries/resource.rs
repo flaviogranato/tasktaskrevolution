@@ -1,4 +1,4 @@
-use crate::application::cqrs::Query;
+use crate::application::cqrs::commands::Query;
 use crate::domain::resource_management::AnyResource;
 use serde::{Deserialize, Serialize};
 
