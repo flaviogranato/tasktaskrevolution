@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid7;
 
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::DomainError;
 
 /// Represents a company entity in the system.
 ///
@@ -85,17 +85,17 @@ impl Company {
     /// Creates a new company instance.
     pub fn new(code: String, name: String, created_by: String) -> Result<Self, DomainError> {
         if code.trim().is_empty() {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "code".to_string(),
                 message: "Company code cannot be empty".to_string(),
-            }));
+            });
         }
 
         if name.trim().is_empty() {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "name".to_string(),
                 message: "Company name cannot be empty".to_string(),
-            }));
+            });
         }
 
         let now = Utc::now();
@@ -122,10 +122,10 @@ impl Company {
     /// Updates the company name.
     pub fn update_name(&mut self, new_name: String) -> Result<(), DomainError> {
         if new_name.trim().is_empty() {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "name".to_string(),
                 message: "Company name cannot be empty".to_string(),
-            }));
+            });
         }
 
         self.name = new_name;

@@ -1,16 +1,13 @@
+use super::super::commands::DeleteCommand;
 use crate::{
     application::{
-        project::cancel_project::CancelProjectUseCase,
+        project::cancel_project::CancelProjectUseCase, resource::deactivate_resource::DeactivateResourceUseCase,
         task::delete_task::DeleteTaskUseCase,
-        resource::deactivate_resource::DeactivateResourceUseCase,
     },
     infrastructure::persistence::{
-        project_repository::FileProjectRepository,
-        task_repository::FileTaskRepository,
-        resource_repository::FileResourceRepository,
+        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
     },
 };
-use super::super::commands::DeleteCommand;
 
 pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {

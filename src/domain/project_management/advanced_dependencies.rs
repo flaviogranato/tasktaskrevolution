@@ -7,7 +7,7 @@ use chrono::{Days, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::DomainError;
 
 // ============================================================================
 // ENUMS
@@ -80,21 +80,21 @@ impl LagType {
         match self {
             LagType::Positive(duration) => {
                 let days = Days::new(duration.num_days() as u64);
-                base_date.checked_add_days(days).ok_or_else(|| {
-                    DomainError::new(DomainErrorKind::ValidationError {
+                base_date
+                    .checked_add_days(days)
+                    .ok_or_else(|| DomainError::ValidationError {
                         field: "lag".to_string(),
                         message: "Invalid positive lag duration".to_string(),
                     })
-                })
             }
             LagType::Negative(duration) => {
                 let days = Days::new(duration.num_days() as u64);
-                base_date.checked_sub_days(days).ok_or_else(|| {
-                    DomainError::new(DomainErrorKind::ValidationError {
+                base_date
+                    .checked_sub_days(days)
+                    .ok_or_else(|| DomainError::ValidationError {
                         field: "lag".to_string(),
                         message: "Invalid negative lag duration".to_string(),
                     })
-                })
             }
             LagType::Zero => Ok(base_date),
         }
@@ -152,17 +152,17 @@ impl AdvancedDependency {
     /// Valida se a dependência é válida
     pub fn validate(&self) -> Result<(), DomainError> {
         if self.predecessor_id == self.successor_id {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "A task cannot depend on itself".to_string(),
-            }));
+            });
         }
 
         if self.predecessor_id.is_empty() || self.successor_id.is_empty() {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "Predecessor and successor IDs cannot be empty".to_string(),
-            }));
+            });
         }
 
         Ok(())
@@ -263,33 +263,33 @@ impl AdvancedDependencyGraph {
 
         // Verificar se as tarefas existem
         if !self.nodes.contains_key(&dependency.predecessor_id) {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "predecessor_id".to_string(),
                 message: "Predecessor task does not exist".to_string(),
-            }));
+            });
         }
 
         if !self.nodes.contains_key(&dependency.successor_id) {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "successor_id".to_string(),
                 message: "Successor task does not exist".to_string(),
-            }));
+            });
         }
 
         // Verificar se a dependência já existe
         if self.has_dependency(&dependency.predecessor_id, &dependency.successor_id) {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "Dependency already exists".to_string(),
-            }));
+            });
         }
 
         // Verificar se criaria ciclo
         if self.would_create_cycle(&dependency.predecessor_id, &dependency.successor_id) {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "Dependency would create a cycle".to_string(),
-            }));
+            });
         }
 
         // Adicionar dependência
@@ -299,12 +299,14 @@ impl AdvancedDependencyGraph {
 
         // Atualizar nós
         if let Some(node) = self.nodes.get_mut(&dependency.predecessor_id)
-            && !node.successors.contains(&dependency.successor_id) {
+            && !node.successors.contains(&dependency.successor_id)
+        {
             node.successors.push(dependency.successor_id.clone());
         }
 
         if let Some(node) = self.nodes.get_mut(&dependency.successor_id)
-            && !node.predecessors.contains(&dependency.predecessor_id) {
+            && !node.predecessors.contains(&dependency.predecessor_id)
+        {
             node.predecessors.push(dependency.predecessor_id.clone());
         }
 
@@ -359,7 +361,8 @@ impl AdvancedDependencyGraph {
     /// Remove uma dependência
     pub fn remove_dependency(&mut self, predecessor_id: &str, successor_id: &str) -> Result<(), DomainError> {
         if let Some(deps) = self.dependencies.get_mut(predecessor_id)
-            && let Some(pos) = deps.iter().position(|dep| dep.successor_id == successor_id) {
+            && let Some(pos) = deps.iter().position(|dep| dep.successor_id == successor_id)
+        {
             deps.remove(pos);
         }
 
@@ -412,16 +415,16 @@ impl AdvancedDependencyGraph {
         for deps in self.dependencies.values() {
             for dep in deps {
                 if !self.nodes.contains_key(&dep.predecessor_id) {
-                    return Err(DomainError::new(DomainErrorKind::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "dependency".to_string(),
                         message: format!("Dependency references non-existent predecessor: {}", dep.predecessor_id),
-                    }));
+                    });
                 }
                 if !self.nodes.contains_key(&dep.successor_id) {
-                    return Err(DomainError::new(DomainErrorKind::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "dependency".to_string(),
                         message: format!("Dependency references non-existent successor: {}", dep.successor_id),
-                    }));
+                    });
                 }
             }
         }
@@ -429,10 +432,10 @@ impl AdvancedDependencyGraph {
         // Verificar se não há ciclos
         for task_id in self.nodes.keys() {
             if self.is_predecessor(task_id, task_id) {
-                return Err(DomainError::new(DomainErrorKind::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "dependency".to_string(),
                     message: format!("Circular dependency detected involving task: {}", task_id),
-                }));
+                });
             }
         }
 

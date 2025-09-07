@@ -1,16 +1,10 @@
+use super::super::commands::ListCommand;
 use crate::{
-    application::list::{
-        projects::ListProjectsUseCase,
-        resources::ListResourcesUseCase,
-        tasks::ListTasksUseCase,
-    },
+    application::list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
     infrastructure::persistence::{
-        project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository,
-        task_repository::FileTaskRepository,
+        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
     },
 };
-use super::super::commands::ListCommand;
 
 pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -25,7 +19,12 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                     } else {
                         println!("Projects:");
                         for project in projects {
-                            println!("  - {} ({}) - {}", project.name(), project.code(), project.company_code());
+                            println!(
+                                "  - {} ({}) - {}",
+                                project.name(),
+                                project.code(),
+                                project.company_code()
+                            );
                         }
                     }
                     Ok(())
@@ -69,7 +68,12 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                     } else {
                         println!("Resources:");
                         for resource in resources {
-                            println!("  - {} ({}) - {}", resource.name(), resource.code(), resource.email().unwrap_or("N/A"));
+                            println!(
+                                "  - {} ({}) - {}",
+                                resource.name(),
+                                resource.code(),
+                                resource.email().unwrap_or("N/A")
+                            );
                         }
                     }
                     Ok(())

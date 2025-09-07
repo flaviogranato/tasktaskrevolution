@@ -1,10 +1,7 @@
+use super::super::commands::ResourceCommand;
 use crate::{
     application::{
-        create::{
-            resource::CreateResourceUseCase,
-            time_off::CreateTimeOffUseCase,
-            vacation::CreateVacationUseCase,
-        },
+        create::{resource::CreateResourceUseCase, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase},
         resource::{
             deactivate_resource::DeactivateResourceUseCase,
             describe_resource::DescribeResourceUseCase,
@@ -13,7 +10,6 @@ use crate::{
     },
     infrastructure::persistence::resource_repository::FileResourceRepository,
 };
-use super::super::commands::ResourceCommand;
 use chrono::NaiveDate;
 
 pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn std::error::Error>> {
@@ -54,14 +50,19 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            match create_use_case.execute(&resource, hours, &start.format("%Y-%m-%d").to_string(), description.as_deref()) {
+            match create_use_case.execute(
+                &resource,
+                hours,
+                &start.format("%Y-%m-%d").to_string(),
+                description.as_deref(),
+            ) {
                 Ok(_) => {
                     println!("✅ Time off created successfully!");
                     Ok(())
                 }
                 Err(e) => {
                     eprintln!("❌ Failed to create time off: {}", e);
-                    Err(e.into())
+                    Err(e)
                 }
             }
         }
@@ -80,14 +81,20 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            match create_use_case.execute(&resource, &start.format("%Y-%m-%d").to_string(), &end.format("%Y-%m-%d").to_string(), with_compensation, None) {
+            match create_use_case.execute(
+                &resource,
+                &start.format("%Y-%m-%d").to_string(),
+                &end.format("%Y-%m-%d").to_string(),
+                with_compensation,
+                None,
+            ) {
                 Ok(_) => {
                     println!("✅ Vacation created successfully!");
                     Ok(())
                 }
                 Err(e) => {
                     eprintln!("❌ Failed to create vacation: {}", e);
-                    Err(e.into())
+                    Err(e)
                 }
             }
         }

@@ -4,6 +4,12 @@ use crate::domain::task_management::AnyTask;
 /// Handler para comandos de tarefa
 pub struct TaskCommandHandler;
 
+impl Default for TaskCommandHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaskCommandHandler {
     pub fn new() -> Self {
         Self

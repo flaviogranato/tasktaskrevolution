@@ -3,7 +3,7 @@ use TaskTaskRevolution::application::cqrs::example_usage::CQRSExample;
 #[test]
 fn test_cqrs_example() {
     let example = CQRSExample::new();
-    
+
     // Teste básico - verificar se os handlers são criados
     // O exemplo completo seria testado em um ambiente de integração
     assert!(true, "CQRS example created successfully");
@@ -12,10 +12,8 @@ fn test_cqrs_example() {
 #[test]
 fn test_cqrs_commands_structure() {
     use TaskTaskRevolution::application::cqrs::commands::{
-        company::CreateCompanyCommand,
-        project::CreateProjectCommand,
+        company::CreateCompanyCommand, project::CreateProjectCommand, resource::CreateResourceCommand,
         task::CreateTaskCommand,
-        resource::CreateResourceCommand,
     };
 
     // Teste de criação de comandos
@@ -59,10 +57,10 @@ fn test_cqrs_commands_structure() {
 #[test]
 fn test_cqrs_queries_structure() {
     use TaskTaskRevolution::application::cqrs::queries::{
-        company::{GetCompanyQuery, ListCompaniesQuery, CompanyFilters},
+        company::{CompanyFilters, GetCompanyQuery, ListCompaniesQuery},
         project::{GetProjectQuery, ListProjectsQuery, ProjectFilters},
-        task::{GetTaskQuery, ListTasksQuery, TaskFilters},
         resource::{GetResourceQuery, ListResourcesQuery, ResourceFilters},
+        task::{GetTaskQuery, ListTasksQuery, TaskFilters},
     };
 
     // Teste de criação de queries

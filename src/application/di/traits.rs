@@ -17,12 +17,12 @@ pub trait ServiceRegistrar {
     where
         T: Injectable,
         F: Fn() -> T + Send + Sync + 'static;
-    
+
     fn register_singleton<T, F>(&mut self, factory: F) -> Result<(), String>
     where
         T: Injectable,
         F: Fn() -> T + Send + Sync + 'static;
-    
+
     fn register_instance<T>(&mut self, instance: T) -> Result<(), String>
     where
         T: Injectable;
@@ -33,7 +33,7 @@ pub trait ServiceResolver {
     fn resolve<T>(&self) -> Result<Arc<T>, String>
     where
         T: Injectable + 'static;
-    
+
     fn try_resolve<T>(&self) -> Option<Arc<T>>
     where
         T: Injectable + 'static;

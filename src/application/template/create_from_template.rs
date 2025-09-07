@@ -33,10 +33,9 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
         company_code: String,
     ) -> Result<CreatedProject, DomainError> {
         // Render template with variables
-        let rendered = template.render(variables).map_err(|e| {
-            DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
-                message: format!("Template rendering failed: {}", e),
-            })
+        let rendered = template.render(variables).map_err(|e| DomainError::ValidationError {
+            field: "template".to_string(),
+            message: format!("Template rendering failed: {}", e),
         })?;
 
         // Create project
@@ -74,15 +73,17 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
         for task in &rendered.tasks {
             // Parse dates
             let start_date = NaiveDate::parse_from_str(&rendered.project.start_date, "%Y-%m-%d").map_err(|e| {
-                DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
+                DomainError::ValidationError {
+                    field: "start_date".to_string(),
                     message: format!("Invalid start date format: {}", e),
-                })
+                }
             })?;
 
             let due_date = NaiveDate::parse_from_str(&rendered.project.end_date, "%Y-%m-%d").map_err(|e| {
-                DomainError::new(crate::domain::shared::errors::DomainErrorKind::Generic {
+                DomainError::ValidationError {
+                    field: "end_date".to_string(),
                     message: format!("Invalid end date format: {}", e),
-                })
+                }
             })?;
 
             let _task_description = if task.description.is_empty() {

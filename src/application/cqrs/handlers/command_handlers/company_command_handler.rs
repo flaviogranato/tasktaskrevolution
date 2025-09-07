@@ -4,6 +4,12 @@ use crate::domain::company_management::company::Company;
 /// Handler para comandos de empresa
 pub struct CompanyCommandHandler;
 
+impl Default for CompanyCommandHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompanyCommandHandler {
     pub fn new() -> Self {
         Self
@@ -11,12 +17,9 @@ impl CompanyCommandHandler {
 
     pub fn handle_create_company(&self, command: CreateCompanyCommand) -> Result<Company, String> {
         // Implementação simplificada para demonstração
-        let company = Company::new(
-            command.code,
-            command.name,
-            command.description.unwrap_or_else(|| "".to_string()),
-        ).map_err(|e| format!("Failed to create company: {}", e))?;
-        
+        let company = Company::new(command.code, command.name, command.description.unwrap_or_default())
+            .map_err(|e| format!("Failed to create company: {}", e))?;
+
         Ok(company)
     }
 

@@ -1,9 +1,9 @@
 pub mod company;
 pub mod project;
-pub mod task;
 pub mod resource;
+pub mod task;
 
 pub use company::*;
 pub use project::*;
-pub use task::*;
 pub use resource::*;
+pub use task::*;

@@ -54,7 +54,6 @@ mod test {
     use super::*;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use crate::domain::shared::errors::DomainError;
-    use crate::domain::shared::errors::DomainErrorKind;
     use std::cell::RefCell;
 
     struct MockProjectRepository {
@@ -84,9 +83,10 @@ mod test {
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(DomainErrorKind::Generic {
+                return Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
-                }));
+                });
             }
             *self.saved_config.borrow_mut() = Some(project);
             Ok(())

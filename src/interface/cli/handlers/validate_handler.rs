@@ -1,18 +1,14 @@
+use super::super::commands::ValidateCommand;
 use crate::{
     application::validate::{
-        business_rules::ValidateBusinessRulesUseCase,
-        data_integrity::ValidateDataIntegrityUseCase,
-        entities::ValidateEntitiesUseCase,
-        system::ValidateSystemUseCase,
+        business_rules::ValidateBusinessRulesUseCase, data_integrity::ValidateDataIntegrityUseCase,
+        entities::ValidateEntitiesUseCase, system::ValidateSystemUseCase,
     },
     infrastructure::persistence::{
-        company_repository::FileCompanyRepository,
-        project_repository::FileProjectRepository,
+        company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
         resource_repository::FileResourceRepository,
-        task_repository::FileTaskRepository,
     },
 };
-use super::super::commands::ValidateCommand;
 
 pub fn handle_validate_command(command: ValidateCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -20,7 +16,8 @@ pub fn handle_validate_command(command: ValidateCommand) -> Result<(), Box<dyn s
             let project_repository = FileProjectRepository::new();
             let resource_repository = FileResourceRepository::new(".");
             let company_repository = FileCompanyRepository::new(".");
-            let validate_use_case = ValidateBusinessRulesUseCase::new(&project_repository, &resource_repository, &company_repository);
+            let validate_use_case =
+                ValidateBusinessRulesUseCase::new(&project_repository, &resource_repository, &company_repository);
 
             match validate_use_case.execute() {
                 Ok(_) => {
@@ -37,7 +34,8 @@ pub fn handle_validate_command(command: ValidateCommand) -> Result<(), Box<dyn s
             let project_repository = FileProjectRepository::new();
             let resource_repository = FileResourceRepository::new(".");
             let company_repository = FileCompanyRepository::new(".");
-            let validate_use_case = ValidateDataIntegrityUseCase::new(&project_repository, &resource_repository, &company_repository);
+            let validate_use_case =
+                ValidateDataIntegrityUseCase::new(&project_repository, &resource_repository, &company_repository);
 
             match validate_use_case.execute() {
                 Ok(_) => {
@@ -54,7 +52,8 @@ pub fn handle_validate_command(command: ValidateCommand) -> Result<(), Box<dyn s
             let project_repository = FileProjectRepository::new();
             let resource_repository = FileResourceRepository::new(".");
             let company_repository = FileCompanyRepository::new(".");
-            let validate_use_case = ValidateEntitiesUseCase::new(&project_repository, &resource_repository, &company_repository);
+            let validate_use_case =
+                ValidateEntitiesUseCase::new(&project_repository, &resource_repository, &company_repository);
 
             match validate_use_case.execute() {
                 Ok(_) => {
@@ -71,11 +70,8 @@ pub fn handle_validate_command(command: ValidateCommand) -> Result<(), Box<dyn s
             let project_repository = FileProjectRepository::new();
             let resource_repository = FileResourceRepository::new(".");
             let company_repository = FileCompanyRepository::new(".");
-            let validate_use_case = ValidateSystemUseCase::new(
-                project_repository,
-                resource_repository,
-                company_repository,
-            );
+            let validate_use_case =
+                ValidateSystemUseCase::new(project_repository, resource_repository, company_repository);
 
             match validate_use_case.execute() {
                 Ok(_) => {

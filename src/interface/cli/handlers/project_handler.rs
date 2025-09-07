@@ -1,3 +1,4 @@
+use super::super::commands::ProjectCommand;
 use crate::{
     application::{
         create::project::CreateProjectUseCase,
@@ -7,19 +8,10 @@ use crate::{
             describe_project::DescribeProjectUseCase,
             update_project::{UpdateProjectArgs, UpdateProjectUseCase},
         },
-        template::{
-            create_from_template::CreateFromTemplateUseCase,
-            load_template::LoadTemplateUseCase,
-        },
     },
-    infrastructure::persistence::{
-        company_repository::FileCompanyRepository,
-        project_repository::FileProjectRepository,
-    },
+    infrastructure::persistence::project_repository::FileProjectRepository,
 };
-use super::super::commands::ProjectCommand;
 use chrono::NaiveDate;
-use std::collections::HashMap;
 
 pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -61,7 +53,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             params,
         } => {
             // Este comando foi movido para template_handler.rs
-            return Err("FromTemplate command should be handled by template_handler".into());
+            Err("FromTemplate command should be handled by template_handler".into())
         }
         ProjectCommand::Describe { code, company } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
@@ -89,17 +81,16 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
-            let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let start = start_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let end = end_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let end = end_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            let args = UpdateProjectArgs {
-                name,
-                description,
-            };
+            let args = UpdateProjectArgs { name, description };
 
             match update_use_case.execute(&code, args) {
                 Ok(_) => {
@@ -134,7 +125,8 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             resource,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let resource_repository = crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
+            let resource_repository =
+                crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
             let assign_use_case = AssignResourceToTaskUseCase::new(project_repository, resource_repository);
 
             match assign_use_case.execute(&project, &task, &resource) {

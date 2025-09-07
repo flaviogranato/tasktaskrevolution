@@ -111,7 +111,7 @@ mod tests {
     use super::*;
     use crate::domain::{
         project_management::{AnyProject, builder::ProjectBuilder},
-        shared::errors::{DomainError, DomainErrorKind},
+        shared::errors::DomainError,
         task_management::{
             Task,
             state::{Completed, InProgress},
@@ -502,9 +502,10 @@ mod tests {
 
         impl ProjectRepository for ErrorMockProjectRepository {
             fn load(&self) -> Result<AnyProject, DomainError> {
-                Err(DomainError::new(DomainErrorKind::Generic {
+                Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
                     message: "Repository error".to_string(),
-                }))
+                })
             }
             fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
                 unimplemented!()

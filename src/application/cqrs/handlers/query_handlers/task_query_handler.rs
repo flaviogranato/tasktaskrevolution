@@ -4,6 +4,12 @@ use crate::domain::task_management::AnyTask;
 /// Handler para queries de tarefa
 pub struct TaskQueryHandler;
 
+impl Default for TaskQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaskQueryHandler {
     pub fn new() -> Self {
         Self

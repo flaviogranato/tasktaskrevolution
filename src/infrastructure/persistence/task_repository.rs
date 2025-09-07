@@ -2,7 +2,7 @@
 
 use crate::{
     domain::{
-        shared::errors::{DomainError, DomainErrorKind},
+        shared::errors::DomainError,
         task_management::{AnyTask, repository::TaskRepository},
     },
     infrastructure::persistence::manifests::task_manifest::TaskManifest,
@@ -63,27 +63,21 @@ impl TaskRepository for FileTaskRepository {
     fn save(&self, task: AnyTask) -> Result<AnyTask, DomainError> {
         let file_path = self.get_task_file_path(task.name());
         let task_manifest = TaskManifest::from(task.clone());
-        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| {
-            DomainError::new(DomainErrorKind::Serialization {
-                format: "YAML".to_string(),
-                details: format!("Error serializing task: {}", e),
-            })
+        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::Serialization {
+            format: "YAML".to_string(),
+            details: format!("Error serializing task: {}", e),
+            source: Some(Box::new(e)),
         })?;
 
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| {
-            DomainError::new(DomainErrorKind::Io {
-                operation: "file operation".to_string(),
-                path: None,
-            })
-            .with_context(format!("Error creating directory: {e}"))
+        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::Io {
+            operation: "create directory".to_string(),
+            source: e,
         })?;
 
-        fs::write(file_path, yaml).map_err(|e| {
-            DomainError::new(DomainErrorKind::Io {
-                operation: "file operation".to_string(),
-                path: None,
-            })
-            .with_context(format!("Error saving task: {e}"))
+        fs::write(&file_path, yaml).map_err(|e| DomainError::IoWithPath {
+            operation: "file write".to_string(),
+            path: file_path.to_string_lossy().to_string(),
+            source: e,
         })?;
 
         Ok(task)
@@ -93,27 +87,21 @@ impl TaskRepository for FileTaskRepository {
     fn save_in_hierarchy(&self, task: AnyTask, company_code: &str, project_code: &str) -> Result<AnyTask, DomainError> {
         let file_path = self.get_project_task_path(company_code, project_code, task.name());
         let task_manifest = TaskManifest::from(task.clone());
-        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| {
-            DomainError::new(DomainErrorKind::Serialization {
-                format: "YAML".to_string(),
-                details: format!("Error serializing task: {}", e),
-            })
+        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::Serialization {
+            format: "YAML".to_string(),
+            details: format!("Error serializing task: {}", e),
+            source: Some(Box::new(e)),
         })?;
 
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| {
-            DomainError::new(DomainErrorKind::Io {
-                operation: "file operation".to_string(),
-                path: None,
-            })
-            .with_context(format!("Error creating directory: {e}"))
+        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::Io {
+            operation: "create directory".to_string(),
+            source: e,
         })?;
 
-        fs::write(file_path, yaml).map_err(|e| {
-            DomainError::new(DomainErrorKind::Io {
-                operation: "file operation".to_string(),
-                path: None,
-            })
-            .with_context(format!("Error writing task file: {e}"))
+        fs::write(&file_path, yaml).map_err(|e| DomainError::IoWithPath {
+            operation: "file write".to_string(),
+            path: file_path.to_string_lossy().to_string(),
+            source: e,
         })?;
 
         Ok(task)
@@ -122,34 +110,37 @@ impl TaskRepository for FileTaskRepository {
     fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
         // Search in new hierarchical structure: companies/*/projects/*/tasks/*.yaml
         let pattern = self.base_path.join("companies/*/projects/*/tasks/*.yaml");
-        let walker = glob(pattern.to_str().unwrap())
-            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
+            field: "glob pattern".to_string(),
+            message: e.to_string(),
+        })?;
         let mut tasks = Vec::new();
 
         for entry in walker {
-            let entry = entry.map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+            let entry = entry.map_err(|e| DomainError::ValidationError {
+                field: "glob entry".to_string(),
+                message: e.to_string(),
+            })?;
             let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| {
-                DomainError::new(DomainErrorKind::Io {
-                    operation: "file operation".to_string(),
-                    path: None,
-                })
-                .with_context(format!("Error reading task file: {e}"))
+            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoWithPath {
+                operation: "file read".to_string(),
+                path: file_path.to_string_lossy().to_string(),
+                source: e,
             })?;
 
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| {
-                DomainError::new(DomainErrorKind::Serialization {
-                    format: "YAML".to_string(),
-                    details: format!("Error deserializing task: {}", e),
-                })
+            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| DomainError::Serialization {
+                format: "YAML".to_string(),
+                details: format!("Error deserializing task: {}", e),
+                source: None,
             })?;
 
-            tasks.push(AnyTask::try_from(task_manifest).map_err(|e| {
-                DomainError::new(DomainErrorKind::Serialization {
+            tasks.push(
+                AnyTask::try_from(task_manifest).map_err(|e| DomainError::Serialization {
                     format: "YAML".to_string(),
                     details: format!("Error converting manifest: {}", e),
-                })
-            })?);
+                    source: None,
+                })?,
+            );
         }
 
         Ok(tasks)
@@ -163,34 +154,37 @@ impl TaskRepository for FileTaskRepository {
         }
 
         let pattern = tasks_path.join("*.yaml");
-        let walker = glob(pattern.to_str().unwrap())
-            .map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
+            field: "glob pattern".to_string(),
+            message: e.to_string(),
+        })?;
         let mut tasks = Vec::new();
 
         for entry in walker {
-            let entry = entry.map_err(|e| DomainError::new(DomainErrorKind::Generic { message: e.to_string() }))?;
+            let entry = entry.map_err(|e| DomainError::ValidationError {
+                field: "glob entry".to_string(),
+                message: e.to_string(),
+            })?;
             let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| {
-                DomainError::new(DomainErrorKind::Io {
-                    operation: "file operation".to_string(),
-                    path: None,
-                })
-                .with_context(format!("Error reading task file: {e}"))
+            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoWithPath {
+                operation: "file read".to_string(),
+                path: file_path.to_string_lossy().to_string(),
+                source: e,
             })?;
 
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| {
-                DomainError::new(DomainErrorKind::Serialization {
-                    format: "YAML".to_string(),
-                    details: format!("Error deserializing task: {}", e),
-                })
+            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| DomainError::Serialization {
+                format: "YAML".to_string(),
+                details: format!("Error deserializing task: {}", e),
+                source: None,
             })?;
 
-            tasks.push(AnyTask::try_from(task_manifest).map_err(|e| {
-                DomainError::new(DomainErrorKind::Serialization {
+            tasks.push(
+                AnyTask::try_from(task_manifest).map_err(|e| DomainError::Serialization {
                     format: "YAML".to_string(),
                     details: format!("Error converting manifest: {}", e),
-                })
-            })?);
+                    source: None,
+                })?,
+            );
         }
 
         Ok(tasks)

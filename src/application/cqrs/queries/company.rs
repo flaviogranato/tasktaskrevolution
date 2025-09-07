@@ -1,6 +1,6 @@
 use crate::application::cqrs::Query;
-use serde::{Deserialize, Serialize};
 use crate::domain::company_management::company::Company;
+use serde::{Deserialize, Serialize};
 
 /// Query para obter uma empresa por código
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,11 +1,5 @@
-use crate::{
-    application::{
-        company_management::CreateCompanyArgs,
-        di::{CreateUseCaseService, traits::ServiceResolver},
-    },
-    interface::cli::handlers::DI_HANDLER,
-};
 use super::super::commands::CompanyCommand;
+use crate::{application::company_management::CreateCompanyArgs, interface::cli::handlers::DI_HANDLER};
 
 pub fn handle_company_command(command: CompanyCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -45,7 +39,7 @@ pub fn handle_company_command(command: CompanyCommand) -> Result<(), Box<dyn std
                 }
                 Err(e) => {
                     eprintln!("❌ Failed to create company: {}", e);
-                    Err(e.into())
+                    Err(e)
                 }
             }
         }

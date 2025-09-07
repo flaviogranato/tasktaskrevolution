@@ -1,6 +1,6 @@
 use super::Command;
-use serde::{Deserialize, Serialize};
 use crate::domain::project_management::project::Project;
+use serde::{Deserialize, Serialize};
 
 /// Command para criar um novo projeto
 #[derive(Debug, Clone, Serialize, Deserialize)]

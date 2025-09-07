@@ -1,61 +1,36 @@
+use super::traits::Injectable;
 use crate::{
     application::{
         company_management::CreateCompanyUseCase,
         create::{
-            project::CreateProjectUseCase,
-            resource::CreateResourceUseCase,
-            task::CreateTaskUseCase,
-            time_off::CreateTimeOffUseCase,
-            vacation::CreateVacationUseCase,
+            project::CreateProjectUseCase, resource::CreateResourceUseCase, task::CreateTaskUseCase,
+            time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase,
         },
-        init::InitManagerUseCase,
-        list::{
-            projects::ListProjectsUseCase,
-            resources::ListResourcesUseCase,
-            tasks::ListTasksUseCase,
-        },
+        list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
         project::{
-            assign_resource_to_task::AssignResourceToTaskUseCase,
-            cancel_project::CancelProjectUseCase,
-            describe_project::DescribeProjectUseCase,
-            update_project::UpdateProjectUseCase,
+            assign_resource_to_task::AssignResourceToTaskUseCase, cancel_project::CancelProjectUseCase,
+            describe_project::DescribeProjectUseCase, update_project::UpdateProjectUseCase,
         },
-        report::{
-            task::TaskReportUseCase,
-            vacation::VacationReportUseCase,
-        },
+        report::{task::TaskReportUseCase, vacation::VacationReportUseCase},
         resource::{
-            deactivate_resource::DeactivateResourceUseCase,
-            describe_resource::DescribeResourceUseCase,
+            deactivate_resource::DeactivateResourceUseCase, describe_resource::DescribeResourceUseCase,
             update_resource::UpdateResourceUseCase,
         },
         task::{
-            delete_task::DeleteTaskUseCase,
-            describe_task::DescribeTaskUseCase,
-            link_task::LinkTaskUseCase,
+            delete_task::DeleteTaskUseCase, describe_task::DescribeTaskUseCase, link_task::LinkTaskUseCase,
             update_task::UpdateTaskUseCase,
         },
         template::{
-            create_from_template::CreateFromTemplateUseCase,
-            list_templates::ListTemplatesUseCase,
+            create_from_template::CreateFromTemplateUseCase, list_templates::ListTemplatesUseCase,
             load_template::LoadTemplateUseCase,
-        },
-        validate::{
-            business_rules::ValidateBusinessRulesUseCase,
-            data_integrity::ValidateDataIntegrityUseCase,
-            entities::ValidateEntitiesUseCase,
-            system::ValidateSystemUseCase,
         },
     },
     infrastructure::persistence::{
-        company_repository::FileCompanyRepository,
-        config_repository::FileConfigRepository,
-        project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository,
+        company_repository::FileCompanyRepository, config_repository::FileConfigRepository,
+        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
         task_repository::FileTaskRepository,
     },
 };
-use super::traits::Injectable;
 use std::any::Any;
 
 /// Serviço de repositórios
@@ -91,7 +66,6 @@ impl Injectable for RepositoryService {
     }
 }
 
-
 /// Serviço de casos de uso de criação
 pub struct CreateUseCaseService {
     pub create_company: CreateCompanyUseCase<FileCompanyRepository>,
@@ -121,7 +95,6 @@ impl Injectable for CreateUseCaseService {
     }
 }
 
-
 /// Serviço de casos de uso de listagem
 pub struct ListUseCaseService {
     pub list_projects: ListProjectsUseCase<FileProjectRepository>,
@@ -144,7 +117,6 @@ impl Injectable for ListUseCaseService {
         self
     }
 }
-
 
 /// Serviço de casos de uso de projeto
 pub struct ProjectUseCaseService {
@@ -174,7 +146,6 @@ impl Injectable for ProjectUseCaseService {
     }
 }
 
-
 /// Serviço de casos de uso de tarefa
 pub struct TaskUseCaseService {
     pub delete_task: DeleteTaskUseCase<FileProjectRepository>,
@@ -200,7 +171,6 @@ impl Injectable for TaskUseCaseService {
     }
 }
 
-
 /// Serviço de casos de uso de recurso
 pub struct ResourceUseCaseService {
     pub deactivate_resource: DeactivateResourceUseCase<FileResourceRepository>,
@@ -223,7 +193,6 @@ impl Injectable for ResourceUseCaseService {
         self
     }
 }
-
 
 /// Serviço de casos de uso de template
 pub struct TemplateUseCaseService {
@@ -252,7 +221,6 @@ impl Injectable for TemplateUseCaseService {
     }
 }
 
-
 /// Serviço de casos de uso de validação
 /// Nota: Por enquanto não usa ValidationUseCases devido a problemas de lifetime
 pub struct ValidationUseCaseService {
@@ -262,9 +230,7 @@ pub struct ValidationUseCaseService {
 
 impl ValidationUseCaseService {
     pub fn new(_repos: &RepositoryService) -> Self {
-        Self {
-            _placeholder: (),
-        }
+        Self { _placeholder: () }
     }
 }
 
@@ -273,7 +239,6 @@ impl Injectable for ValidationUseCaseService {
         self
     }
 }
-
 
 /// Serviço de casos de uso de relatórios
 pub struct ReportUseCaseService {
@@ -299,7 +264,6 @@ impl Injectable for ReportUseCaseService {
     }
 }
 
-
 /// Serviço de inicialização
 /// Nota: Por enquanto não usa InitManagerUseCase devido a problemas de thread safety
 pub struct InitService {
@@ -309,9 +273,7 @@ pub struct InitService {
 
 impl InitService {
     pub fn new(_repos: &RepositoryService) -> Self {
-        Self {
-            _placeholder: (),
-        }
+        Self { _placeholder: () }
     }
 }
 

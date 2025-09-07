@@ -417,11 +417,10 @@ mod tests {
 
         impl TaskRepository for FailingMockTaskRepository {
             fn save(&self, _task: AnyTask) -> Result<AnyTask, DomainError> {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Save failed".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
+                    message: "Save failed".to_string(),
+                })
             }
 
             fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {

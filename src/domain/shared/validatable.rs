@@ -86,7 +86,7 @@ impl<T: Validatable> Validator<T> for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+    use crate::domain::shared::errors::DomainError;
 
     // Mock structs for testing
     #[derive(Debug, Clone, PartialEq)]
@@ -111,10 +111,10 @@ mod tests {
             if self.is_valid {
                 Ok(())
             } else {
-                Err(DomainError::new(DomainErrorKind::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "validatable".to_string(),
                     message: format!("Validation failed for {}", self.name),
-                }))
+                })
             }
         }
     }
@@ -127,10 +127,10 @@ mod tests {
     impl Validator<MockValidatable> for NameValidator {
         fn validate(&self, item: &MockValidatable) -> Result<(), DomainError> {
             if item.name.is_empty() {
-                Err(DomainError::new(DomainErrorKind::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "name".to_string(),
                     message: "Name cannot be empty".to_string(),
-                }))
+                })
             } else {
                 Ok(())
             }
@@ -140,10 +140,10 @@ mod tests {
     impl Validator<MockValidatable> for ValueValidator {
         fn validate(&self, item: &MockValidatable) -> Result<(), DomainError> {
             if item.value < 0 {
-                Err(DomainError::new(DomainErrorKind::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "value".to_string(),
                     message: "Value must be non-negative".to_string(),
-                }))
+                })
             } else {
                 Ok(())
             }
@@ -153,10 +153,10 @@ mod tests {
     impl Validator<MockValidatable> for CompositeTestValidator {
         fn validate(&self, item: &MockValidatable) -> Result<(), DomainError> {
             if item.name == "invalid" {
-                Err(DomainError::new(DomainErrorKind::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "name".to_string(),
                     message: "Special invalid name".to_string(),
-                }))
+                })
             } else {
                 Ok(())
             }

@@ -1,15 +1,17 @@
+use super::super::commands::LinkCommand;
 use crate::{
     application::task::link_task::LinkTaskUseCase,
-    infrastructure::persistence::{
-        task_repository::FileTaskRepository,
-        project_repository::FileProjectRepository,
-    },
+    infrastructure::persistence::project_repository::FileProjectRepository,
 };
-use super::super::commands::LinkCommand;
 
 pub fn handle_link_command(command: LinkCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
-        LinkCommand::Tasks { from, to, project, company } => {
+        LinkCommand::Tasks {
+            from,
+            to,
+            project,
+            company,
+        } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let link_use_case = LinkTaskUseCase::new(project_repository);
 

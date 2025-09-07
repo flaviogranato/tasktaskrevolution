@@ -1,24 +1,17 @@
+use super::super::commands::TemplateCommand;
 use crate::{
     application::{
+        create::{project::CreateProjectUseCase, resource::CreateResourceUseCase, task::CreateTaskUseCase},
         template::{
-            create_from_template::CreateFromTemplateUseCase,
-            list_templates::ListTemplatesUseCase,
+            create_from_template::CreateFromTemplateUseCase, list_templates::ListTemplatesUseCase,
             load_template::LoadTemplateUseCase,
-        },
-        create::{
-            project::CreateProjectUseCase,
-            resource::CreateResourceUseCase,
-            task::CreateTaskUseCase,
         },
     },
     infrastructure::persistence::{
-        project_repository::FileProjectRepository,
-        company_repository::FileCompanyRepository,
-        resource_repository::FileResourceRepository,
-        task_repository::FileTaskRepository,
+        company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
+        resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
     },
 };
-use super::super::commands::TemplateCommand;
 use std::collections::HashMap;
 
 pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn std::error::Error>> {
@@ -79,13 +72,14 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
             let resource_repository = FileResourceRepository::new(".");
             let company_repository = FileCompanyRepository::new(".");
             let task_repository = FileTaskRepository::new(".");
-            
+
             let create_project_use_case = CreateProjectUseCase::new(project_repository);
             let create_resource_use_case = CreateResourceUseCase::new(resource_repository);
             let create_task_use_case = CreateTaskUseCase::new(FileProjectRepository::with_base_path(".".into()));
-            
+
             let load_use_case = LoadTemplateUseCase::new();
-            let create_use_case = CreateFromTemplateUseCase::new(create_project_use_case, create_resource_use_case, create_task_use_case);
+            let create_use_case =
+                CreateFromTemplateUseCase::new(create_project_use_case, create_resource_use_case, create_task_use_case);
 
             let templates_dir = std::path::Path::new("templates/projects");
             let template_data = load_use_case.load_by_name(templates_dir, &template)?;

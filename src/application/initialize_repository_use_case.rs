@@ -31,7 +31,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+    use crate::domain::shared::errors::DomainError;
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
 
@@ -54,9 +54,10 @@ mod test {
     impl ConfigRepository for MockConfigRepository {
         fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(DomainErrorKind::Generic {
+                return Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
-                }));
+                });
             }
             *self.saved_config.borrow_mut() = Some(config.clone());
             *self.created_path.borrow_mut() = Some(path.clone());
@@ -71,9 +72,10 @@ mod test {
 
         fn load(&self) -> Result<(Config, PathBuf), DomainError> {
             if self.should_fail {
-                return Err(DomainError::new(DomainErrorKind::Generic {
+                return Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
                     message: "Erro mockado ao carregar".to_string(),
-                }));
+                });
             }
             let config = Config::new("mock".to_string(), "mock@email.com".to_string(), "UTC".to_string());
             let path = PathBuf::from("/mock/path");

@@ -4,6 +4,12 @@ use crate::domain::project_management::project::Project;
 /// Handler para queries de projeto
 pub struct ProjectQueryHandler;
 
+impl Default for ProjectQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProjectQueryHandler {
     pub fn new() -> Self {
         Self

@@ -1,7 +1,7 @@
 use super::Command;
-use serde::{Deserialize, Serialize};
 use crate::domain::resource_management::AnyResource;
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 
 /// Command para criar um novo recurso
 #[derive(Debug, Clone, Serialize, Deserialize)]

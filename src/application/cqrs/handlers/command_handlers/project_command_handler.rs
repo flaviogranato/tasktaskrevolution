@@ -4,6 +4,12 @@ use crate::domain::project_management::project::Project;
 /// Handler para comandos de projeto
 pub struct ProjectCommandHandler;
 
+impl Default for ProjectCommandHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProjectCommandHandler {
     pub fn new() -> Self {
         Self
@@ -15,9 +21,10 @@ impl ProjectCommandHandler {
             command.code,
             command.name,
             command.company_code,
-            command.description.unwrap_or_else(|| "".to_string()),
-        ).map_err(|e| format!("Failed to create project: {}", e))?;
-        
+            command.description.unwrap_or_default(),
+        )
+        .map_err(|e| format!("Failed to create project: {}", e))?;
+
         Ok(project)
     }
 

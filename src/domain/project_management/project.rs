@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use super::super::task_management::any_task::AnyTask;
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::DomainError;
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -181,17 +181,17 @@ impl Default for WorkHours {
 impl Project {
     pub fn new(code: String, name: String, company_code: String, created_by: String) -> Result<Self, DomainError> {
         if code.trim().is_empty() {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "code".to_string(),
                 message: "Project code cannot be empty".to_string(),
-            }));
+            });
         }
 
         if name.trim().is_empty() {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "name".to_string(),
                 message: "Project name cannot be empty".to_string(),
-            }));
+            });
         }
 
         let now = Utc::now();
@@ -221,9 +221,10 @@ impl Project {
 
     pub fn change_status(&mut self, new_status: ProjectStatus) -> Result<(), DomainError> {
         if !self.status.can_transition_to(&new_status) {
-            return Err(DomainError::new(DomainErrorKind::Generic {
+            return Err(DomainError::ValidationError {
+                field: "status".to_string(),
                 message: format!("Cannot transition from {:?} to {:?}", self.status, new_status),
-            }));
+            });
         }
 
         // Validações específicas por status
@@ -247,10 +248,10 @@ impl Project {
 
     fn validate_can_start(&self) -> Result<(), DomainError> {
         if self.tasks.is_empty() {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "tasks".to_string(),
                 message: "Project must have at least one task to start".to_string(),
-            }));
+            });
         }
         Ok(())
     }
@@ -259,10 +260,10 @@ impl Project {
         let all_tasks_completed = self.tasks.values().all(|task| task.status() == "Completed");
 
         if !all_tasks_completed {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "tasks".to_string(),
                 message: "All tasks must be completed before marking project as complete".to_string(),
-            }));
+            });
         }
         Ok(())
     }
@@ -272,10 +273,10 @@ impl Project {
         let task_id = task.code().to_string();
 
         if self.tasks.contains_key(&task_id) {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "task_id".to_string(),
                 message: "Task with this ID already exists".to_string(),
-            }));
+            });
         }
 
         self.tasks.insert(task_id, task);
@@ -300,10 +301,10 @@ impl Project {
         let key = format!("{}_{}", assignment.resource_id, assignment.task_id);
 
         if self.resources.contains_key(&key) {
-            return Err(DomainError::new(DomainErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "resource_assignment".to_string(),
                 message: "Resource is already assigned to this task".to_string(),
-            }));
+            });
         }
 
         self.resources.insert(key, assignment);

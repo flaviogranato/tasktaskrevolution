@@ -116,11 +116,10 @@ impl CommandBus {
             // In a real implementation, you might want to use a different approach
             command.execute()
         } else {
-            Err(DomainError::new(
-                crate::domain::shared::errors::DomainErrorKind::Generic {
-                    message: format!("No handler found for command: {}", type_name),
-                },
-            ))
+            Err(DomainError::ValidationError {
+                field: "command".to_string(),
+                message: format!("No handler found for command: {}", type_name),
+            })
         }
     }
 }
@@ -272,11 +271,10 @@ mod tests {
             if self.can_execute {
                 Ok(CommandResult::success("Command executed successfully"))
             } else {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Command cannot be executed".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "command".to_string(),
+                    message: "Command cannot be executed".to_string(),
+                })
             }
         }
 
@@ -295,12 +293,10 @@ mod tests {
         fn validate(&self) -> Result<(), DomainError> {
             match &self.validation_result {
                 Ok(()) => Ok(()),
-                Err(_) => Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                        field: "test".to_string(),
-                        message: "Validation failed".to_string(),
-                    },
-                )),
+                Err(_) => Err(DomainError::ValidationError {
+                    field: "test".to_string(),
+                    message: "Validation failed".to_string(),
+                }),
             }
         }
     }
@@ -352,11 +348,10 @@ mod tests {
             if self.can_undo {
                 Ok(CommandResult::success("Command undone successfully"))
             } else {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Command cannot be undone".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "command".to_string(),
+                    message: "Command cannot be undone".to_string(),
+                })
             }
         }
 
@@ -520,12 +515,11 @@ mod tests {
 
     #[test]
     fn test_mock_command_validation_failure() {
-        let command = MockCommand::new("test", "Test command").with_validation_result(Err(DomainError::new(
-            crate::domain::shared::errors::DomainErrorKind::ValidationError {
+        let command =
+            MockCommand::new("test", "Test command").with_validation_result(Err(DomainError::ValidationError {
                 field: "test".to_string(),
                 message: "Validation failed".to_string(),
-            },
-        )));
+            }));
         let result = command.validate();
         assert!(result.is_err());
 
@@ -970,11 +964,10 @@ mod tests {
             if self.can_redo {
                 Ok(CommandResult::success("Command redone successfully"))
             } else {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Command cannot be redone".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "command".to_string(),
+                    message: "Command cannot be redone".to_string(),
+                })
             }
         }
     }
@@ -1083,12 +1076,10 @@ mod tests {
         impl Command for ValidatedCommand {
             fn execute(&self) -> Result<CommandResult, DomainError> {
                 if self.value > self.max_value {
-                    Err(DomainError::new(
-                        crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                            field: "value".to_string(),
-                            message: format!("Value {} exceeds maximum {}", self.value, self.max_value),
-                        },
-                    ))
+                    Err(DomainError::ValidationError {
+                        field: "value".to_string(),
+                        message: format!("Value {} exceeds maximum {}", self.value, self.max_value),
+                    })
                 } else {
                     Ok(CommandResult::success("Value within limits"))
                 }
@@ -1104,12 +1095,10 @@ mod tests {
 
             fn validate(&self) -> Result<(), DomainError> {
                 if self.value < 0 {
-                    Err(DomainError::new(
-                        crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                            field: "value".to_string(),
-                            message: "Value cannot be negative".to_string(),
-                        },
-                    ))
+                    Err(DomainError::ValidationError {
+                        field: "value".to_string(),
+                        message: "Value cannot be negative".to_string(),
+                    })
                 } else {
                     Ok(())
                 }
@@ -1170,19 +1159,17 @@ mod tests {
         impl Command for ConditionalCommand {
             fn execute(&self) -> Result<CommandResult, DomainError> {
                 if !self.should_execute {
-                    return Err(DomainError::new(
-                        crate::domain::shared::errors::DomainErrorKind::Generic {
-                            message: "Command execution disabled".to_string(),
-                        },
-                    ));
+                    return Err(DomainError::ValidationError {
+                        field: "command".to_string(),
+                        message: "Command execution disabled".to_string(),
+                    });
                 }
 
                 if !self.condition_met {
-                    return Err(DomainError::new(
-                        crate::domain::shared::errors::DomainErrorKind::Generic {
-                            message: "Condition not met".to_string(),
-                        },
-                    ));
+                    return Err(DomainError::ValidationError {
+                        field: "command".to_string(),
+                        message: "Condition not met".to_string(),
+                    });
                 }
 
                 Ok(CommandResult::success("Conditional command executed"))
@@ -1258,21 +1245,19 @@ mod tests {
         impl Command for RetryableCommand {
             fn execute(&self) -> Result<CommandResult, DomainError> {
                 if self.current_attempt >= self.max_attempts {
-                    return Err(DomainError::new(
-                        crate::domain::shared::errors::DomainErrorKind::Generic {
-                            message: "Max attempts exceeded".to_string(),
-                        },
-                    ));
+                    return Err(DomainError::ValidationError {
+                        field: "command".to_string(),
+                        message: "Max attempts exceeded".to_string(),
+                    });
                 }
 
                 if self.current_attempt == self.success_on_attempt {
                     Ok(CommandResult::success("Command succeeded on retry"))
                 } else {
-                    Err(DomainError::new(
-                        crate::domain::shared::errors::DomainErrorKind::Generic {
-                            message: format!("Attempt {} failed", self.current_attempt),
-                        },
-                    ))
+                    Err(DomainError::ValidationError {
+                        field: "command".to_string(),
+                        message: format!("Attempt {} failed", self.current_attempt),
+                    })
                 }
             }
 
@@ -1374,11 +1359,10 @@ mod tests {
         impl Command for ResourceCommand {
             fn execute(&self) -> Result<CommandResult, DomainError> {
                 if !self.resource_available {
-                    return Err(DomainError::new(
-                        crate::domain::shared::errors::DomainErrorKind::Generic {
-                            message: format!("Resource {} not available", self.resource_id),
-                        },
-                    ));
+                    return Err(DomainError::ValidationError {
+                        field: "resource".to_string(),
+                        message: format!("Resource {} not available", self.resource_id),
+                    });
                 }
 
                 Ok(CommandResult::success_with_data(

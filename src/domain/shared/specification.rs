@@ -198,7 +198,9 @@ pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {
     where
         S: Specification<T> + 'static, // 'static necessário para Box<dyn>
     {
-        AndSpecification::new().add_specification(Box::new(self)).add_specification(Box::new(other))
+        AndSpecification::new()
+            .add_specification(Box::new(self))
+            .add_specification(Box::new(other))
     }
 
     /// Combine this specification with another using OR logic
@@ -206,7 +208,9 @@ pub trait SpecificationExt<T>: Specification<T> + Sized + 'static {
     where
         S: Specification<T> + 'static, // 'static necessário para Box<dyn>
     {
-        OrSpecification::new().add_specification(Box::new(self)).add_specification(Box::new(other))
+        OrSpecification::new()
+            .add_specification(Box::new(self))
+            .add_specification(Box::new(other))
     }
 
     /// Negate this specification
