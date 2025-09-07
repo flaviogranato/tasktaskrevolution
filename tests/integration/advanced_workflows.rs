@@ -121,8 +121,8 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create",
         "company",
+        "create",
         "--name",
         "Tech Solutions Inc",
         "--code",
@@ -143,7 +143,7 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", "TECH-SOL"]);
+        cmd.args(&["resource", "create", "--name", name, "--code", &name.to_lowercase().replace(" ", "_"), "--email", &format!("{}@techsol.com", name.to_lowercase().replace(" ", ".")), "--description", role]);
         cmd.assert().success();
     }
 
@@ -151,12 +151,20 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "create",
         "project",
+        "create",
+        "--name",
         "E-commerce Platform",
+        "--description",
         "Complete e-commerce solution",
-        "--company-code",
+        "--company",
         "TECH-SOL",
+        "--code",
+        "ECOMMERCE",
+        "--start-date",
+        "2024-01-15",
+        "--end-date",
+        "2024-06-15",
     ]);
     cmd.assert().success();
 
@@ -244,19 +252,21 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create",
             "task",
+            "create",
             "--name",
             name,
+            "--code",
+            &name.to_lowercase().replace(" ", "_"),
             "--description",
             description,
             "--start-date",
             start_date,
             "--due-date",
             end_date,
-            "--project-code",
+            "--project",
             &project_code,
-            "--company-code",
+            "--company",
             "TECH-SOL",
         ]);
         cmd.assert().success();
@@ -335,8 +345,8 @@ fn test_multi_company_management() -> Result<(), Box<dyn std::error::Error>> {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create",
             "company",
+            "create",
             "--name",
             name,
             "--code",
@@ -350,12 +360,20 @@ fn test_multi_company_management() -> Result<(), Box<dyn std::error::Error>> {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "create",
             "project",
+            "create",
+            "--name",
             &format!("{} Project", name),
+            "--description",
             &format!("Main project for {}", name),
-            "--company-code",
+            "--company",
             code,
+            "--code",
+            &format!("{}-PROJECT", code),
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-12-31",
         ]);
         cmd.assert().success();
     }
@@ -424,7 +442,7 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     for (name, role, company_code) in &resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", company_code]);
+        cmd.args(&["resource", "create", "--name", name, "--code", &name.to_lowercase().replace(" ", "_"), "--email", &format!("{}@{}.com", name.to_lowercase().replace(" ", "."), company_code.to_lowercase()), "--description", role]);
         cmd.assert().success();
     }
 
@@ -439,7 +457,7 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     for (name, description, company_code) in &projects {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "project", name, description, "--company-code", company_code]);
+        cmd.args(&["project", "create", "--name", name, "--description", description, "--company-code", company_code, "--code", &format!("{}-PROJECT", company_code), "--start-date", "2024-01-01", "--end-date", "2024-12-31"]);
         cmd.assert().success();
     }
 

@@ -25,6 +25,9 @@ pub enum Commands {
         /// Manager email
         #[clap(short, long)]
         email: String,
+        /// Company name
+        #[clap(long, default_value = "Default Company")]
+        company_name: String,
         /// Default timezone
         #[clap(short, long, default_value = "UTC")]
         timezone: String,
@@ -115,12 +118,13 @@ impl Cli {
             Commands::Init {
                 name,
                 email,
+                company_name,
                 timezone,
                 work_hours_start,
                 work_hours_end,
                 work_days,
             } => {
-                handlers::init_handler::handle_init(name, email, timezone, work_hours_start, work_hours_end, work_days)
+                handlers::init_handler::handle_init(name, email, company_name, timezone, work_hours_start, work_hours_end, work_days)
             }
             Commands::Company { command } => handlers::company_handler::handle_company_command(command),
             Commands::Project { command } => handlers::project_handler::handle_project_command(command),

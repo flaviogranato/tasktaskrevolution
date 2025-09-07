@@ -3,6 +3,7 @@ use crate::{application::init::InitManagerData, interface::cli::handlers::get_ap
 pub fn handle_init(
     name: String,
     email: String,
+    company_name: String,
     timezone: String,
     work_hours_start: String,
     work_hours_end: String,
@@ -20,7 +21,7 @@ pub fn handle_init(
         timezone,
         work_hours_start,
         work_hours_end,
-        company_name: "Default Company".to_string(),
+        company_name,
     };
 
     // Por enquanto, apenas simula o sucesso da inicialização

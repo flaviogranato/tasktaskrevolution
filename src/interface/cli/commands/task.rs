@@ -8,13 +8,13 @@ pub enum TaskCommand {
         #[clap(short, long)]
         name: String,
         /// Task code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Project code
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
         /// Task description
         #[clap(short, long)]
@@ -32,25 +32,25 @@ pub enum TaskCommand {
     /// Describe a task
     Describe {
         /// Task code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Project code
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
     },
     /// Update a task
     Update {
         /// Task code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Project code
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
         /// New task name
         #[clap(long)]
@@ -68,13 +68,13 @@ pub enum TaskCommand {
     /// Delete a task
     Delete {
         /// Task code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Project code
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
     },
     /// Link tasks
@@ -89,7 +89,7 @@ pub enum TaskCommand {
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
     },
     /// Remove task link
@@ -104,7 +104,7 @@ pub enum TaskCommand {
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
     },
     /// Assign resource to task
@@ -116,7 +116,7 @@ pub enum TaskCommand {
         #[clap(short, long)]
         project: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
         /// Resource code
         #[clap(short, long)]

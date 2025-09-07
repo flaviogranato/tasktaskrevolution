@@ -19,7 +19,7 @@ pub enum TemplateCommand {
         #[clap(short, long)]
         name: String,
         /// Project code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Company code
         #[clap(short, long)]
