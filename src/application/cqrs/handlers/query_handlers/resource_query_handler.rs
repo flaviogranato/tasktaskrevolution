@@ -4,6 +4,12 @@ use crate::domain::resource_management::AnyResource;
 /// Handler para queries de recurso
 pub struct ResourceQueryHandler;
 
+impl Default for ResourceQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResourceQueryHandler {
     pub fn new() -> Self {
         Self

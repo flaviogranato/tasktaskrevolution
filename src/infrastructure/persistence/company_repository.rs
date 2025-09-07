@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use crate::domain::company_management::{Company, CompanyRepository};
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::DomainError;
 use crate::infrastructure::persistence::manifests::company_manifest::CompanyManifest;
 
 /// File-based implementation of CompanyRepository.
@@ -38,47 +38,41 @@ impl FileCompanyRepository {
         let companies_dir = self.get_companies_dir();
 
         if !companies_dir.exists() {
-            fs::create_dir_all(&companies_dir).map_err(|e| {
-                DomainError::new(DomainErrorKind::RepositoryError {
-                    operation: "create_companies_directory".to_string(),
-                    details: format!("Failed to create companies directory: {}", e),
-                })
+            fs::create_dir_all(&companies_dir).map_err(|e| DomainError::Io {
+                operation: "create directory".to_string(),
+                source: e,
             })?;
             return Ok(());
         }
 
         let mut companies = HashMap::new();
 
-        for entry in fs::read_dir(&companies_dir).map_err(|e| {
-            DomainError::new(DomainErrorKind::RepositoryError {
-                operation: "read_companies_directory".to_string(),
-                details: format!("Failed to read companies directory: {}", e),
-            })
+        for entry in fs::read_dir(&companies_dir).map_err(|e| DomainError::IoWithPath {
+            operation: "read directory".to_string(),
+            path: companies_dir.to_string_lossy().to_string(),
+            source: e,
         })? {
-            let entry = entry.map_err(|e| {
-                DomainError::new(DomainErrorKind::RepositoryError {
-                    operation: "read_directory_entry".to_string(),
-                    details: format!("Failed to read directory entry: {}", e),
-                })
+            let entry = entry.map_err(|e| DomainError::Io {
+                operation: "read directory entry".to_string(),
+                source: e,
             })?;
 
             let path = entry.path();
             if path.is_dir() {
                 let company_yaml_path = path.join("company.yaml");
                 if company_yaml_path.exists() {
-                    let content = fs::read_to_string(&company_yaml_path).map_err(|e| {
-                        DomainError::new(DomainErrorKind::RepositoryError {
-                            operation: "read_company_file".to_string(),
-                            details: format!("Failed to read company file {}: {}", company_yaml_path.display(), e),
-                        })
+                    let content = fs::read_to_string(&company_yaml_path).map_err(|e| DomainError::IoWithPath {
+                        operation: "file read".to_string(),
+                        path: company_yaml_path.to_string_lossy().to_string(),
+                        source: e,
                     })?;
 
-                    let manifest: CompanyManifest = serde_yaml::from_str(&content).map_err(|e| {
-                        DomainError::new(DomainErrorKind::Serialization {
+                    let manifest: CompanyManifest =
+                        serde_yaml::from_str(&content).map_err(|e| DomainError::Serialization {
                             format: "YAML".to_string(),
                             details: format!("Failed to parse company file {}: {}", company_yaml_path.display(), e),
-                        })
-                    })?;
+                            source: Some(Box::new(e)),
+                        })?;
 
                     let company = manifest.to();
                     companies.insert(company.code.clone(), company);
@@ -98,38 +92,33 @@ impl FileCompanyRepository {
 
         // Create companies directory if it doesn't exist
         if !companies_dir.exists() {
-            fs::create_dir_all(&companies_dir).map_err(|e| {
-                DomainError::new(DomainErrorKind::RepositoryError {
-                    operation: "create_companies_directory".to_string(),
-                    details: format!("Failed to create companies directory: {}", e),
-                })
+            fs::create_dir_all(&companies_dir).map_err(|e| DomainError::Io {
+                operation: "create directory".to_string(),
+                source: e,
             })?;
         }
 
         // Create company directory if it doesn't exist
         if !company_dir.exists() {
-            fs::create_dir_all(&company_dir).map_err(|e| {
-                DomainError::new(DomainErrorKind::RepositoryError {
-                    operation: "create_company_directory".to_string(),
-                    details: format!("Failed to create company directory: {}", e),
-                })
+            fs::create_dir_all(&company_dir).map_err(|e| DomainError::IoWithPath {
+                operation: "create directory".to_string(),
+                path: company_dir.to_string_lossy().to_string(),
+                source: e,
             })?;
         }
 
         let manifest = CompanyManifest::from(company);
-        let yaml_content = serde_yaml::to_string(&manifest).map_err(|e| {
-            DomainError::new(DomainErrorKind::Serialization {
-                format: "YAML".to_string(),
-                details: format!("Failed to serialize company to YAML: {}", e),
-            })
+        let yaml_content = serde_yaml::to_string(&manifest).map_err(|e| DomainError::Serialization {
+            format: "YAML".to_string(),
+            details: format!("Failed to serialize company to YAML: {}", e),
+            source: Some(Box::new(e)),
         })?;
 
         let file_path = self.get_company_path(&company.code);
-        fs::write(&file_path, yaml_content).map_err(|e| {
-            DomainError::new(DomainErrorKind::RepositoryError {
-                operation: "write_company_file".to_string(),
-                details: format!("Failed to write company file {}: {}", file_path.display(), e),
-            })
+        fs::write(&file_path, yaml_content).map_err(|e| DomainError::IoWithPath {
+            operation: "file write".to_string(),
+            path: file_path.to_string_lossy().to_string(),
+            source: e,
         })?;
 
         Ok(())
@@ -140,11 +129,10 @@ impl FileCompanyRepository {
         let company_dir = self.get_company_dir(code);
 
         if company_dir.exists() {
-            fs::remove_dir_all(&company_dir).map_err(|e| {
-                DomainError::new(DomainErrorKind::RepositoryError {
-                    operation: "delete_company_directory".to_string(),
-                    details: format!("Failed to delete company directory {}: {}", company_dir.display(), e),
-                })
+            fs::remove_dir_all(&company_dir).map_err(|e| DomainError::IoWithPath {
+                operation: "delete directory".to_string(),
+                path: company_dir.to_string_lossy().to_string(),
+                source: e,
             })?;
         }
 

@@ -1,50 +1,5 @@
-use crate::domain::company_settings::repository::ConfigRepository;
-use crate::{
-    application::{
-        build_use_case::BuildUseCase,
-        company_management::{CreateCompanyArgs, CreateCompanyUseCase},
-        create::{
-            project::CreateProjectUseCase, resource::CreateResourceUseCase, task::CreateTaskArgs,
-            task::CreateTaskUseCase, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase,
-        },
-        init::{InitManagerData, InitManagerUseCase},
-        list::{projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
-        project::assign_resource_to_task::AssignResourceToTaskUseCase,
-        project::{
-            cancel_project::CancelProjectUseCase,
-            describe_project::DescribeProjectUseCase,
-            update_project::{UpdateProjectArgs, UpdateProjectUseCase},
-        },
-        report::{task::TaskReportUseCase, vacation::VacationReportUseCase},
-        resource::{
-            deactivate_resource::DeactivateResourceUseCase,
-            describe_resource::DescribeResourceUseCase,
-            update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
-        },
-        task::{
-            delete_task::DeleteTaskUseCase,
-            describe_task::DescribeTaskUseCase,
-            link_task::LinkTaskUseCase,
-            update_task::{UpdateTaskArgs, UpdateTaskUseCase},
-        },
-        template::{
-            create_from_template::CreateFromTemplateUseCase, list_templates::ListTemplatesUseCase,
-            load_template::LoadTemplateUseCase,
-        },
-        validate::{
-            business_rules::ValidateBusinessRulesUseCase, data_integrity::ValidateDataIntegrityUseCase,
-            entities::ValidateEntitiesUseCase, system::ValidateSystemUseCase,
-        },
-    },
-    infrastructure::persistence::{
-        company_repository::FileCompanyRepository, config_repository::FileConfigRepository,
-        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
-    },
-};
 use clap::{Parser, Subcommand};
-use csv::Writer;
-use serde::Deserialize;
-use std::{collections::HashMap, env, path::PathBuf};
+use std::{env, path::PathBuf};
 
 pub mod commands;
 pub mod handlers;
@@ -164,9 +119,9 @@ impl Cli {
                 work_hours_start,
                 work_hours_end,
                 work_days,
-            } => handlers::init_handler::handle_init(
-                name, email, timezone, work_hours_start, work_hours_end, work_days,
-            ),
+            } => {
+                handlers::init_handler::handle_init(name, email, timezone, work_hours_start, work_hours_end, work_days)
+            }
             Commands::Company { command } => handlers::company_handler::handle_company_command(command),
             Commands::Project { command } => handlers::project_handler::handle_project_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),

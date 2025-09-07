@@ -4,6 +4,12 @@ use crate::domain::company_management::company::Company;
 /// Handler para queries de empresa
 pub struct CompanyQueryHandler;
 
+impl Default for CompanyQueryHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompanyQueryHandler {
     pub fn new() -> Self {
         Self

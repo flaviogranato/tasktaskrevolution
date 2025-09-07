@@ -431,11 +431,10 @@ mod tests {
                 entities.insert(entity.id.clone(), entity.clone());
                 Ok(entity)
             } else {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Entity not found for update".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "entity".to_string(),
+                    message: "Entity not found for update".to_string(),
+                })
             }
         }
 

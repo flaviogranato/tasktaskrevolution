@@ -1,3 +1,4 @@
+use super::super::commands::TaskCommand;
 use crate::{
     application::{
         create::task::{CreateTaskArgs, CreateTaskUseCase},
@@ -9,12 +10,8 @@ use crate::{
             update_task::{UpdateTaskArgs, UpdateTaskUseCase},
         },
     },
-    infrastructure::persistence::{
-        project_repository::FileProjectRepository,
-        task_repository::FileTaskRepository,
-    },
+    infrastructure::persistence::{project_repository::FileProjectRepository, task_repository::FileTaskRepository},
 };
-use super::super::commands::TaskCommand;
 use chrono::NaiveDate;
 
 pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::error::Error>> {
@@ -90,10 +87,12 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let update_use_case = UpdateTaskUseCase::new(project_repository);
 
-            let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let start = start_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let due = due_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let due = due_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid due date format: {}", e))?;
 
@@ -130,7 +129,12 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        TaskCommand::Link { from, to, project, company } => {
+        TaskCommand::Link {
+            from,
+            to,
+            project,
+            company,
+        } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let link_use_case = LinkTaskUseCase::new(project_repository);
 
@@ -145,9 +149,15 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        TaskCommand::Unlink { from, to, project, company } => {
+        TaskCommand::Unlink {
+            from,
+            to,
+            project,
+            company,
+        } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let unlink_use_case = crate::application::task::remove_dependency::RemoveTaskDependencyUseCase::new(project_repository);
+            let unlink_use_case =
+                crate::application::task::remove_dependency::RemoveTaskDependencyUseCase::new(project_repository);
 
             match unlink_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
@@ -160,9 +170,15 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        TaskCommand::AssignResource { task, project, company, resource } => {
+        TaskCommand::AssignResource {
+            task,
+            project,
+            company,
+            resource,
+        } => {
             let task_repository = FileTaskRepository::new(".");
-            let resource_repository = crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
+            let resource_repository =
+                crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
             let assign_use_case = AssignResourceToTaskUseCase::new(task_repository, resource_repository);
 
             match assign_use_case.execute(&task, &resource) {

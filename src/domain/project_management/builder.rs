@@ -1,8 +1,7 @@
 #![allow(dead_code)]
 
 use super::project::{Project, ProjectSettings, VacationRules, WorkHours};
-use crate::domain::shared::errors::DomainErrorKind::ProjectInvalidState;
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::DomainError;
 use chrono::{NaiveDate, Utc};
 use std::collections::HashMap;
 
@@ -112,43 +111,34 @@ impl ProjectBuilder {
     /// Validates the project configuration and builds the `Project` instance.
     pub fn build(self) -> Result<Project, DomainError> {
         // Validate required fields
-        let code = self.code.ok_or_else(|| {
-            DomainError::new(DomainErrorKind::ValidationError {
-                field: "code".to_string(),
-                message: "Project code is required".to_string(),
-            })
+        let code = self.code.ok_or_else(|| DomainError::ValidationError {
+            field: "code".to_string(),
+            message: "Project code is required".to_string(),
         })?;
 
-        let name = self.name.ok_or_else(|| {
-            DomainError::new(DomainErrorKind::ValidationError {
-                field: "name".to_string(),
-                message: "Project name is required".to_string(),
-            })
+        let name = self.name.ok_or_else(|| DomainError::ValidationError {
+            field: "name".to_string(),
+            message: "Project name is required".to_string(),
         })?;
 
-        let company_code = self.company_code.ok_or_else(|| {
-            DomainError::new(DomainErrorKind::ValidationError {
-                field: "company_code".to_string(),
-                message: "Company code is required".to_string(),
-            })
+        let company_code = self.company_code.ok_or_else(|| DomainError::ValidationError {
+            field: "company_code".to_string(),
+            message: "Company code is required".to_string(),
         })?;
 
-        let created_by = self.created_by.ok_or_else(|| {
-            DomainError::new(DomainErrorKind::ValidationError {
-                field: "created_by".to_string(),
-                message: "Creator is required".to_string(),
-            })
+        let created_by = self.created_by.ok_or_else(|| DomainError::ValidationError {
+            field: "created_by".to_string(),
+            message: "Creator is required".to_string(),
         })?;
 
         // Validate dates if both are provided
         if let (Some(start), Some(end)) = (self.start_date, self.end_date)
             && start > end
         {
-            return Err(DomainError::new(ProjectInvalidState {
-                current: "invalid_dates".to_string(),
-                expected: "start_date < end_date".to_string(),
-            })
-            .with_context("Start date must be before end date"));
+            return Err(DomainError::ValidationError {
+                field: "dates".to_string(),
+                message: "Start date must be before end date".to_string(),
+            });
         }
 
         let now = Utc::now();

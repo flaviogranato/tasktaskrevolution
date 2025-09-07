@@ -1,7 +1,4 @@
-use crate::domain::{
-    resource_management::repository::ResourceRepository,
-    shared::errors::{DomainError, DomainErrorKind},
-};
+use crate::domain::{resource_management::repository::ResourceRepository, shared::errors::DomainError};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -24,23 +21,23 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 
     fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
         let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-            .map_err(|_| {
-                DomainError::new(DomainErrorKind::Generic {
-                    message: "Formato de data inválido. Use YYYY-MM-DD".to_string(),
-                })
+            .map_err(|_| DomainError::ValidationError {
+                field: "date".to_string(),
+                message: "Formato de data inválido. Use YYYY-MM-DD".to_string(),
             })?
             .and_hms_opt(0, 0, 0)
-            .ok_or_else(|| {
-                DomainError::new(DomainErrorKind::Generic {
-                    message: "Erro ao converter hora".to_string(),
-                })
+            .ok_or_else(|| DomainError::ValidationError {
+                field: "time".to_string(),
+                message: "Erro ao converter hora".to_string(),
             })?;
 
-        Local.from_local_datetime(&naive).earliest().ok_or_else(|| {
-            DomainError::new(DomainErrorKind::Generic {
+        Local
+            .from_local_datetime(&naive)
+            .earliest()
+            .ok_or_else(|| DomainError::ValidationError {
+                field: "date".to_string(),
                 message: "Erro ao converter data local".to_string(),
             })
-        })
     }
 
     pub fn execute(
@@ -127,19 +124,18 @@ mod tests {
         ) -> Result<AnyResource, DomainError> {
             // Force error for specific test case
             if resource_name == "error_resource" {
-                return Err(DomainError::new(DomainErrorKind::Generic {
+                return Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
                     message: "Simulated repository error".to_string(),
-                }));
+                });
             }
 
             let mut resources = self.resources.borrow_mut();
             let resource_any = resources
                 .iter_mut()
                 .find(|r| r.name() == resource_name)
-                .ok_or_else(|| {
-                    DomainError::new(DomainErrorKind::ResourceNotFound {
-                        code: "Resource not found".to_string(),
-                    })
+                .ok_or_else(|| DomainError::ResourceNotFound {
+                    code: "Resource not found".to_string(),
                 })?;
 
             let updated = match resource_any {
@@ -154,10 +150,10 @@ mod tests {
                     AnyResource::Assigned(updated_r)
                 }
                 AnyResource::Inactive(_) => {
-                    return Err(DomainError::new(DomainErrorKind::ResourceInvalidState {
+                    return Err(DomainError::ResourceInvalidState {
                         current: "Inactive".to_string(),
                         expected: "Active".to_string(),
-                    }));
+                    });
                 }
             };
             *resource_any = updated.clone();
@@ -244,7 +240,10 @@ mod tests {
         let result = use_case.execute("error_resource", 10, "2024-01-01", Some("Test time off"));
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "Simulated repository error");
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "Validation error for field 'repository': Simulated repository error"
+        );
     }
 
     #[test]

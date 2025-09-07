@@ -1,10 +1,4 @@
-use crate::{
-    application::{
-        di::{DIFactory, traits::ServiceResolver},
-        init::InitManagerData,
-    },
-    interface::cli::handlers::DI_HANDLER,
-};
+use crate::{application::init::InitManagerData, interface::cli::handlers::DI_HANDLER};
 
 pub fn handle_init(
     name: String,
@@ -18,10 +12,7 @@ pub fn handle_init(
     // Por enquanto, não usa DI - será implementado posteriormente
     // let _init_service: std::sync::Arc<crate::application::di::InitService> = container.try_resolve().ok_or("Failed to resolve InitService")?;
 
-    let work_days_vec: Vec<String> = work_days
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .collect();
+    let work_days_vec: Vec<String> = work_days.split(',').map(|s| s.trim().to_string()).collect();
 
     let _init_data = InitManagerData {
         name,
@@ -41,7 +32,7 @@ pub fn handle_init(
         }
         Err(e) => {
             eprintln!("❌ Failed to initialize system: {}", e);
-            Err(e.into())
+            Err(e)
         }
     }
 }

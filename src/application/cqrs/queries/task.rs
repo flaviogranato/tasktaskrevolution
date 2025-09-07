@@ -1,6 +1,6 @@
 use crate::application::cqrs::Query;
-use serde::{Deserialize, Serialize};
 use crate::domain::task_management::AnyTask;
+use serde::{Deserialize, Serialize};
 
 /// Query para obter uma tarefa por código
 #[derive(Debug, Clone, Serialize, Deserialize)]

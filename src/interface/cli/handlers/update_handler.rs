@@ -1,3 +1,4 @@
+use super::super::commands::UpdateCommand;
 use crate::{
     application::{
         project::update_project::{UpdateProjectArgs, UpdateProjectUseCase},
@@ -5,12 +6,9 @@ use crate::{
         task::update_task::{UpdateTaskArgs, UpdateTaskUseCase},
     },
     infrastructure::persistence::{
-        project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository,
-        task_repository::FileTaskRepository,
+        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
     },
 };
-use super::super::commands::UpdateCommand;
 use chrono::NaiveDate;
 
 pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::error::Error>> {
@@ -26,17 +24,16 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
-            let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let start = start_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let end = end_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let end = end_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            let args = UpdateProjectArgs {
-                name,
-                description,
-            };
+            let args = UpdateProjectArgs { name, description };
 
             match update_use_case.execute(&code, args) {
                 Ok(_) => {
@@ -61,10 +58,12 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let update_use_case = UpdateTaskUseCase::new(project_repository);
 
-            let start = start_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let start = start_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let due = due_date.map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
+            let due = due_date
+                .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid due date format: {}", e))?;
 

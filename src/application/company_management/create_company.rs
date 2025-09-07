@@ -45,23 +45,19 @@ where
         // Check if company code already exists
         let code_exists = self.company_repository.code_exists(&code)?;
         if code_exists {
-            return Err(DomainError::new(
-                crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                    field: "code".to_string(),
-                    message: "Company code already exists".to_string(),
-                },
-            ));
+            return Err(DomainError::ValidationError {
+                field: "code".to_string(),
+                message: "Company code already exists".to_string(),
+            });
         }
 
         // Check if company name already exists
         let name_exists = self.company_repository.name_exists(&args.name)?;
         if name_exists {
-            return Err(DomainError::new(
-                crate::domain::shared::errors::DomainErrorKind::ValidationError {
-                    field: "name".to_string(),
-                    message: "Company name already exists".to_string(),
-                },
-            ));
+            return Err(DomainError::ValidationError {
+                field: "name".to_string(),
+                message: "Company name already exists".to_string(),
+            });
         }
 
         // Create the company
@@ -177,8 +173,8 @@ mod tests {
         assert!(result2.is_err());
 
         if let Err(error) = result2 {
-            match error.kind() {
-                crate::domain::shared::errors::DomainErrorKind::ValidationError { field, message } => {
+            match error {
+                DomainError::ValidationError { field, message } => {
                     assert_eq!(field, "code");
                     assert_eq!(message, "Company code already exists");
                 }
@@ -228,8 +224,8 @@ mod tests {
         assert!(result2.is_err());
 
         if let Err(error) = result2 {
-            match error.kind() {
-                crate::domain::shared::errors::DomainErrorKind::ValidationError { field, message } => {
+            match error {
+                DomainError::ValidationError { field, message } => {
                     assert_eq!(field, "name");
                     assert_eq!(message, "Company name already exists");
                 }

@@ -1,6 +1,6 @@
 use crate::application::cqrs::Query;
-use serde::{Deserialize, Serialize};
 use crate::domain::project_management::project::Project;
+use serde::{Deserialize, Serialize};
 
 /// Query para obter um projeto por código
 #[derive(Debug, Clone, Serialize, Deserialize)]

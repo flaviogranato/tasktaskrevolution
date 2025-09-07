@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::DomainError;
 use std::error::Error as StdError;
 use std::fmt;
 
@@ -87,41 +87,39 @@ impl StdError for CompanySettingsError {}
 impl From<CompanySettingsError> for DomainError {
     fn from(err: CompanySettingsError) -> Self {
         match err {
-            CompanySettingsError::ConfigurationNotFound { path } => {
-                DomainError::new(DomainErrorKind::ConfigurationMissing { field: path })
-            }
-            CompanySettingsError::ConfigurationInvalid { field, value, reason } => {
-                DomainError::new(DomainErrorKind::ConfigurationInvalid { field, value }).with_context(reason)
-            }
-            CompanySettingsError::ConfigurationMissing { field } => {
-                DomainError::new(DomainErrorKind::ConfigurationMissing { field })
-            }
-            CompanySettingsError::ManagerNotFound { identifier } => {
-                DomainError::new(DomainErrorKind::ResourceNotFound { code: identifier })
-            }
+            CompanySettingsError::ConfigurationNotFound { path } => DomainError::ValidationError {
+                field: "configuration".to_string(),
+                message: format!("Configuration file missing: {}", path),
+            },
+            CompanySettingsError::ConfigurationInvalid { field, value, reason } => DomainError::ValidationError {
+                field,
+                message: format!("Invalid configuration value '{}': {}", value, reason),
+            },
+            CompanySettingsError::ConfigurationMissing { field } => DomainError::ValidationError {
+                field: "configuration".to_string(),
+                message: format!("Configuration field missing: {}", field),
+            },
+            CompanySettingsError::ManagerNotFound { identifier } => DomainError::ResourceNotFound { code: identifier },
             CompanySettingsError::InvalidManagerData { field, reason } => {
-                DomainError::new(DomainErrorKind::ValidationError { field, message: reason })
+                DomainError::ValidationError { field, message: reason }
             }
-            CompanySettingsError::RepositoryInitializationFailed { reason } => {
-                DomainError::new(DomainErrorKind::RepositoryError {
-                    operation: "initialization".to_string(),
-                    details: reason,
-                })
-            }
-            CompanySettingsError::OperationNotAllowed { operation, reason } => {
-                DomainError::new(DomainErrorKind::Generic {
-                    message: format!("Operation '{}' not allowed: {}", operation, reason),
-                })
-            }
+            CompanySettingsError::RepositoryInitializationFailed { reason } => DomainError::Io {
+                operation: "initialization".to_string(),
+                source: std::io::Error::other(reason),
+            },
+            CompanySettingsError::OperationNotAllowed { operation, reason } => DomainError::ValidationError {
+                field: "operation".to_string(),
+                message: format!("Operation '{}' not allowed: {}", operation, reason),
+            },
             CompanySettingsError::FileSystemError {
                 operation,
                 path,
                 details,
-            } => DomainError::new(DomainErrorKind::Io {
+            } => DomainError::IoWithPath {
                 operation,
-                path: Some(path),
-            })
-            .with_context(details),
+                path,
+                source: std::io::Error::other(details),
+            },
         }
     }
 }
@@ -224,10 +222,10 @@ mod tests {
         };
         let domain_error: DomainError = company_error.into();
 
-        if let DomainErrorKind::ConfigurationMissing { field } = domain_error.kind() {
-            assert_eq!(field, "company_name");
+        if let DomainError::ValidationError { field, .. } = domain_error {
+            assert_eq!(field, "configuration");
         } else {
-            panic!("Expected ConfigurationMissing error kind");
+            panic!("Expected ValidationError");
         }
     }
 
@@ -240,14 +238,13 @@ mod tests {
         };
         let domain_error: DomainError = company_error.into();
 
-        if let DomainErrorKind::ConfigurationInvalid { field, value } = domain_error.kind() {
+        if let DomainError::ValidationError { field, message } = domain_error {
             assert_eq!(field, "timezone");
-            assert_eq!(value, "invalid_timezone");
+            assert!(message.contains("invalid_timezone"));
+            assert!(message.contains("Invalid timezone format"));
         } else {
-            panic!("Expected ConfigurationInvalid error kind");
+            panic!("Expected ValidationError");
         }
-
-        assert_eq!(domain_error.context(), Some(&"Invalid timezone format".to_string()));
     }
 
     #[test]
@@ -257,10 +254,10 @@ mod tests {
         };
         let domain_error: DomainError = company_error.into();
 
-        if let DomainErrorKind::ConfigurationMissing { field } = domain_error.kind() {
-            assert_eq!(field, "company_name");
+        if let DomainError::ValidationError { field, .. } = domain_error {
+            assert_eq!(field, "configuration");
         } else {
-            panic!("Expected ConfigurationMissing error kind");
+            panic!("Expected ValidationError");
         }
     }
 
@@ -271,7 +268,7 @@ mod tests {
         };
         let domain_error: DomainError = company_error.into();
 
-        if let DomainErrorKind::ResourceNotFound { code } = domain_error.kind() {
+        if let DomainError::ResourceNotFound { code } = domain_error {
             assert_eq!(code, "john.doe@company.com");
         } else {
             panic!("Expected ResourceNotFound error kind");
@@ -286,7 +283,7 @@ mod tests {
         };
         let domain_error: DomainError = company_error.into();
 
-        if let DomainErrorKind::ValidationError { field, message } = domain_error.kind() {
+        if let DomainError::ValidationError { field, message } = domain_error {
             assert_eq!(field, "email");
             assert_eq!(message, "Invalid email format");
         } else {
@@ -301,11 +298,10 @@ mod tests {
         };
         let domain_error: DomainError = company_error.into();
 
-        if let DomainErrorKind::RepositoryError { operation, details } = domain_error.kind() {
+        if let DomainError::Io { operation, .. } = domain_error {
             assert_eq!(operation, "initialization");
-            assert_eq!(details, "Database connection failed");
         } else {
-            panic!("Expected RepositoryError error kind");
+            panic!("Expected Io error kind");
         }
     }
 
@@ -318,14 +314,12 @@ mod tests {
         };
         let domain_error: DomainError = company_error.into();
 
-        if let DomainErrorKind::Io { operation, path } = domain_error.kind() {
+        if let DomainError::IoWithPath { operation, path, .. } = domain_error {
             assert_eq!(operation, "read");
-            assert_eq!(path, &Some("/config/settings.yaml".to_string()));
+            assert_eq!(path, "/config/settings.yaml");
         } else {
-            panic!("Expected Io error kind");
+            panic!("Expected IoWithPath error kind");
         }
-
-        assert_eq!(domain_error.context(), Some(&"Permission denied".to_string()));
     }
 
     #[test]
@@ -390,7 +384,7 @@ mod tests {
 
             let domain_error: DomainError = error.into();
             // Verificar que a conversão foi bem-sucedida
-            assert!(matches!(domain_error.kind(), _));
+            assert!(matches!(domain_error, _));
         }
     }
 }

@@ -1,6 +1,6 @@
 use super::Command;
-use serde::{Deserialize, Serialize};
 use crate::domain::company_management::company::Company;
+use serde::{Deserialize, Serialize};
 
 /// Command para criar uma nova empresa
 #[derive(Debug, Clone, Serialize, Deserialize)]

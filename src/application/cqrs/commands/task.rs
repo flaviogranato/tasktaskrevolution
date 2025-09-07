@@ -1,7 +1,7 @@
 use super::Command;
-use serde::{Deserialize, Serialize};
 use crate::domain::task_management::AnyTask;
 use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 
 /// Command para criar uma nova tarefa
 #[derive(Debug, Clone, Serialize, Deserialize)]

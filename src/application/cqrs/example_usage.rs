@@ -1,23 +1,17 @@
 use crate::application::cqrs::{
     commands::{
-        company::{CreateCompanyCommand, UpdateCompanyCommand, DeleteCompanyCommand},
-        project::{CreateProjectCommand, UpdateProjectCommand, CancelProjectCommand},
-        task::{CreateTaskCommand, UpdateTaskCommand, AddTaskDependencyCommand},
-        resource::{CreateResourceCommand, CreateTimeOffCommand},
-    },
-    queries::{
-        company::{GetCompanyQuery, ListCompaniesQuery, CompanyFilters},
-        project::{GetProjectQuery, ListProjectsQuery, ProjectFilters},
-        task::{GetTaskQuery, ListTasksQuery, TaskFilters},
-        resource::{GetResourceQuery, ListResourcesQuery, ResourceFilters},
+        company::CreateCompanyCommand, project::CreateProjectCommand, resource::CreateResourceCommand,
+        task::CreateTaskCommand,
     },
     handlers::{
-        command_handlers::{
-            CompanyCommandHandler, ProjectCommandHandler, TaskCommandHandler, ResourceCommandHandler,
-        },
-        query_handlers::{
-            CompanyQueryHandler, ProjectQueryHandler, TaskQueryHandler, ResourceQueryHandler,
-        },
+        command_handlers::{CompanyCommandHandler, ProjectCommandHandler, ResourceCommandHandler, TaskCommandHandler},
+        query_handlers::{CompanyQueryHandler, ProjectQueryHandler, ResourceQueryHandler, TaskQueryHandler},
+    },
+    queries::{
+        company::{CompanyFilters, ListCompaniesQuery},
+        project::{ListProjectsQuery, ProjectFilters},
+        resource::{ListResourcesQuery, ResourceFilters},
+        task::{ListTasksQuery, TaskFilters},
     },
 };
 
@@ -31,6 +25,12 @@ pub struct CQRSExample {
     project_query_handler: ProjectQueryHandler,
     task_query_handler: TaskQueryHandler,
     resource_query_handler: ResourceQueryHandler,
+}
+
+impl Default for CQRSExample {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CQRSExample {
@@ -57,7 +57,7 @@ impl CQRSExample {
             code: "TECH".to_string(),
             description: Some("Empresa de tecnologia".to_string()),
         };
-        
+
         let company = self.company_command_handler.handle_create_company(create_company_cmd)?;
         println!("✅ Empresa criada: {} ({})", company.name(), company.code());
 
@@ -68,7 +68,7 @@ impl CQRSExample {
             description: Some("Projeto de desenvolvimento".to_string()),
             company_code: "TECH".to_string(),
         };
-        
+
         let project = self.project_command_handler.handle_create_project(create_project_cmd)?;
         println!("✅ Projeto criado: {} ({})", project.name(), project.code());
 
@@ -82,7 +82,7 @@ impl CQRSExample {
             end_date: None,
             priority: Some("high".to_string()),
         };
-        
+
         let task = self.task_command_handler.handle_create_task(create_task_cmd)?;
         println!("✅ Tarefa criada: {} ({})", task.name(), task.code());
 
@@ -93,8 +93,10 @@ impl CQRSExample {
             email: Some("joao@techcorp.com".to_string()),
             resource_type: "person".to_string(),
         };
-        
-        let resource = self.resource_command_handler.handle_create_resource(create_resource_cmd)?;
+
+        let resource = self
+            .resource_command_handler
+            .handle_create_resource(create_resource_cmd)?;
         println!("✅ Recurso criado: {} ({})", resource.name(), resource.code());
 
         // 5. Queries - Listar empresas
@@ -104,7 +106,7 @@ impl CQRSExample {
                 code_contains: None,
             }),
         };
-        
+
         let companies = self.company_query_handler.handle_list_companies(list_companies_query)?;
         println!("📋 Empresas encontradas: {}", companies.len());
 
@@ -117,7 +119,7 @@ impl CQRSExample {
                 status: None,
             }),
         };
-        
+
         let projects = self.project_query_handler.handle_list_projects(list_projects_query)?;
         println!("📋 Projetos encontrados: {}", projects.len());
 
@@ -131,7 +133,7 @@ impl CQRSExample {
                 priority: Some("high".to_string()),
             }),
         };
-        
+
         let tasks = self.task_query_handler.handle_list_tasks(list_tasks_query)?;
         println!("📋 Tarefas encontradas: {}", tasks.len());
 
@@ -144,8 +146,10 @@ impl CQRSExample {
                 resource_type: Some("person".to_string()),
             }),
         };
-        
-        let resources = self.resource_query_handler.handle_list_resources(list_resources_query)?;
+
+        let resources = self
+            .resource_query_handler
+            .handle_list_resources(list_resources_query)?;
         println!("📋 Recursos encontrados: {}", resources.len());
 
         println!("🎉 Exemplo de CQRS executado com sucesso!");

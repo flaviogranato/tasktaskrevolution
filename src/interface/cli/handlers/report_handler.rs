@@ -1,18 +1,20 @@
+use super::super::commands::ReportCommand;
 use crate::{
     application::report::{task::TaskReportUseCase, vacation::VacationReportUseCase},
     infrastructure::persistence::{
-        project_repository::FileProjectRepository,
-        task_repository::FileTaskRepository,
-        resource_repository::FileResourceRepository,
+        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
     },
 };
-use super::super::commands::ReportCommand;
-use std::{path::PathBuf, fs::File};
 use csv::Writer;
+use std::fs::File;
 
 pub fn handle_report_command(command: ReportCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
-        ReportCommand::Tasks { project, company, output } => {
+        ReportCommand::Tasks {
+            project,
+            company,
+            output,
+        } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let report_use_case = TaskReportUseCase::new(project_repository);
 
@@ -26,7 +28,7 @@ pub fn handle_report_command(command: ReportCommand) -> Result<(), Box<dyn std::
                 }
                 Err(e) => {
                     eprintln!("❌ Failed to generate task report: {}", e);
-                    Err(e.into())
+                    Err(e)
                 }
             }
         }
@@ -45,7 +47,7 @@ pub fn handle_report_command(command: ReportCommand) -> Result<(), Box<dyn std::
                 }
                 Err(e) => {
                     eprintln!("❌ Failed to generate vacation report: {}", e);
-                    Err(e.into())
+                    Err(e)
                 }
             }
         }

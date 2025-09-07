@@ -431,11 +431,10 @@ mod tests {
 
         impl ProjectRepository for FailingMockProjectRepository {
             fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Repository save failed".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
+                    message: "Repository save failed".to_string(),
+                })
             }
 
             fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {

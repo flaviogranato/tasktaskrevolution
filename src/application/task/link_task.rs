@@ -144,11 +144,10 @@ mod tests {
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), DomainError> {
             if self.should_fail_save {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Simulated save failure".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
+                    message: "Simulated save failure".to_string(),
+                })
             } else {
                 self.projects.borrow_mut().insert(project.code().to_string(), project);
                 Ok(())
@@ -353,11 +352,10 @@ mod tests {
             }
 
             fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
-                Err(DomainError::new(
-                    crate::domain::shared::errors::DomainErrorKind::Generic {
-                        message: "Repository save failed".to_string(),
-                    },
-                ))
+                Err(DomainError::ValidationError {
+                    field: "repository".to_string(),
+                    message: "Repository save failed".to_string(),
+                })
             }
 
             fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {

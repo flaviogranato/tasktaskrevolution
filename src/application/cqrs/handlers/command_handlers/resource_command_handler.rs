@@ -4,6 +4,12 @@ use crate::domain::resource_management::AnyResource;
 /// Handler para comandos de recurso
 pub struct ResourceCommandHandler;
 
+impl Default for ResourceCommandHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ResourceCommandHandler {
     pub fn new() -> Self {
         Self

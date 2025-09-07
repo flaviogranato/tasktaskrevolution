@@ -1,6 +1,6 @@
 use crate::application::cqrs::Query;
-use serde::{Deserialize, Serialize};
 use crate::domain::resource_management::AnyResource;
+use serde::{Deserialize, Serialize};
 
 /// Query para obter um recurso por código
 #[derive(Debug, Clone, Serialize, Deserialize)]
