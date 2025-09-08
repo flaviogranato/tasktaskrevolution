@@ -1,7 +1,5 @@
-use crate::domain::{
-    resource_management::{repository::ResourceRepository, resource::Resource},
-    shared::errors::DomainError,
-};
+use crate::domain::resource_management::{repository::ResourceRepository, resource::Resource};
+use crate::application::errors::AppError;
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
@@ -17,7 +15,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         resource_type: &str,
         company_code: String,
         project_code: Option<String>,
-    ) -> Result<(), DomainError> {
+    ) -> Result<(), AppError> {
         let code = self.repository.get_next_code(resource_type)?;
         let r = Resource::new(code, name.to_string(), None, resource_type.to_string(), None, 0);
 
@@ -40,7 +38,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
 mod test {
     use super::*;
     use crate::domain::resource_management::AnyResource;
-    use crate::domain::shared::errors::DomainError;
+    use crate::application::errors::AppError;
     use chrono::{DateTime, Local};
     use std::cell::RefCell;
 
@@ -59,9 +57,9 @@ mod test {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
             if self.should_fail {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
                 });
@@ -76,15 +74,15 @@ mod test {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             Ok(vec![])
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)
         }
 
@@ -94,7 +92,7 @@ mod test {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -105,7 +103,7 @@ mod test {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -113,7 +111,7 @@ mod test {
             false
         }
 
-        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }

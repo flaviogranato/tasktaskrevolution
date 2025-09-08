@@ -1,40 +1,40 @@
 #![allow(unused_imports)]
 use crate::domain::task_management::{Category, Priority};
-use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::any_task::AnyTask,
-};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::task_management::any_task::AnyTask;
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum LinkTaskError {
+pub enum LinkAppError {
     ProjectNotFound(String),
     TaskNotFound(String),
     DependencyNotFound(String),
     CircularDependencyDetected(Vec<String>),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for LinkTaskError {
+impl fmt::Display for LinkAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            LinkTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            LinkTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
-            LinkTaskError::DependencyNotFound(code) => write!(f, "Dependency task with code '{}' not found.", code),
-            LinkTaskError::CircularDependencyDetected(tasks) => {
+            LinkAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            LinkAppError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
+            LinkAppError::DependencyNotFound(code) => write!(f, "Dependency task with code '{}' not found.", code),
+            LinkAppError::CircularDependencyDetected(tasks) => {
                 write!(f, "Circular dependency detected between tasks: {:?}", tasks)
             }
-            LinkTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
-            LinkTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            LinkAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            LinkAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for LinkTaskError {}
+impl std::error::Error for LinkAppError {}
 
-impl From<DomainError> for LinkTaskError {
-    fn from(err: DomainError) -> Self {
-        LinkTaskError::RepositoryError(err)
+impl From<AppError> for LinkAppError {
+    fn from(err: AppError) -> Self {
+        LinkAppError::RepositoryError(err)
     }
 }
 
@@ -59,9 +59,9 @@ where
         project_code: &str,
         task_code: &str,
         dependency_code: &str,
-    ) -> Result<AnyTask, LinkTaskError> {
+    ) -> Result<AnyTask, LinkAppError> {
         if task_code == dependency_code {
-            return Err(LinkTaskError::DomainError(
+            return Err(LinkAppError::AppError(
                 "A task cannot depend on itself.".to_string(),
             ));
         }
@@ -70,14 +70,14 @@ where
         let mut project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| LinkTaskError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| LinkAppError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Ensure both tasks exist within the project.
         if !project.tasks().contains_key(task_code) {
-            return Err(LinkTaskError::TaskNotFound(task_code.to_string()));
+            return Err(LinkAppError::TaskNotFound(task_code.to_string()));
         }
         if !project.tasks().contains_key(dependency_code) {
-            return Err(LinkTaskError::DependencyNotFound(dependency_code.to_string()));
+            return Err(LinkAppError::DependencyNotFound(dependency_code.to_string()));
         }
 
         // 3. Check for circular dependencies.
@@ -87,7 +87,7 @@ where
 
         while let Some(current_code) = stack.pop() {
             if current_code == task_code {
-                return Err(LinkTaskError::CircularDependencyDetected(vec![
+                return Err(LinkAppError::CircularDependencyDetected(vec![
                     task_code.to_string(),
                     dependency_code.to_string(),
                 ]));
@@ -115,7 +115,7 @@ where
         // 4. Add the dependency to the task.
         let updated_task = project
             .add_dependency_to_task(task_code, dependency_code)
-            .map_err(LinkTaskError::DomainError)?;
+            .map_err(LinkAppError::AppError)?;
 
         // 5. Save the entire project aggregate with the modified task.
         self.project_repository.save(project.clone())?;
@@ -128,6 +128,8 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
+    
+    
         project_management::{any_project::AnyProject, builder::ProjectBuilder},
         task_management::{any_task::AnyTask, state::Planned, task::Task},
     };
@@ -142,9 +144,9 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             if self.should_fail_save {
-                Err(DomainError::ValidationError {
+                Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Simulated save failure".to_string(),
                 })
@@ -153,16 +155,16 @@ mod tests {
                 Ok(())
             }
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -234,7 +236,7 @@ mod tests {
         let use_case = LinkTaskUseCase::new(project_repo);
 
         let result = use_case.execute("PROJ-1", "B_NONEXISTENT", "A");
-        assert!(matches!(result, Err(LinkTaskError::TaskNotFound(_))));
+        assert!(matches!(result, Err(LinkAppError::TaskNotFound(_))));
     }
 
     #[test]
@@ -247,7 +249,7 @@ mod tests {
         let use_case = LinkTaskUseCase::new(project_repo);
 
         let result = use_case.execute("PROJ-1", "A", "B_NONEXISTENT");
-        assert!(matches!(result, Err(LinkTaskError::DependencyNotFound(_))));
+        assert!(matches!(result, Err(LinkAppError::DependencyNotFound(_))));
     }
 
     #[test]
@@ -260,7 +262,7 @@ mod tests {
         let use_case = LinkTaskUseCase::new(project_repo);
 
         let result = use_case.execute("PROJ-1", "A", "A");
-        assert!(matches!(result, Err(LinkTaskError::DomainError(_))));
+        assert!(matches!(result, Err(LinkAppError::AppError(_))));
     }
 
     #[test]
@@ -282,7 +284,7 @@ mod tests {
         // Try to create dependency A -> B, which would create a cycle (A -> B -> A)
         let result = use_case.execute("PROJ-1", "A", "B");
 
-        assert!(matches!(result, Err(LinkTaskError::CircularDependencyDetected(_))));
+        assert!(matches!(result, Err(LinkAppError::CircularDependencyDetected(_))));
     }
 
     #[test]
@@ -332,7 +334,7 @@ mod tests {
         let use_case = LinkTaskUseCase::new(project_repo);
 
         let result = use_case.execute("NONEXISTENT_PROJECT", "A", "B");
-        assert!(matches!(result, Err(LinkTaskError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(LinkAppError::ProjectNotFound(_))));
     }
 
     #[test]
@@ -347,26 +349,26 @@ mod tests {
         }
 
         impl ProjectRepository for FailingMockProjectRepository {
-            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
+            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
                 Ok(Some(self.project.clone()))
             }
 
-            fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
-                Err(DomainError::ValidationError {
+            fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+                Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Repository save failed".to_string(),
                 })
             }
 
-            fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+            fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
                 Ok(vec![self.project.clone()])
             }
 
-            fn load(&self) -> Result<AnyProject, DomainError> {
+            fn load(&self) -> Result<AnyProject, AppError> {
                 Ok(self.project.clone())
             }
 
-            fn get_next_code(&self) -> Result<String, DomainError> {
+            fn get_next_code(&self) -> Result<String, AppError> {
                 Ok("PROJ-1".to_string())
             }
         }

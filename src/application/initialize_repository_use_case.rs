@@ -2,9 +2,11 @@
 
 use crate::domain::shared::convertable::Convertible;
 use crate::domain::{
+    
+    
     company_settings::{config::Config, repository::ConfigRepository},
-    shared::errors::DomainError,
 };
+use crate::application::errors::AppError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
 
@@ -17,7 +19,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
-    pub fn execute(&self, path: PathBuf, manager_name: String, manager_email: String) -> Result<(), DomainError> {
+    pub fn execute(&self, path: PathBuf, manager_name: String, manager_email: String) -> Result<(), AppError> {
         let config = Config::new(manager_name.clone(), manager_email.clone(), "UTC".to_string());
         let config_manifest = <ConfigManifest as Convertible<Config>>::from(config);
         self.repository.create_repository_dir(path.clone())?;
@@ -31,7 +33,7 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::shared::errors::DomainError;
+    use crate::application::errors::AppError;
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
 
@@ -52,9 +54,9 @@ mod test {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
+        fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), AppError> {
             if self.should_fail {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
                 });
@@ -65,14 +67,14 @@ mod test {
             Ok(())
         }
 
-        fn create_repository_dir(&self, path: PathBuf) -> Result<(), DomainError> {
+        fn create_repository_dir(&self, path: PathBuf) -> Result<(), AppError> {
             *self.created_path.borrow_mut() = Some(path.clone());
             Ok(())
         }
 
-        fn load(&self) -> Result<(Config, PathBuf), DomainError> {
+        fn load(&self) -> Result<(Config, PathBuf), AppError> {
             if self.should_fail {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao carregar".to_string(),
                 });

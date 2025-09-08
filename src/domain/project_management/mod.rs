@@ -1,7 +1,6 @@
 pub mod advanced_dependencies;
 pub mod any_project;
 pub mod builder;
-pub mod errors;
 pub mod gantt_chart;
 pub mod layoff_period;
 pub mod project;

@@ -1,5 +1,5 @@
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 
 pub struct ListProjectsUseCase<R: ProjectRepository> {
     repository: R,
@@ -10,7 +10,7 @@ impl<R: ProjectRepository> ListProjectsUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self) -> Result<Vec<AnyProject>, DomainError> {
+    pub fn execute(&self) -> Result<Vec<AnyProject>, AppError> {
         self.repository.find_all()
     }
 }
@@ -34,20 +34,20 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().push(project);
             Ok(())
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             Ok(self.projects.borrow().clone())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().iter().find(|p| p.code() == code).cloned())
         }
     }

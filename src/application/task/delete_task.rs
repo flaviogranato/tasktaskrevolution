@@ -1,37 +1,35 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    shared::errors::DomainError,
-    task_management::{Category, Priority, any_task::AnyTask},
-};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum DeleteTaskError {
+pub enum DeleteAppError {
     ProjectNotFound(String),
     TaskNotFound(String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for DeleteTaskError {
+impl fmt::Display for DeleteAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DeleteTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            DeleteTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
-            DeleteTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
-            DeleteTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            DeleteAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            DeleteAppError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
+            DeleteAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            DeleteAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for DeleteTaskError {}
+impl std::error::Error for DeleteAppError {}
 
-impl From<DomainError> for DeleteTaskError {
-    fn from(err: DomainError) -> Self {
-        DeleteTaskError::RepositoryError(err)
+impl From<AppError> for DeleteAppError {
+    fn from(err: AppError) -> Self {
+        DeleteAppError::RepositoryError(err)
     }
 }
 
@@ -50,15 +48,15 @@ where
         Self { project_repository }
     }
 
-    pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DeleteTaskError> {
+    pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DeleteAppError> {
         // 1. Load the project aggregate.
         let mut project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| DeleteTaskError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| DeleteAppError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Cancel the task (change its state to Cancelled)
-        let cancelled_task = project.cancel_task(task_code).map_err(DeleteTaskError::DomainError)?;
+        let cancelled_task = project.cancel_task(task_code).map_err(DeleteAppError::AppError)?;
 
         // 3. Save the updated project aggregate.
         self.project_repository.save(project.clone())?;
@@ -72,6 +70,8 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
+    
+    
         project_management::{AnyProject, builder::ProjectBuilder},
         task_management::{state::Planned, task::Task},
     };
@@ -86,20 +86,20 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -149,7 +149,7 @@ mod tests {
         let use_case = DeleteTaskUseCase::new(project_repo);
 
         let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1");
-        assert!(matches!(result, Err(DeleteTaskError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(DeleteAppError::ProjectNotFound(_))));
     }
 
     #[test]

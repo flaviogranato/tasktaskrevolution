@@ -63,13 +63,11 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        resource_management::{
-            AnyResource,
-            resource::{Period, PeriodType, Resource},
-        },
-        shared::errors::DomainError,
+    use crate::domain::resource_management::{
+        AnyResource,
+        resource::{Period, PeriodType, Resource},
     };
+    use crate::application::errors::AppError;
     use chrono::{DateTime, Local, NaiveDateTime};
     use std::cell::RefCell;
     use std::collections::HashMap;
@@ -106,15 +104,15 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)
         }
 
@@ -123,7 +121,7 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
@@ -133,7 +131,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
 
@@ -144,9 +142,9 @@ mod tests {
             end_date: &str,
             is_time_off_compensation: bool,
             compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             if self.should_fail {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Simulated repository error".to_string(),
                 });
@@ -180,7 +178,7 @@ mod tests {
                     AnyResource::Available(r) => r.vacations = add_vacation(r.vacations.clone()),
                     AnyResource::Assigned(r) => r.vacations = add_vacation(r.vacations.clone()),
                     AnyResource::Inactive(_) => {
-                        return Err(DomainError::ResourceInvalidState {
+                        return Err(AppError::ResourceInvalidState {
                             current: "Inactive".to_string(),
                             expected: "Active".to_string(),
                         });
@@ -188,7 +186,7 @@ mod tests {
                 }
                 Ok(any_resource.clone())
             } else {
-                Err(DomainError::ResourceNotFound {
+                Err(AppError::ResourceNotFound {
                     code: resource_name.to_string(),
                 })
             }
@@ -198,7 +196,7 @@ mod tests {
             false
         }
 
-        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }

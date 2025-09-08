@@ -1,4 +1,5 @@
-use crate::domain::{resource_management::repository::ResourceRepository, shared::errors::DomainError};
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::application::errors::AppError;
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -19,14 +20,14 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         Self { repository }
     }
 
-    fn parse_date(date_str: &str) -> Result<DateTime<Local>, DomainError> {
+    fn parse_date(date_str: &str) -> Result<DateTime<Local>, AppError> {
         let naive = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-            .map_err(|_| DomainError::ValidationError {
+            .map_err(|_| AppError::ValidationError {
                 field: "date".to_string(),
                 message: "Formato de data inválido. Use YYYY-MM-DD".to_string(),
             })?
             .and_hms_opt(0, 0, 0)
-            .ok_or_else(|| DomainError::ValidationError {
+            .ok_or_else(|| AppError::ValidationError {
                 field: "time".to_string(),
                 message: "Erro ao converter hora".to_string(),
             })?;
@@ -34,7 +35,7 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
         Local
             .from_local_datetime(&naive)
             .earliest()
-            .ok_or_else(|| DomainError::ValidationError {
+            .ok_or_else(|| AppError::ValidationError {
                 field: "date".to_string(),
                 message: "Erro ao converter data local".to_string(),
             })
@@ -69,10 +70,8 @@ impl<R: ResourceRepository> CreateTimeOffUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        resource_management::{AnyResource, resource::Resource, state::Available},
-        shared::errors::DomainError,
-    };
+    use crate::domain::resource_management::{AnyResource, resource::Resource, state::Available};
+    use crate::application::errors::AppError;
     use std::cell::RefCell;
 
     struct MockResourceRepository {
@@ -88,7 +87,7 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
             let mut resources = self.resources.borrow_mut();
             if let Some(index) = resources.iter().position(|r| r.id() == resource.id()) {
                 resources[index] = resource.clone();
@@ -98,11 +97,11 @@ mod tests {
             Ok(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.borrow().clone())
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)
         }
 
@@ -111,7 +110,7 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
@@ -121,10 +120,10 @@ mod tests {
             hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             // Force error for specific test case
             if resource_name == "error_resource" {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Simulated repository error".to_string(),
                 });
@@ -134,7 +133,7 @@ mod tests {
             let resource_any = resources
                 .iter_mut()
                 .find(|r| r.name() == resource_name)
-                .ok_or_else(|| DomainError::ResourceNotFound {
+                .ok_or_else(|| AppError::ResourceNotFound {
                     code: "Resource not found".to_string(),
                 })?;
 
@@ -150,7 +149,7 @@ mod tests {
                     AnyResource::Assigned(updated_r)
                 }
                 AnyResource::Inactive(_) => {
-                    return Err(DomainError::ResourceInvalidState {
+                    return Err(AppError::ResourceInvalidState {
                         current: "Inactive".to_string(),
                         expected: "Active".to_string(),
                     });
@@ -167,7 +166,7 @@ mod tests {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!("Not needed for these tests")
         }
 
@@ -175,7 +174,7 @@ mod tests {
             false
         }
 
-        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }

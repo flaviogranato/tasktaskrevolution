@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid7::Uuid;
 
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::{AppError, AppErrorKind};
 
 // ============================================================================
 // ENUMS

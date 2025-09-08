@@ -2,10 +2,10 @@ use super::business_rules::ValidateBusinessRulesUseCase;
 use super::data_integrity::ValidateDataIntegrityUseCase;
 use super::entities::ValidateEntitiesUseCase;
 use super::types::ValidationResult;
-use crate::domain::{
-    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository, shared::errors::DomainError,
-};
+use crate::domain::company_management::repository::CompanyRepository;
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::application::errors::AppError;
 
 pub struct ValidateSystemUseCase<P, R, C>
 where
@@ -32,7 +32,7 @@ where
         }
     }
 
-    pub fn execute(&self) -> Result<Vec<ValidationResult>, DomainError> {
+    pub fn execute(&self) -> Result<Vec<ValidationResult>, AppError> {
         let mut all_results = Vec::new();
 
         // 1. Validate data integrity first (foundation)
@@ -56,7 +56,7 @@ where
         Ok(all_results)
     }
 
-    fn validate_data_integrity(&self) -> Result<Vec<ValidationResult>, DomainError> {
+    fn validate_data_integrity(&self) -> Result<Vec<ValidationResult>, AppError> {
         let use_case = ValidateDataIntegrityUseCase::new(
             &self.project_repository,
             &self.resource_repository,
@@ -65,7 +65,7 @@ where
         use_case.execute()
     }
 
-    fn validate_entities(&self) -> Result<Vec<ValidationResult>, DomainError> {
+    fn validate_entities(&self) -> Result<Vec<ValidationResult>, AppError> {
         let use_case = ValidateEntitiesUseCase::new(
             &self.project_repository,
             &self.resource_repository,
@@ -74,7 +74,7 @@ where
         use_case.execute()
     }
 
-    fn validate_business_rules(&self) -> Result<Vec<ValidationResult>, DomainError> {
+    fn validate_business_rules(&self) -> Result<Vec<ValidationResult>, AppError> {
         let use_case = ValidateBusinessRulesUseCase::new(
             &self.project_repository,
             &self.resource_repository,

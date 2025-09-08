@@ -3,7 +3,7 @@ use crate::application::create::resource::CreateResourceUseCase;
 use crate::application::create::task::CreateTaskUseCase;
 use crate::domain::project_management::{ProjectTemplate, repository::ProjectRepository};
 use crate::domain::resource_management::repository::ResourceRepository;
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 
@@ -31,9 +31,9 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
         template: &ProjectTemplate,
         variables: &HashMap<String, String>,
         company_code: String,
-    ) -> Result<CreatedProject, DomainError> {
+    ) -> Result<CreatedProject, AppError> {
         // Render template with variables
-        let rendered = template.render(variables).map_err(|e| DomainError::ValidationError {
+        let rendered = template.render(variables).map_err(|e| AppError::ValidationError {
             field: "template".to_string(),
             message: format!("Template rendering failed: {}", e),
         })?;
@@ -73,14 +73,14 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
         for task in &rendered.tasks {
             // Parse dates
             let start_date = NaiveDate::parse_from_str(&rendered.project.start_date, "%Y-%m-%d").map_err(|e| {
-                DomainError::ValidationError {
+                AppError::ValidationError {
                     field: "start_date".to_string(),
                     message: format!("Invalid start date format: {}", e),
                 }
             })?;
 
             let due_date = NaiveDate::parse_from_str(&rendered.project.end_date, "%Y-%m-%d").map_err(|e| {
-                DomainError::ValidationError {
+                AppError::ValidationError {
                     field: "end_date".to_string(),
                     message: format!("Invalid end date format: {}", e),
                 }

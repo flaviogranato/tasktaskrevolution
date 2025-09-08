@@ -1,4 +1,5 @@
 pub mod app;
+pub mod errors;
 pub mod build_context;
 pub mod build_use_case;
 pub mod gantt_use_case;

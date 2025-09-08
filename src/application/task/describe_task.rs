@@ -1,33 +1,31 @@
 #![allow(unused_imports)]
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    shared::errors::DomainError,
-    task_management::{Category, Priority, any_task::AnyTask},
-};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum DescribeTaskError {
+pub enum DescribeAppError {
     ProjectNotFound(String),
     TaskNotFound(String),
-    RepositoryError(DomainError),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for DescribeTaskError {
+impl fmt::Display for DescribeAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DescribeTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            DescribeTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
-            DescribeTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            DescribeAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            DescribeAppError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
+            DescribeAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for DescribeTaskError {}
+impl std::error::Error for DescribeAppError {}
 
-impl From<DomainError> for DescribeTaskError {
-    fn from(err: DomainError) -> Self {
-        DescribeTaskError::RepositoryError(err)
+impl From<AppError> for DescribeAppError {
+    fn from(err: AppError) -> Self {
+        DescribeAppError::RepositoryError(err)
     }
 }
 
@@ -46,17 +44,17 @@ where
         Self { project_repository }
     }
 
-    pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DescribeTaskError> {
+    pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DescribeAppError> {
         let project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| DescribeTaskError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| DescribeAppError::ProjectNotFound(project_code.to_string()))?;
 
         let task = project
             .tasks()
             .get(task_code)
             .cloned()
-            .ok_or_else(|| DescribeTaskError::TaskNotFound(task_code.to_string()))?;
+            .ok_or_else(|| DescribeAppError::TaskNotFound(task_code.to_string()))?;
 
         Ok(task)
     }
@@ -67,6 +65,8 @@ mod tests {
     use super::*;
     use crate::domain::project_management::any_project::AnyProject;
     use crate::domain::{
+    
+    
         project_management::builder::ProjectBuilder,
         task_management::{state::Planned, task::Task},
     };
@@ -80,19 +80,19 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
             unimplemented!()
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -161,7 +161,7 @@ mod tests {
 
         let result = use_case.execute(project_code, "TSK-NONEXISTENT");
 
-        assert!(matches!(result, Err(DescribeTaskError::TaskNotFound(_))));
+        assert!(matches!(result, Err(DescribeAppError::TaskNotFound(_))));
     }
 
     #[test]
@@ -173,6 +173,6 @@ mod tests {
 
         let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1");
 
-        assert!(matches!(result, Err(DescribeTaskError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(DescribeAppError::ProjectNotFound(_))));
     }
 }

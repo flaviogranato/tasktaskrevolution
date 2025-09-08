@@ -1,10 +1,10 @@
 use super::specifications::{ProjectHasAssignedResourcesSpec, ProjectHasTasksSpec};
 use super::types::ValidationResult;
 use crate::domain::shared::specification::{AndSpecification, Specification};
-use crate::domain::{
-    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository, shared::errors::DomainError,
-};
+use crate::domain::company_management::repository::CompanyRepository;
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::application::errors::AppError;
 
 pub struct ValidateEntitiesUseCase<'a, P, R, C>
 where
@@ -31,7 +31,7 @@ where
         }
     }
 
-    pub fn execute(&self) -> Result<Vec<ValidationResult>, DomainError> {
+    pub fn execute(&self) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         // Load all entities
@@ -53,7 +53,7 @@ where
         companies: &[crate::domain::company_management::company::Company],
         resources: &[crate::domain::resource_management::any_resource::AnyResource],
         projects: &[crate::domain::project_management::any_project::AnyProject],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         // Check for orphaned entities
@@ -113,7 +113,7 @@ where
     fn validate_entity_completeness(
         &self,
         projects: &[crate::domain::project_management::any_project::AnyProject],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         // Create composite specification for project completeness

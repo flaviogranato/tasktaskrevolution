@@ -1,11 +1,9 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    shared::errors::DomainError,
-    task_management::{Category, Priority, any_task::AnyTask},
-};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
@@ -13,8 +11,8 @@ pub enum RemoveDependencyError {
     ProjectNotFound(String),
     TaskNotFound(String),
     DependencyNotFound(String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
 impl fmt::Display for RemoveDependencyError {
@@ -23,7 +21,7 @@ impl fmt::Display for RemoveDependencyError {
             RemoveDependencyError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
             RemoveDependencyError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
             RemoveDependencyError::DependencyNotFound(code) => write!(f, "Dependency '{}' not found for task.", code),
-            RemoveDependencyError::DomainError(message) => write!(f, "Domain error: {}", message),
+            RemoveDependencyError::AppError(message) => write!(f, "Domain error: {}", message),
             RemoveDependencyError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
@@ -31,8 +29,8 @@ impl fmt::Display for RemoveDependencyError {
 
 impl std::error::Error for RemoveDependencyError {}
 
-impl From<DomainError> for RemoveDependencyError {
-    fn from(err: DomainError) -> Self {
+impl From<AppError> for RemoveDependencyError {
+    fn from(err: AppError) -> Self {
         RemoveDependencyError::RepositoryError(err)
     }
 }
@@ -89,7 +87,7 @@ where
 
         // 4. Validate that removing the dependency won't break critical constraints
         if self.is_task_blocked_by_dependency(&project, task_code, dependency_code)? {
-            return Err(RemoveDependencyError::DomainError(
+            return Err(RemoveDependencyError::AppError(
                 "Cannot remove dependency: task is currently blocked by another dependency.".to_string(),
             ));
         }
@@ -97,7 +95,7 @@ where
         // 5. Remove the dependency from the task
         let updated_task = project
             .remove_dependency_from_task(task_code, dependency_code)
-            .map_err(RemoveDependencyError::DomainError)?;
+            .map_err(RemoveDependencyError::AppError)?;
 
         // 6. Save the updated project
         self.project_repository.save(project.clone())?;
@@ -141,6 +139,8 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
+    
+    
         project_management::{AnyProject, builder::ProjectBuilder},
         task_management::{state::Planned, task::Task},
     };
@@ -154,24 +154,24 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
 
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
 
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -353,7 +353,7 @@ mod tests {
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
 
         // Assert
-        assert!(matches!(result, Err(RemoveDependencyError::DomainError(_))));
+        assert!(matches!(result, Err(RemoveDependencyError::AppError(_))));
     }
 
     #[test]
@@ -430,14 +430,14 @@ mod tests {
         struct FailingMockProjectRepository;
 
         impl ProjectRepository for FailingMockProjectRepository {
-            fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
-                Err(DomainError::ValidationError {
+            fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+                Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Repository save failed".to_string(),
                 })
             }
 
-            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
+            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
                 let project = setup_test_project(vec![
                     create_test_task("TASK-A", vec!["TASK-B".to_string()]).into(),
                     create_test_task("TASK-B", vec![]).into(),
@@ -445,15 +445,15 @@ mod tests {
                 Ok(Some(project))
             }
 
-            fn load(&self) -> Result<AnyProject, DomainError> {
+            fn load(&self) -> Result<AnyProject, AppError> {
                 unimplemented!()
             }
 
-            fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+            fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
                 unimplemented!()
             }
 
-            fn get_next_code(&self) -> Result<String, DomainError> {
+            fn get_next_code(&self) -> Result<String, AppError> {
                 unimplemented!()
             }
         }

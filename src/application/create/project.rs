@@ -1,7 +1,7 @@
-use crate::domain::{
-    project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository},
-    shared::errors::DomainError,
+use crate::domain::project_management::{
+    AnyProject, builder::ProjectBuilder, repository::ProjectRepository,
 };
+use crate::application::errors::AppError;
 
 pub struct CreateProjectUseCase<R: ProjectRepository> {
     repository: R,
@@ -17,7 +17,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         name: &str,
         description: Option<&str>,
         company_code: String,
-    ) -> Result<AnyProject, DomainError> {
+    ) -> Result<AnyProject, AppError> {
         // Get the next available code
         let code = self.repository.get_next_code()?;
 
@@ -34,7 +34,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
             project = project.description(Some(desc.to_string()));
         }
 
-        let project = project.build()?; // This returns Result<Project, DomainError>
+        let project = project.build()?; // This returns Result<Project, AppError>
         let any_project: AnyProject = project.into();
 
         self.repository.save(any_project.clone())?;
@@ -53,7 +53,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
 mod test {
     use super::*;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
-    use crate::domain::shared::errors::DomainError;
+    use crate::application::errors::AppError;
     use std::cell::RefCell;
 
     struct MockProjectRepository {
@@ -81,9 +81,9 @@ mod test {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             if self.should_fail {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
                 });
@@ -92,19 +92,19 @@ mod test {
             Ok(())
         }
 
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             Ok(self.project.clone())
         }
 
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             Ok("proj-1".to_string()) // Always return a fixed code for tests
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             Ok(vec![self.project.clone()])
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             if self.project.code() == code {
                 Ok(Some(self.project.clone()))
             } else {
