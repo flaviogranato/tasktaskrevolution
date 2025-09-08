@@ -121,8 +121,8 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "company",
         "create",
+        "company",
         "--name",
         "Tech Solutions Inc",
         "--code",
@@ -143,7 +143,7 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["resource", "create", "--name", name, "--code", &name.to_lowercase().replace(" ", "_"), "--email", &format!("{}@techsol.com", name.to_lowercase().replace(" ", ".")), "--description", role]);
+        cmd.args(&["create", "resource", "--name", name, "--code", &name.to_lowercase().replace(" ", "_"), "--email", &format!("{}@techsol.com", name.to_lowercase().replace(" ", ".")), "--company", "TECH-SOL", "--start-date", "2024-01-01", "--end-date", "2024-12-31", "--description", role]);
         cmd.assert().success();
     }
 
@@ -151,8 +151,8 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args(&[
-        "project",
         "create",
+        "project",
         "--name",
         "E-commerce Platform",
         "--description",
@@ -442,7 +442,7 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     for (name, role, company_code) in &resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["resource", "create", "--name", name, "--code", &name.to_lowercase().replace(" ", "_"), "--email", &format!("{}@{}.com", name.to_lowercase().replace(" ", "."), company_code.to_lowercase()), "--description", role]);
+        cmd.args(&["create", "resource", "--name", name, "--code", &name.to_lowercase().replace(" ", "_"), "--email", &format!("{}@{}.com", name.to_lowercase().replace(" ", "."), company_code.to_lowercase()), "--company", company_code, "--start-date", "2024-01-01", "--end-date", "2024-12-31", "--description", role]);
         cmd.assert().success();
     }
 
@@ -457,7 +457,7 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     for (name, description, company_code) in &projects {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["project", "create", "--name", name, "--description", description, "--company-code", company_code, "--code", &format!("{}-PROJECT", company_code), "--start-date", "2024-01-01", "--end-date", "2024-12-31"]);
+        cmd.args(&["create", "project", "--name", name, "--description", description, "--company", company_code, "--code", &format!("{}-PROJECT", company_code), "--start-date", "2024-01-01", "--end-date", "2024-12-31"]);
         cmd.assert().success();
     }
 
