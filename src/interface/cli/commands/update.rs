@@ -7,9 +7,9 @@ pub enum UpdateCommand {
         /// Project code
         #[clap(short, long)]
         code: String,
-        /// Company code
-        #[clap(short, long)]
-        company: String,
+        /// Company code (optional if in company/project context)
+        #[clap(long)]
+        company: Option<String>,
         /// New project name
         #[clap(long)]
         name: Option<String>,
@@ -28,12 +28,12 @@ pub enum UpdateCommand {
         /// Task code
         #[clap(short, long)]
         code: String,
-        /// Project code
+        /// Project code (optional if in project context)
         #[clap(short, long)]
-        project: String,
-        /// Company code
-        #[clap(short, long)]
-        company: String,
+        project: Option<String>,
+        /// Company code (optional if in company/project context)
+        #[clap(long)]
+        company: Option<String>,
         /// New task name
         #[clap(long)]
         name: Option<String>,
