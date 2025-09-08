@@ -304,7 +304,7 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // 8. Validar saída HTML
-    let public_dir = temp.child("public");
+    let public_dir = temp.child("dist");
     let index_file = public_dir.child("index.html");
     index_file.assert(predicate::path::exists());
     index_file.assert(predicate::str::contains("Tech Solutions Inc"));
