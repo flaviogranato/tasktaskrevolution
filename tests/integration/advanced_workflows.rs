@@ -1169,3 +1169,779 @@ fn test_template_create_project_integration() -> Result<(), Box<dyn std::error::
 
     Ok(())
 }
+
+/// Testa comandos de update em diferentes contextos
+#[test]
+fn test_update_commands_contextual_execution() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    let temp_path = temp.path();
+
+    // Setup: Initialize system and create test data
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "init",
+        "--name",
+        "Test Manager",
+        "--email",
+        "manager@test.com",
+        "--company-name",
+        "Test Company",
+    ]);
+    cmd.assert().success();
+
+    // Create company
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "company",
+        "--name",
+        "Test Company",
+        "--code",
+        "TEST-COMP",
+        "--description",
+        "A test company",
+    ]);
+    cmd.assert().success();
+
+    // Create project (without specifying code - let it auto-generate)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "project",
+        "--name",
+        "Test Project",
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test project",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    
+    // Extract project code from output
+    let project_code = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "proj-1".to_string()
+        }
+    } else {
+        "proj-1".to_string()
+    };
+
+    // Create resource
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "resource",
+        "--name",
+        "Test Resource",
+        "--company",
+        "TEST-COMP",
+        "--email",
+        "test@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    
+    // Extract resource code from output
+    let resource_code = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "employee-1".to_string()
+        }
+    } else {
+        "employee-1".to_string()
+    };
+
+    // Create task
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "task",
+        "--name",
+        "Test Task",
+        "--project",
+        &project_code,
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test task",
+        "--start-date",
+        "2024-01-01",
+        "--due-date",
+        "2024-01-15",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    
+    // Extract task code from output
+    let task_code = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "task-1".to_string()
+        }
+    } else {
+        "task-1".to_string()
+    };
+
+    // Test 1: Update project in root context (should require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "update",
+        "project",
+        "--code",
+        &project_code,
+        "--company",
+        "TEST-COMP",
+        "--name",
+        "Updated Project",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Project updated successfully"));
+
+    // Test 2: Update task in root context (should require company and project parameters)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "update",
+        "task",
+        "--code",
+        &task_code,
+        "--project",
+        &project_code,
+        "--company",
+        "TEST-COMP",
+        "--name",
+        "Updated Task",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Task updated successfully"));
+
+    // Test 3: Update resource in root context (should require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "update",
+        "resource",
+        "--code",
+        &resource_code,
+        "--company",
+        "TEST-COMP",
+        "--name",
+        "Updated Resource",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Resource updated successfully"));
+
+    // Test 4: Update project in company context (should not require company parameter)
+    let company_dir = temp_path.join("companies").join("TEST-COMP");
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&company_dir);
+    cmd.args(&[
+        "update",
+        "project",
+        "--code",
+        &project_code,
+        "--name",
+        "Updated Project Company Context",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Project updated successfully"));
+
+    // Test 5: Update task in company context (should not require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&company_dir);
+    cmd.args(&[
+        "update",
+        "task",
+        "--code",
+        &task_code,
+        "--project",
+        &project_code,
+        "--name",
+        "Updated Task Company Context",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Task updated successfully"));
+
+    // Test 6: Update resource in company context (should not require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&company_dir);
+    cmd.args(&[
+        "update",
+        "resource",
+        "--code",
+        &resource_code,
+        "--name",
+        "Updated Resource Company Context",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Resource updated successfully"));
+
+    // Test 7: Update project in project context (should not require company or project parameters)
+    let project_dir = company_dir.join("projects").join(&project_code);
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&project_dir);
+    cmd.args(&[
+        "update",
+        "project",
+        "--code",
+        &project_code,
+        "--name",
+        "Updated Project Project Context",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Project updated successfully"));
+
+    // Test 8: Update task in project context (should not require company or project parameters)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&project_dir);
+    cmd.args(&[
+        "update",
+        "task",
+        "--code",
+        &task_code,
+        "--name",
+        "Updated Task Project Context",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Task updated successfully"));
+
+    // Test 9: Update resource in project context (should not require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&project_dir);
+    cmd.args(&[
+        "update",
+        "resource",
+        "--code",
+        &resource_code,
+        "--name",
+        "Updated Resource Project Context",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Resource updated successfully"));
+
+    // Test 10: Validate error messages for missing parameters in root context
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "update",
+        "project",
+        "--code",
+        &project_code,
+        "--name",
+        "Should Fail",
+    ]);
+    cmd.assert().failure().stderr(predicate::str::contains("Company parameter required"));
+
+    // Test 11: Validate error messages for missing parameters in root context for task
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "update",
+        "task",
+        "--code",
+        &task_code,
+        "--name",
+        "Should Fail",
+    ]);
+    cmd.assert().failure().stderr(predicate::str::contains("Company parameter required"));
+
+    // Test 12: Validate error messages for missing parameters in root context for resource
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "update",
+        "resource",
+        "--code",
+        &resource_code,
+        "--name",
+        "Should Fail",
+    ]);
+    cmd.assert().failure().stderr(predicate::str::contains("Company parameter required"));
+
+    Ok(())
+}
+
+/// Testa comandos de delete em diferentes contextos
+#[test]
+fn test_delete_commands_contextual_execution() -> Result<(), Box<dyn std::error::Error>> {
+    let temp = assert_fs::TempDir::new()?;
+    let temp_path = temp.path();
+
+    // Setup: Initialize system and create test data
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "init",
+        "--name",
+        "Test Manager",
+        "--email",
+        "manager@test.com",
+        "--company-name",
+        "Test Company",
+    ]);
+    cmd.assert().success();
+
+    // Create company
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "company",
+        "--name",
+        "Test Company",
+        "--code",
+        "TEST-COMP",
+        "--description",
+        "A test company",
+    ]);
+    cmd.assert().success();
+
+    // Create project (without specifying code - let it auto-generate)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "project",
+        "--name",
+        "Test Project",
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test project",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    
+    // Extract project code from output
+    let project_code = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "proj-1".to_string()
+        }
+    } else {
+        "proj-1".to_string()
+    };
+
+    // Create resource
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "resource",
+        "--name",
+        "Test Resource",
+        "--company",
+        "TEST-COMP",
+        "--email",
+        "test@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    
+    // Extract resource code from output
+    let resource_code = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "employee-1".to_string()
+        }
+    } else {
+        "employee-1".to_string()
+    };
+
+    // Create task
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "task",
+        "--name",
+        "Test Task",
+        "--project",
+        &project_code,
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test task",
+        "--start-date",
+        "2024-01-01",
+        "--due-date",
+        "2024-01-15",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    
+    // Extract task code from output
+    let task_code = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "task-1".to_string()
+        }
+    } else {
+        "task-1".to_string()
+    };
+
+    // Test 1: Delete task in root context (should require company and project parameters)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "delete",
+        "task",
+        "--code",
+        &task_code,
+        "--project",
+        &project_code,
+        "--company",
+        "TEST-COMP",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Task deleted successfully"));
+
+    // Test 2: Delete resource in root context (should require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "delete",
+        "resource",
+        "--code",
+        &resource_code,
+        "--company",
+        "TEST-COMP",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Resource deleted successfully"));
+
+    // Test 3: Delete project in root context (should require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "delete",
+        "project",
+        "--code",
+        &project_code,
+        "--company",
+        "TEST-COMP",
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Project deleted successfully"));
+
+    // Recreate data for company context tests
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "project",
+        "--name",
+        "Test Project 2",
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test project 2",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let project_code_2 = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "proj-2".to_string()
+        }
+    } else {
+        "proj-2".to_string()
+    };
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "resource",
+        "--name",
+        "Test Resource 2",
+        "--company",
+        "TEST-COMP",
+        "--email",
+        "test2@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let resource_code_2 = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "employee-2".to_string()
+        }
+    } else {
+        "employee-2".to_string()
+    };
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "task",
+        "--name",
+        "Test Task 2",
+        "--project",
+        &project_code_2,
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test task 2",
+        "--start-date",
+        "2024-01-01",
+        "--due-date",
+        "2024-01-15",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let task_code_2 = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "task-2".to_string()
+        }
+    } else {
+        "task-2".to_string()
+    };
+
+    // Test 4: Delete task in company context (should not require company parameter)
+    let company_dir = temp_path.join("companies").join("TEST-COMP");
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&company_dir);
+    cmd.args(&[
+        "delete",
+        "task",
+        "--code",
+        &task_code_2,
+        "--project",
+        &project_code_2,
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Task deleted successfully"));
+
+    // Test 5: Delete resource in company context (should not require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&company_dir);
+    cmd.args(&[
+        "delete",
+        "resource",
+        "--code",
+        &resource_code_2,
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Resource deleted successfully"));
+
+    // Test 6: Delete project in company context (should not require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&company_dir);
+    cmd.args(&[
+        "delete",
+        "project",
+        "--code",
+        &project_code_2,
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Project deleted successfully"));
+
+    // Recreate data for project context tests
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "project",
+        "--name",
+        "Test Project 3",
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test project 3",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let project_code_3 = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "proj-3".to_string()
+        }
+    } else {
+        "proj-3".to_string()
+    };
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "resource",
+        "--name",
+        "Test Resource 3",
+        "--company",
+        "TEST-COMP",
+        "--email",
+        "test3@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let resource_code_3 = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "employee-3".to_string()
+        }
+    } else {
+        "employee-3".to_string()
+    };
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "create",
+        "task",
+        "--name",
+        "Test Task 3",
+        "--project",
+        &project_code_3,
+        "--company",
+        "TEST-COMP",
+        "--description",
+        "A test task 3",
+        "--start-date",
+        "2024-01-01",
+        "--due-date",
+        "2024-01-15",
+    ]);
+    let binding = cmd.assert().success();
+    let output = binding.get_output();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let task_code_3 = if let Some(start) = stdout.find("code '") {
+        let start = start + 6;
+        if let Some(end) = stdout[start..].find("'") {
+            stdout[start..start + end].to_string()
+        } else {
+            "task-3".to_string()
+        }
+    } else {
+        "task-3".to_string()
+    };
+
+    // Test 7: Delete task in project context (should not require company or project parameters)
+    let project_dir = company_dir.join("projects").join(&project_code_3);
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&project_dir);
+    cmd.args(&[
+        "delete",
+        "task",
+        "--code",
+        &task_code_3,
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Task deleted successfully"));
+
+    // Test 8: Delete resource in project context (should not require company parameter)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&project_dir);
+    cmd.args(&[
+        "delete",
+        "resource",
+        "--code",
+        &resource_code_3,
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Resource deleted successfully"));
+
+    // Test 9: Delete project in project context (should not require company or project parameters)
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(&project_dir);
+    cmd.args(&[
+        "delete",
+        "project",
+        "--code",
+        &project_code_3,
+    ]);
+    cmd.assert().success().stdout(predicate::str::contains("Project deleted successfully"));
+
+    // Test 10: Validate error messages for missing parameters in root context
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "delete",
+        "project",
+        "--code",
+        "NONEXISTENT",
+    ]);
+    cmd.assert().failure().stderr(predicate::str::contains("Company parameter required"));
+
+    // Test 11: Validate error messages for missing parameters in root context for task
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "delete",
+        "task",
+        "--code",
+        "NONEXISTENT",
+    ]);
+    cmd.assert().failure().stderr(predicate::str::contains("Company parameter required"));
+
+    // Test 12: Validate error messages for missing parameters in root context for resource
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(&[
+        "delete",
+        "resource",
+        "--code",
+        "NONEXISTENT",
+    ]);
+    cmd.assert().failure().stderr(predicate::str::contains("Company parameter required"));
+
+    Ok(())
+}
