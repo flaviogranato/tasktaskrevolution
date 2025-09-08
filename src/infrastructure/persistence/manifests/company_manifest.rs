@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::domain::company_management::company::{Company, CompanySize, CompanyStatus};
 
+const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
+
 /// Manifest for serializing/deserializing Company entities to/from YAML.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -57,7 +59,7 @@ pub enum CompanyStatusManifest {
 impl From<&Company> for CompanyManifest {
     fn from(company: &Company) -> Self {
         Self {
-            api_version: "company.tasktaskrevolution.io/v1".to_string(),
+            api_version: API_VERSION.to_string(),
             kind: "Company".to_string(),
             metadata: CompanyMetadata {
                 id: company.id.clone(),
@@ -160,7 +162,7 @@ mod tests {
 
         let manifest = CompanyManifest::from(&company);
 
-        assert_eq!(manifest.api_version, "company.tasktaskrevolution.io/v1");
+        assert_eq!(manifest.api_version, API_VERSION);
         assert_eq!(manifest.kind, "Company");
         assert_eq!(manifest.metadata.code, "COMP-001");
         assert_eq!(manifest.metadata.name, "TechConsulting Ltda");
