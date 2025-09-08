@@ -252,8 +252,8 @@ fn test_complete_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "task",
             "create",
+            "task",
             "--name",
             name,
             "--code",
