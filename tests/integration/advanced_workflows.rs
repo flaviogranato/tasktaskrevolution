@@ -345,8 +345,8 @@ fn test_multi_company_management() -> Result<(), Box<dyn std::error::Error>> {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "company",
             "create",
+            "company",
             "--name",
             name,
             "--code",
@@ -672,10 +672,13 @@ fn test_concurrent_operations() -> Result<(), Box<dyn std::error::Error>> {
         cmd.args(&[
             "create",
             "resource",
-            resource,
-            "Developer",
-            "--company-code",
-            "TECH-CORP",
+            "--name", resource,
+            "--code", &resource.to_lowercase().replace(" ", "_"),
+            "--email", &format!("{}@techcorp.com", resource.to_lowercase().replace(" ", ".")),
+            "--company", "TECH-CORP",
+            "--start-date", "2024-01-01",
+            "--end-date", "2024-12-31",
+            "--description", "Developer",
         ]);
         cmd.assert().success();
     }
@@ -774,10 +777,12 @@ fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
     cmd.args(&[
         "create",
         "project",
-        "Web App",
-        "Web application project",
-        "--company-code",
-        "TECH-CORP",
+        "--name", "Web App",
+        "--code", "WEB-APP",
+        "--company", "TECH-CORP",
+        "--start-date", "2024-01-01",
+        "--end-date", "2024-12-31",
+        "--description", "Web application project",
     ]);
     cmd.assert().success();
     Ok(())
@@ -847,11 +852,11 @@ fn test_template_workflow_complete() -> Result<(), Box<dyn std::error::Error>> {
     cmd.current_dir(temp.path());
     cmd.args(&[
         "template", "create",
-        "web-app",
-        "Ecommerce Platform",
-        "A modern e-commerce platform",
-        "--company-code", "DEFAULT",
-        "--variables", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-06-15,timezone=UTC,project_description=A modern e-commerce platform"
+        "--template", "web-app",
+        "--name", "Ecommerce Platform",
+        "--code", "ECOMMERCE",
+        "--company", "DEFAULT",
+        "--params", "project_name=Ecommerce Platform,frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-06-15,timezone=UTC,project_description=A modern e-commerce platform"
     ]);
     cmd.assert()
         .success()
@@ -981,15 +986,14 @@ fn test_template_multi_project_workflow() -> Result<(), Box<dyn std::error::Erro
         cmd.args(&[
             "template",
             "create",
-            template,
-            name,
-            description,
-            "--company-code",
-            "DEFAULT",
-            "--variables",
+            "--template", template,
+            "--name", name,
+            "--code", &format!("{}-{}", name.to_uppercase().replace(" ", "-"), template.to_uppercase()),
+            "--company", "DEFAULT",
+            "--params",
             &format!(
-                "{},start_date=2024-01-15,end_date=2024-06-15,timezone=UTC,project_description={}",
-                variables, description
+                "project_name={},{},start_date=2024-01-15,end_date=2024-06-15,timezone=UTC,project_description={}",
+                name, variables, description
             ),
         ]);
         cmd.assert()
@@ -1055,12 +1059,11 @@ fn test_template_variable_validation() -> Result<(), Box<dyn std::error::Error>>
     cmd.args(&[
         "template",
         "create",
-        "web-app",
-        "Test Project",
-        "Test description",
-        "--company-code",
-        "DEFAULT",
-        "--variables",
+        "--template", "web-app",
+        "--name", "Test Project",
+        "--code", "TEST-PROJECT-FAIL",
+        "--company", "DEFAULT",
+        "--params",
         "frontend_developer=Alice",
     ]);
     cmd.assert()
@@ -1072,11 +1075,11 @@ fn test_template_variable_validation() -> Result<(), Box<dyn std::error::Error>>
     cmd.current_dir(temp.path());
     cmd.args(&[
         "template", "create",
-        "web-app",
-        "Test Project",
-        "Test description",
-        "--company-code", "DEFAULT",
-        "--variables", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=Test description"
+        "--template", "web-app",
+        "--name", "Test Project",
+        "--code", "TEST-PROJECT",
+        "--company", "DEFAULT",
+        "--params", "project_name=Test Project,frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=Test description"
     ]);
     cmd.assert()
         .success()
@@ -1125,9 +1128,13 @@ fn test_template_create_project_integration() -> Result<(), Box<dyn std::error::
     cmd.current_dir(temp.path());
     cmd.args(&[
         "create", "project",
-        "API Gateway",
-        "A microservice API gateway",
-        "--from-template", "microservice",
+        "--name", "API Gateway",
+        "--code", "API-GATEWAY",
+        "--company", "DEFAULT",
+        "--start-date", "2024-01-15",
+        "--end-date", "2024-02-28",
+        "--description", "A microservice API gateway",
+        "--template", "microservice",
         "--template-vars", "backend_developer=Alice,devops_engineer=Bob,api_designer=Charlie,start_date=2024-01-15,end_date=2024-02-28,timezone=UTC,project_description=A microservice API gateway"
     ]);
     cmd.assert()
