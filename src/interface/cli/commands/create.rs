@@ -22,9 +22,9 @@ pub enum CreateCommand {
         /// Project code
         #[clap(long)]
         code: String,
-        /// Company code
+        /// Company code (optional if in company context)
         #[clap(long)]
-        company: String,
+        company: Option<String>,
         /// Project description
         #[clap(short, long)]
         description: Option<String>,
@@ -49,12 +49,12 @@ pub enum CreateCommand {
         /// Task code
         #[clap(long)]
         code: String,
-        /// Project code
+        /// Project code (optional if in project context)
         #[clap(short, long)]
-        project: String,
-        /// Company code
+        project: Option<String>,
+        /// Company code (optional if in company/project context)
         #[clap(long)]
-        company: String,
+        company: Option<String>,
         /// Task description
         #[clap(short, long)]
         description: Option<String>,
@@ -79,9 +79,9 @@ pub enum CreateCommand {
         /// Resource email
         #[clap(short, long)]
         email: String,
-        /// Company code
+        /// Company code (optional if in company/project context)
         #[clap(long)]
-        company: String,
+        company: Option<String>,
         /// Resource description
         #[clap(short, long)]
         description: Option<String>,
