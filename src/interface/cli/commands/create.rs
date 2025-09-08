@@ -20,10 +20,10 @@ pub enum CreateCommand {
         #[clap(short, long)]
         name: String,
         /// Project code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
         /// Project description
         #[clap(short, long)]
@@ -74,13 +74,13 @@ pub enum CreateCommand {
         #[clap(short, long)]
         name: String,
         /// Resource code
-        #[clap(short, long)]
+        #[clap(long)]
         code: String,
         /// Resource email
         #[clap(short, long)]
         email: String,
         /// Company code
-        #[clap(short, long)]
+        #[clap(long)]
         company: String,
         /// Resource description
         #[clap(short, long)]
