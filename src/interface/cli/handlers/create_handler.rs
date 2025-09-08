@@ -1,4 +1,6 @@
 use crate::interface::cli::commands::CreateCommand;
+use crate::interface::cli::handlers::get_app_handler;
+use crate::application::company_management::{CreateCompanyUseCase, CreateCompanyArgs};
 
 pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
@@ -7,12 +9,33 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
             code,
             description,
         } => {
-            // For now, just print success - TODO: implement actual creation
-            println!("Company '{}' created successfully with code '{}'", name, code);
-            if let Some(desc) = description {
-                println!("Description: {}", desc);
+            let app = get_app_handler().get_app();
+            let company_repo = &app.company_repository;
+            
+            let args = CreateCompanyArgs {
+                code,
+                name: name.clone(),
+                description,
+                tax_id: None,
+                address: None,
+                email: None,
+                phone: None,
+                website: None,
+                industry: None,
+                created_by: "CLI".to_string(),
+            };
+            
+            let use_case = CreateCompanyUseCase::new(company_repo.clone());
+            match use_case.execute(args) {
+                Ok(company) => {
+                    println!("Company '{}' created successfully with code '{}'", company.name(), company.code());
+                    Ok(())
+                }
+                Err(e) => {
+                    eprintln!("❌ Failed to create company: {}", e);
+                    Err(Box::new(e))
+                }
             }
-            Ok(())
         }
         CreateCommand::Project {
             name,
