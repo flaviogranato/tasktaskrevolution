@@ -41,25 +41,10 @@ pub enum Commands {
         #[clap(long, default_value = "monday,tuesday,wednesday,thursday,friday")]
         work_days: String,
     },
-    /// Create a new company
-    Company {
+    /// Create new entities
+    Create {
         #[clap(subcommand)]
-        command: commands::CompanyCommand,
-    },
-    /// Create a new project
-    Project {
-        #[clap(subcommand)]
-        command: commands::ProjectCommand,
-    },
-    /// Create a new task
-    Task {
-        #[clap(subcommand)]
-        command: commands::TaskCommand,
-    },
-    /// Create a new resource
-    Resource {
-        #[clap(subcommand)]
-        command: commands::ResourceCommand,
+        command: commands::CreateCommand,
     },
     /// List entities
     List {
@@ -126,10 +111,7 @@ impl Cli {
             } => {
                 handlers::init_handler::handle_init(name, email, company_name, timezone, work_hours_start, work_hours_end, work_days)
             }
-            Commands::Company { command } => handlers::company_handler::handle_company_command(command),
-            Commands::Project { command } => handlers::project_handler::handle_project_command(command),
-            Commands::Task { command } => handlers::task_handler::handle_task_command(command),
-            Commands::Resource { command } => handlers::resource_handler::handle_resource_command(command),
+            Commands::Create { command } => handlers::create_handler::handle_create_command(command),
             Commands::List { command } => handlers::list_handler::handle_list_command(command),
             Commands::Update { command } => handlers::update_handler::handle_update_command(command),
             Commands::Delete { command } => handlers::delete_handler::handle_delete_command(command),
