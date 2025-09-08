@@ -2,6 +2,8 @@ use clap::Subcommand;
 
 #[derive(Subcommand)]
 pub enum ListCommand {
+    /// List all companies
+    Companies,
     /// List all projects
     Projects {
         /// Company code filter
