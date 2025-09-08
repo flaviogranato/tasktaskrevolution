@@ -7,21 +7,21 @@ pub enum DeleteCommand {
         /// Project code
         #[clap(short, long)]
         code: String,
-        /// Company code
-        #[clap(short, long)]
-        company: String,
+        /// Company code (optional if in company/project context)
+        #[clap(long)]
+        company: Option<String>,
     },
     /// Delete a task
     Task {
         /// Task code
         #[clap(short, long)]
         code: String,
-        /// Project code
+        /// Project code (optional if in project context)
         #[clap(short, long)]
-        project: String,
-        /// Company code
-        #[clap(short, long)]
-        company: String,
+        project: Option<String>,
+        /// Company code (optional if in company/project context)
+        #[clap(long)]
+        company: Option<String>,
     },
     /// Delete a resource
     Resource {
