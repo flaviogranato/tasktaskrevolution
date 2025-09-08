@@ -360,8 +360,8 @@ fn test_multi_company_management() -> Result<(), Box<dyn std::error::Error>> {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.args(&[
-            "project",
             "create",
+            "project",
             "--name",
             &format!("{} Project", name),
             "--description",
@@ -505,7 +505,7 @@ fn test_resource_allocation_scenarios() -> Result<(), Box<dyn std::error::Error>
     // Testar listagem de recursos
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.arg("list").arg("resources");
+    cmd.args(&["list", "resources", "--company", "TECH-SOL"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Alice Backend"))
@@ -614,9 +614,9 @@ fn test_task_dependency_management() -> Result<(), Box<dyn std::error::Error>> {
             start_date,
             "--due-date",
             end_date,
-            "--project-code",
+            "--project",
             &project_code,
-            "--company-code",
+            "--company",
             "TECH-CORP",
         ]);
         cmd.assert().success();
@@ -648,7 +648,7 @@ fn test_task_dependency_management() -> Result<(), Box<dyn std::error::Error>> {
     // Testar listagem de tarefas
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.arg("list").arg("tasks");
+    cmd.args(&["list", "tasks"]);
     cmd.assert().success();
 
     temp.close()?;
@@ -692,10 +692,18 @@ fn test_concurrent_operations() -> Result<(), Box<dyn std::error::Error>> {
         cmd.args(&[
             "create",
             "project",
+            "--name",
             project,
+            "--description",
             &format!("Description for {}", project),
-            "--company-code",
+            "--company",
             "TECH-CORP",
+            "--code",
+            &format!("{}-PROJECT", project.to_uppercase().replace(" ", "-")),
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-12-31",
         ]);
         cmd.assert().success();
     }
