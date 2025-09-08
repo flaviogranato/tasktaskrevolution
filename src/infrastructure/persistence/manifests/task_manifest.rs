@@ -21,9 +21,10 @@ struct TaskCore {
     category: TaskCategory,
 }
 
-const API_VERSION: &str = "v1";
+const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct TaskManifest {
     pub api_version: String,
     pub kind: String,
@@ -39,6 +40,12 @@ pub struct Metadata {
     pub code: String,
     pub name: String,
     pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_by: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -211,6 +218,9 @@ impl From<AnyTask> for TaskManifest {
                 code: task_core.code,
                 name: task_core.name,
                 description: task_core.description,
+                created_at: None,
+                updated_at: None,
+                created_by: None,
             },
             spec: Spec {
                 project_code: task_core.project_code,

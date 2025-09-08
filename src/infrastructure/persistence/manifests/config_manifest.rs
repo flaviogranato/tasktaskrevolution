@@ -18,7 +18,19 @@ pub struct ConfigManifest {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigMetadata {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
     pub created_at: chrono::DateTime<Utc>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<chrono::DateTime<Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_by: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
@@ -59,7 +71,15 @@ impl ConfigManifest {
         ConfigManifest {
             api_version: API_VERSION.to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata { created_at: Utc::now() },
+            metadata: ConfigMetadata { 
+                id: None,
+                code: None,
+                name: None,
+                description: None,
+                created_at: Utc::now(),
+                updated_at: None,
+                created_by: None,
+            },
             spec: ConfigSpec {
                 manager_name: "Default Manager".to_string(),
                 manager_email: "email@example.com".to_string(),
@@ -90,7 +110,15 @@ impl Convertible<Config> for ConfigManifest {
         ConfigManifest {
             api_version: API_VERSION.to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata { created_at: Utc::now() },
+            metadata: ConfigMetadata { 
+                id: None,
+                code: None,
+                name: None,
+                description: None,
+                created_at: Utc::now(),
+                updated_at: None,
+                created_by: None,
+            },
             spec: ConfigSpec {
                 manager_name: source.manager_name,
                 manager_email: source.manager_email,

@@ -40,6 +40,14 @@ pub struct ResourceMetadata {
     pub email: String,
     pub code: String,
     pub resource_type: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_by: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -210,6 +218,10 @@ impl From<AnyResource> for ResourceManifest {
                 email: email.unwrap_or_default(),
                 code,
                 resource_type,
+                description: None,
+                created_at: None,
+                updated_at: None,
+                created_by: None,
             },
             spec,
         }

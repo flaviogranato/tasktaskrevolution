@@ -25,6 +25,12 @@ pub struct ProjectMetadata {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created_by: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -106,6 +112,9 @@ impl From<AnyProject> for ProjectManifest {
                 code: Some(code),
                 name,
                 description: description.unwrap_or_default(),
+                created_at: None,
+                updated_at: None,
+                created_by: None,
             },
             spec: ProjectSpec {
                 timezone,
