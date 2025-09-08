@@ -1,37 +1,35 @@
 #![allow(dead_code)]
 
-use crate::domain::{
-    resource_management::{any_resource::AnyResource, repository::ResourceRepository},
-    shared::errors::DomainError,
-};
+use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum DeactivateResourceError {
+pub enum DeactivateAppError {
     ResourceNotFound(String),
     ResourceAlreadyDeactivated(String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for DeactivateResourceError {
+impl fmt::Display for DeactivateAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DeactivateResourceError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
-            DeactivateResourceError::ResourceAlreadyDeactivated(code) => {
+            DeactivateAppError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            DeactivateAppError::ResourceAlreadyDeactivated(code) => {
                 write!(f, "Resource '{}' is already deactivated.", code)
             }
-            DeactivateResourceError::DomainError(message) => write!(f, "Domain error: {}", message),
-            DeactivateResourceError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            DeactivateAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            DeactivateAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for DeactivateResourceError {}
+impl std::error::Error for DeactivateAppError {}
 
-impl From<DomainError> for DeactivateResourceError {
-    fn from(err: DomainError) -> Self {
-        DeactivateResourceError::RepositoryError(err)
+impl From<AppError> for DeactivateAppError {
+    fn from(err: AppError) -> Self {
+        DeactivateAppError::RepositoryError(err)
     }
 }
 
@@ -50,16 +48,16 @@ where
         Self { resource_repository }
     }
 
-    pub fn execute(&self, resource_code: &str) -> Result<AnyResource, DeactivateResourceError> {
+    pub fn execute(&self, resource_code: &str) -> Result<AnyResource, DeactivateAppError> {
         // 1. Find the resource from the repository.
         let resource = self
             .resource_repository
             .find_by_code(resource_code)?
-            .ok_or_else(|| DeactivateResourceError::ResourceNotFound(resource_code.to_string()))?;
+            .ok_or_else(|| DeactivateAppError::ResourceNotFound(resource_code.to_string()))?;
 
         // 2. Call the domain logic to deactivate the resource.
         // This consumes the resource and returns a new one in the `Inactive` state.
-        let deactivated_resource = resource.deactivate().map_err(DeactivateResourceError::DomainError)?;
+        let deactivated_resource = resource.deactivate().map_err(DeactivateAppError::AppError)?;
 
         // 3. Save the now-inactive resource back to the repository.
         let saved_resource = self.resource_repository.save(deactivated_resource)?;
@@ -82,14 +80,14 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
             self.resources
                 .borrow_mut()
                 .insert(resource.code().to_string(), resource.clone());
             Ok(resource)
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(self.resources.borrow().get(code).cloned())
         }
 
@@ -98,14 +96,14 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
             unimplemented!()
         }
         fn save_time_off(
@@ -114,7 +112,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _desc: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn save_vacation(
@@ -124,7 +122,7 @@ mod tests {
             _end: &str,
             _comp: bool,
             _hours: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn check_if_layoff_period(
@@ -180,6 +178,6 @@ mod tests {
 
         let result = use_case.execute("RES-NONEXISTENT");
 
-        assert!(matches!(result, Err(DeactivateResourceError::ResourceNotFound(_))));
+        assert!(matches!(result, Err(DeactivateAppError::ResourceNotFound(_))));
     }
 }

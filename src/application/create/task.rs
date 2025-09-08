@@ -1,7 +1,7 @@
 // Priority and Category are used in Task initializations
-use crate::domain::{
-    project_management::repository::ProjectRepository, shared::errors::DomainError, task_management::TaskBuilder,
-};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::task_management::TaskBuilder;
+use crate::application::errors::AppError;
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {
@@ -22,7 +22,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self, args: CreateTaskArgs) -> Result<(), DomainError> {
+    pub fn execute(&self, args: CreateTaskArgs) -> Result<(), AppError> {
         let CreateTaskArgs {
             company_code: _company_code, // TODO: Use this for hierarchical task saving
             project_code,
@@ -36,7 +36,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         let mut project = self
             .repository
             .find_by_code(&project_code)?
-            .ok_or_else(|| DomainError::ProjectNotFound {
+            .ok_or_else(|| AppError::ProjectNotFound {
                 code: project_code.clone(),
             })?;
 
@@ -44,7 +44,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         // This is a placeholder for the future implementation of `project.add_task(...)`
         // For now, we'll keep the builder logic here.
         if start_date > due_date {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "dates".to_string(),
                 message: "Data de início não pode ser posterior à data de vencimento".to_string(),
             });
@@ -57,7 +57,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
             .name(name.clone())
             .code(next_task_code)
             .dates(start_date, due_date)
-            .map_err(|e| DomainError::ValidationError {
+            .map_err(|e| AppError::ValidationError {
                 field: "task".to_string(),
                 message: e.to_string(),
             })?;
@@ -67,7 +67,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
                 .validate_vacations(&[])
                 .unwrap()
                 .build()
-                .map_err(|e| DomainError::ValidationError {
+                .map_err(|e| AppError::ValidationError {
                     field: "task".to_string(),
                     message: e.to_string(),
                 })
@@ -79,7 +79,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
                 .validate_vacations(&[])
                 .unwrap()
                 .build()
-                .map_err(|e| DomainError::ValidationError {
+                .map_err(|e| AppError::ValidationError {
                     field: "task".to_string(),
                     message: e.to_string(),
                 })
@@ -130,9 +130,9 @@ mod test {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             if self.should_fail {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
                 });
@@ -141,18 +141,18 @@ mod test {
             Ok(())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
 
         // Unimplemented methods
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }

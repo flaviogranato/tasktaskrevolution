@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 
 /// A trait for objects that can validate themselves
 pub trait Validatable {
     /// Validate the object and return a result
-    fn validate(&self) -> Result<(), DomainError>;
+    fn validate(&self) -> Result<(), AppError>;
 
     /// Check if the object is valid without returning an error
     fn is_valid(&self) -> bool {
@@ -24,7 +24,7 @@ pub trait Validatable {
 /// A trait for objects that can validate other objects
 pub trait Validator<T> {
     /// Validate the given object
-    fn validate(&self, item: &T) -> Result<(), DomainError>;
+    fn validate(&self, item: &T) -> Result<(), AppError>;
 
     /// Check if the given object is valid
     fn is_valid(&self, item: &T) -> bool {
@@ -62,7 +62,7 @@ impl<T> CompositeValidator<T> {
 }
 
 impl<T> Validator<T> for CompositeValidator<T> {
-    fn validate(&self, item: &T) -> Result<(), DomainError> {
+    fn validate(&self, item: &T) -> Result<(), AppError> {
         for validator in &self.validators {
             validator.validate(item)?;
         }
@@ -78,7 +78,7 @@ impl<T> Default for CompositeValidator<T> {
 
 // Convenience implementation for any type that implements Validatable
 impl<T: Validatable> Validator<T> for T {
-    fn validate(&self, _item: &T) -> Result<(), DomainError> {
+    fn validate(&self, _item: &T) -> Result<(), AppError> {
         self.validate()
     }
 }
@@ -86,7 +86,7 @@ impl<T: Validatable> Validator<T> for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::errors::DomainError;
+    use crate::application::errors::AppError;
 
     // Mock structs for testing
     #[derive(Debug, Clone, PartialEq)]
@@ -107,11 +107,11 @@ mod tests {
     }
 
     impl Validatable for MockValidatable {
-        fn validate(&self) -> Result<(), DomainError> {
+        fn validate(&self) -> Result<(), AppError> {
             if self.is_valid {
                 Ok(())
             } else {
-                Err(DomainError::ValidationError {
+                Err(AppError::ValidationError {
                     field: "validatable".to_string(),
                     message: format!("Validation failed for {}", self.name),
                 })
@@ -125,9 +125,9 @@ mod tests {
     struct CompositeTestValidator;
 
     impl Validator<MockValidatable> for NameValidator {
-        fn validate(&self, item: &MockValidatable) -> Result<(), DomainError> {
+        fn validate(&self, item: &MockValidatable) -> Result<(), AppError> {
             if item.name.is_empty() {
-                Err(DomainError::ValidationError {
+                Err(AppError::ValidationError {
                     field: "name".to_string(),
                     message: "Name cannot be empty".to_string(),
                 })
@@ -138,9 +138,9 @@ mod tests {
     }
 
     impl Validator<MockValidatable> for ValueValidator {
-        fn validate(&self, item: &MockValidatable) -> Result<(), DomainError> {
+        fn validate(&self, item: &MockValidatable) -> Result<(), AppError> {
             if item.value < 0 {
-                Err(DomainError::ValidationError {
+                Err(AppError::ValidationError {
                     field: "value".to_string(),
                     message: "Value must be non-negative".to_string(),
                 })
@@ -151,9 +151,9 @@ mod tests {
     }
 
     impl Validator<MockValidatable> for CompositeTestValidator {
-        fn validate(&self, item: &MockValidatable) -> Result<(), DomainError> {
+        fn validate(&self, item: &MockValidatable) -> Result<(), AppError> {
             if item.name == "invalid" {
-                Err(DomainError::ValidationError {
+                Err(AppError::ValidationError {
                     field: "name".to_string(),
                     message: "Special invalid name".to_string(),
                 })

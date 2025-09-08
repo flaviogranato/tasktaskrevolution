@@ -1,4 +1,6 @@
 use crate::domain::{
+    
+    
     project_management::repository::ProjectRepository, resource_management::repository::ResourceRepository,
 };
 use csv::Writer;
@@ -69,15 +71,13 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        project_management::{AnyProject, builder::ProjectBuilder},
-        resource_management::{
-            AnyResource,
-            resource::{Period, PeriodType, Resource},
-            state::Available,
-        },
-        shared::errors::DomainError,
+    use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
+    use crate::domain::resource_management::{
+        AnyResource,
+        resource::{Period, PeriodType, Resource},
+        state::Available,
     };
+    use crate::application::errors::AppError;
     use chrono::{Local, TimeZone};
 
     // --- Mocks ---
@@ -86,23 +86,23 @@ mod tests {
         project: AnyProject,
     }
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
             unimplemented!()
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             Ok(self.project.clone())
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             Ok("proj-1".to_string())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             if self.project.code() == code {
                 Ok(Some(self.project.clone()))
             } else {
                 Ok(None)
             }
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             Ok(vec![self.project.clone()])
         }
     }
@@ -111,13 +111,13 @@ mod tests {
         resources: Vec<AnyResource>,
     }
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.clone())
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)
         }
 
@@ -126,7 +126,7 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
         fn save_time_off(
@@ -135,7 +135,7 @@ mod tests {
             _h: u32,
             _d: &str,
             _desc: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn save_vacation(
@@ -145,13 +145,13 @@ mod tests {
             _e: &str,
             _i: bool,
             _c: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn check_if_layoff_period(&self, _s: &chrono::DateTime<Local>, _e: &chrono::DateTime<Local>) -> bool {
             unimplemented!()
         }
-        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }

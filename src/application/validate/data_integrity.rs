@@ -4,10 +4,10 @@ use super::specifications::{
 };
 use super::types::ValidationResult;
 use crate::domain::shared::specification::{AndSpecification, Specification};
-use crate::domain::{
-    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository, shared::errors::DomainError,
-};
+use crate::domain::company_management::repository::CompanyRepository;
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::application::errors::AppError;
 
 pub struct ValidateDataIntegrityUseCase<'a, P, R, C>
 where
@@ -34,7 +34,7 @@ where
         }
     }
 
-    pub fn execute(&self) -> Result<Vec<ValidationResult>, DomainError> {
+    pub fn execute(&self) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         // Load all entities
@@ -53,7 +53,7 @@ where
     fn validate_projects_with_specifications(
         &self,
         projects: &[crate::domain::project_management::any_project::AnyProject],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         // Create composite specification for projects
@@ -80,7 +80,7 @@ where
     fn validate_resources_with_specifications(
         &self,
         resources: &[crate::domain::resource_management::any_resource::AnyResource],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         let resource_spec = ValidResourceVacationSpec;
@@ -103,7 +103,7 @@ where
     fn validate_companies_with_specifications(
         &self,
         companies: &[crate::domain::company_management::company::Company],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         let company_spec = ValidCompanySettingsSpec;

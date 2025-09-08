@@ -1,6 +1,8 @@
 #![allow(unused_imports)]
 use crate::domain::task_management::{Category, Priority};
-use crate::domain::{project_management::repository::ProjectRepository, task_management::AnyTask};
+use crate::domain::{
+    
+    project_management::repository::ProjectRepository, task_management::AnyTask};
 use csv::Writer;
 use std::error::Error;
 use std::io;
@@ -109,14 +111,12 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        project_management::{AnyProject, builder::ProjectBuilder},
-        shared::errors::DomainError,
-        task_management::{
-            Task,
-            state::{Completed, InProgress},
-        },
+    use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
+    use crate::domain::task_management::{
+        Task,
+        state::{Completed, InProgress},
     };
+    use crate::application::errors::AppError;
     use chrono::NaiveDate;
     use uuid7::uuid7;
 
@@ -126,19 +126,19 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             Ok(self.project.clone())
         }
-        fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -501,22 +501,22 @@ mod tests {
         struct ErrorMockProjectRepository;
 
         impl ProjectRepository for ErrorMockProjectRepository {
-            fn load(&self) -> Result<AnyProject, DomainError> {
-                Err(DomainError::ValidationError {
+            fn load(&self) -> Result<AnyProject, AppError> {
+                Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Repository error".to_string(),
                 })
             }
-            fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
+            fn save(&self, _project: AnyProject) -> Result<(), AppError> {
                 unimplemented!()
             }
-            fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+            fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
                 unimplemented!()
             }
-            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
+            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
                 unimplemented!()
             }
-            fn get_next_code(&self) -> Result<String, DomainError> {
+            fn get_next_code(&self) -> Result<String, AppError> {
                 unimplemented!()
             }
         }

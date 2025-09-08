@@ -1,33 +1,31 @@
 #![allow(dead_code)]
 
-use crate::domain::{
-    resource_management::{any_resource::AnyResource, repository::ResourceRepository},
-    shared::errors::DomainError,
-};
+use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum UpdateResourceError {
+pub enum UpdateAppError {
     ResourceNotFound(String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for UpdateResourceError {
+impl fmt::Display for UpdateAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            UpdateResourceError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
-            UpdateResourceError::DomainError(message) => write!(f, "Domain error: {}", message),
-            UpdateResourceError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            UpdateAppError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            UpdateAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            UpdateAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for UpdateResourceError {}
+impl std::error::Error for UpdateAppError {}
 
-impl From<DomainError> for UpdateResourceError {
-    fn from(err: DomainError) -> Self {
-        UpdateResourceError::RepositoryError(err)
+impl From<AppError> for UpdateAppError {
+    fn from(err: AppError) -> Self {
+        UpdateAppError::RepositoryError(err)
     }
 }
 
@@ -53,12 +51,12 @@ where
         Self { resource_repository }
     }
 
-    pub fn execute(&self, resource_code: &str, args: UpdateResourceArgs) -> Result<AnyResource, UpdateResourceError> {
+    pub fn execute(&self, resource_code: &str, args: UpdateResourceArgs) -> Result<AnyResource, UpdateAppError> {
         // 1. Load the resource aggregate.
         let mut resource = self
             .resource_repository
             .find_by_code(resource_code)?
-            .ok_or_else(|| UpdateResourceError::ResourceNotFound(resource_code.to_string()))?;
+            .ok_or_else(|| UpdateAppError::ResourceNotFound(resource_code.to_string()))?;
 
         // 2. Update the fields on the aggregate.
         // In a more complex scenario, this would be a method on the `AnyResource`
@@ -95,14 +93,14 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
             self.resources
                 .borrow_mut()
                 .insert(resource.code().to_string(), resource.clone());
             Ok(resource)
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(self.resources.borrow().get(code).cloned())
         }
 
@@ -111,15 +109,15 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
         // Other methods are not needed for this test.
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
             unimplemented!()
         }
         fn save_time_off(
@@ -128,7 +126,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _desc: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn save_vacation(
@@ -138,7 +136,7 @@ mod tests {
             _end: &str,
             _comp: bool,
             _hours: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn check_if_layoff_period(
@@ -203,6 +201,6 @@ mod tests {
 
         let result = use_case.execute("DEV-NONEXISTENT", args);
 
-        assert!(matches!(result, Err(UpdateResourceError::ResourceNotFound(_))));
+        assert!(matches!(result, Err(UpdateAppError::ResourceNotFound(_))));
     }
 }

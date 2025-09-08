@@ -2,7 +2,7 @@
 
 use crate::domain::company_settings::Config;
 use crate::domain::company_settings::repository::ConfigRepository;
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 use std::boxed::Box;
 
 /// Data structure for initializing a manager/consultant
@@ -27,7 +27,7 @@ impl InitManagerUseCase {
     }
 
     /// Execute the initialization of a manager/consultant
-    pub fn execute(&self, data: InitManagerData) -> Result<Config, DomainError> {
+    pub fn execute(&self, data: InitManagerData) -> Result<Config, AppError> {
         // Validate input data
         self.validate_input(&data)?;
 
@@ -44,7 +44,7 @@ impl InitManagerUseCase {
         use crate::domain::shared::convertable::Convertible;
         use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
         let config_manifest = <ConfigManifest as Convertible<Config>>::from(config.clone());
-        let current_dir = std::env::current_dir().map_err(|e| DomainError::ValidationError {
+        let current_dir = std::env::current_dir().map_err(|e| AppError::ValidationError {
             field: "path".to_string(),
             message: e.to_string(),
         })?;
@@ -54,23 +54,23 @@ impl InitManagerUseCase {
     }
 
     /// Validate input data
-    fn validate_input(&self, data: &InitManagerData) -> Result<(), DomainError> {
+    fn validate_input(&self, data: &InitManagerData) -> Result<(), AppError> {
         if data.name.trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "name".to_string(),
                 message: "Manager name cannot be empty".to_string(),
             });
         }
 
         if data.company_name.trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "company_name".to_string(),
                 message: "Company name cannot be empty".to_string(),
             });
         }
 
         if !self.is_valid_email(&data.email) {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "email".to_string(),
                 message: "Invalid email format".to_string(),
             });
@@ -83,10 +83,10 @@ impl InitManagerUseCase {
     }
 
     /// Validate work hours format
-    fn validate_work_hours(&self, start: &str, end: &str) -> Result<(), DomainError> {
+    fn validate_work_hours(&self, start: &str, end: &str) -> Result<(), AppError> {
         // Basic validation - just check if they're not empty for now
         if start.trim().is_empty() || end.trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "work_hours".to_string(),
                 message: "Work hours cannot be empty".to_string(),
             });
@@ -134,26 +134,26 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), DomainError> {
+        fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), AppError> {
             if self.should_fail {
-                return Err(DomainError::Io {
+                return Err(AppError::IoError {
                     operation: "save".to_string(),
-                    source: std::io::Error::new(std::io::ErrorKind::Other, "Database connection failed"),
+                    details: "Database connection failed".to_string(),
                 });
             }
             Ok(())
         }
 
-        fn create_repository_dir(&self, _path: PathBuf) -> Result<(), DomainError> {
+        fn create_repository_dir(&self, _path: PathBuf) -> Result<(), AppError> {
             Ok(())
         }
 
-        fn load(&self) -> Result<(Config, PathBuf), DomainError> {
+        fn load(&self) -> Result<(Config, PathBuf), AppError> {
             self.saved_config
                 .borrow()
                 .clone()
                 .map(|c| (c, PathBuf::from("/tmp")))
-                .ok_or(DomainError::ValidationError {
+                .ok_or(AppError::ValidationError {
                     field: "config".to_string(),
                     message: "Configuration missing".to_string(),
                 })

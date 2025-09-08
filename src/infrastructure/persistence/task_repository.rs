@@ -1,12 +1,8 @@
 #![allow(dead_code)]
 
-use crate::{
-    domain::{
-        shared::errors::DomainError,
-        task_management::{AnyTask, repository::TaskRepository},
-    },
-    infrastructure::persistence::manifests::task_manifest::TaskManifest,
-};
+use crate::domain::task_management::{AnyTask, repository::TaskRepository};
+use crate::application::errors::AppError;
+use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
 use glob::glob;
 use serde_yaml;
 use std::{
@@ -60,85 +56,81 @@ impl FileTaskRepository {
 }
 
 impl TaskRepository for FileTaskRepository {
-    fn save(&self, task: AnyTask) -> Result<AnyTask, DomainError> {
+    fn save(&self, task: AnyTask) -> Result<AnyTask, AppError> {
         let file_path = self.get_task_file_path(task.name());
         let task_manifest = TaskManifest::from(task.clone());
-        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::Serialization {
+        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: format!("Error serializing task: {}", e),
-            source: Some(Box::new(e)),
         })?;
 
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::Io {
+        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| AppError::IoError {
             operation: "create directory".to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
-        fs::write(&file_path, yaml).map_err(|e| DomainError::IoWithPath {
+        fs::write(&file_path, yaml).map_err(|e| AppError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file_path.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
         Ok(task)
     }
 
     /// Save task in the new hierarchical structure
-    fn save_in_hierarchy(&self, task: AnyTask, company_code: &str, project_code: &str) -> Result<AnyTask, DomainError> {
+    fn save_in_hierarchy(&self, task: AnyTask, company_code: &str, project_code: &str) -> Result<AnyTask, AppError> {
         let file_path = self.get_project_task_path(company_code, project_code, task.name());
         let task_manifest = TaskManifest::from(task.clone());
-        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::Serialization {
+        let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: format!("Error serializing task: {}", e),
-            source: Some(Box::new(e)),
         })?;
 
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::Io {
+        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| AppError::IoError {
             operation: "create directory".to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
-        fs::write(&file_path, yaml).map_err(|e| DomainError::IoWithPath {
+        fs::write(&file_path, yaml).map_err(|e| AppError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file_path.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
         Ok(task)
     }
 
-    fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
+    fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
         // Search in new hierarchical structure: companies/*/projects/*/tasks/*.yaml
         let pattern = self.base_path.join("companies/*/projects/*/tasks/*.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
         let mut tasks = Vec::new();
 
         for entry in walker {
-            let entry = entry.map_err(|e| DomainError::ValidationError {
+            let entry = entry.map_err(|e| AppError::ValidationError {
                 field: "glob entry".to_string(),
                 message: e.to_string(),
             })?;
             let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoWithPath {
+            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: file_path.to_string_lossy().to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
 
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| DomainError::Serialization {
+            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: format!("Error deserializing task: {}", e),
-                source: None,
             })?;
 
             tasks.push(
-                AnyTask::try_from(task_manifest).map_err(|e| DomainError::Serialization {
+                AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {
                     format: "YAML".to_string(),
                     details: format!("Error converting manifest: {}", e),
-                    source: None,
                 })?,
             );
         }
@@ -147,42 +139,40 @@ impl TaskRepository for FileTaskRepository {
     }
 
     /// Find all tasks for a specific project
-    fn find_all_by_project(&self, company_code: &str, project_code: &str) -> Result<Vec<AnyTask>, DomainError> {
+    fn find_all_by_project(&self, company_code: &str, project_code: &str) -> Result<Vec<AnyTask>, AppError> {
         let tasks_path = self.get_project_tasks_path(company_code, project_code);
         if !tasks_path.exists() {
             return Ok(Vec::new());
         }
 
         let pattern = tasks_path.join("*.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
         let mut tasks = Vec::new();
 
         for entry in walker {
-            let entry = entry.map_err(|e| DomainError::ValidationError {
+            let entry = entry.map_err(|e| AppError::ValidationError {
                 field: "glob entry".to_string(),
                 message: e.to_string(),
             })?;
             let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoWithPath {
+            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: file_path.to_string_lossy().to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
 
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| DomainError::Serialization {
+            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: format!("Error deserializing task: {}", e),
-                source: None,
             })?;
 
             tasks.push(
-                AnyTask::try_from(task_manifest).map_err(|e| DomainError::Serialization {
+                AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {
                     format: "YAML".to_string(),
                     details: format!("Error converting manifest: {}", e),
-                    source: None,
                 })?,
             );
         }
@@ -190,7 +180,7 @@ impl TaskRepository for FileTaskRepository {
         Ok(tasks)
     }
 
-    fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, DomainError> {
+    fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
         // Since tasks are saved by name, we need to search through all tasks
         // to find one with the matching code
         let all_tasks = self.find_all()?;
@@ -202,7 +192,7 @@ impl TaskRepository for FileTaskRepository {
         Ok(None)
     }
 
-    fn find_by_project(&self, project_code: &str) -> Result<Vec<AnyTask>, DomainError> {
+    fn find_by_project(&self, project_code: &str) -> Result<Vec<AnyTask>, AppError> {
         let all_tasks = self.find_all()?;
         let project_tasks: Vec<AnyTask> = all_tasks
             .into_iter()
@@ -211,7 +201,7 @@ impl TaskRepository for FileTaskRepository {
         Ok(project_tasks)
     }
 
-    fn get_next_code(&self, project_code: &str) -> Result<String, DomainError> {
+    fn get_next_code(&self, project_code: &str) -> Result<String, AppError> {
         let all_tasks = self.find_all()?;
         let project_tasks: Vec<&AnyTask> = all_tasks
             .iter()

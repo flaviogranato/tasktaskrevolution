@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid7;
 
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 
 /// Represents a company entity in the system.
 ///
@@ -83,16 +83,16 @@ impl std::fmt::Display for CompanyStatus {
 
 impl Company {
     /// Creates a new company instance.
-    pub fn new(code: String, name: String, created_by: String) -> Result<Self, DomainError> {
+    pub fn new(code: String, name: String, created_by: String) -> Result<Self, AppError> {
         if code.trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "code".to_string(),
                 message: "Company code cannot be empty".to_string(),
             });
         }
 
         if name.trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "name".to_string(),
                 message: "Company name cannot be empty".to_string(),
             });
@@ -120,9 +120,9 @@ impl Company {
     }
 
     /// Updates the company name.
-    pub fn update_name(&mut self, new_name: String) -> Result<(), DomainError> {
+    pub fn update_name(&mut self, new_name: String) -> Result<(), AppError> {
         if new_name.trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "name".to_string(),
                 message: "Company name cannot be empty".to_string(),
             });

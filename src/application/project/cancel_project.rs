@@ -1,35 +1,33 @@
 #![allow(dead_code)]
 
-use crate::domain::{
-    project_management::{any_project::AnyProject, repository::ProjectRepository},
-    shared::errors::DomainError,
-};
+use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum CancelProjectError {
+pub enum CancelAppError {
     ProjectNotFound(String),
     ProjectAlreadyCancelled(String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for CancelProjectError {
+impl fmt::Display for CancelAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            CancelProjectError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            CancelProjectError::ProjectAlreadyCancelled(code) => write!(f, "Project '{}' is already cancelled.", code),
-            CancelProjectError::DomainError(message) => write!(f, "Domain error: {}", message),
-            CancelProjectError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            CancelAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            CancelAppError::ProjectAlreadyCancelled(code) => write!(f, "Project '{}' is already cancelled.", code),
+            CancelAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            CancelAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for CancelProjectError {}
+impl std::error::Error for CancelAppError {}
 
-impl From<DomainError> for CancelProjectError {
-    fn from(err: DomainError) -> Self {
-        CancelProjectError::RepositoryError(err)
+impl From<AppError> for CancelAppError {
+    fn from(err: AppError) -> Self {
+        CancelAppError::RepositoryError(err)
     }
 }
 
@@ -48,15 +46,15 @@ where
         Self { project_repository }
     }
 
-    pub fn execute(&self, project_code: &str) -> Result<AnyProject, CancelProjectError> {
+    pub fn execute(&self, project_code: &str) -> Result<AnyProject, CancelAppError> {
         // 1. Load the project aggregate.
         let project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| CancelProjectError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| CancelAppError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Delegate the cancellation to the project aggregate.
-        let cancelled_project = project.cancel().map_err(CancelProjectError::DomainError)?;
+        let cancelled_project = project.cancel().map_err(CancelAppError::AppError)?;
 
         // 3. Save the updated project aggregate.
         self.project_repository.save(cancelled_project.clone())?;
@@ -79,20 +77,20 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -118,7 +116,7 @@ mod tests {
         let use_case = CancelProjectUseCase::new(project_repo);
 
         let result = use_case.execute("PROJ-NONEXISTENT");
-        assert!(matches!(result, Err(CancelProjectError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(CancelAppError::ProjectNotFound(_))));
     }
 
     // TODO: Enable this test once `AnyProject::cancel` is implemented.

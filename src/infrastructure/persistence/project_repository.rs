@@ -1,11 +1,7 @@
-use crate::{
-    domain::{
-        project_management::{AnyProject, repository::ProjectRepository},
-        shared::errors::DomainError,
-        task_management::any_task::AnyTask,
-    },
-    infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest},
-};
+use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
+use crate::domain::task_management::any_task::AnyTask;
+use crate::application::errors::AppError;
+use crate::infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest};
 use globwalk::glob;
 use serde_yaml;
 use std::error::Error;
@@ -66,23 +62,22 @@ impl FileProjectRepository {
     }
 
     /// Loads a single project from a specific project directory path.
-    pub fn load_from_path(&self, project_dir: &Path) -> Result<AnyProject, DomainError> {
+    pub fn load_from_path(&self, project_dir: &Path) -> Result<AnyProject, AppError> {
         let manifest_path = project_dir.join("project.yaml");
         if !manifest_path.exists() {
-            return Err(DomainError::ProjectNotFound {
+            return Err(AppError::ProjectNotFound {
                 code: "unknown".to_string(),
             });
         }
         let manifest = self
             .load_manifest(&manifest_path)
-            .map_err(|e| DomainError::ValidationError {
+            .map_err(|e| AppError::ValidationError {
                 field: "manifest".to_string(),
                 message: format!("Failed to load project manifest: {e}"),
             })?;
-        let mut project = AnyProject::try_from(manifest).map_err(|e| DomainError::Serialization {
+        let mut project = AnyProject::try_from(manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: format!("Error converting project manifest: {e}"),
-            source: None,
         })?;
         self.load_tasks_for_project(&mut project, &manifest_path)?;
         Ok(project)
@@ -90,7 +85,7 @@ impl FileProjectRepository {
 
     /// Loads a specific project by company code and project code
     #[allow(dead_code)]
-    pub fn load_by_codes(&self, company_code: &str, project_code: &str) -> Result<AnyProject, DomainError> {
+    pub fn load_by_codes(&self, company_code: &str, project_code: &str) -> Result<AnyProject, AppError> {
         let project_path = self.get_project_path(company_code, project_code);
         self.load_from_path(&project_path)
     }
@@ -113,8 +108,8 @@ impl FileProjectRepository {
         &self,
         manifest: ProjectManifest,
         company_code: &str,
-    ) -> Result<AnyProject, DomainError> {
-        let code = manifest.metadata.code.ok_or_else(|| DomainError::ValidationError {
+    ) -> Result<AnyProject, AppError> {
+        let code = manifest.metadata.code.ok_or_else(|| AppError::ValidationError {
             field: "code".to_string(),
             message: "Project code is missing in manifest".to_string(),
         })?;
@@ -193,34 +188,32 @@ impl FileProjectRepository {
     }
 
     /// Loads tasks from the `tasks` subdirectory of a project and adds them.
-    fn load_tasks_for_project(&self, project: &mut AnyProject, project_path: &Path) -> Result<(), DomainError> {
+    fn load_tasks_for_project(&self, project: &mut AnyProject, project_path: &Path) -> Result<(), AppError> {
         let tasks_dir = project_path.parent().unwrap().join("tasks");
         if !tasks_dir.exists() {
             return Ok(());
         }
 
         let pattern = tasks_dir.join("*.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
 
         for entry in walker.flatten() {
             let task_path = entry.path();
-            let yaml = fs::read_to_string(task_path).map_err(|e| DomainError::IoWithPath {
+            let yaml = fs::read_to_string(task_path).map_err(|e| AppError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: task_path.to_string_lossy().to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| DomainError::Serialization {
+            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: format!("Error deserializing task: {e}"),
-                source: None,
             })?;
-            let task = AnyTask::try_from(task_manifest).map_err(|e| DomainError::Serialization {
+            let task = AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: format!("Error converting task manifest: {e}"),
-                source: None,
             })?;
             project.add_task(task);
         }
@@ -232,48 +225,46 @@ impl FileProjectRepository {
 impl ProjectRepository for FileProjectRepository {
     /// Salva um projeto.
     /// Cria um diretório com o nome do projeto e salva um arquivo `project.yaml` dentro dele.
-    fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+    fn save(&self, project: AnyProject) -> Result<(), AppError> {
         let project_dir = self.get_project_path(project.company_code(), project.code());
 
         // Save project manifest
-        fs::create_dir_all(&project_dir).map_err(|e| DomainError::IoWithPath {
+        fs::create_dir_all(&project_dir).map_err(|e| AppError::IoErrorWithPath {
             operation: "create directory".to_string(),
             path: project_dir.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
         let manifest_path = project_dir.join("project.yaml");
         let project_manifest = ProjectManifest::from(project.clone());
-        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| DomainError::Serialization {
+        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: format!("Error serializing project: {e}"),
-            source: None,
         })?;
-        fs::write(&manifest_path, yaml).map_err(|e| DomainError::IoWithPath {
+        fs::write(&manifest_path, yaml).map_err(|e| AppError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: manifest_path.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
         // Save tasks
         let tasks_dir = project_dir.join("tasks");
-        fs::create_dir_all(&tasks_dir).map_err(|e| DomainError::IoWithPath {
+        fs::create_dir_all(&tasks_dir).map_err(|e| AppError::IoErrorWithPath {
             operation: "create directory".to_string(),
             path: tasks_dir.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
         for task in project.tasks().values() {
             let task_manifest = TaskManifest::from(task.clone());
-            let task_yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::Serialization {
+            let task_yaml = serde_yaml::to_string(&task_manifest).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: format!("Error serializing task: {e}"),
-                source: None,
             })?;
             let task_path = tasks_dir.join(format!("{}.yaml", task.code()));
-            fs::write(&task_path, task_yaml).map_err(|e| DomainError::IoWithPath {
+            fs::write(&task_path, task_yaml).map_err(|e| AppError::IoErrorWithPath {
                 operation: "file write".to_string(),
                 path: task_path.to_string_lossy().to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
         }
 
@@ -282,9 +273,9 @@ impl ProjectRepository for FileProjectRepository {
 
     /// Carrega um projeto.
     /// `path` deve ser o caminho para o diretório do projeto.
-    fn load(&self) -> Result<AnyProject, DomainError> {
+    fn load(&self) -> Result<AnyProject, AppError> {
         let pattern = self.base_path.join("**/project.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
+        let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
@@ -293,25 +284,24 @@ impl ProjectRepository for FileProjectRepository {
             let manifest_path = entry.path();
             let manifest = self
                 .load_manifest(manifest_path)
-                .map_err(|e| DomainError::ValidationError {
+                .map_err(|e| AppError::ValidationError {
                     field: "manifest".to_string(),
                     message: format!("Failed to load project manifest: {e}"),
                 })?;
-            let mut project = AnyProject::try_from(manifest).map_err(|e| DomainError::Serialization {
+            let mut project = AnyProject::try_from(manifest).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: format!("Error converting project manifest: {e}"),
-                source: None,
             })?;
             self.load_tasks_for_project(&mut project, manifest_path)?;
             Ok(project)
         } else {
-            Err(DomainError::ProjectNotFound {
+            Err(AppError::ProjectNotFound {
                 code: "unknown".to_string(),
             })
         }
     }
 
-    fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+    fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
         let mut projects = Vec::new();
         let mut processed_paths = std::collections::HashSet::new();
 
@@ -352,7 +342,7 @@ impl ProjectRepository for FileProjectRepository {
         Ok(projects)
     }
 
-    fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+    fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
         // This is not the most performant implementation, but it is correct.
         // It avoids duplicating the task loading logic.
         let projects = self.find_all()?;
@@ -364,7 +354,7 @@ impl ProjectRepository for FileProjectRepository {
         Ok(None)
     }
 
-    fn get_next_code(&self) -> Result<String, DomainError> {
+    fn get_next_code(&self) -> Result<String, AppError> {
         // Use timestamp-based approach for better uniqueness in concurrent scenarios
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

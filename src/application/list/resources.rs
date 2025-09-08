@@ -1,5 +1,5 @@
 use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 
 pub struct ListResourcesUseCase<R: ResourceRepository> {
     repository: R,
@@ -10,7 +10,7 @@ impl<R: ResourceRepository> ListResourcesUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self) -> Result<Vec<AnyResource>, DomainError> {
+    pub fn execute(&self) -> Result<Vec<AnyResource>, AppError> {
         self.repository.find_all()
     }
 }
@@ -25,10 +25,10 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.clone())
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)
         }
 
@@ -37,11 +37,11 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
-        fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn save_time_off(
@@ -50,7 +50,7 @@ mod tests {
             _h: u32,
             _d: &str,
             _desc: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn save_vacation(
@@ -60,7 +60,7 @@ mod tests {
             _e: &str,
             _i: bool,
             _c: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn check_if_layoff_period(
@@ -70,7 +70,7 @@ mod tests {
         ) -> bool {
             unimplemented!()
         }
-        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }

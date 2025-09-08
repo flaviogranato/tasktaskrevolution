@@ -1,7 +1,10 @@
 use crate::domain::{
+    
+    
     company_settings::{Config, repository::ConfigRepository},
-    shared::{convertable::Convertible, errors::DomainError},
+    shared::convertable::Convertible,
 };
+use crate::application::errors::AppError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use serde_yaml::to_string;
 use std::{fs, path::PathBuf};
@@ -30,54 +33,52 @@ impl Default for FileConfigRepository {
 }
 
 impl ConfigRepository for FileConfigRepository {
-    fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), DomainError> {
-        let config_yaml = to_string(&config).map_err(|e| DomainError::Serialization {
+    fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), AppError> {
+        let config_yaml = to_string(&config).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: e.to_string(),
-            source: Some(Box::new(e)),
         })?;
         let file = path.join("config.yaml");
-        fs::write(&file, config_yaml).map_err(|e| DomainError::IoWithPath {
+        fs::write(&file, config_yaml).map_err(|e| AppError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
         Ok(())
     }
 
-    fn create_repository_dir(&self, path: PathBuf) -> Result<(), DomainError> {
+    fn create_repository_dir(&self, path: PathBuf) -> Result<(), AppError> {
         if !path.exists() {
-            fs::create_dir(&path).map_err(|e| DomainError::IoWithPath {
+            fs::create_dir(&path).map_err(|e| AppError::IoErrorWithPath {
                 operation: "create directory".to_string(),
                 path: path.to_string_lossy().to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
             println!("Configuration repository created.");
         }
         Ok(())
     }
 
-    fn load(&self) -> Result<(Config, PathBuf), DomainError> {
-        let mut current_path = self.base_path.canonicalize().map_err(|e| DomainError::IoWithPath {
+    fn load(&self) -> Result<(Config, PathBuf), AppError> {
+        let mut current_path = self.base_path.canonicalize().map_err(|e| AppError::IoErrorWithPath {
             operation: "canonicalize path".to_string(),
             path: self.base_path.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
         loop {
             let config_path = current_path.join("config.yaml");
 
             if config_path.exists() {
-                let file_content = fs::read_to_string(&config_path).map_err(|e| DomainError::IoWithPath {
+                let file_content = fs::read_to_string(&config_path).map_err(|e| AppError::IoErrorWithPath {
                     operation: "file read".to_string(),
                     path: config_path.to_string_lossy().to_string(),
-                    source: e,
+                    details: e.to_string(),
                 })?;
                 let manifest: ConfigManifest =
-                    serde_yaml::from_str(&file_content).map_err(|e| DomainError::Serialization {
+                    serde_yaml::from_str(&file_content).map_err(|e| AppError::SerializationError {
                         format: "YAML".to_string(),
                         details: e.to_string(),
-                        source: Some(Box::new(e)),
                     })?;
 
                 return Ok((manifest.to(), current_path));
@@ -88,7 +89,7 @@ impl ConfigRepository for FileConfigRepository {
             }
         }
 
-        Err(DomainError::ValidationError {
+        Err(AppError::ValidationError {
             field: "config file".to_string(),
             message: "Não foi possível encontrar o arquivo 'config.yaml' nos diretórios pais.".to_string(),
         })

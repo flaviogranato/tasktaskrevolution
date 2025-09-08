@@ -7,7 +7,7 @@ use chrono::{Datelike, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use super::advanced_dependencies::{AdvancedDependencyGraph, DependencyType};
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 
 // ============================================================================
 // ENUMS
@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /// Converte um AdvancedDependencyGraph em GanttChart
-    pub fn from_dependency_graph(graph: &AdvancedDependencyGraph, config: GanttConfig) -> Result<Self, DomainError> {
+    pub fn from_dependency_graph(graph: &AdvancedDependencyGraph, config: GanttConfig) -> Result<Self, AppError> {
         let start_date = config.start_date;
         let end_date = config.end_date;
         let mut gantt = GanttChart::new(config);

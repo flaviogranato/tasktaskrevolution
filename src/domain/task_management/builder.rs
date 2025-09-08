@@ -1,7 +1,7 @@
 use super::category::Category;
 use super::priority::Priority;
 use super::state::Planned;
-use super::task::{Task, TaskError};
+use super::task::{Task, AppError};
 use chrono::NaiveDate;
 use std::marker::PhantomData;
 use uuid7::{Uuid, uuid7};
@@ -116,9 +116,9 @@ impl TaskBuilder<WithName> {
     }
 
     /// Sets the start and due dates for the task, validating that the range is valid.
-    pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, TaskError> {
+    pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, AppError> {
         if start > due {
-            return Err(TaskError::InvalidDateRange);
+            return Err(AppError::InvalidDateRange);
         }
 
         Ok(TaskBuilder {
@@ -149,14 +149,14 @@ impl TaskBuilder<WithDates> {
     pub fn validate_vacations(
         self,
         resource_vacations: &[(String, NaiveDate, NaiveDate)],
-    ) -> Result<TaskBuilder<Ready>, TaskError> {
+    ) -> Result<TaskBuilder<Ready>, AppError> {
         let start = self.start_date.unwrap();
         let due = self.due_date.unwrap();
 
         for res in &self.assigned_resources {
             for (vac_res, vac_start, vac_end) in resource_vacations {
                 if res == vac_res && start <= *vac_end && due >= *vac_start {
-                    return Err(TaskError::ResourceOnVacation(res.clone()));
+                    return Err(AppError::ResourceOnVacation(res.clone()));
                 }
             }
         }
@@ -179,14 +179,14 @@ impl TaskBuilder<WithDates> {
 #[allow(dead_code)]
 impl TaskBuilder<Ready> {
     /// Builds the final `Task<Planned>` instance.
-    pub fn build(self) -> Result<Task<Planned>, TaskError> {
+    pub fn build(self) -> Result<Task<Planned>, AppError> {
         Ok(Task {
             id: self.id,
             project_code: self
                 .project_code
-                .ok_or(TaskError::MissingField("project_code".to_string()))?,
-            code: self.code.ok_or(TaskError::MissingField("code".to_string()))?,
-            name: self.name.ok_or(TaskError::MissingField("name".to_string()))?,
+                .ok_or(AppError::MissingField("project_code".to_string()))?,
+            code: self.code.ok_or(AppError::MissingField("code".to_string()))?,
+            name: self.name.ok_or(AppError::MissingField("name".to_string()))?,
             description: None,
             state: Planned, // The task starts in the 'Planned' state.
             start_date: self.start_date.unwrap(),
@@ -242,7 +242,7 @@ mod tests {
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
             );
 
-        assert!(matches!(result, Err(TaskError::InvalidDateRange)));
+        assert!(matches!(result, Err(AppError::InvalidDateRange)));
     }
 
     #[test]
@@ -265,7 +265,7 @@ mod tests {
             .assign_resource("RES-002")
             .validate_vacations(&vacations);
 
-        assert!(matches!(result, Err(TaskError::ResourceOnVacation(res)) if res == "RES-002"));
+        assert!(matches!(result, Err(AppError::ResourceOnVacation(res)) if res == "RES-002"));
     }
 
     #[test]

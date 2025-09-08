@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 use crate::domain::company_management::{Company, CompanyRepository};
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 use crate::infrastructure::persistence::manifests::company_manifest::CompanyManifest;
 
 /// File-based implementation of CompanyRepository.
@@ -34,44 +34,43 @@ impl FileCompanyRepository {
         self.base_path.join("companies").join(code)
     }
 
-    fn load_companies_from_disk(&self) -> Result<(), DomainError> {
+    fn load_companies_from_disk(&self) -> Result<(), AppError> {
         let companies_dir = self.get_companies_dir();
 
         if !companies_dir.exists() {
-            fs::create_dir_all(&companies_dir).map_err(|e| DomainError::Io {
+            fs::create_dir_all(&companies_dir).map_err(|e| AppError::IoError {
                 operation: "create directory".to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
             return Ok(());
         }
 
         let mut companies = HashMap::new();
 
-        for entry in fs::read_dir(&companies_dir).map_err(|e| DomainError::IoWithPath {
+        for entry in fs::read_dir(&companies_dir).map_err(|e| AppError::IoErrorWithPath {
             operation: "read directory".to_string(),
             path: companies_dir.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })? {
-            let entry = entry.map_err(|e| DomainError::Io {
+            let entry = entry.map_err(|e| AppError::IoError {
                 operation: "read directory entry".to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
 
             let path = entry.path();
             if path.is_dir() {
                 let company_yaml_path = path.join("company.yaml");
                 if company_yaml_path.exists() {
-                    let content = fs::read_to_string(&company_yaml_path).map_err(|e| DomainError::IoWithPath {
+                    let content = fs::read_to_string(&company_yaml_path).map_err(|e| AppError::IoErrorWithPath {
                         operation: "file read".to_string(),
                         path: company_yaml_path.to_string_lossy().to_string(),
-                        source: e,
+                        details: e.to_string(),
                     })?;
 
                     let manifest: CompanyManifest =
-                        serde_yaml::from_str(&content).map_err(|e| DomainError::Serialization {
+                        serde_yaml::from_str(&content).map_err(|e| AppError::SerializationError {
                             format: "YAML".to_string(),
                             details: format!("Failed to parse company file {}: {}", company_yaml_path.display(), e),
-                            source: Some(Box::new(e)),
                         })?;
 
                     let company = manifest.to();
@@ -86,53 +85,52 @@ impl FileCompanyRepository {
         Ok(())
     }
 
-    fn save_company_to_disk(&self, company: &Company) -> Result<(), DomainError> {
+    fn save_company_to_disk(&self, company: &Company) -> Result<(), AppError> {
         let companies_dir = self.get_companies_dir();
         let company_dir = self.get_company_dir(&company.code);
 
         // Create companies directory if it doesn't exist
         if !companies_dir.exists() {
-            fs::create_dir_all(&companies_dir).map_err(|e| DomainError::Io {
+            fs::create_dir_all(&companies_dir).map_err(|e| AppError::IoError {
                 operation: "create directory".to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
         }
 
         // Create company directory if it doesn't exist
         if !company_dir.exists() {
-            fs::create_dir_all(&company_dir).map_err(|e| DomainError::IoWithPath {
+            fs::create_dir_all(&company_dir).map_err(|e| AppError::IoErrorWithPath {
                 operation: "create directory".to_string(),
                 path: company_dir.to_string_lossy().to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
         }
 
         let manifest = CompanyManifest::from(company);
-        let yaml_content = serde_yaml::to_string(&manifest).map_err(|e| DomainError::Serialization {
+        let yaml_content = serde_yaml::to_string(&manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: format!("Failed to serialize company to YAML: {}", e),
-            source: Some(Box::new(e)),
         })?;
 
         let file_path = self.get_company_path(&company.code);
-        fs::write(&file_path, yaml_content).map_err(|e| DomainError::IoWithPath {
+        fs::write(&file_path, yaml_content).map_err(|e| AppError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file_path.to_string_lossy().to_string(),
-            source: e,
+            details: e.to_string(),
         })?;
 
         Ok(())
     }
 
     #[allow(dead_code)]
-    fn delete_company_from_disk(&self, code: &str) -> Result<(), DomainError> {
+    fn delete_company_from_disk(&self, code: &str) -> Result<(), AppError> {
         let company_dir = self.get_company_dir(code);
 
         if company_dir.exists() {
-            fs::remove_dir_all(&company_dir).map_err(|e| DomainError::IoWithPath {
+            fs::remove_dir_all(&company_dir).map_err(|e| AppError::IoErrorWithPath {
                 operation: "delete directory".to_string(),
                 path: company_dir.to_string_lossy().to_string(),
-                source: e,
+                details: e.to_string(),
             })?;
         }
 
@@ -141,7 +139,7 @@ impl FileCompanyRepository {
 }
 
 impl CompanyRepository for FileCompanyRepository {
-    fn save(&self, company: Company) -> Result<(), DomainError> {
+    fn save(&self, company: Company) -> Result<(), AppError> {
         // Load companies from disk first to ensure consistency
         self.load_companies_from_disk()?;
 
@@ -157,7 +155,7 @@ impl CompanyRepository for FileCompanyRepository {
         Ok(())
     }
 
-    fn find_by_id(&self, id: &str) -> Result<Option<Company>, DomainError> {
+    fn find_by_id(&self, id: &str) -> Result<Option<Company>, AppError> {
         self.load_companies_from_disk()?;
 
         let companies = self.companies.read().unwrap();
@@ -166,7 +164,7 @@ impl CompanyRepository for FileCompanyRepository {
         Ok(company)
     }
 
-    fn find_by_code(&self, code: &str) -> Result<Option<Company>, DomainError> {
+    fn find_by_code(&self, code: &str) -> Result<Option<Company>, AppError> {
         self.load_companies_from_disk()?;
 
         let companies = self.companies.read().unwrap();
@@ -175,7 +173,7 @@ impl CompanyRepository for FileCompanyRepository {
         Ok(company)
     }
 
-    fn find_by_name(&self, name: &str) -> Result<Option<Company>, DomainError> {
+    fn find_by_name(&self, name: &str) -> Result<Option<Company>, AppError> {
         self.load_companies_from_disk()?;
 
         let companies = self.companies.read().unwrap();
@@ -184,7 +182,7 @@ impl CompanyRepository for FileCompanyRepository {
         Ok(company)
     }
 
-    fn find_all(&self) -> Result<Vec<Company>, DomainError> {
+    fn find_all(&self) -> Result<Vec<Company>, AppError> {
         self.load_companies_from_disk()?;
 
         let companies = self.companies.read().unwrap();
@@ -193,7 +191,7 @@ impl CompanyRepository for FileCompanyRepository {
         Ok(companies_vec)
     }
 
-    fn update(&self, company: Company) -> Result<(), DomainError> {
+    fn update(&self, company: Company) -> Result<(), AppError> {
         // Load companies from disk first to ensure consistency
         self.load_companies_from_disk()?;
 
@@ -209,7 +207,7 @@ impl CompanyRepository for FileCompanyRepository {
         Ok(())
     }
 
-    fn delete(&self, code: &str) -> Result<(), DomainError> {
+    fn delete(&self, code: &str) -> Result<(), AppError> {
         // Load companies from disk first to ensure consistency
         self.load_companies_from_disk()?;
 
@@ -223,7 +221,7 @@ impl CompanyRepository for FileCompanyRepository {
         Ok(())
     }
 
-    fn get_next_code(&self) -> Result<String, DomainError> {
+    fn get_next_code(&self) -> Result<String, AppError> {
         self.load_companies_from_disk()?;
 
         let companies = self.companies.read().unwrap();
@@ -239,14 +237,14 @@ impl CompanyRepository for FileCompanyRepository {
         }
     }
 
-    fn code_exists(&self, code: &str) -> Result<bool, DomainError> {
+    fn code_exists(&self, code: &str) -> Result<bool, AppError> {
         self.load_companies_from_disk()?;
 
         let companies = self.companies.read().unwrap();
         Ok(companies.contains_key(code))
     }
 
-    fn name_exists(&self, name: &str) -> Result<bool, DomainError> {
+    fn name_exists(&self, name: &str) -> Result<bool, AppError> {
         self.load_companies_from_disk()?;
 
         let companies = self.companies.read().unwrap();

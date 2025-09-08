@@ -1,42 +1,40 @@
 #![allow(dead_code)]
 
-use crate::domain::{
-    resource_management::{any_resource::AnyResource, repository::ResourceRepository},
-    shared::errors::DomainError,
-    task_management::{any_task::AnyTask, repository::TaskRepository},
-};
+use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
+use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum AssignResourceToTaskError {
+pub enum AssignResourceToAppError {
     ProjectNotFound(String),
     TaskNotFound(String),
     ResourceNotFound(String),
     ResourceAlreadyAssigned(String, String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for AssignResourceToTaskError {
+impl fmt::Display for AssignResourceToAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AssignResourceToTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            AssignResourceToTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
-            AssignResourceToTaskError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
-            AssignResourceToTaskError::ResourceAlreadyAssigned(resource, task) => {
+            AssignResourceToAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            AssignResourceToAppError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
+            AssignResourceToAppError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            AssignResourceToAppError::ResourceAlreadyAssigned(resource, task) => {
                 write!(f, "Resource '{}' is already assigned to task '{}'.", resource, task)
             }
-            AssignResourceToTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
-            AssignResourceToTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            AssignResourceToAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            AssignResourceToAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for AssignResourceToTaskError {}
+impl std::error::Error for AssignResourceToAppError {}
 
-impl From<DomainError> for AssignResourceToTaskError {
-    fn from(err: DomainError) -> Self {
-        AssignResourceToTaskError::RepositoryError(err)
+impl From<AppError> for AssignResourceToAppError {
+    fn from(err: AppError) -> Self {
+        AssignResourceToAppError::RepositoryError(err)
     }
 }
 
@@ -61,22 +59,22 @@ where
         }
     }
 
-    pub fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceToTaskError> {
+    pub fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceToAppError> {
         // 1. Find the task
         let task = self
             .task_repository
             .find_by_code(task_code)?
-            .ok_or_else(|| AssignResourceToTaskError::TaskNotFound(task_code.to_string()))?;
+            .ok_or_else(|| AssignResourceToAppError::TaskNotFound(task_code.to_string()))?;
 
         // 2. Find the resource
         let resource = self
             .resource_repository
             .find_by_code(resource_code)?
-            .ok_or_else(|| AssignResourceToTaskError::ResourceNotFound(resource_code.to_string()))?;
+            .ok_or_else(|| AssignResourceToAppError::ResourceNotFound(resource_code.to_string()))?;
 
         // 3. Validate resource availability
         if !self.is_resource_available(&resource) {
-            return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(
+            return Err(AssignResourceToAppError::ResourceAlreadyAssigned(
                 resource_code.to_string(),
                 task_code.to_string(),
             ));
@@ -89,7 +87,7 @@ where
         let saved_task = self
             .task_repository
             .save(updated_task)
-            .map_err(AssignResourceToTaskError::RepositoryError)?;
+            .map_err(AssignResourceToAppError::RepositoryError)?;
 
         Ok(saved_task)
     }
@@ -105,7 +103,7 @@ where
         &self,
         task: AnyTask,
         _resource: AnyResource,
-    ) -> Result<AnyTask, AssignResourceToTaskError> {
+    ) -> Result<AnyTask, AssignResourceToAppError> {
         // This will be implemented in the domain layer
         // For now, return the task as-is
         Ok(task)
@@ -115,7 +113,9 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
+    use crate::domain::{
+    
+    resource_management::resource::Resource, task_management::builder::TaskBuilder};
     use chrono::NaiveDate;
     use std::{cell::RefCell, collections::HashMap};
 
@@ -125,16 +125,16 @@ mod tests {
     }
 
     impl TaskRepository for MockTaskRepository {
-        fn save(&self, task: AnyTask) -> Result<AnyTask, DomainError> {
+        fn save(&self, task: AnyTask) -> Result<AnyTask, AppError> {
             self.tasks.borrow_mut().insert(task.code().to_string(), task.clone());
             Ok(task)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
             Ok(self.tasks.borrow().get(code).cloned())
         }
 
@@ -143,19 +143,19 @@ mod tests {
             task: AnyTask,
             _company_code: &str,
             _project_code: &str,
-        ) -> Result<AnyTask, DomainError> {
+        ) -> Result<AnyTask, AppError> {
             self.save(task)
         }
 
-        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, DomainError> {
+        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, DomainError> {
+        fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
             unimplemented!()
         }
 
-        fn get_next_code(&self, _project_code: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, _project_code: &str) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -165,18 +165,18 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
             self.resources
                 .borrow_mut()
                 .insert(resource.code().to_string(), resource.clone());
             Ok(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(self.resources.borrow().get(code).cloned())
         }
 
@@ -185,7 +185,7 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
@@ -195,7 +195,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
 
@@ -206,7 +206,7 @@ mod tests {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
 
@@ -218,7 +218,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -297,7 +297,7 @@ mod tests {
         let result = use_case.execute("NONEXISTENT-TASK", "RES-001");
 
         // Assert
-        assert!(matches!(result, Err(AssignResourceToTaskError::TaskNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToAppError::TaskNotFound(_))));
     }
 
     #[test]
@@ -318,7 +318,7 @@ mod tests {
         let result = use_case.execute("TASK-001", "NONEXISTENT-RESOURCE");
 
         // Assert
-        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToAppError::ResourceNotFound(_))));
     }
 
     #[test]
@@ -348,22 +348,22 @@ mod tests {
                 }
             }
 
-            fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceToTaskError> {
+            fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceToAppError> {
                 // 1. Find the task
                 let task = self
                     .task_repository
                     .find_by_code(task_code)?
-                    .ok_or_else(|| AssignResourceToTaskError::TaskNotFound(task_code.to_string()))?;
+                    .ok_or_else(|| AssignResourceToAppError::TaskNotFound(task_code.to_string()))?;
 
                 // 2. Find the resource
                 let resource = self
                     .resource_repository
                     .find_by_code(resource_code)?
-                    .ok_or_else(|| AssignResourceToTaskError::ResourceNotFound(resource_code.to_string()))?;
+                    .ok_or_else(|| AssignResourceToAppError::ResourceNotFound(resource_code.to_string()))?;
 
                 // 3. Validate resource availability - always return false
                 if !self.is_resource_available(&resource) {
-                    return Err(AssignResourceToTaskError::ResourceAlreadyAssigned(
+                    return Err(AssignResourceToAppError::ResourceAlreadyAssigned(
                         resource_code.to_string(),
                         task_code.to_string(),
                     ));
@@ -387,7 +387,7 @@ mod tests {
                 &self,
                 task: AnyTask,
                 _resource: AnyResource,
-            ) -> Result<AnyTask, AssignResourceToTaskError> {
+            ) -> Result<AnyTask, AssignResourceToAppError> {
                 Ok(task)
             }
         }
@@ -400,7 +400,7 @@ mod tests {
         // Assert
         assert!(matches!(
             result,
-            Err(AssignResourceToTaskError::ResourceAlreadyAssigned(_, _))
+            Err(AssignResourceToAppError::ResourceAlreadyAssigned(_, _))
         ));
     }
 
@@ -416,18 +416,18 @@ mod tests {
         }
 
         impl TaskRepository for FailingMockTaskRepository {
-            fn save(&self, _task: AnyTask) -> Result<AnyTask, DomainError> {
-                Err(DomainError::ValidationError {
+            fn save(&self, _task: AnyTask) -> Result<AnyTask, AppError> {
+                Err(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Save failed".to_string(),
                 })
             }
 
-            fn find_all(&self) -> Result<Vec<AnyTask>, DomainError> {
+            fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
                 Ok(self.tasks.borrow().values().cloned().collect())
             }
 
-            fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, DomainError> {
+            fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
                 Ok(self.tasks.borrow().get(code).cloned())
             }
 
@@ -436,7 +436,7 @@ mod tests {
                 task: AnyTask,
                 _company_code: &str,
                 _project_code: &str,
-            ) -> Result<AnyTask, DomainError> {
+            ) -> Result<AnyTask, AppError> {
                 self.save(task)
             }
 
@@ -444,15 +444,15 @@ mod tests {
                 &self,
                 _company_code: &str,
                 _project_code: &str,
-            ) -> Result<Vec<AnyTask>, DomainError> {
+            ) -> Result<Vec<AnyTask>, AppError> {
                 Ok(self.tasks.borrow().values().cloned().collect())
             }
 
-            fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, DomainError> {
+            fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
                 unimplemented!()
             }
 
-            fn get_next_code(&self, _project_code: &str) -> Result<String, DomainError> {
+            fn get_next_code(&self, _project_code: &str) -> Result<String, AppError> {
                 unimplemented!()
             }
         }
@@ -476,7 +476,7 @@ mod tests {
             eprintln!("Error type: {:?}", e);
             // Check if it's a RepositoryError and contains the expected message
             match e {
-                AssignResourceToTaskError::RepositoryError(domain_error) => {
+                AssignResourceToAppError::RepositoryError(domain_error) => {
                     assert!(domain_error.to_string().contains("Save failed"));
                 }
                 _ => {

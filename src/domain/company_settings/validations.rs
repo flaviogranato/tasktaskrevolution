@@ -1,15 +1,15 @@
 #![allow(dead_code)]
 
-use crate::domain::company_settings::errors::CompanySettingsError;
+use crate::application::errors::AppError;
 
 /// Validações de domínio para configurações da empresa
 pub struct CompanySettingsValidator;
 
 impl CompanySettingsValidator {
     /// Valida o nome do gerente
-    pub fn validate_manager_name(name: &str) -> Result<(), CompanySettingsError> {
+    pub fn validate_manager_name(name: &str) -> Result<(), AppError> {
         if name.trim().is_empty() {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
                 reason: "Nome do gerente não pode estar vazio".to_string(),
@@ -17,7 +17,7 @@ impl CompanySettingsValidator {
         }
 
         if name.len() < 2 {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
                 reason: "Nome do gerente deve ter pelo menos 2 caracteres".to_string(),
@@ -25,7 +25,7 @@ impl CompanySettingsValidator {
         }
 
         if name.len() > 100 {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
                 reason: "Nome do gerente não pode exceder 100 caracteres".to_string(),
@@ -37,7 +37,7 @@ impl CompanySettingsValidator {
             .chars()
             .all(|c| c.is_alphabetic() || c.is_whitespace() || c == '-' || c == '\'')
         {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
                 reason: "Nome do gerente contém caracteres inválidos".to_string(),
@@ -48,9 +48,9 @@ impl CompanySettingsValidator {
     }
 
     /// Valida o email do gerente
-    pub fn validate_manager_email(email: &str) -> Result<(), CompanySettingsError> {
+    pub fn validate_manager_email(email: &str) -> Result<(), AppError> {
         if email.trim().is_empty() {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Email do gerente não pode estar vazio".to_string(),
@@ -59,7 +59,7 @@ impl CompanySettingsValidator {
 
         // Validação básica de formato de email
         if !email.contains('@') || !email.contains('.') {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Formato de email inválido".to_string(),
@@ -68,7 +68,7 @@ impl CompanySettingsValidator {
 
         let parts: Vec<&str> = email.split('@').collect();
         if parts.len() != 2 {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Formato de email inválido".to_string(),
@@ -79,7 +79,7 @@ impl CompanySettingsValidator {
         let domain_part = parts[1];
 
         if local_part.is_empty() || domain_part.is_empty() {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Partes do email não podem estar vazias".to_string(),
@@ -87,7 +87,7 @@ impl CompanySettingsValidator {
         }
 
         if local_part.len() > 64 || domain_part.len() > 253 {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Email muito longo".to_string(),
@@ -98,9 +98,9 @@ impl CompanySettingsValidator {
     }
 
     /// Valida o fuso horário padrão
-    pub fn validate_default_timezone(timezone: &str) -> Result<(), CompanySettingsError> {
+    pub fn validate_default_timezone(timezone: &str) -> Result<(), AppError> {
         if timezone.trim().is_empty() {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "default_timezone".to_string(),
                 value: timezone.to_string(),
                 reason: "Fuso horário padrão não pode estar vazio".to_string(),
@@ -135,7 +135,7 @@ impl CompanySettingsValidator {
         ];
 
         if !valid_timezones.contains(&timezone) {
-            return Err(CompanySettingsError::ConfigurationInvalid {
+            return Err(AppError::ConfigurationInvalid {
                 field: "default_timezone".to_string(),
                 value: timezone.to_string(),
                 reason: format!("Fuso horário '{}' não é suportado", timezone),
@@ -150,7 +150,7 @@ impl CompanySettingsValidator {
         manager_name: &str,
         manager_email: &str,
         default_timezone: &str,
-    ) -> Result<(), CompanySettingsError> {
+    ) -> Result<(), AppError> {
         Self::validate_manager_name(manager_name)?;
         Self::validate_manager_email(manager_email)?;
         Self::validate_default_timezone(default_timezone)?;
@@ -173,7 +173,7 @@ mod tests {
     fn test_validate_manager_name_empty() {
         let result = CompanySettingsValidator::validate_manager_name("");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("vazio"))
         );
     }
@@ -182,7 +182,7 @@ mod tests {
     fn test_validate_manager_name_too_short() {
         let result = CompanySettingsValidator::validate_manager_name("A");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("2 caracteres"))
         );
     }
@@ -192,7 +192,7 @@ mod tests {
         let long_name = "A".repeat(101);
         let result = CompanySettingsValidator::validate_manager_name(&long_name);
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("100 caracteres"))
         );
     }
@@ -201,7 +201,7 @@ mod tests {
     fn test_validate_manager_name_invalid_chars() {
         let result = CompanySettingsValidator::validate_manager_name("John123");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("caracteres inválidos"))
         );
     }
@@ -217,7 +217,7 @@ mod tests {
     fn test_validate_manager_email_empty() {
         let result = CompanySettingsValidator::validate_manager_email("");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("vazio"))
         );
     }
@@ -226,7 +226,7 @@ mod tests {
     fn test_validate_manager_email_no_at() {
         let result = CompanySettingsValidator::validate_manager_email("johnexample.com");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("Formato de email inválido"))
         );
     }
@@ -235,7 +235,7 @@ mod tests {
     fn test_validate_manager_email_no_dot() {
         let result = CompanySettingsValidator::validate_manager_email("john@example");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("Formato de email inválido"))
         );
     }
@@ -251,7 +251,7 @@ mod tests {
     fn test_validate_default_timezone_empty() {
         let result = CompanySettingsValidator::validate_default_timezone("");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "default_timezone" && reason.contains("vazio"))
         );
     }
@@ -260,7 +260,7 @@ mod tests {
     fn test_validate_default_timezone_invalid() {
         let result = CompanySettingsValidator::validate_default_timezone("Invalid/Timezone");
         assert!(
-            matches!(result, Err(CompanySettingsError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "default_timezone" && reason.contains("não é suportado"))
         );
     }

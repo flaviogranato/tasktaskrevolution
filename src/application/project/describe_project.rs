@@ -1,29 +1,27 @@
-use crate::domain::{
-    project_management::{any_project::AnyProject, repository::ProjectRepository},
-    shared::errors::DomainError,
-};
+use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum DescribeProjectError {
+pub enum DescribeAppError {
     ProjectNotFound(String),
-    RepositoryError(DomainError),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for DescribeProjectError {
+impl fmt::Display for DescribeAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DescribeProjectError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            DescribeProjectError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            DescribeAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            DescribeAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for DescribeProjectError {}
+impl std::error::Error for DescribeAppError {}
 
-impl From<DomainError> for DescribeProjectError {
-    fn from(err: DomainError) -> Self {
-        DescribeProjectError::RepositoryError(err)
+impl From<AppError> for DescribeAppError {
+    fn from(err: AppError) -> Self {
+        DescribeAppError::RepositoryError(err)
     }
 }
 
@@ -42,10 +40,10 @@ where
         Self { project_repository }
     }
 
-    pub fn execute(&self, project_code: &str) -> Result<AnyProject, DescribeProjectError> {
+    pub fn execute(&self, project_code: &str) -> Result<AnyProject, DescribeAppError> {
         self.project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| DescribeProjectError::ProjectNotFound(project_code.to_string()))
+            .ok_or_else(|| DescribeAppError::ProjectNotFound(project_code.to_string()))
     }
 }
 
@@ -61,20 +59,20 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -118,6 +116,6 @@ mod tests {
 
         let result = use_case.execute("PROJ-NONEXISTENT");
 
-        assert!(matches!(result, Err(DescribeProjectError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(DescribeAppError::ProjectNotFound(_))));
     }
 }

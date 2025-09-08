@@ -2,11 +2,10 @@
 
 use super::types::ValidationResult;
 
-use crate::domain::{
-    company_management::repository::CompanyRepository, project_management::repository::ProjectRepository,
-    resource_management::repository::ResourceRepository, resource_management::resource::Period,
-    shared::errors::DomainError,
-};
+use crate::domain::company_management::repository::CompanyRepository;
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::resource_management::{repository::ResourceRepository, resource::Period};
+use crate::application::errors::AppError;
 use chrono::{DateTime, FixedOffset, Local, NaiveDate, Offset};
 
 pub struct ValidateBusinessRulesUseCase<'a, P, R, C>
@@ -34,7 +33,7 @@ where
         }
     }
 
-    pub fn execute(&self) -> Result<Vec<ValidationResult>, DomainError> {
+    pub fn execute(&self) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         // Load all entities
@@ -62,7 +61,7 @@ where
         _companies: &[crate::domain::company_management::company::Company],
         resources: &[crate::domain::resource_management::any_resource::AnyResource],
         _projects: &[crate::domain::project_management::any_project::AnyProject],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         // Check vacation overlaps between resources
@@ -106,7 +105,7 @@ where
         &self,
         _resources: &[crate::domain::resource_management::any_resource::AnyResource],
         projects: &[crate::domain::project_management::any_project::AnyProject],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         for project in projects {
@@ -134,7 +133,7 @@ where
     fn validate_project_timeline(
         &self,
         projects: &[crate::domain::project_management::any_project::AnyProject],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let mut results = Vec::new();
 
         for project in projects {
@@ -176,7 +175,7 @@ where
     fn validate_cost_constraints(
         &self,
         _projects: &[crate::domain::project_management::any_project::AnyProject],
-    ) -> Result<Vec<ValidationResult>, DomainError> {
+    ) -> Result<Vec<ValidationResult>, AppError> {
         let results = Vec::new();
 
         // TODO: Implement cost validation when budget and cost fields are available

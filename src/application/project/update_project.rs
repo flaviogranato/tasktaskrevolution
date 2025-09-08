@@ -1,33 +1,31 @@
 #![allow(dead_code)]
 
-use crate::domain::{
-    project_management::{any_project::AnyProject, repository::ProjectRepository},
-    shared::errors::DomainError,
-};
+use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum UpdateProjectError {
+pub enum UpdateAppError {
     ProjectNotFound(String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for UpdateProjectError {
+impl fmt::Display for UpdateAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            UpdateProjectError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            UpdateProjectError::DomainError(message) => write!(f, "Domain error: {}", message),
-            UpdateProjectError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            UpdateAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            UpdateAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            UpdateAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for UpdateProjectError {}
+impl std::error::Error for UpdateAppError {}
 
-impl From<DomainError> for UpdateProjectError {
-    fn from(err: DomainError) -> Self {
-        UpdateProjectError::RepositoryError(err)
+impl From<AppError> for UpdateAppError {
+    fn from(err: AppError) -> Self {
+        UpdateAppError::RepositoryError(err)
     }
 }
 
@@ -52,12 +50,12 @@ where
         Self { project_repository }
     }
 
-    pub fn execute(&self, project_code: &str, args: UpdateProjectArgs) -> Result<AnyProject, UpdateProjectError> {
+    pub fn execute(&self, project_code: &str, args: UpdateProjectArgs) -> Result<AnyProject, UpdateAppError> {
         // 1. Load the project aggregate.
         let mut project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| UpdateProjectError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| UpdateAppError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Update the fields on the aggregate.
         if let Some(name) = args.name {
@@ -86,20 +84,20 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -153,6 +151,6 @@ mod tests {
         };
 
         let result = use_case.execute("PROJ-NONEXISTENT", args);
-        assert!(matches!(result, Err(UpdateProjectError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(UpdateAppError::ProjectNotFound(_))));
     }
 }

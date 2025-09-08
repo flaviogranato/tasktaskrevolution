@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain::shared::errors::{DomainError, DomainErrorKind};
+use crate::domain::shared::errors::{AppError, AppErrorKind};
 use crate::domain::company_settings::{Config, WorkDay};
 use crate::infrastructure::persistence::config_repository::ConfigRepository;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
@@ -30,9 +30,9 @@ impl MockConfigRepository {
 }
 
 impl ConfigRepository for MockConfigRepository {
-    fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), DomainError> {
+    fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), AppError> {
         if self.should_fail {
-            return Err(DomainError::new(DomainErrorKind::PersistenceError {
+            return Err(AppError::new(AppErrorKind::PersistenceError {
                 operation: "save".to_string(),
                 details: "Database connection failed".to_string(),
             }));
@@ -40,14 +40,14 @@ impl ConfigRepository for MockConfigRepository {
         Ok(())
     }
 
-    fn create_repository_dir(&self, _path: PathBuf) -> Result<(), DomainError> {
+    fn create_repository_dir(&self, _path: PathBuf) -> Result<(), AppError> {
         Ok(())
     }
 
-    fn load(&self) -> Result<(Config, PathBuf), DomainError> {
+    fn load(&self) -> Result<(Config, PathBuf), AppError> {
         self.saved_config.borrow().clone().map(|c| {
             (c, PathBuf::from("/tmp"))
-        }).ok_or(DomainError::new(DomainErrorKind::ConfigurationMissing {
+        }).ok_or(AppError::new(AppErrorKind::ConfigurationMissing {
             field: "config".to_string()
         }))
     }
@@ -104,7 +104,7 @@ fn test_init_manager_invalid_email() {
     // Assert
     assert!(result.is_err());
     let error = result.unwrap_err();
-    assert!(matches!(error.kind(), DomainErrorKind::ValidationError { .. }));
+    assert!(matches!(error.kind(), AppErrorKind::ValidationError { .. }));
 }
 
 #[test]
@@ -128,7 +128,7 @@ fn test_init_manager_invalid_timezone() {
     // Assert
     assert!(result.is_err());
     let error = result.unwrap_err();
-    assert!(matches!(error.kind(), DomainErrorKind::ValidationError { .. }));
+    assert!(matches!(error.kind(), AppErrorKind::ValidationError { .. }));
 }
 
 #[test]
@@ -152,7 +152,7 @@ fn test_init_manager_invalid_work_hours() {
     // Assert
     assert!(result.is_err());
     let error = result.unwrap_err();
-    assert!(matches!(error.kind(), DomainErrorKind::ValidationError { .. }));
+    assert!(matches!(error.kind(), AppErrorKind::ValidationError { .. }));
 }
 
 #[test]
@@ -176,7 +176,7 @@ fn test_init_manager_empty_name() {
     // Assert
     assert!(result.is_err());
     let error = result.unwrap_err();
-    assert!(matches!(error.kind(), DomainErrorKind::ValidationError { .. }));
+    assert!(matches!(error.kind(), AppErrorKind::ValidationError { .. }));
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn test_init_manager_empty_company_name() {
     // Assert
     assert!(result.is_err());
     let error = result.unwrap_err();
-    assert!(matches!(error.kind(), DomainErrorKind::ValidationError { .. }));
+    assert!(matches!(error.kind(), AppErrorKind::ValidationError { .. }));
 }
 
 #[test]
@@ -224,7 +224,7 @@ fn test_init_manager_repository_error() {
     // Assert
     assert!(result.is_err());
     let error = result.unwrap_err();
-    assert!(matches!(error.kind(), DomainErrorKind::PersistenceError { .. }));
+    assert!(matches!(error.kind(), AppErrorKind::PersistenceError { .. }));
 }
 
 #[test]

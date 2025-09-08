@@ -1,44 +1,42 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use crate::domain::{
-    project_management::{any_project::AnyProject, repository::ProjectRepository},
-    resource_management::repository::ResourceRepository,
-    shared::errors::DomainError,
-    task_management::{Category, Priority},
-};
+use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::task_management::{Category, Priority};
+use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum AssignResourceToTaskError {
+pub enum AssignResourceToAppError {
     ProjectNotFound(String),
     TaskNotFound(String),
     ResourceNotFound(String),
     ResourceAlreadyAssigned(String, String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for AssignResourceToTaskError {
+impl fmt::Display for AssignResourceToAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AssignResourceToTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            AssignResourceToTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
-            AssignResourceToTaskError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
-            AssignResourceToTaskError::ResourceAlreadyAssigned(resource, task) => {
+            AssignResourceToAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            AssignResourceToAppError::TaskNotFound(code) => write!(f, "Task with code '{}' not found.", code),
+            AssignResourceToAppError::ResourceNotFound(code) => write!(f, "Resource with code '{}' not found.", code),
+            AssignResourceToAppError::ResourceAlreadyAssigned(resource, task) => {
                 write!(f, "Resource '{}' is already assigned to task '{}'.", resource, task)
             }
-            AssignResourceToTaskError::DomainError(message) => write!(f, "Domain error: {}", message),
-            AssignResourceToTaskError::RepositoryError(err) => write!(f, "Repository error: {}", err),
+            AssignResourceToAppError::AppError(message) => write!(f, "Domain error: {}", message),
+            AssignResourceToAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
     }
 }
 
-impl std::error::Error for AssignResourceToTaskError {}
+impl std::error::Error for AssignResourceToAppError {}
 
-impl From<DomainError> for AssignResourceToTaskError {
-    fn from(err: DomainError) -> Self {
-        AssignResourceToTaskError::RepositoryError(err)
+impl From<AppError> for AssignResourceToAppError {
+    fn from(err: AppError) -> Self {
+        AssignResourceToAppError::RepositoryError(err)
     }
 }
 
@@ -68,28 +66,28 @@ where
         project_code: &str,
         task_code: &str,
         resource_code: &str,
-    ) -> Result<AnyProject, AssignResourceToTaskError> {
+    ) -> Result<AnyProject, AssignResourceToAppError> {
         // 1. Find the project
         let mut project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| AssignResourceToTaskError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| AssignResourceToAppError::ProjectNotFound(project_code.to_string()))?;
 
         // 2. Find the resource
         let _resource = self
             .resource_repository
             .find_by_code(resource_code)?
-            .ok_or_else(|| AssignResourceToTaskError::ResourceNotFound(resource_code.to_string()))?;
+            .ok_or_else(|| AssignResourceToAppError::ResourceNotFound(resource_code.to_string()))?;
 
         // 3. Validate that the task exists in the project
         if !project.tasks().contains_key(task_code) {
-            return Err(AssignResourceToTaskError::TaskNotFound(task_code.to_string()));
+            return Err(AssignResourceToAppError::TaskNotFound(task_code.to_string()));
         }
 
         // 4. Assign the resource to the task
         project
             .assign_resource_to_task(task_code, &[resource_code])
-            .map_err(AssignResourceToTaskError::DomainError)?;
+            .map_err(AssignResourceToAppError::AppError)?;
 
         // 5. Save the updated project
         self.project_repository.save(project.clone())?;
@@ -102,6 +100,8 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
+    
+    
         project_management::{AnyProject, builder::ProjectBuilder},
         resource_management::{AnyResource, resource::Resource},
         task_management::{AnyTask, state::Planned, task::Task},
@@ -116,24 +116,24 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
 
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
 
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -143,11 +143,11 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn find_all(&self) -> Result<Vec<AnyResource>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.clone())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(self.resources.iter().find(|r| r.code() == code).cloned())
         }
 
@@ -156,11 +156,11 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
 
-        fn save(&self, _resource: AnyResource) -> Result<AnyResource, DomainError> {
+        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
 
@@ -170,7 +170,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _desc: Option<String>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
 
@@ -181,7 +181,7 @@ mod tests {
             _end: &str,
             _comp: bool,
             _hours: Option<u32>,
-        ) -> Result<AnyResource, DomainError> {
+        ) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
 
@@ -189,7 +189,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn get_next_code(&self, resource_type: &str) -> Result<String, DomainError> {
+        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }
@@ -277,7 +277,7 @@ mod tests {
 
         let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1", "dev-res-1");
 
-        assert!(matches!(result, Err(AssignResourceToTaskError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToAppError::ProjectNotFound(_))));
     }
 
     #[test]
@@ -293,6 +293,6 @@ mod tests {
 
         let result = use_case.execute("PROJ-1", "TSK-1", "res-NONEXISTENT");
 
-        assert!(matches!(result, Err(AssignResourceToTaskError::ResourceNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToAppError::ResourceNotFound(_))));
     }
 }

@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
 use crate::domain::project_management::repository::ProjectRepository;
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 
 pub struct ListTasksUseCase<R: ProjectRepository> {
@@ -12,7 +12,7 @@ impl<R: ProjectRepository> ListTasksUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self) -> Result<Vec<AnyTask>, DomainError> {
+    pub fn execute(&self) -> Result<Vec<AnyTask>, AppError> {
         let project = self.repository.load()?;
         let tasks = project.tasks().values().cloned().collect();
         Ok(tasks)
@@ -22,11 +22,9 @@ impl<R: ProjectRepository> ListTasksUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        project_management::{AnyProject, builder::ProjectBuilder},
-        shared::errors::DomainError,
-        task_management::{state::Planned, task::Task},
-    };
+    use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
+    use crate::domain::task_management::{state::Planned, task::Task};
+    use crate::application::errors::AppError;
     use chrono::NaiveDate;
 
     use uuid7::uuid7;
@@ -36,20 +34,20 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             Ok(self.project.clone())
         }
         // Unimplemented methods
-        fn save(&self, _project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }

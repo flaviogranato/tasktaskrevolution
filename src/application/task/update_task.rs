@@ -1,38 +1,36 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
-use crate::domain::{
-    project_management::repository::ProjectRepository,
-    shared::errors::DomainError,
-    task_management::{Category, Priority, any_task::AnyTask},
-};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
+use crate::application::errors::AppError;
 use chrono::NaiveDate;
 use std::fmt;
 
 #[derive(Debug)]
-pub enum UpdateTaskError {
+pub enum UpdateAppError {
     ProjectNotFound(String),
     TaskNotFound(String),
-    DomainError(String),
-    RepositoryError(DomainError),
+    AppError(String),
+    RepositoryError(AppError),
 }
 
-impl fmt::Display for UpdateTaskError {
+impl fmt::Display for UpdateAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            UpdateTaskError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
-            UpdateTaskError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
-            UpdateTaskError::DomainError(message) => write!(f, "An unexpected domain rule was violated: {}", message),
-            UpdateTaskError::RepositoryError(err) => write!(f, "A repository error occurred: {}", err),
+            UpdateAppError::ProjectNotFound(code) => write!(f, "Project with code '{}' not found.", code),
+            UpdateAppError::TaskNotFound(code) => write!(f, "Task with code '{}' not found in project.", code),
+            UpdateAppError::AppError(message) => write!(f, "An unexpected domain rule was violated: {}", message),
+            UpdateAppError::RepositoryError(err) => write!(f, "A repository error occurred: {}", err),
         }
     }
 }
 
-impl std::error::Error for UpdateTaskError {}
+impl std::error::Error for UpdateAppError {}
 
-impl From<DomainError> for UpdateTaskError {
-    fn from(err: DomainError) -> Self {
-        UpdateTaskError::RepositoryError(err)
+impl From<AppError> for UpdateAppError {
+    fn from(err: AppError) -> Self {
+        UpdateAppError::RepositoryError(err)
     }
 }
 
@@ -64,12 +62,12 @@ where
         project_code: &str,
         task_code: &str,
         args: UpdateTaskArgs,
-    ) -> Result<AnyTask, UpdateTaskError> {
+    ) -> Result<AnyTask, UpdateAppError> {
         // 1. Load the project aggregate.
         let mut project = self
             .project_repository
             .find_by_code(project_code)?
-            .ok_or_else(|| UpdateTaskError::ProjectNotFound(project_code.to_string()))?;
+            .ok_or_else(|| UpdateAppError::ProjectNotFound(project_code.to_string()))?;
 
         // Check if a reschedule is needed before args is moved.
         let needs_reschedule = args.due_date.is_some();
@@ -78,13 +76,13 @@ where
         // This method ensures all domain invariants are respected.
         let updated_task = project
             .update_task(task_code, args.name, args.description, args.start_date, args.due_date)
-            .map_err(UpdateTaskError::DomainError)?;
+            .map_err(UpdateAppError::AppError)?;
 
         // 3. If the due date was changed, reschedule all dependent tasks.
         if needs_reschedule {
             project
                 .reschedule_dependents_of(task_code)
-                .map_err(UpdateTaskError::DomainError)?;
+                .map_err(UpdateAppError::AppError)?;
         }
 
         // 4. Save the updated project aggregate.
@@ -99,6 +97,8 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
+    
+    
         project_management::{AnyProject, builder::ProjectBuilder},
         task_management::{state::Planned, task::Task},
     };
@@ -112,20 +112,20 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), DomainError> {
+        fn save(&self, project: AnyProject) -> Result<(), AppError> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError> {
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, DomainError> {
+        fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, DomainError> {
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, DomainError> {
+        fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
         }
     }
@@ -202,7 +202,7 @@ mod tests {
         };
 
         let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1", args);
-        assert!(matches!(result, Err(UpdateTaskError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(UpdateAppError::ProjectNotFound(_))));
     }
 
     fn create_task_with_deps(code: &str, start_date: NaiveDate, due_date: NaiveDate, deps: Vec<&str>) -> AnyTask {

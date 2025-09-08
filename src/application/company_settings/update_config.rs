@@ -4,7 +4,7 @@ use crate::domain::company_settings::{
     config::{Config, WorkDay},
     repository::ConfigRepository,
 };
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 
 #[allow(dead_code)]
 pub struct UpdateCompanyConfigUseCase<R>
@@ -23,7 +23,7 @@ where
     }
 
     /// Updates company configuration with conflict resolution
-    pub fn execute(&self, updates: CompanyConfigUpdates) -> Result<Config, DomainError> {
+    pub fn execute(&self, updates: CompanyConfigUpdates) -> Result<Config, AppError> {
         // Load existing configuration
         let (mut config, _) = self.repository.load()?;
 
@@ -31,7 +31,7 @@ where
         if let Some(manager_name) = &updates.manager_name
             && manager_name.trim().is_empty()
         {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "manager_name".to_string(),
                 message: "Manager name cannot be empty".to_string(),
             });
@@ -40,7 +40,7 @@ where
         if let Some(manager_email) = &updates.manager_email
             && (manager_email.trim().is_empty() || !manager_email.contains('@') || !manager_email.contains('.'))
         {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "manager_email".to_string(),
                 message: "Invalid email format".to_string(),
             });
@@ -80,19 +80,18 @@ where
     }
 
     /// Updates configuration from YAML string (for manual edits)
-    pub fn update_from_yaml(&self, yaml_content: &str) -> Result<Config, DomainError> {
+    pub fn update_from_yaml(&self, yaml_content: &str) -> Result<Config, AppError> {
         // Parse YAML content
         let yaml_data: serde_yaml::Value =
-            serde_yaml::from_str(yaml_content).map_err(|e| DomainError::Serialization {
+            serde_yaml::from_str(yaml_content).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: e.to_string(),
-                source: Some(Box::new(e)),
             })?;
 
         // Create new config from YAML
         let manager_name = yaml_data["manager_name"]
             .as_str()
-            .ok_or_else(|| DomainError::ValidationError {
+            .ok_or_else(|| AppError::ValidationError {
                 field: "manager_name".to_string(),
                 message: "Manager name is missing".to_string(),
             })?
@@ -100,7 +99,7 @@ where
 
         let manager_email = yaml_data["manager_email"]
             .as_str()
-            .ok_or_else(|| DomainError::ValidationError {
+            .ok_or_else(|| AppError::ValidationError {
                 field: "manager_email".to_string(),
                 message: "Manager email is missing".to_string(),
             })?
@@ -108,7 +107,7 @@ where
 
         let default_timezone = yaml_data["default_timezone"]
             .as_str()
-            .ok_or_else(|| DomainError::ValidationError {
+            .ok_or_else(|| AppError::ValidationError {
                 field: "default_timezone".to_string(),
                 message: "Default timezone is missing".to_string(),
             })?
@@ -149,7 +148,7 @@ where
     }
 
     /// Merges CLI updates with existing YAML configuration
-    pub fn merge_updates(&self, cli_updates: CompanyConfigUpdates) -> Result<Config, DomainError> {
+    pub fn merge_updates(&self, cli_updates: CompanyConfigUpdates) -> Result<Config, AppError> {
         // Load existing configuration
         let (mut config, _) = self.repository.load()?;
 
@@ -178,13 +177,12 @@ where
     }
 
     /// Validates YAML content before applying
-    pub fn validate_yaml(&self, yaml_content: &str) -> Result<(), DomainError> {
+    pub fn validate_yaml(&self, yaml_content: &str) -> Result<(), AppError> {
         // Try to parse YAML first
         let yaml_data: serde_yaml::Value =
-            serde_yaml::from_str(yaml_content).map_err(|e| DomainError::Serialization {
+            serde_yaml::from_str(yaml_content).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: e.to_string(),
-                source: Some(Box::new(e)),
             })?;
 
         // Validate required fields
@@ -193,21 +191,21 @@ where
         let default_timezone = yaml_data["default_timezone"].as_str();
 
         if manager_name.is_none() || manager_name.unwrap().trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "manager_name".to_string(),
                 message: "Manager name is required and cannot be empty".to_string(),
             });
         }
 
         if manager_email.is_none() || manager_email.unwrap().trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "manager_email".to_string(),
                 message: "Manager email is required and cannot be empty".to_string(),
             });
         }
 
         if default_timezone.is_none() || default_timezone.unwrap().trim().is_empty() {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "default_timezone".to_string(),
                 message: "Default timezone is required and cannot be empty".to_string(),
             });
@@ -217,7 +215,7 @@ where
         if let Some(email) = manager_email
             && (!email.contains('@') || !email.contains('.'))
         {
-            return Err(DomainError::ValidationError {
+            return Err(AppError::ValidationError {
                 field: "manager_email".to_string(),
                 message: "Invalid email format".to_string(),
             });
@@ -246,7 +244,7 @@ where
             ];
 
             if !valid_timezones.contains(&timezone) {
-                return Err(DomainError::ValidationError {
+                return Err(AppError::ValidationError {
                     field: "default_timezone".to_string(),
                     message: "Invalid timezone format".to_string(),
                 });
@@ -359,17 +357,17 @@ mod tests {
             &self,
             _config: ConfigManifest,
             _path: PathBuf,
-        ) -> Result<(), crate::domain::shared::errors::DomainError> {
+        ) -> Result<(), crate::application::errors::AppError> {
             Ok(())
         }
 
-        fn create_repository_dir(&self, _path: PathBuf) -> Result<(), crate::domain::shared::errors::DomainError> {
+        fn create_repository_dir(&self, _path: PathBuf) -> Result<(), crate::application::errors::AppError> {
             Ok(())
         }
 
-        fn load(&self) -> Result<(Config, PathBuf), crate::domain::shared::errors::DomainError> {
+        fn load(&self) -> Result<(Config, PathBuf), crate::application::errors::AppError> {
             self.config.borrow().clone().map(|c| (c, PathBuf::from("/tmp"))).ok_or(
-                crate::domain::shared::errors::DomainError::ValidationError {
+                crate::application::errors::AppError::ValidationError {
                     field: "configuration".to_string(),
                     message: "Configuration field missing: config".to_string(),
                 },
@@ -423,7 +421,7 @@ mod tests {
         // Assert
         assert!(result.is_err());
         let error = result.unwrap_err();
-        assert!(matches!(error, DomainError::ValidationError { field, .. } if field == "configuration"));
+        assert!(matches!(error, AppError::ValidationError { field, .. } if field == "configuration"));
     }
 
     #[test]
@@ -448,7 +446,7 @@ mod tests {
         // Assert
         assert!(result.is_err());
         let error = result.unwrap_err();
-        assert!(matches!(error, DomainError::ValidationError { .. }));
+        assert!(matches!(error, AppError::ValidationError { .. }));
     }
 
     #[test]
@@ -496,7 +494,7 @@ work_days: ["monday", "tuesday", "wednesday"]
         // Assert
         assert!(result.is_err());
         let error = result.unwrap_err();
-        assert!(matches!(error, DomainError::Serialization { .. }));
+        assert!(matches!(error, AppError::SerializationError { .. }));
     }
 
     #[test]
@@ -572,6 +570,6 @@ default_timezone: "Invalid/Timezone"
         // Assert
         assert!(result.is_err());
         let error = result.unwrap_err();
-        assert!(matches!(error, DomainError::ValidationError { .. }));
+        assert!(matches!(error, AppError::ValidationError { .. }));
     }
 }

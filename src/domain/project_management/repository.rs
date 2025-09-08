@@ -1,10 +1,10 @@
 use crate::domain::project_management::AnyProject;
-use crate::domain::shared::errors::DomainError;
+use crate::application::errors::AppError;
 
 pub trait ProjectRepository {
-    fn save(&self, project: AnyProject) -> Result<(), DomainError>;
-    fn load(&self) -> Result<AnyProject, DomainError>;
-    fn find_all(&self) -> Result<Vec<AnyProject>, DomainError>;
-    fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, DomainError>;
-    fn get_next_code(&self) -> Result<String, DomainError>;
+    fn save(&self, project: AnyProject) -> Result<(), AppError>;
+    fn load(&self) -> Result<AnyProject, AppError>;
+    fn find_all(&self) -> Result<Vec<AnyProject>, AppError>;
+    fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError>;
+    fn get_next_code(&self) -> Result<String, AppError>;
 }
