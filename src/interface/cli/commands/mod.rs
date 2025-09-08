@@ -1,4 +1,5 @@
 pub mod company;
+pub mod create;
 pub mod delete;
 pub mod link;
 pub mod list;
@@ -12,6 +13,7 @@ pub mod update;
 pub mod validate;
 
 pub use company::CompanyCommand;
+pub use create::CreateCommand;
 pub use delete::DeleteCommand;
 pub use link::LinkCommand;
 pub use list::ListCommand;
