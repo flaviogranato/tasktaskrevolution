@@ -425,6 +425,9 @@ mod convertable_tests {
                 code: "TASK-1".to_string(),
                 name: "Basic Task".to_string(),
                 description: Some("A simple task for testing".to_string()),
+                created_at: None,
+                updated_at: None,
+                created_by: None,
             },
             spec: Spec {
                 project_code: "PROJ-1".to_string(),

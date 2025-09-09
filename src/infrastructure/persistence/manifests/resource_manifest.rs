@@ -367,6 +367,10 @@ mod tests {
                 email: "".to_string(),
                 code: "former-1".to_string(),
                 resource_type: "Former".to_string(),
+                description: None,
+                created_at: None,
+                updated_at: None,
+                created_by: None,
             },
             spec: ResourceSpec {
                 time_off_balance: 0,

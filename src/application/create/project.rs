@@ -17,9 +17,13 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         name: &str,
         description: Option<&str>,
         company_code: String,
+        code: Option<String>,
     ) -> Result<AnyProject, AppError> {
-        // Get the next available code
-        let code = self.repository.get_next_code()?;
+        // Get the next available code or use provided code
+        let code = match code {
+            Some(c) => c,
+            None => self.repository.get_next_code()?,
+        };
 
         // Use the unified builder
         let mut project = ProjectBuilder::new()
@@ -120,7 +124,7 @@ mod test {
         let name = "John";
         let description = Some("a simple test project");
 
-        let result = use_case.execute(name, description, "TEST_COMPANY".to_string());
+        let result = use_case.execute(name, description, "TEST_COMPANY".to_string(), None);
         assert!(result.is_ok());
     }
 
@@ -131,7 +135,7 @@ mod test {
         let name = "John";
         let description = Some("a simple test project");
 
-        let result = use_case.execute(name, description, "TEST_COMPANY".to_string());
+        let result = use_case.execute(name, description, "TEST_COMPANY".to_string(), None);
         assert!(result.is_err());
     }
 
@@ -141,7 +145,7 @@ mod test {
         let use_case = CreateProjectUseCase::new(mock_repo);
         let name = "John";
         let description = Some("a simple test project");
-        let _ = use_case.execute(name, description, "TEST_COMPANY".to_string());
+        let _ = use_case.execute(name, description, "TEST_COMPANY".to_string(), None);
 
         let saved_config = use_case.get_repository().saved_config.borrow();
         assert!(saved_config.is_some());

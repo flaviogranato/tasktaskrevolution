@@ -52,6 +52,9 @@ pub enum UpdateCommand {
         /// Resource code
         #[clap(short, long)]
         code: String,
+        /// Company code (optional if in company context)
+        #[clap(long)]
+        company: Option<String>,
         /// New resource name
         #[clap(long)]
         name: Option<String>,

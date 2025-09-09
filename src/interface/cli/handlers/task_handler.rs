@@ -42,6 +42,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 name: name.clone(),
                 project_code: project.clone(),
                 company_code: company,
+                code: None, // Auto-generate code
                 start_date: start,
                 due_date: due,
                 assigned_resources: assigned_resources_vec,

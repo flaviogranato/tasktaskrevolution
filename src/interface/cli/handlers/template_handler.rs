@@ -86,8 +86,11 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
 
             let mut template_params = HashMap::new();
             for param in params {
-                if let Some((key, value)) = param.split_once('=') {
-                    template_params.insert(key.to_string(), value.to_string());
+                // Split by comma first, then by equals
+                for kv_pair in param.split(',') {
+                    if let Some((key, value)) = kv_pair.split_once('=') {
+                        template_params.insert(key.trim().to_string(), value.trim().to_string());
+                    }
                 }
             }
 

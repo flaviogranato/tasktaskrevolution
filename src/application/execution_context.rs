@@ -236,6 +236,7 @@ impl ExecutionContext {
             (ExecutionContext::Company(_), "update", "resource") => Ok(()),
             (ExecutionContext::Company(_), "delete", "project") => Ok(()),
             (ExecutionContext::Company(_), "delete", "resource") => Ok(()),
+            (ExecutionContext::Company(_), "delete", "task") => Ok(()),
             
             // Project context - can manage tasks
             (ExecutionContext::Project(_, _), "create", "task") => Ok(()),

@@ -519,6 +519,10 @@ mod tests {
                 name: name.to_string(),
                 email: "test@example.com".to_string(),
                 resource_type: resource_type.to_string(),
+                description: None,
+                created_at: None,
+                updated_at: None,
+                created_by: None,
             },
             spec: crate::infrastructure::persistence::manifests::resource_manifest::ResourceSpec {
                 time_off_balance: 0,

@@ -212,7 +212,11 @@ impl ProjectTemplate {
 
         // Check for unresolved placeholders
         if result.contains("{{") && result.contains("}}") {
-            return Err(format!("Unresolved placeholders in template: {}", result));
+            // Find the first unresolved placeholder
+            let start = result.find("{{").unwrap();
+            let end = result[start..].find("}}").unwrap() + start + 2;
+            let unresolved = &result[start..end];
+            return Err(format!("Unresolved placeholders in template: {}", unresolved));
         }
 
         Ok(result)

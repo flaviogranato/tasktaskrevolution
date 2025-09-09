@@ -19,23 +19,22 @@ impl<R: CompanyRepository> ListCompaniesUseCase<R> {
 mod tests {
     use super::*;
     use crate::domain::company_management::Company;
-    use std::cell::RefCell;
 
     struct MockCompanyRepository {
-        companies: RefCell<Vec<Company>>,
+        companies: std::sync::RwLock<Vec<Company>>,
     }
 
     impl MockCompanyRepository {
         fn new(companies: Vec<Company>) -> Self {
             Self {
-                companies: RefCell::new(companies),
+                companies: std::sync::RwLock::new(companies),
             }
         }
     }
 
     impl CompanyRepository for MockCompanyRepository {
         fn save(&self, company: Company) -> Result<(), AppError> {
-            self.companies.borrow_mut().push(company);
+            self.companies.write().unwrap().push(company);
             Ok(())
         }
 
@@ -52,7 +51,7 @@ mod tests {
         }
 
         fn find_all(&self) -> Result<Vec<Company>, AppError> {
-            Ok(self.companies.borrow().clone())
+            Ok(self.companies.read().unwrap().clone())
         }
 
         fn update(&self, _company: Company) -> Result<(), AppError> {
@@ -80,15 +79,8 @@ mod tests {
         Company::new(
             code.to_string(),
             name.to_string(),
-            Some("Test company".to_string()),
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
             "test-user".to_string(),
-        )
+        ).expect("Failed to create test company")
     }
 
     #[test]

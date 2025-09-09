@@ -137,7 +137,8 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
 
             // For now, we'll use a simple approach since ListTasksUseCase doesn't support filtering
             // This will be improved in future iterations
-            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let base_path = context.asset_path_prefix();
+            let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let list_use_case = ListTasksUseCase::new(project_repository);
 
             match list_use_case.execute() {
@@ -158,19 +159,26 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        ListCommand::Resources => {
+        ListCommand::Resources { company } => {
             // Validate command in context
             if let Err(e) = context.validate_command("list", "resources") {
                 return Err(format!("Command not valid in current context: {}", e).into());
             }
 
             // Determine company code based on context
-            let company_code = match &context {
-                ExecutionContext::Root => {
+            let company_code = match (&context, company) {
+                (ExecutionContext::Root, Some(company)) => company,
+                (ExecutionContext::Root, None) => {
                     return Err("Company parameter required in root context for listing resources".into());
                 }
-                ExecutionContext::Company(code) => code,
-                ExecutionContext::Project(company, _) => company,
+                (ExecutionContext::Company(code), Some(_)) => {
+                    return Err("Company parameter not needed in company context".into());
+                }
+                (ExecutionContext::Company(code), None) => code.clone(),
+                (ExecutionContext::Project(company, _), Some(_)) => {
+                    return Err("Company parameter not needed in project context".into());
+                }
+                (ExecutionContext::Project(company, _), None) => company.clone(),
             };
 
             let resource_repository = FileResourceRepository::new(".");

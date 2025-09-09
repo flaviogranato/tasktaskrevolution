@@ -49,7 +49,8 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let base_path = context.asset_path_prefix();
+            let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
             let start = start_date
@@ -113,7 +114,8 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let base_path = context.asset_path_prefix();
+            let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let update_use_case = UpdateTaskUseCase::new(project_repository);
 
             let start = start_date
@@ -132,7 +134,7 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 due_date: due,
             };
 
-            match update_use_case.execute(&code, &project_code, args) {
+            match update_use_case.execute(&project_code, &code, args) {
                 Ok(_) => {
                     println!("✅ Task updated successfully!");
                     Ok(())
@@ -145,6 +147,7 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
         }
         UpdateCommand::Resource {
             code,
+            company,
             name,
             email,
             description,
@@ -154,15 +157,21 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 return Err(format!("Command not valid in current context: {}", e).into());
             }
 
-            // Resources can be updated from company or project context
-            match &context {
-                ExecutionContext::Root => {
-                    return Err("Resource updates not allowed in root context".into());
+            // Determine company code based on context
+            let company_code = match (&context, company) {
+                (ExecutionContext::Root, Some(company)) => company,
+                (ExecutionContext::Root, None) => {
+                    return Err("Company parameter required in root context for updating resources".into());
                 }
-                ExecutionContext::Company(_) | ExecutionContext::Project(_, _) => {
-                    // Resource updates are allowed in company or project context
+                (ExecutionContext::Company(code), Some(_)) => {
+                    return Err("Company parameter not needed in company context".into());
                 }
-            }
+                (ExecutionContext::Company(code), None) => code.clone(),
+                (ExecutionContext::Project(company, _), Some(_)) => {
+                    return Err("Company parameter not needed in project context".into());
+                }
+                (ExecutionContext::Project(company, _), None) => company.clone(),
+            };
 
             let resource_repository = FileResourceRepository::new(".");
             let update_use_case = UpdateResourceUseCase::new(resource_repository);

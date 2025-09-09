@@ -28,5 +28,8 @@ pub enum DeleteCommand {
         /// Resource code
         #[clap(short, long)]
         code: String,
+        /// Company code (optional if in company/project context)
+        #[clap(long)]
+        company: Option<String>,
     },
 }
