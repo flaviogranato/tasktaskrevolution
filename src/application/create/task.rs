@@ -8,6 +8,7 @@ pub struct CreateTaskArgs {
     pub company_code: String,
     pub project_code: String,
     pub name: String,
+    pub code: Option<String>,
     pub start_date: NaiveDate,
     pub due_date: NaiveDate,
     pub assigned_resources: Vec<String>,
@@ -27,6 +28,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
             company_code: _company_code, // TODO: Use this for hierarchical task saving
             project_code,
             name,
+            code,
             start_date,
             due_date,
             assigned_resources,
@@ -50,7 +52,12 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
             });
         }
 
-        let next_task_code = format!("task-{}", project.tasks().len() + 1);
+        let next_task_code = match code {
+            Some(c) => c,
+            None => format!("task-{}", project.tasks().len() + 1),
+        };
+
+        let task_code_for_output = next_task_code.clone();
 
         let builder = TaskBuilder::new()
             .project_code(project_code)
@@ -91,7 +98,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         // 3. Save the entire project aggregate.
         self.repository.save(project)?;
 
-        println!("Task {name} created successfully.");
+        println!("Task '{}' created successfully with code '{}'", name, task_code_for_output);
         Ok(())
     }
 }
@@ -172,6 +179,7 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Implementar autenticação".to_string(),
+            code: None,
             start_date,
             due_date,
             assigned_resources: vec!["dev1".to_string()],
@@ -197,6 +205,7 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-NONEXISTENT".to_string(),
             name: "Task for nonexistent project".to_string(),
+            code: None,
             start_date,
             due_date,
             assigned_resources: vec![],
@@ -218,6 +227,7 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task with invalid dates".to_string(),
+            code: None,
             start_date: due_date + chrono::Duration::days(1), // start_date > due_date
             due_date,
             assigned_resources: vec![],
@@ -244,6 +254,7 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task with same dates".to_string(),
+            code: None,
             start_date,           // Use the same date for both
             due_date: start_date, // Use the same date for both
             assigned_resources: vec![],
@@ -267,6 +278,7 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task without resources".to_string(),
+            code: None,
             start_date,
             due_date,
             assigned_resources: vec![], // Empty resources vector
@@ -293,6 +305,7 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task with multiple resources".to_string(),
+            code: None,
             start_date,
             due_date,
             assigned_resources: vec!["dev1".to_string(), "dev2".to_string(), "dev3".to_string()],
@@ -319,6 +332,7 @@ mod test {
         let args = CreateTaskArgs {
             project_code: "PROJ-1".to_string(),
             name: "Task that will fail to save".to_string(),
+            code: None,
             start_date,
             due_date,
             assigned_resources: vec!["dev1".to_string()],

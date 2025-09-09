@@ -41,7 +41,8 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let project_repository = FileProjectRepository::new();
+            let base_path = context.asset_path_prefix();
+            let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let cancel_use_case = CancelProjectUseCase::new(project_repository);
 
             match cancel_use_case.execute(&code) {
@@ -86,10 +87,11 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let base_path = context.asset_path_prefix();
+            let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let delete_use_case = DeleteTaskUseCase::new(project_repository);
 
-            match delete_use_case.execute(&code, &project_code) {
+            match delete_use_case.execute(&project_code, &code) {
                 Ok(_) => {
                     println!("✅ Task deleted successfully!");
                     Ok(())
@@ -100,23 +102,27 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
                 }
             }
         }
-        DeleteCommand::Resource { code } => {
+        DeleteCommand::Resource { code, company } => {
             // Validate command in context
             if let Err(e) = context.validate_command("delete", "resource") {
                 return Err(format!("Command not valid in current context: {}", e).into());
             }
 
-            // Resources can be deleted from company or project context
-            match &context {
-                ExecutionContext::Root => {
-                    return Err("Resource deletion not allowed in root context".into());
+            // Resources can be deleted from company or project context, or from root if company is specified
+            match (&context, company) {
+                (ExecutionContext::Root, None) => {
+                    return Err("Resource deletion not allowed in root context without company parameter".into());
                 }
-                ExecutionContext::Company(_) | ExecutionContext::Project(_, _) => {
+                (ExecutionContext::Root, Some(_)) => {
+                    // Resource deletion is allowed in root context when company is specified
+                }
+                (ExecutionContext::Company(_) | ExecutionContext::Project(_, _), _) => {
                     // Resource deletion is allowed in company or project context
                 }
             }
 
-            let resource_repository = FileResourceRepository::new(".");
+            let base_path = context.asset_path_prefix();
+            let resource_repository = FileResourceRepository::new(base_path);
             let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository);
 
             match deactivate_use_case.execute(&code) {

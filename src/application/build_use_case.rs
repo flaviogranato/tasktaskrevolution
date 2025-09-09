@@ -698,7 +698,7 @@ spec:
 
         // Create a test task file
         let task_content = r#"
-api_version: v1
+apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Task
 metadata:
   id: "01901dea-3e4b-7698-b323-95232d306587"

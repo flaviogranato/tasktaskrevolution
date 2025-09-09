@@ -47,18 +47,19 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
 
         let project =
             self.create_project_use_case
-                .execute(&rendered.project.name, project_description, company_code.clone())?;
+                .execute(&rendered.project.name, project_description, company_code.clone(), None)?;
 
         let mut created_resources = Vec::new();
         let mut created_tasks = Vec::new();
 
         // Create resources
         for resource in &rendered.resources {
-            self.create_resource_use_case.execute(
+              self.create_resource_use_case.execute(
                 &resource.name,
                 &resource.r#type,
                 company_code.clone(),
                 None, // Global to company
+                None, // Auto-generate code
             )?;
 
             created_resources.push(CreatedResource {
@@ -97,6 +98,7 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
                     company_code: company_code.clone(),
                     project_code: project.code().to_string(),
                     name: task.name.clone(),
+                    code: None, // Auto-generate code
                     start_date,
                     due_date,
                     assigned_resources: Vec::new(), // TODO: Assign resources based on template

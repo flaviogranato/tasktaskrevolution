@@ -8,6 +8,7 @@ use crate::application::{
     create::task::{CreateTaskUseCase, CreateTaskArgs},
     errors::AppError,
 };
+use crate::infrastructure::persistence::project_repository::FileProjectRepository;
 use chrono::NaiveDate;
 
 pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::error::Error>> {
@@ -66,7 +67,7 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
         }
         CreateCommand::Project {
             name,
-            code: _,
+            code,
             company,
             description,
             start_date: _,
@@ -99,7 +100,7 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
             let project_repo = &app.project_repository;
             
             let use_case = CreateProjectUseCase::new(project_repo.clone());
-            match use_case.execute(&name, description.as_deref(), company_code.clone()) {
+            match use_case.execute(&name, description.as_deref(), company_code.clone(), code) {
                 Ok(project) => {
                     println!("Project '{}' created successfully with code '{}' in company '{}'", 
                         project.name(), project.code(), company_code);
@@ -113,7 +114,7 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
         }
         CreateCommand::Task {
             name,
-            code: _,
+            code,
             project,
             company,
             description: _,
@@ -151,8 +152,8 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let app = get_app_handler().get_app();
-            let project_repo = &app.project_repository;
+            let base_path = context.asset_path_prefix();
+            let project_repo = FileProjectRepository::with_base_path(base_path.into());
             
             // Parse dates
             let start_date_parsed = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
@@ -178,6 +179,7 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
                 company_code: company_code.clone(),
                 project_code: project_code.clone(),
                 name: name.clone(),
+                code,
                 start_date: start_date_parsed,
                 due_date: due_date_parsed,
                 assigned_resources: assigned_resources_vec,
@@ -197,7 +199,7 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
         }
         CreateCommand::Resource {
             name,
-            code: _,
+            code,
             email: _,
             company,
             description: _,
@@ -229,7 +231,7 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
             let resource_repo = &app.resource_repository;
             
             let use_case = CreateResourceUseCase::new(resource_repo.clone());
-            match use_case.execute(&name, "employee", company_code.clone(), None) {
+            match use_case.execute(&name, "employee", company_code.clone(), None, code) {
                 Ok(_) => {
                     println!("Resource '{}' created successfully in company '{}'", name, company_code);
                     Ok(())

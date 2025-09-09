@@ -20,5 +20,9 @@ pub enum ListCommand {
         company: Option<String>,
     },
     /// List all resources
-    Resources,
+    Resources {
+        /// Company code filter
+        #[clap(short, long)]
+        company: Option<String>,
+    },
 }
