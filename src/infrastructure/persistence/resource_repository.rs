@@ -257,7 +257,12 @@ impl ResourceRepository for FileResourceRepository {
         let mut resources = Vec::new();
 
         // Search in company resources: companies/*/resources/*.yaml
-        let company_pattern = self.base_path.join("companies/*/resources/*.yaml");
+        let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
+        let company_pattern = if absolute_base.ends_with("companies") {
+            absolute_base.join("*/resources/*.yaml")
+        } else {
+            absolute_base.join("companies/*/resources/*.yaml")
+        };
         let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
@@ -326,14 +331,98 @@ impl ResourceRepository for FileResourceRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
+        println!("DEBUG: find_by_code called with code: {}", code);
+        println!("DEBUG: base_path: {:?}", self.base_path);
+        
+        // If we're in a project or company context, search in company resources first
+        if self.base_path.ends_with("projects") || self.base_path.ends_with("companies") || self.base_path.to_string_lossy() == "../" {
+            println!("DEBUG: In project/company context, searching company resources");
+            // We're in a project or company context, search in company resources
+            let company_pattern = if self.base_path.ends_with("projects") {
+                // We're in projects/*/ directory, go up to companies/*/resources
+                self.base_path.parent().unwrap().parent().unwrap().join("*/resources/*.yaml")
+            } else if self.base_path.to_string_lossy() == "../" {
+                // We're in a project directory, search in ../resources/*.yaml
+                // Get the current working directory and go up two levels to get to company directory
+                let current_dir = std::env::current_dir().unwrap_or_else(|_| self.base_path.clone());
+                let company_dir = current_dir.parent().unwrap().parent().unwrap();
+                company_dir.join("resources/*.yaml")
+            } else {
+                // We're in companies/*/ directory, search in */resources
+                self.base_path.join("*/resources/*.yaml")
+            };
+            
+            println!("DEBUG: Company pattern: {:?}", company_pattern);
+            
+            // Check if the resources directory exists
+            let resources_dir = if self.base_path.to_string_lossy() == "../" {
+                // Get the current working directory and go up two levels to get to company directory
+                let current_dir = std::env::current_dir().unwrap_or_else(|_| self.base_path.clone());
+                let company_dir = current_dir.parent().unwrap().parent().unwrap();
+                company_dir.join("resources")
+            } else {
+                self.base_path.join("resources")
+            };
+            println!("DEBUG: Resources directory: {:?}", resources_dir);
+            println!("DEBUG: Resources directory exists: {}", resources_dir.exists());
+            if resources_dir.exists() {
+                let entries: Result<Vec<_>, _> = std::fs::read_dir(&resources_dir).unwrap().collect();
+                println!("DEBUG: Resources directory contents: {:?}", entries.unwrap());
+            }
+            
+            let walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+                field: "glob pattern".to_string(),
+                message: e.to_string(),
+            })?;
+
+            let mut found_count = 0;
+            for entry in walker {
+                let entry = entry.map_err(|e| AppError::ValidationError {
+                    field: "glob entry".to_string(),
+                    message: e.to_string(),
+                })?;
+                let file_path = entry.as_path();
+                println!("DEBUG: Found resource file: {:?}", file_path);
+                found_count += 1;
+                
+                let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+                    operation: "file read".to_string(),
+                    path: file_path.to_string_lossy().to_string(),
+                    details: e.to_string(),
+                })?;
+
+                let resource_manifest: ResourceManifest =
+                    serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                        format: "YAML".to_string(),
+                        details: format!("Error deserializing resource: {}", e),
+                    })?;
+
+                let resource = AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error converting manifest: {}", e),
+                })?;
+
+                println!("DEBUG: Resource code: {}, looking for: {}", resource.code(), code);
+                if resource.code() == code {
+                    println!("DEBUG: Found matching resource!");
+                    return Ok(Some(resource));
+                }
+            }
+            println!("DEBUG: Searched {} company resource files, no match found", found_count);
+        }
+        
         // Since resources are saved by name, we need to search through all resources
         // to find one with the matching code
+        println!("DEBUG: Falling back to find_all()");
         let all_resources = self.find_all()?;
+        println!("DEBUG: Found {} total resources", all_resources.len());
         for resource in all_resources {
             if resource.code() == code {
+                println!("DEBUG: Found matching resource in find_all!");
                 return Ok(Some(resource));
             }
         }
+        println!("DEBUG: No resource found with code: {}", code);
         Ok(None)
     }
 

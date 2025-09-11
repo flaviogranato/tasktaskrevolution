@@ -234,15 +234,20 @@ impl ExecutionContext {
             (ExecutionContext::Company(_), "list", "resources") => Ok(()),
             (ExecutionContext::Company(_), "update", "project") => Ok(()),
             (ExecutionContext::Company(_), "update", "resource") => Ok(()),
+            (ExecutionContext::Company(_), "update", "task") => Ok(()),
             (ExecutionContext::Company(_), "delete", "project") => Ok(()),
             (ExecutionContext::Company(_), "delete", "resource") => Ok(()),
             (ExecutionContext::Company(_), "delete", "task") => Ok(()),
             
-            // Project context - can manage tasks
+            // Project context - can manage tasks and projects
             (ExecutionContext::Project(_, _), "create", "task") => Ok(()),
             (ExecutionContext::Project(_, _), "list", "tasks") => Ok(()),
             (ExecutionContext::Project(_, _), "update", "task") => Ok(()),
+            (ExecutionContext::Project(_, _), "update", "project") => Ok(()),
+            (ExecutionContext::Project(_, _), "update", "resource") => Ok(()),
             (ExecutionContext::Project(_, _), "delete", "task") => Ok(()),
+            (ExecutionContext::Project(_, _), "delete", "resource") => Ok(()),
+            (ExecutionContext::Project(_, _), "delete", "project") => Ok(()),
             
             // Invalid combinations
             _ => Err(ExecutionContextError::NoContextFound {

@@ -49,7 +49,11 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let base_path = context.asset_path_prefix();
+                let base_path = match context {
+                    ExecutionContext::Root => ".".to_string(),
+                    ExecutionContext::Company(_) => "../".to_string(),
+                    ExecutionContext::Project(_, _) => ".".to_string(),
+                };
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
@@ -92,7 +96,10 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             // Determine project and company codes based on context
             let (project_code, company_code) = match (&context, project, company) {
                 (ExecutionContext::Root, Some(project), Some(company)) => (project, company),
-                (ExecutionContext::Root, None, _) => {
+                (ExecutionContext::Root, None, None) => {
+                    return Err("Project and company parameters required in root context".into());
+                }
+                (ExecutionContext::Root, None, Some(_)) => {
                     return Err("Project parameter required in root context".into());
                 }
                 (ExecutionContext::Root, Some(_), None) => {
@@ -114,7 +121,11 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let base_path = context.asset_path_prefix();
+                let base_path = match context {
+                    ExecutionContext::Root => ".".to_string(),
+                    ExecutionContext::Company(_) => "../".to_string(),
+                    ExecutionContext::Project(_, _) => ".".to_string(),
+                };
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let update_use_case = UpdateTaskUseCase::new(project_repository);
 
@@ -173,7 +184,12 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 (ExecutionContext::Project(company, _), None) => company.clone(),
             };
 
-            let resource_repository = FileResourceRepository::new(".");
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => "../".to_string(),
+            };
+            let resource_repository = FileResourceRepository::new(base_path);
             let update_use_case = UpdateResourceUseCase::new(resource_repository);
 
             let args = UpdateResourceArgs {

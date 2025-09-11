@@ -152,7 +152,11 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let base_path = context.asset_path_prefix();
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => "../../".to_string(),
+            };
             let project_repo = FileProjectRepository::with_base_path(base_path.into());
             
             // Parse dates

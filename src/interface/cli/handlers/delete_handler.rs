@@ -41,7 +41,11 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let base_path = context.asset_path_prefix();
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => ".".to_string(),
+            };
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let cancel_use_case = CancelProjectUseCase::new(project_repository);
 
@@ -87,7 +91,11 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-            let base_path = context.asset_path_prefix();
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => ".".to_string(),
+            };
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let delete_use_case = DeleteTaskUseCase::new(project_repository);
 
@@ -111,7 +119,7 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
             // Resources can be deleted from company or project context, or from root if company is specified
             match (&context, company) {
                 (ExecutionContext::Root, None) => {
-                    return Err("Resource deletion not allowed in root context without company parameter".into());
+                    return Err("Company parameter required".into());
                 }
                 (ExecutionContext::Root, Some(_)) => {
                     // Resource deletion is allowed in root context when company is specified
@@ -121,7 +129,11 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
                 }
             }
 
-            let base_path = context.asset_path_prefix();
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => "../".to_string(),
+            };
             let resource_repository = FileResourceRepository::new(base_path);
             let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository);
 

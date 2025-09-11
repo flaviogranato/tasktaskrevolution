@@ -109,76 +109,20 @@ impl FileProjectRepository {
         manifest: ProjectManifest,
         company_code: &str,
     ) -> Result<AnyProject, AppError> {
-        let code = manifest.metadata.code.ok_or_else(|| AppError::ValidationError {
-            field: "code".to_string(),
-            message: "Project code is missing in manifest".to_string(),
+        // Use the TryFrom implementation to load the project with tasks from manifest
+        let mut project = AnyProject::try_from(manifest).map_err(|e| AppError::ValidationError {
+            field: "project manifest".to_string(),
+            message: e,
         })?;
-        let name = manifest.metadata.name;
-        let description = if manifest.metadata.description.is_empty() {
-            None
-        } else {
-            Some(manifest.metadata.description)
-        };
-        let start_date = manifest.spec.start_date;
-        let end_date = manifest.spec.end_date;
-        let vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
-        let timezone = manifest.spec.timezone;
 
-        // Convert status from manifest
-        let _status = match manifest.spec.status {
-            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::Planned => {
-                crate::domain::project_management::project::ProjectStatus::Planned
+        // Update the company code to match the path
+        match &mut project {
+            AnyProject::Project(p) => {
+                p.company_code = company_code.to_string();
             }
-            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::InProgress => {
-                crate::domain::project_management::project::ProjectStatus::InProgress
-            }
-            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::Completed => {
-                crate::domain::project_management::project::ProjectStatus::Completed
-            }
-            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::Cancelled => {
-                crate::domain::project_management::project::ProjectStatus::Cancelled
-            }
-            crate::infrastructure::persistence::manifests::project_manifest::ProjectStatusManifest::OnHold => {
-                crate::domain::project_management::project::ProjectStatus::Planned // Map OnHold to Planned for now
-            }
-        };
-
-        // Use ProjectBuilder to create the project
-        let mut builder = crate::domain::project_management::builder::ProjectBuilder::new()
-            .code(code)
-            .name(name)
-            .company_code(company_code.to_string())
-            .created_by("system".to_string()); // TODO: Get from manifest or context
-
-        if let Some(desc) = description {
-            builder = builder.description(Some(desc));
-        }
-        if let Some(start) = start_date {
-            // Parse start_date from string to NaiveDate
-            if let Ok(parsed_date) = chrono::NaiveDate::parse_from_str(&start, "%Y-%m-%d") {
-                builder = builder.start_date(parsed_date);
-            }
-        }
-        if let Some(end) = end_date {
-            // Parse end_date from string to NaiveDate
-            if let Ok(parsed_date) = chrono::NaiveDate::parse_from_str(&end, "%Y-%m-%d") {
-                builder = builder.end_date(parsed_date);
-            }
-        }
-        if let Some(vr) = vacation_rules {
-            // Convert vacation_rules::VacationRules to project::VacationRules
-            let project_vr = crate::domain::project_management::project::VacationRules {
-                allowed_days_per_year: vr.max_concurrent_vacations.unwrap_or(20),
-                carry_over_days: 5, // Default value
-            };
-            builder = builder.vacation_rules(project_vr);
-        }
-        if let Some(tz) = timezone {
-            builder = builder.timezone(tz);
         }
 
-        let project = builder.build()?;
-        Ok(AnyProject::from(project))
+        Ok(project)
     }
 
     /// Carrega e deserializa o manifesto de um projeto de um arquivo YAML.
@@ -307,7 +251,11 @@ impl ProjectRepository for FileProjectRepository {
 
         // Padrão para buscar projetos na nova estrutura: companies/*/projects/*/project.yaml
         let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
-        let pattern = absolute_base.join("companies/*/projects/*/project.yaml");
+        let pattern = if absolute_base.ends_with("companies") {
+            absolute_base.join("*/projects/*/project.yaml")
+        } else {
+            absolute_base.join("companies/*/projects/*/project.yaml")
+        };
         let pattern_str = pattern.to_str().unwrap();
         if let Ok(walker) = glob(pattern_str) {
             for entry in walker.flatten() {
@@ -410,12 +358,16 @@ mod tests {
                 code: Some("TEST-001".to_string()),
                 name: "Test Project".to_string(),
                 description: "A test project for repository testing".to_string(),
+                created_at: None,
+                updated_at: None,
+                created_by: None,
             },
             spec: ProjectSpec {
                 timezone: Some("UTC".to_string()),
                 start_date: Some("2024-01-01".to_string()),
                 end_date: Some("2024-12-31".to_string()),
                 status: ProjectStatusManifest::Planned,
+                tasks: None,
                 vacation_rules: Some(VacationRulesManifest {
                     max_concurrent_vacations: None,
                     allow_layoff_vacations: None,
