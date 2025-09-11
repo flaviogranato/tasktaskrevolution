@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
-use crate::application::errors::AppError;
 use chrono::NaiveDate;
 use std::fmt;
 
@@ -97,8 +97,6 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
-    
-    
         project_management::{AnyProject, builder::ProjectBuilder},
         task_management::{state::Planned, task::Task},
     };

@@ -1,71 +1,181 @@
-use std::fmt;
 use std::error::Error as StdError;
+use std::fmt;
 
 /// Unified application error type
 /// Replaces all domain-specific error types with a single, idiomatic error enum
 #[derive(Debug, PartialEq)]
 pub enum AppError {
     // Entity Not Found Errors
-    ProjectNotFound { code: String },
-    ResourceNotFound { code: String },
-    TaskNotFound { code: String },
-    CompanyNotFound { code: String },
-    ConfigurationNotFound { path: String },
+    ProjectNotFound {
+        code: String,
+    },
+    ResourceNotFound {
+        code: String,
+    },
+    TaskNotFound {
+        code: String,
+    },
+    CompanyNotFound {
+        code: String,
+    },
+    ConfigurationNotFound {
+        path: String,
+    },
 
     // Entity Already Exists Errors
-    ProjectAlreadyExists { code: String },
-    ResourceAlreadyExists { code: String },
-    TaskAlreadyExists { code: String },
-    CompanyAlreadyExists { code: String },
+    ProjectAlreadyExists {
+        code: String,
+    },
+    ResourceAlreadyExists {
+        code: String,
+    },
+    TaskAlreadyExists {
+        code: String,
+    },
+    CompanyAlreadyExists {
+        code: String,
+    },
 
     // Invalid State Errors
-    ProjectInvalidState { current: String, expected: String },
-    ResourceInvalidState { current: String, expected: String },
-    TaskInvalidState { current: String, expected: String },
+    ProjectInvalidState {
+        current: String,
+        expected: String,
+    },
+    ResourceInvalidState {
+        current: String,
+        expected: String,
+    },
+    TaskInvalidState {
+        current: String,
+        expected: String,
+    },
 
     // Validation Errors
-    ValidationError { field: String, message: String },
-    ProjectValidationFailed { details: String },
-    ResourceValidationFailed { details: String },
-    TaskValidationFailed { details: String },
-    ConfigurationInvalid { field: String, value: String, reason: String },
-    ConfigurationMissing { field: String },
+    ValidationError {
+        field: String,
+        message: String,
+    },
+    ProjectValidationFailed {
+        details: String,
+    },
+    ResourceValidationFailed {
+        details: String,
+    },
+    TaskValidationFailed {
+        details: String,
+    },
+    ConfigurationInvalid {
+        field: String,
+        value: String,
+        reason: String,
+    },
+    ConfigurationMissing {
+        field: String,
+    },
 
     // Business Logic Errors
-    TaskAssignmentFailed { reason: String },
-    CircularDependency { task_codes: String },
-    ModificationNotAllowed { entity: String, state: String, reason: String },
-    OperationNotAllowed { operation: String, reason: String },
+    TaskAssignmentFailed {
+        reason: String,
+    },
+    CircularDependency {
+        task_codes: String,
+    },
+    ModificationNotAllowed {
+        entity: String,
+        state: String,
+        reason: String,
+    },
+    OperationNotAllowed {
+        operation: String,
+        reason: String,
+    },
 
     // I/O Errors
-    IoError { operation: String, details: String },
-    IoErrorWithPath { operation: String, path: String, details: String },
-    FileNotFound { path: String },
-    FileReadError { path: String, details: String },
-    FileWriteError { path: String, details: String },
-    DirectoryNotFound { path: String },
-    DirectoryCreateError { path: String, details: String },
+    IoError {
+        operation: String,
+        details: String,
+    },
+    IoErrorWithPath {
+        operation: String,
+        path: String,
+        details: String,
+    },
+    FileNotFound {
+        path: String,
+    },
+    FileReadError {
+        path: String,
+        details: String,
+    },
+    FileWriteError {
+        path: String,
+        details: String,
+    },
+    DirectoryNotFound {
+        path: String,
+    },
+    DirectoryCreateError {
+        path: String,
+        details: String,
+    },
 
     // Serialization Errors
-    SerializationError { format: String, details: String },
-    DeserializationError { format: String, details: String },
-    FileParseError { path: String, format: String, details: String },
+    SerializationError {
+        format: String,
+        details: String,
+    },
+    DeserializationError {
+        format: String,
+        details: String,
+    },
+    FileParseError {
+        path: String,
+        format: String,
+        details: String,
+    },
 
     // Repository Errors
-    RepositoryError { operation: String, details: String },
-    PersistenceError { operation: String, details: String },
-    DatabaseError { operation: String, details: String },
-    NetworkError { operation: String, details: String },
-    CacheError { operation: String, details: String },
+    RepositoryError {
+        operation: String,
+        details: String,
+    },
+    PersistenceError {
+        operation: String,
+        details: String,
+    },
+    DatabaseError {
+        operation: String,
+        details: String,
+    },
+    NetworkError {
+        operation: String,
+        details: String,
+    },
+    CacheError {
+        operation: String,
+        details: String,
+    },
 
     // Path and Configuration Errors
-    PathInvalid { path: String, reason: String },
-    ManagerNotFound { identifier: String },
-    InvalidManagerData { field: String, reason: String },
-    RepositoryInitializationFailed { reason: String },
+    PathInvalid {
+        path: String,
+        reason: String,
+    },
+    ManagerNotFound {
+        identifier: String,
+    },
+    InvalidManagerData {
+        field: String,
+        reason: String,
+    },
+    RepositoryInitializationFailed {
+        reason: String,
+    },
 
     // Generic Errors
-    Generic { message: String },
+    Generic {
+        message: String,
+    },
 }
 
 impl fmt::Display for AppError {
@@ -127,7 +237,11 @@ impl fmt::Display for AppError {
                 write!(f, "Task validation failed: {}", details)
             }
             AppError::ConfigurationInvalid { field, value, reason } => {
-                write!(f, "Invalid configuration for field '{}' with value '{}': {}", field, value, reason)
+                write!(
+                    f,
+                    "Invalid configuration for field '{}' with value '{}': {}",
+                    field, value, reason
+                )
             }
             AppError::ConfigurationMissing { field } => {
                 write!(f, "Missing configuration for field '{}'", field)
@@ -151,7 +265,11 @@ impl fmt::Display for AppError {
             AppError::IoError { operation, details } => {
                 write!(f, "I/O error during {}: {}", operation, details)
             }
-            AppError::IoErrorWithPath { operation, path, details } => {
+            AppError::IoErrorWithPath {
+                operation,
+                path,
+                details,
+            } => {
                 write!(f, "I/O error during {} on path '{}': {}", operation, path, details)
             }
             AppError::FileNotFound { path } => {
@@ -298,7 +416,11 @@ impl AppError {
     }
 
     /// Create an I/O error with path
-    pub fn io_error_with_path(operation: impl Into<String>, path: impl Into<String>, details: impl Into<String>) -> Self {
+    pub fn io_error_with_path(
+        operation: impl Into<String>,
+        path: impl Into<String>,
+        details: impl Into<String>,
+    ) -> Self {
         Self::IoErrorWithPath {
             operation: operation.into(),
             path: path.into(),
@@ -447,4 +569,3 @@ mod tests {
         assert!(result.is_ok());
     }
 }
-

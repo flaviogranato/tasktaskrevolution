@@ -1,7 +1,7 @@
 #![allow(unused_imports)]
+use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
-use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
@@ -65,8 +65,6 @@ mod tests {
     use super::*;
     use crate::domain::project_management::any_project::AnyProject;
     use crate::domain::{
-    
-    
         project_management::builder::ProjectBuilder,
         task_management::{state::Planned, task::Task},
     };

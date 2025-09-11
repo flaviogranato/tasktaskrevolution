@@ -1,7 +1,7 @@
 // Priority and Category are used in Task initializations
+use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::task_management::TaskBuilder;
-use crate::application::errors::AppError;
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {
@@ -98,7 +98,10 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         // 3. Save the entire project aggregate.
         self.repository.save(project)?;
 
-        println!("Task '{}' created successfully with code '{}'", name, task_code_for_output);
+        println!(
+            "Task '{}' created successfully with code '{}'",
+            name, task_code_for_output
+        );
         Ok(())
     }
 }

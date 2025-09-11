@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
+use crate::application::errors::AppError;
 use crate::domain::company_settings::{
     config::{Config, WorkDay},
     repository::ConfigRepository,
 };
-use crate::application::errors::AppError;
 
 #[allow(dead_code)]
 pub struct UpdateCompanyConfigUseCase<R>
@@ -353,11 +353,7 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(
-            &self,
-            _config: ConfigManifest,
-            _path: PathBuf,
-        ) -> Result<(), crate::application::errors::AppError> {
+        fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), crate::application::errors::AppError> {
             Ok(())
         }
 

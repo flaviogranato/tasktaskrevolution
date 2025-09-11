@@ -1,6 +1,6 @@
+use crate::application::errors::AppError;
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
 use crate::domain::task_management::any_task::AnyTask;
-use crate::application::errors::AppError;
 use crate::infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest};
 use globwalk::glob;
 use serde_yaml;
@@ -151,10 +151,11 @@ impl FileProjectRepository {
                 path: task_path.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
-                details: format!("Error deserializing task: {e}"),
-            })?;
+            let task_manifest: TaskManifest =
+                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing task: {e}"),
+                })?;
             let task = AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {
                 format: "YAML".to_string(),
                 details: format!("Error converting task manifest: {e}"),

@@ -1,5 +1,5 @@
-use crate::domain::project_management::AnyProject;
 use crate::application::errors::AppError;
+use crate::domain::project_management::AnyProject;
 
 pub trait ProjectRepository {
     fn save(&self, project: AnyProject) -> Result<(), AppError>;

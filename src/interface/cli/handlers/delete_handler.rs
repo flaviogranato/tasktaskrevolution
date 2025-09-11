@@ -1,10 +1,8 @@
 use super::super::commands::DeleteCommand;
 use crate::{
     application::{
-        execution_context::ExecutionContext,
-        project::cancel_project::CancelProjectUseCase, 
-        resource::deactivate_resource::DeactivateResourceUseCase,
-        task::delete_task::DeleteTaskUseCase,
+        execution_context::ExecutionContext, project::cancel_project::CancelProjectUseCase,
+        resource::deactivate_resource::DeactivateResourceUseCase, task::delete_task::DeleteTaskUseCase,
     },
     infrastructure::persistence::{
         project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
@@ -13,8 +11,8 @@ use crate::{
 
 pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::error::Error>> {
     // Detect the current execution context
-    let context = ExecutionContext::detect_current()
-        .map_err(|e| format!("Failed to detect execution context: {}", e))?;
+    let context =
+        ExecutionContext::detect_current().map_err(|e| format!("Failed to detect execution context: {}", e))?;
 
     println!("[INFO] Current context: {}", context.display_name());
 

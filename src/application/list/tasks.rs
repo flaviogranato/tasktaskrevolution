@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
-use crate::domain::project_management::repository::ProjectRepository;
 use crate::application::errors::AppError;
+use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 
 pub struct ListTasksUseCase<R: ProjectRepository> {
@@ -36,9 +36,9 @@ impl<R: ProjectRepository> ListTasksUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::errors::AppError;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use crate::domain::task_management::{state::Planned, task::Task};
-    use crate::application::errors::AppError;
     use chrono::NaiveDate;
 
     use uuid7::uuid7;

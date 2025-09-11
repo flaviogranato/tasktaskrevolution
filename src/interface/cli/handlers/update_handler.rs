@@ -14,8 +14,8 @@ use chrono::NaiveDate;
 
 pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::error::Error>> {
     // Detect the current execution context
-    let context = ExecutionContext::detect_current()
-        .map_err(|e| format!("Failed to detect execution context: {}", e))?;
+    let context =
+        ExecutionContext::detect_current().map_err(|e| format!("Failed to detect execution context: {}", e))?;
 
     println!("[INFO] Current context: {}", context.display_name());
 
@@ -49,11 +49,11 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-                let base_path = match context {
-                    ExecutionContext::Root => ".".to_string(),
-                    ExecutionContext::Company(_) => "../".to_string(),
-                    ExecutionContext::Project(_, _) => ".".to_string(),
-                };
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => ".".to_string(),
+            };
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
@@ -121,11 +121,11 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
                 }
             };
 
-                let base_path = match context {
-                    ExecutionContext::Root => ".".to_string(),
-                    ExecutionContext::Company(_) => "../".to_string(),
-                    ExecutionContext::Project(_, _) => ".".to_string(),
-                };
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => ".".to_string(),
+            };
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let update_use_case = UpdateTaskUseCase::new(project_repository);
 

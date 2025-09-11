@@ -1,9 +1,9 @@
 use crate::application::create::project::CreateProjectUseCase;
 use crate::application::create::resource::CreateResourceUseCase;
 use crate::application::create::task::CreateTaskUseCase;
+use crate::application::errors::AppError;
 use crate::domain::project_management::{ProjectTemplate, repository::ProjectRepository};
 use crate::domain::resource_management::repository::ResourceRepository;
-use crate::application::errors::AppError;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 
@@ -45,16 +45,19 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
             Some(rendered.project.description.as_str())
         };
 
-        let project =
-            self.create_project_use_case
-                .execute(&rendered.project.name, project_description, company_code.clone(), None)?;
+        let project = self.create_project_use_case.execute(
+            &rendered.project.name,
+            project_description,
+            company_code.clone(),
+            None,
+        )?;
 
         let mut created_resources = Vec::new();
         let mut created_tasks = Vec::new();
 
         // Create resources
         for resource in &rendered.resources {
-              self.create_resource_use_case.execute(
+            self.create_resource_use_case.execute(
                 &resource.name,
                 &resource.r#type,
                 company_code.clone(),

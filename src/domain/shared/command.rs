@@ -515,11 +515,10 @@ mod tests {
 
     #[test]
     fn test_mock_command_validation_failure() {
-        let command =
-            MockCommand::new("test", "Test command").with_validation_result(Err(AppError::ValidationError {
-                field: "test".to_string(),
-                message: "Validation failed".to_string(),
-            }));
+        let command = MockCommand::new("test", "Test command").with_validation_result(Err(AppError::ValidationError {
+            field: "test".to_string(),
+            message: "Validation failed".to_string(),
+        }));
         let result = command.validate();
         assert!(result.is_err());
 

@@ -1,12 +1,8 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::convertable::Convertible;
-use crate::domain::{
-    
-    
-    company_settings::{config::Config, repository::ConfigRepository},
-};
 use crate::application::errors::AppError;
+use crate::domain::company_settings::{config::Config, repository::ConfigRepository};
+use crate::domain::shared::convertable::Convertible;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::PathBuf;
 

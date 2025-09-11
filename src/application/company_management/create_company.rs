@@ -1,5 +1,5 @@
-use crate::domain::company_management::{Company, CompanyRepository};
 use crate::application::errors::AppError;
+use crate::domain::company_management::{Company, CompanyRepository};
 
 /// Arguments for creating a new company.
 #[derive(Debug, Clone)]

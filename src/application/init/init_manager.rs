@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
+use crate::application::errors::AppError;
 use crate::domain::company_settings::Config;
 use crate::domain::company_settings::repository::ConfigRepository;
-use crate::application::errors::AppError;
 use std::boxed::Box;
 
 /// Data structure for initializing a manager/consultant

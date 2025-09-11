@@ -2,19 +2,21 @@ use super::super::commands::ListCommand;
 use crate::{
     application::{
         execution_context::ExecutionContext,
-        list::{companies::ListCompaniesUseCase, projects::ListProjectsUseCase, resources::ListResourcesUseCase, tasks::ListTasksUseCase},
+        list::{
+            companies::ListCompaniesUseCase, projects::ListProjectsUseCase, resources::ListResourcesUseCase,
+            tasks::ListTasksUseCase,
+        },
     },
     infrastructure::persistence::{
-        company_repository::FileCompanyRepository,
-        project_repository::FileProjectRepository, 
+        company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
         resource_repository::FileResourceRepository,
     },
 };
 
 pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::error::Error>> {
     // Detect the current execution context
-    let context = ExecutionContext::detect_current()
-        .map_err(|e| format!("Failed to detect execution context: {}", e))?;
+    let context =
+        ExecutionContext::detect_current().map_err(|e| format!("Failed to detect execution context: {}", e))?;
 
     println!("[INFO] Current context: {}", context.display_name());
 
@@ -54,9 +56,7 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                         }
                     }
                 }
-                _ => {
-                    Err("Companies can only be listed from root context".into())
-                }
+                _ => Err("Companies can only be listed from root context".into()),
             }
         }
         ListCommand::Projects { company } => {

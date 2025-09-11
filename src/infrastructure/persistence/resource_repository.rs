@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
+use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::{AnyResource, Period, PeriodType, repository::ResourceRepository};
-use crate::application::errors::AppError;
 use crate::infrastructure::persistence::{
     manifests::resource_manifest::ResourceManifest, project_repository::FileProjectRepository,
 };
@@ -333,14 +333,22 @@ impl ResourceRepository for FileResourceRepository {
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
         println!("DEBUG: find_by_code called with code: {}", code);
         println!("DEBUG: base_path: {:?}", self.base_path);
-        
+
         // If we're in a project or company context, search in company resources first
-        if self.base_path.ends_with("projects") || self.base_path.ends_with("companies") || self.base_path.to_string_lossy() == "../" {
+        if self.base_path.ends_with("projects")
+            || self.base_path.ends_with("companies")
+            || self.base_path.to_string_lossy() == "../"
+        {
             println!("DEBUG: In project/company context, searching company resources");
             // We're in a project or company context, search in company resources
             let company_pattern = if self.base_path.ends_with("projects") {
                 // We're in projects/*/ directory, go up to companies/*/resources
-                self.base_path.parent().unwrap().parent().unwrap().join("*/resources/*.yaml")
+                self.base_path
+                    .parent()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .join("*/resources/*.yaml")
             } else if self.base_path.to_string_lossy() == "../" {
                 // We're in a project directory, search in ../resources/*.yaml
                 // Get the current working directory and go up two levels to get to company directory
@@ -351,9 +359,9 @@ impl ResourceRepository for FileResourceRepository {
                 // We're in companies/*/ directory, search in */resources
                 self.base_path.join("*/resources/*.yaml")
             };
-            
+
             println!("DEBUG: Company pattern: {:?}", company_pattern);
-            
+
             // Check if the resources directory exists
             let resources_dir = if self.base_path.to_string_lossy() == "../" {
                 // Get the current working directory and go up two levels to get to company directory
@@ -369,7 +377,7 @@ impl ResourceRepository for FileResourceRepository {
                 let entries: Result<Vec<_>, _> = std::fs::read_dir(&resources_dir).unwrap().collect();
                 println!("DEBUG: Resources directory contents: {:?}", entries.unwrap());
             }
-            
+
             let walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
                 field: "glob pattern".to_string(),
                 message: e.to_string(),
@@ -384,7 +392,7 @@ impl ResourceRepository for FileResourceRepository {
                 let file_path = entry.as_path();
                 println!("DEBUG: Found resource file: {:?}", file_path);
                 found_count += 1;
-                
+
                 let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
                     operation: "file read".to_string(),
                     path: file_path.to_string_lossy().to_string(),
@@ -410,7 +418,7 @@ impl ResourceRepository for FileResourceRepository {
             }
             println!("DEBUG: Searched {} company resource files, no match found", found_count);
         }
-        
+
         // Since resources are saved by name, we need to search through all resources
         // to find one with the matching code
         println!("DEBUG: Falling back to find_all()");

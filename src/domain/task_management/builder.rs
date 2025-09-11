@@ -1,7 +1,7 @@
 use super::category::Category;
 use super::priority::Priority;
 use super::state::Planned;
-use super::task::{Task, AppError};
+use super::task::{AppError, Task};
 use chrono::NaiveDate;
 use std::marker::PhantomData;
 use uuid7::{Uuid, uuid7};

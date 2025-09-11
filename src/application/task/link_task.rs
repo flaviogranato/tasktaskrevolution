@@ -1,8 +1,8 @@
 #![allow(unused_imports)]
-use crate::domain::task_management::{Category, Priority};
+use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::task_management::any_task::AnyTask;
-use crate::application::errors::AppError;
+use crate::domain::task_management::{Category, Priority};
 use std::fmt;
 
 #[derive(Debug)]
@@ -54,16 +54,9 @@ where
         Self { project_repository }
     }
 
-    pub fn execute(
-        &self,
-        project_code: &str,
-        task_code: &str,
-        dependency_code: &str,
-    ) -> Result<AnyTask, LinkAppError> {
+    pub fn execute(&self, project_code: &str, task_code: &str, dependency_code: &str) -> Result<AnyTask, LinkAppError> {
         if task_code == dependency_code {
-            return Err(LinkAppError::AppError(
-                "A task cannot depend on itself.".to_string(),
-            ));
+            return Err(LinkAppError::AppError("A task cannot depend on itself.".to_string()));
         }
 
         // 1. Load the project aggregate that contains the tasks.
@@ -128,8 +121,6 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
-    
-    
         project_management::{any_project::AnyProject, builder::ProjectBuilder},
         task_management::{any_task::AnyTask, state::Planned, task::Task},
     };

@@ -3,8 +3,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use crate::domain::company_management::{Company, CompanyRepository};
 use crate::application::errors::AppError;
+use crate::domain::company_management::{Company, CompanyRepository};
 use crate::infrastructure::persistence::manifests::company_manifest::CompanyManifest;
 
 /// File-based implementation of CompanyRepository.

@@ -1,8 +1,6 @@
 #![allow(unused_imports)]
 use crate::domain::task_management::{Category, Priority};
-use crate::domain::{
-    
-    project_management::repository::ProjectRepository, task_management::AnyTask};
+use crate::domain::{project_management::repository::ProjectRepository, task_management::AnyTask};
 use csv::Writer;
 use std::error::Error;
 use std::io;
@@ -111,12 +109,12 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::errors::AppError;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use crate::domain::task_management::{
         Task,
         state::{Completed, InProgress},
     };
-    use crate::application::errors::AppError;
     use chrono::NaiveDate;
     use uuid7::uuid7;
 

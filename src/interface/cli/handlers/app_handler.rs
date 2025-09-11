@@ -6,6 +6,12 @@ pub struct AppHandler {
     app: Arc<App>,
 }
 
+impl Default for AppHandler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppHandler {
     pub fn new() -> Self {
         Self {

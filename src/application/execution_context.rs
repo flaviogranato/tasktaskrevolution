@@ -1,6 +1,6 @@
-use std::path::Path;
-use serde_yaml;
 use crate::application::errors::AppError;
+use serde_yaml;
+use std::path::Path;
 
 /// Represents the different execution contexts where CLI commands can be executed
 #[derive(Debug, Clone, PartialEq)]
@@ -104,10 +104,9 @@ impl ExecutionContext {
 
     /// Detects the execution context from the current working directory
     pub fn detect_current() -> Result<Self, ExecutionContextError> {
-        let current_dir = std::env::current_dir()
-            .map_err(|e| ExecutionContextError::IoError {
-                error: format!("Failed to get current directory: {}", e),
-            })?;
+        let current_dir = std::env::current_dir().map_err(|e| ExecutionContextError::IoError {
+            error: format!("Failed to get current directory: {}", e),
+        })?;
         Self::detect(&current_dir)
     }
 
@@ -123,10 +122,11 @@ impl ExecutionContext {
             error: format!("Failed to read company.yaml: {}", e),
         })?;
 
-        let manifest: CompanyManifest = serde_yaml::from_str(&content).map_err(|e| ExecutionContextError::InvalidYaml {
-            file: "company.yaml".to_string(),
-            error: e.to_string(),
-        })?;
+        let manifest: CompanyManifest =
+            serde_yaml::from_str(&content).map_err(|e| ExecutionContextError::InvalidYaml {
+                file: "company.yaml".to_string(),
+                error: e.to_string(),
+            })?;
 
         Ok(Some(manifest.metadata.code))
     }
@@ -143,10 +143,11 @@ impl ExecutionContext {
             error: format!("Failed to read project.yaml: {}", e),
         })?;
 
-        let manifest: ProjectManifest = serde_yaml::from_str(&content).map_err(|e| ExecutionContextError::InvalidYaml {
-            file: "project.yaml".to_string(),
-            error: e.to_string(),
-        })?;
+        let manifest: ProjectManifest =
+            serde_yaml::from_str(&content).map_err(|e| ExecutionContextError::InvalidYaml {
+                file: "project.yaml".to_string(),
+                error: e.to_string(),
+            })?;
 
         Ok(Some(manifest.metadata.code))
     }
@@ -155,7 +156,7 @@ impl ExecutionContext {
     fn find_company_from_path(path: &Path) -> Result<Option<String>, ExecutionContextError> {
         // Look for companies/*/projects/*/ structure
         let path_components: Vec<_> = path.components().collect();
-        
+
         // Find the pattern: .../companies/{company_code}/projects/{project_code}/...
         for (i, component) in path_components.iter().enumerate() {
             if component.as_os_str() == "companies" && i + 1 < path_components.len() {
@@ -165,7 +166,7 @@ impl ExecutionContext {
                 }
             }
         }
-        
+
         Ok(None)
     }
 
@@ -204,19 +205,19 @@ impl ExecutionContext {
             (ExecutionContext::Root, "create") => vec![],
             (ExecutionContext::Root, "update") => vec![],
             (ExecutionContext::Root, "delete") => vec![],
-            
+
             // Company context
             (ExecutionContext::Company(_), "list") => vec![],
             (ExecutionContext::Company(_), "create") => vec![],
             (ExecutionContext::Company(_), "update") => vec![],
             (ExecutionContext::Company(_), "delete") => vec![],
-            
+
             // Project context
             (ExecutionContext::Project(_, _), "list") => vec![],
             (ExecutionContext::Project(_, _), "create") => vec![],
             (ExecutionContext::Project(_, _), "update") => vec![],
             (ExecutionContext::Project(_, _), "delete") => vec![],
-            
+
             _ => vec![],
         }
     }
@@ -226,7 +227,7 @@ impl ExecutionContext {
         match (self, command, entity) {
             // Root context - can do everything but needs parameters
             (ExecutionContext::Root, _, _) => Ok(()),
-            
+
             // Company context - can manage projects and resources
             (ExecutionContext::Company(_), "create", "project") => Ok(()),
             (ExecutionContext::Company(_), "create", "resource") => Ok(()),
@@ -238,7 +239,7 @@ impl ExecutionContext {
             (ExecutionContext::Company(_), "delete", "project") => Ok(()),
             (ExecutionContext::Company(_), "delete", "resource") => Ok(()),
             (ExecutionContext::Company(_), "delete", "task") => Ok(()),
-            
+
             // Project context - can manage tasks and projects
             (ExecutionContext::Project(_, _), "create", "task") => Ok(()),
             (ExecutionContext::Project(_, _), "list", "tasks") => Ok(()),
@@ -248,10 +249,15 @@ impl ExecutionContext {
             (ExecutionContext::Project(_, _), "delete", "task") => Ok(()),
             (ExecutionContext::Project(_, _), "delete", "resource") => Ok(()),
             (ExecutionContext::Project(_, _), "delete", "project") => Ok(()),
-            
+
             // Invalid combinations
             _ => Err(ExecutionContextError::NoContextFound {
-                path: format!("Command '{} {}' not valid in context: {}", command, entity, self.display_name()),
+                path: format!(
+                    "Command '{} {}' not valid in context: {}",
+                    command,
+                    entity,
+                    self.display_name()
+                ),
             }),
         }
     }
@@ -386,10 +392,17 @@ metadata:
     #[test]
     fn test_detect_project_context_with_company_path() {
         let temp_root = setup_test_environment();
-        let project_dir = temp_root.join("companies").join("test-company").join("projects").join("test-project");
+        let project_dir = temp_root
+            .join("companies")
+            .join("test-company")
+            .join("projects")
+            .join("test-project");
 
         let context = ExecutionContext::detect(&project_dir).unwrap();
-        assert_eq!(context, ExecutionContext::Project("test-company".to_string(), "test-proj".to_string()));
+        assert_eq!(
+            context,
+            ExecutionContext::Project("test-company".to_string(), "test-proj".to_string())
+        );
         assert_eq!(context.display_name(), "Project: test-proj in test-company");
         assert_eq!(context.company_code(), Some("test-company".to_string()));
         assert_eq!(context.project_code(), Some("test-proj".to_string()));
@@ -443,6 +456,9 @@ metadata:
     fn test_asset_path_prefixes() {
         assert_eq!(ExecutionContext::Root.asset_path_prefix(), "");
         assert_eq!(ExecutionContext::Company("TECH".to_string()).asset_path_prefix(), "../");
-        assert_eq!(ExecutionContext::Project("TECH".to_string(), "proj-1".to_string()).asset_path_prefix(), "../../");
+        assert_eq!(
+            ExecutionContext::Project("TECH".to_string(), "proj-1".to_string()).asset_path_prefix(),
+            "../../"
+        );
     }
 }

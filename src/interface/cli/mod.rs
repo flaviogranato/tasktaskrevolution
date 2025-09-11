@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 use std::{env, path::PathBuf};
 
+pub mod command_executor;
 pub mod commands;
 pub mod handlers;
 
@@ -108,9 +109,15 @@ impl Cli {
                 work_hours_start,
                 work_hours_end,
                 work_days,
-            } => {
-                handlers::init_handler::handle_init(name, email, company_name, timezone, work_hours_start, work_hours_end, work_days)
-            }
+            } => command_executor::execute_init(
+                name,
+                email,
+                company_name,
+                timezone,
+                work_hours_start,
+                work_hours_end,
+                work_days,
+            ),
             Commands::Create { command } => handlers::create_handler::handle_create_command(command),
             Commands::List { command } => handlers::list_handler::handle_list_command(command),
             Commands::Update { command } => handlers::update_handler::handle_update_command(command),
@@ -118,8 +125,8 @@ impl Cli {
             Commands::Link { command } => handlers::link_handler::handle_link_command(command),
             Commands::Unlink { command } => handlers::unlink_handler::handle_unlink_command(command),
             Commands::Report { command } => handlers::report_handler::handle_report_command(command),
-            Commands::Validate { command } => handlers::validate_handler::handle_validate_command(command),
-            Commands::Build { output, base_url } => handlers::build_handler::handle_build(output, base_url),
+            Commands::Validate { command } => command_executor::execute_validate(command),
+            Commands::Build { output, base_url } => command_executor::execute_build(output, base_url),
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
         }
     }
