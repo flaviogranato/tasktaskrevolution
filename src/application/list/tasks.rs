@@ -12,10 +12,24 @@ impl<R: ProjectRepository> ListTasksUseCase<R> {
         Self { repository }
     }
 
-    pub fn execute(&self) -> Result<Vec<AnyTask>, AppError> {
-        let project = self.repository.load()?;
-        let tasks = project.tasks().values().cloned().collect();
-        Ok(tasks)
+    pub fn execute(&self, project_code: &str, company_code: &str) -> Result<Vec<AnyTask>, AppError> {
+        let project = self.repository.find_by_code(project_code)?;
+        match project {
+            Some(p) => {
+                // Verify the project belongs to the correct company
+                if p.company_code() == company_code {
+                    let tasks = p.tasks().values().cloned().collect();
+                    Ok(tasks)
+                } else {
+                    Err(AppError::ProjectNotFound {
+                        code: project_code.to_string(),
+                    })
+                }
+            }
+            None => Err(AppError::ProjectNotFound {
+                code: project_code.to_string(),
+            }),
+        }
     }
 }
 
@@ -44,8 +58,12 @@ mod tests {
         fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             unimplemented!()
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
-            unimplemented!()
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+            if self.project.code() == code {
+                Ok(Some(self.project.clone()))
+            } else {
+                Ok(None)
+            }
         }
         fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
@@ -95,7 +113,7 @@ mod tests {
         let mock_repo = MockProjectRepository { project };
         let use_case = ListTasksUseCase::new(mock_repo);
 
-        let result = use_case.execute().unwrap();
+        let result = use_case.execute("PROJ-1", "COMP-001").unwrap();
         assert_eq!(result.len(), 2);
         assert!(result.iter().any(|t| t.name() == "First task"));
         assert!(result.iter().any(|t| t.code() == "TSK-2"));
@@ -107,7 +125,7 @@ mod tests {
         let mock_repo = MockProjectRepository { project };
         let use_case = ListTasksUseCase::new(mock_repo);
 
-        let result = use_case.execute().unwrap();
+        let result = use_case.execute("PROJ-1", "COMP-001").unwrap();
         assert!(result.is_empty());
     }
 }

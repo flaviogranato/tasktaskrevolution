@@ -876,15 +876,15 @@ fn test_template_workflow_complete() -> Result<(), Box<dyn std::error::Error>> {
     // Verify project was created
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["list", "projects", "--company", "ECOMMERCE"]);
+    cmd.args(&["list", "projects", "--company", "DEFAULT"]);
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("ECOMMERCE"));
+        .stdout(predicate::str::contains("Ecommerce Platform"));
 
     // Verify resources were created
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["list", "resources", "--company", "ECOMMERCE"]);
+    cmd.args(&["list", "resources", "--company", "DEFAULT"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Alice"))
@@ -1165,12 +1165,12 @@ fn test_template_create_project_integration() -> Result<(), Box<dyn std::error::
     // Verify the project was created with all components
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["list", "projects", "--company", "API-GATEWAY"]);
+    cmd.args(&["list", "projects", "--company", "DEFAULT"]);
     cmd.assert().success().stdout(predicate::str::contains("API Gateway"));
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["list", "resources", "--company", "API-GATEWAY"]);
+    cmd.args(&["list", "resources", "--company", "DEFAULT"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Alice"))
@@ -1466,6 +1466,8 @@ fn test_update_commands_contextual_execution() -> Result<(), Box<dyn std::error:
         "task",
         "--code",
         &task_code,
+        "--project",
+        &project_code,
         "--name",
         "Should Fail",
     ]);
@@ -1938,6 +1940,8 @@ fn test_delete_commands_contextual_execution() -> Result<(), Box<dyn std::error:
         "delete",
         "task",
         "--code",
+        "NONEXISTENT",
+        "--project",
         "NONEXISTENT",
     ]);
     cmd.assert().failure().stderr(predicate::str::contains("Company parameter required"));

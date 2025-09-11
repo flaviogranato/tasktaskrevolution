@@ -119,29 +119,42 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                 return Err(format!("Command not valid in current context: {}", e).into());
             }
 
-            // Determine project code based on context
-            let project_code = match (&context, project) {
-                (ExecutionContext::Root, Some(project)) => project,
-                (ExecutionContext::Company(_), Some(project)) => project,
-                (ExecutionContext::Project(_, project), None) => project.clone(),
-                (ExecutionContext::Project(_, project), Some(_)) => {
-                    return Err("Project parameter not needed in project context".into());
+            // Determine project code and company code based on context
+            let (project_code, company_code) = match (&context, project, company) {
+                (ExecutionContext::Root, Some(project), Some(company)) => (project, company),
+                (ExecutionContext::Root, Some(_), None) => {
+                    return Err("Company parameter required in root context".into());
                 }
-                (ExecutionContext::Root, None) => {
+                (ExecutionContext::Root, None, _) => {
                     return Err("Project parameter required in root context".into());
                 }
-                (ExecutionContext::Company(_), None) => {
+                (ExecutionContext::Company(company), Some(project), None) => (project, company.clone()),
+                (ExecutionContext::Company(_), Some(_), Some(_)) => {
+                    return Err("Company parameter not needed in company context".into());
+                }
+                (ExecutionContext::Company(_), None, _) => {
                     return Err("Project parameter required in company context".into());
+                }
+                (ExecutionContext::Project(company, project), None, None) => (project.clone(), company.clone()),
+                (ExecutionContext::Project(_, project), Some(_), _) => {
+                    return Err("Project parameter not needed in project context".into());
+                }
+                (ExecutionContext::Project(company, _), None, Some(_)) => {
+                    return Err("Company parameter not needed in project context".into());
                 }
             };
 
             // For now, we'll use a simple approach since ListTasksUseCase doesn't support filtering
             // This will be improved in future iterations
-            let base_path = context.asset_path_prefix();
+            let base_path = match context {
+                ExecutionContext::Root => ".".to_string(),
+                ExecutionContext::Company(_) => "../".to_string(),
+                ExecutionContext::Project(_, _) => "../../".to_string(),
+            };
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let list_use_case = ListTasksUseCase::new(project_repository);
 
-            match list_use_case.execute() {
+            match list_use_case.execute(&project_code, &company_code) {
                 Ok(tasks) => {
                     if tasks.is_empty() {
                         println!("No tasks found for project '{}'.", project_code);
