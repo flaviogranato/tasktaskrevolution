@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::domain::company_management::Company;
 use crate::application::errors::AppError;
+use crate::domain::company_management::Company;
 
 /// Repository trait for Company entity operations.
 pub trait CompanyRepository: Send + Sync {

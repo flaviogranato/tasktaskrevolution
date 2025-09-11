@@ -1,10 +1,8 @@
+use crate::application::errors::AppError;
 use crate::domain::{
-    
-    
     company_settings::{Config, repository::ConfigRepository},
     shared::convertable::Convertible,
 };
-use crate::application::errors::AppError;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use serde_yaml::to_string;
 use std::{fs, path::PathBuf};

@@ -1,5 +1,5 @@
-use crate::domain::company_management::{Company, repository::CompanyRepository};
 use crate::application::errors::AppError;
+use crate::domain::company_management::{Company, repository::CompanyRepository};
 
 pub struct ListCompaniesUseCase<R: CompanyRepository> {
     repository: R,
@@ -76,11 +76,8 @@ mod tests {
     }
 
     fn create_test_company(code: &str, name: &str) -> Company {
-        Company::new(
-            code.to_string(),
-            name.to_string(),
-            "test-user".to_string(),
-        ).expect("Failed to create test company")
+        Company::new(code.to_string(), name.to_string(), "test-user".to_string())
+            .expect("Failed to create test company")
     }
 
     #[test]

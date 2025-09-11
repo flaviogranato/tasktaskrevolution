@@ -1,7 +1,5 @@
-use crate::domain::project_management::{
-    AnyProject, builder::ProjectBuilder, repository::ProjectRepository,
-};
 use crate::application::errors::AppError;
+use crate::domain::project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository};
 
 pub struct CreateProjectUseCase<R: ProjectRepository> {
     repository: R,
@@ -56,8 +54,8 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use crate::application::errors::AppError;
+    use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use std::cell::RefCell;
 
     struct MockProjectRepository {

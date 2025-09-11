@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::domain::task_management::{AnyTask, repository::TaskRepository};
 use crate::application::errors::AppError;
+use crate::domain::task_management::{AnyTask, repository::TaskRepository};
 use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
 use glob::glob;
 use serde_yaml;
@@ -122,10 +122,11 @@ impl TaskRepository for FileTaskRepository {
                 details: e.to_string(),
             })?;
 
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
-                details: format!("Error deserializing task: {}", e),
-            })?;
+            let task_manifest: TaskManifest =
+                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing task: {}", e),
+                })?;
 
             tasks.push(
                 AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {
@@ -164,10 +165,11 @@ impl TaskRepository for FileTaskRepository {
                 details: e.to_string(),
             })?;
 
-            let task_manifest: TaskManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
-                details: format!("Error deserializing task: {}", e),
-            })?;
+            let task_manifest: TaskManifest =
+                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing task: {}", e),
+                })?;
 
             tasks.push(
                 AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {

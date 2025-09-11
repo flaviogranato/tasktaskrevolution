@@ -1,6 +1,4 @@
 use crate::domain::{
-    
-    
     project_management::repository::ProjectRepository, resource_management::repository::ResourceRepository,
 };
 use csv::Writer;
@@ -71,13 +69,13 @@ impl<P: ProjectRepository, R: ResourceRepository> VacationReportUseCase<P, R> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::application::errors::AppError;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use crate::domain::resource_management::{
         AnyResource,
         resource::{Period, PeriodType, Resource},
         state::Available,
     };
-    use crate::application::errors::AppError;
     use chrono::{Local, TimeZone};
 
     // --- Mocks ---
@@ -129,13 +127,7 @@ mod tests {
         ) -> Result<AnyResource, AppError> {
             self.save(resource)
         }
-        fn save_time_off(
-            &self,
-            _r: &str,
-            _h: u32,
-            _d: &str,
-            _desc: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        fn save_time_off(&self, _r: &str, _h: u32, _d: &str, _desc: Option<String>) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn save_vacation(

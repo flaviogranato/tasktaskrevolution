@@ -1,5 +1,5 @@
-use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
 use crate::application::errors::AppError;
+use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
 
 pub struct ListResourcesUseCase<R: ResourceRepository> {
     repository: R,
@@ -44,13 +44,7 @@ mod tests {
         fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
-        fn save_time_off(
-            &self,
-            _r: &str,
-            _h: u32,
-            _d: &str,
-            _desc: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        fn save_time_off(&self, _r: &str, _h: u32, _d: &str, _desc: Option<String>) -> Result<AnyResource, AppError> {
             unimplemented!()
         }
         fn save_vacation(

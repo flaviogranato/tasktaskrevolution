@@ -1,8 +1,6 @@
 use crate::infrastructure::persistence::{
-    company_repository::FileCompanyRepository,
-    config_repository::FileConfigRepository,
-    project_repository::FileProjectRepository,
-    resource_repository::FileResourceRepository,
+    company_repository::FileCompanyRepository, config_repository::FileConfigRepository,
+    project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
     task_repository::FileTaskRepository,
 };
 

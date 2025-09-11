@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::domain::company_settings::config::Config;
 use crate::application::errors::AppError;
+use crate::domain::company_settings::config::Config;
 use crate::domain::company_settings::validations::CompanySettingsValidator;
 
 /// Regras de negócio para configurações da empresa

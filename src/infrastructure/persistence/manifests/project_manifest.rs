@@ -105,7 +105,10 @@ impl From<AnyProject> for ProjectManifest {
                     p.settings.vacation_rules,
                     p.settings.timezone,
                     ProjectStatusManifest::from(&p.status),
-                    p.tasks.values().map(|task| TaskManifest::from(task.clone())).collect::<Vec<_>>(),
+                    p.tasks
+                        .values()
+                        .map(|task| TaskManifest::from(task.clone()))
+                        .collect::<Vec<_>>(),
                 ),
             };
 

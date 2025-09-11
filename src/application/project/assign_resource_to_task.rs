@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 #![allow(unused_imports)]
 
+use crate::application::errors::AppError;
 use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
 use crate::domain::resource_management::repository::ResourceRepository;
 use crate::domain::task_management::{Category, Priority};
-use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
@@ -100,8 +100,6 @@ where
 mod tests {
     use super::*;
     use crate::domain::{
-    
-    
         project_management::{AnyProject, builder::ProjectBuilder},
         resource_management::{AnyResource, resource::Resource},
         task_management::{AnyTask, state::Planned, task::Task},

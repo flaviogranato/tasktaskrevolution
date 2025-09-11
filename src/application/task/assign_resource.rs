@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
+use crate::application::errors::AppError;
 use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
 use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
-use crate::application::errors::AppError;
 use std::fmt;
 
 #[derive(Debug)]
@@ -113,9 +113,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-    
-    resource_management::resource::Resource, task_management::builder::TaskBuilder};
+    use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
     use chrono::NaiveDate;
     use std::{cell::RefCell, collections::HashMap};
 
@@ -440,11 +438,7 @@ mod tests {
                 self.save(task)
             }
 
-            fn find_all_by_project(
-                &self,
-                _company_code: &str,
-                _project_code: &str,
-            ) -> Result<Vec<AnyTask>, AppError> {
+            fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
                 Ok(self.tasks.borrow().values().cloned().collect())
             }
 

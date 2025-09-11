@@ -1,5 +1,5 @@
-use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
 use crate::application::errors::AppError;
+use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
 use std::fmt;
 
 #[derive(Debug)]
@@ -50,8 +50,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource_management::{resource::Resource, state::Available};
     use crate::application::errors::AppError;
+    use crate::domain::resource_management::{resource::Resource, state::Available};
     use std::{cell::RefCell, collections::HashMap};
     use uuid7::uuid7;
 

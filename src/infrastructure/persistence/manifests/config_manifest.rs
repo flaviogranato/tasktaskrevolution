@@ -71,7 +71,7 @@ impl ConfigManifest {
         ConfigManifest {
             api_version: API_VERSION.to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata { 
+            metadata: ConfigMetadata {
                 id: None,
                 code: None,
                 name: None,
@@ -110,7 +110,7 @@ impl Convertible<Config> for ConfigManifest {
         ConfigManifest {
             api_version: API_VERSION.to_string(),
             kind: "Config".to_string(),
-            metadata: ConfigMetadata { 
+            metadata: ConfigMetadata {
                 id: None,
                 code: None,
                 name: None,
