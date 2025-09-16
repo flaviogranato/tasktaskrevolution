@@ -27,19 +27,19 @@ fn test_missing_required_parameters() -> Result<(), Box<dyn std::error::Error>> 
     // Testar init sem nome
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["init", "--email", "test@example.com", "--company-name", "Test Company"]);
+    cmd.args(["init", "--email", "test@example.com", "--company-name", "Test Company"]);
     cmd.assert().failure();
 
     // Testar init sem email
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["init", "--name", "Test Manager", "--company-name", "Test Company"]);
+    cmd.args(["init", "--name", "Test Manager", "--company-name", "Test Company"]);
     cmd.assert().failure();
 
     // Testar init sem company-name
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
     cmd.assert().failure();
 
     temp.close()?;
@@ -64,7 +64,7 @@ fn test_invalid_email_format() -> Result<(), Box<dyn std::error::Error>> {
     for email in invalid_emails {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "init",
             "--name",
             "Test Manager",
@@ -93,7 +93,7 @@ fn test_invalid_company_codes() -> Result<(), Box<dyn std::error::Error>> {
     setup_test_environment(&temp)?;
 
     let long_code = "a".repeat(100);
-    let invalid_codes = vec![
+    let invalid_codes = [
         "",             // Código vazio
         "a",            // Muito curto
         &long_code,     // Muito longo
@@ -105,7 +105,7 @@ fn test_invalid_company_codes() -> Result<(), Box<dyn std::error::Error>> {
     for (i, code) in invalid_codes.iter().enumerate() {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "company",
             "--name",
@@ -145,7 +145,7 @@ fn test_invalid_date_formats() -> Result<(), Box<dyn std::error::Error>> {
     for date in invalid_dates {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "task",
             "--name",
@@ -177,7 +177,7 @@ fn test_create_company_without_init() -> Result<(), Box<dyn std::error::Error>> 
     // Tentar criar empresa sem inicializar (deve funcionar, mas vamos testar o fluxo)
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -205,7 +205,7 @@ fn test_create_resource_without_company() -> Result<(), Box<dyn std::error::Erro
     // Tentar criar recurso sem empresa (o sistema cria com empresa padrão)
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["create", "resource", "Test Resource", "Developer"]);
+    cmd.args(["create", "resource", "Test Resource", "Developer"]);
     cmd.assert().success();
 
     temp.close()?;
@@ -220,7 +220,7 @@ fn test_create_project_without_company() -> Result<(), Box<dyn std::error::Error
     // Tentar criar projeto sem empresa (o sistema cria com empresa padrão)
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&["create", "project", "Test Project", "Test description"]);
+    cmd.args(["create", "project", "Test Project", "Test description"]);
     cmd.assert().success();
 
     temp.close()?;
@@ -238,7 +238,7 @@ fn test_create_task_without_project() -> Result<(), Box<dyn std::error::Error>> 
     // Tentar criar tarefa sem projeto (o sistema retorna erro mas com sucesso)
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "task",
         "--name",
@@ -293,7 +293,7 @@ fn test_read_only_directory() -> Result<(), Box<dyn std::error::Error>> {
     // Tentar criar arquivo em diretório somente leitura
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(read_only_dir.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -344,7 +344,7 @@ fn test_excess_parameters() -> Result<(), Box<dyn std::error::Error>> {
     // Testar init com parâmetros extras
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -370,7 +370,7 @@ fn test_oversized_values() -> Result<(), Box<dyn std::error::Error>> {
     let long_name = "a".repeat(1000);
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         &long_name,
@@ -386,7 +386,7 @@ fn test_oversized_values() -> Result<(), Box<dyn std::error::Error>> {
     let long_email = format!("{}@example.com", "a".repeat(1000));
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -418,7 +418,7 @@ fn test_dangerous_characters() -> Result<(), Box<dyn std::error::Error>> {
     for dangerous_input in dangerous_inputs {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "init",
             "--name",
             dangerous_input,
@@ -447,7 +447,7 @@ fn test_operation_timeout() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=100 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "resource",
             &format!("Resource {}", i),
@@ -504,7 +504,7 @@ fn test_inconsistent_state_recovery() -> Result<(), Box<dyn std::error::Error>> 
 fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -517,7 +517,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -535,7 +535,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Web App",

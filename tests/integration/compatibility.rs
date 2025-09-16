@@ -16,7 +16,6 @@ use std::process::Command;
 
 /// Validador YAML reutilizável
 struct YamlValidator {
-    content: String,
     parsed: Value,
 }
 
@@ -24,7 +23,7 @@ impl YamlValidator {
     fn new(file_path: &std::path::Path) -> Result<Self, Box<dyn std::error::Error>> {
         let content = fs::read_to_string(file_path)?;
         let parsed: Value = serde_yaml::from_str(&content)?;
-        Ok(Self { content, parsed })
+        Ok(Self { parsed })
     }
 
     fn has_field(&self, path: &str) -> bool {
@@ -143,7 +142,7 @@ fn test_company_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -182,7 +181,7 @@ fn test_resource_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     // Criar recurso com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "Modern Resource",
@@ -223,7 +222,7 @@ fn test_project_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     // Criar projeto com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Modern Project",
@@ -281,9 +280,9 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
                 let project_yaml = entry.path().join("project.yaml");
                 if project_yaml.exists() {
                     // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
+                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                            && let Some(code) = yaml
                                 .get("metadata")
                                 .and_then(|m| m.get("code"))
                                 .and_then(|c| c.as_str())
@@ -291,8 +290,6 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
                                 project_code = Some(code.to_string());
                                 break;
                             }
-                        }
-                    }
                 }
             }
         }
@@ -303,7 +300,7 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     // Criar tarefa com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "task",
         "--name",
@@ -430,7 +427,7 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
     // Criar diferentes tipos de entidades para testar versões de API
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "API Test Resource",
@@ -442,7 +439,7 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "API Test Project",
@@ -502,7 +499,7 @@ fn test_required_vs_optional_fields() -> Result<(), Box<dyn std::error::Error>> 
     // Criar recurso com campos mínimos
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "Minimal Resource",
@@ -546,7 +543,7 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
     // Criar estrutura completa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "Structure Test Resource",
@@ -558,7 +555,7 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Structure Test Project",
@@ -655,7 +652,7 @@ spec:
 fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -668,7 +665,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -686,7 +683,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Web App",

@@ -137,7 +137,7 @@ fn test_init_command() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -228,7 +228,7 @@ fn test_init_command_with_timezone() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -258,7 +258,7 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     // Primeiro inicializar
     let mut init_cmd = Command::cargo_bin("ttr")?;
     init_cmd.current_dir(temp.path());
-    init_cmd.args(&[
+    init_cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -272,7 +272,7 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     // Depois criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -404,7 +404,7 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
     // Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "--name",
@@ -499,7 +499,7 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "--name",
@@ -625,9 +625,9 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
                 let project_yaml = entry.path().join("project.yaml");
                 if project_yaml.exists() {
                     // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
+                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                            && let Some(code) = yaml
                                 .get("metadata")
                                 .and_then(|m| m.get("code"))
                                 .and_then(|c| c.as_str())
@@ -635,8 +635,6 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
                                 project_code = Some(code.to_string());
                                 break;
                             }
-                        }
-                    }
                 }
             }
         }
@@ -647,7 +645,7 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     // Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "task",
         "--name",
@@ -899,7 +897,7 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Inicializar
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -913,7 +911,7 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     // 2. Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -928,7 +926,7 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     // 3. Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "John Doe",
@@ -941,7 +939,7 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     // 4. Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Web App",
@@ -960,9 +958,9 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
                 let project_yaml = entry.path().join("project.yaml");
                 if project_yaml.exists() {
                     // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
+                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                            && let Some(code) = yaml
                                 .get("metadata")
                                 .and_then(|m| m.get("code"))
                                 .and_then(|c| c.as_str())
@@ -970,8 +968,6 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
                                 project_code = Some(code.to_string());
                                 break;
                             }
-                        }
-                    }
                 }
             }
         }
@@ -982,7 +978,7 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     // 6. Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "task",
         "--name",
@@ -1024,7 +1020,7 @@ fn test_config_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Inicializar
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "YAML Test Manager",
@@ -1083,7 +1079,7 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -1162,7 +1158,7 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "YAML Developer",
@@ -1225,7 +1221,7 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "YAML Project",
@@ -1313,9 +1309,9 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
                 let project_yaml = entry.path().join("project.yaml");
                 if project_yaml.exists() {
                     // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
+                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                            && let Some(code) = yaml
                                 .get("metadata")
                                 .and_then(|m| m.get("code"))
                                 .and_then(|c| c.as_str())
@@ -1323,8 +1319,6 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
                                 project_code = Some(code.to_string());
                                 break;
                             }
-                        }
-                    }
                 }
             }
         }
@@ -1335,7 +1329,7 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Criar tarefa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "task",
         "--name",
@@ -1419,7 +1413,7 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -1432,7 +1426,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -1450,7 +1444,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Web App",
@@ -1465,7 +1459,7 @@ fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
 fn create_test_resource(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "John Doe",
@@ -1487,9 +1481,9 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
                 let project_yaml = entry.path().join("project.yaml");
                 if project_yaml.exists() {
                     // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
+                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
+                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                            && let Some(code) = yaml
                                 .get("metadata")
                                 .and_then(|m| m.get("code"))
                                 .and_then(|c| c.as_str())
@@ -1497,8 +1491,6 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
                                 project_code = Some(code.to_string());
                                 break;
                             }
-                        }
-                    }
                 }
             }
         }
@@ -1508,7 +1500,7 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "task",
         "--name",
@@ -1554,7 +1546,7 @@ fn copy_templates_to_temp(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 #[test]
 fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(&["template", "list"]);
+    cmd.args(["template", "list"]);
 
     cmd.assert()
         .success()
@@ -1570,7 +1562,7 @@ fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(&["template", "show", "web-app"]);
+    cmd.args(["template", "show", "web-app"]);
 
     cmd.assert()
         .success()
@@ -1591,7 +1583,7 @@ fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_template_show_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(&["template", "show", "nonexistent-template"]);
+    cmd.args(["template", "show", "nonexistent-template"]);
 
     cmd.assert()
         .success()
@@ -1607,7 +1599,7 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -1624,7 +1616,7 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
     // Create project from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "template", "create",
         "web-app",
         "My Web App",
@@ -1655,7 +1647,7 @@ fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::erro
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -1672,7 +1664,7 @@ fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::erro
     // Create project from template with missing variables
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "template",
         "create",
         "web-app",
@@ -1698,7 +1690,7 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -1715,7 +1707,7 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
     // Create project using --from-template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create", "project",
         "Another Web App",
         "--from-template", "web-app",
@@ -1743,7 +1735,7 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -1760,7 +1752,7 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
     // Create mobile app from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "template", "create",
         "mobile-app",
         "My Mobile App",
@@ -1790,7 +1782,7 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -1807,7 +1799,7 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
     // Create microservice from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "template", "create",
         "microservice",
         "User Service",
@@ -1836,7 +1828,7 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
     // Initialize TTR
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -1853,7 +1845,7 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
     // Create data pipeline from template
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "template", "create",
         "data-pipeline",
         "Analytics Pipeline",
@@ -1880,28 +1872,28 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
 fn test_template_help_commands() -> Result<(), Box<dyn std::error::Error>> {
     // Test template help
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(&["template", "--help"]);
+    cmd.args(["template", "--help"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Manage project templates"));
 
     // Test template list help
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(&["template", "list", "--help"]);
+    cmd.args(["template", "list", "--help"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("List available project templates"));
 
     // Test template show help
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(&["template", "show", "--help"]);
+    cmd.args(["template", "show", "--help"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Show details of a specific template"));
 
     // Test template create help
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(&["template", "create", "--help"]);
+    cmd.args(["template", "create", "--help"]);
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Create a new project from a template"));

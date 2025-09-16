@@ -132,7 +132,7 @@ fn test_external_data_import() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in external_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", "TECH-CORP"]);
+        cmd.args(["create", "resource", name, role, "--company-code", "TECH-CORP"]);
         cmd.assert().success();
     }
 
@@ -170,14 +170,14 @@ fn test_webhook_simulation() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in webhook_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", "TECH-CORP"]);
+        cmd.args(["create", "resource", name, role, "--company-code", "TECH-CORP"]);
         cmd.assert().success();
     }
 
     // Simular webhook de criação de projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Webhook Project",
@@ -219,7 +219,7 @@ fn test_external_api_integration() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in api_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", "TECH-CORP"]);
+        cmd.args(["create", "resource", name, role, "--company-code", "TECH-CORP"]);
         cmd.assert().success();
     }
 
@@ -255,7 +255,7 @@ fn test_third_party_tools_integration() -> Result<(), Box<dyn std::error::Error>
     for (name, role) in third_party_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", "TECH-CORP"]);
+        cmd.args(["create", "resource", name, role, "--company-code", "TECH-CORP"]);
         cmd.assert().success();
     }
 
@@ -292,7 +292,7 @@ fn test_data_synchronization() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in sync_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", "TECH-CORP"]);
+        cmd.args(["create", "resource", name, role, "--company-code", "TECH-CORP"]);
         cmd.assert().success();
     }
 
@@ -372,9 +372,9 @@ fn test_monitoring_logging_integration() -> Result<(), Box<dyn std::error::Error
         match op {
             "create" => {
                 if entity == "resource" {
-                    cmd.args(&["create", "resource", name, description, "--company-code", "TECH-CORP"]);
+                    cmd.args(["create", "resource", name, description, "--company-code", "TECH-CORP"]);
                 } else if entity == "project" {
-                    cmd.args(&["create", "project", name, description, "--company-code", "TECH-CORP"]);
+                    cmd.args(["create", "project", name, description, "--company-code", "TECH-CORP"]);
                 }
             }
             "list" => {
@@ -407,7 +407,7 @@ fn test_monitoring_logging_integration() -> Result<(), Box<dyn std::error::Error
 fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -420,7 +420,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -439,7 +439,7 @@ fn create_test_data(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
     // Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "Test Resource",
@@ -452,7 +452,7 @@ fn create_test_data(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Test Project",

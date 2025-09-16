@@ -16,7 +16,6 @@ use std::process::Command;
 
 /// Validador YAML reutilizável
 struct YamlValidator {
-    content: String,
     parsed: Value,
 }
 
@@ -24,7 +23,7 @@ impl YamlValidator {
     fn new(file_path: &std::path::Path) -> Result<Self, Box<dyn std::error::Error>> {
         let content = fs::read_to_string(file_path)?;
         let parsed: Value = serde_yaml::from_str(&content)?;
-        Ok(Self { content, parsed })
+        Ok(Self { parsed })
     }
 
     fn has_field(&self, path: &str) -> bool {
@@ -91,28 +90,6 @@ impl YamlValidator {
         }
     }
 
-    fn get_field_value(&self, path: &str) -> Option<String> {
-        let parts: Vec<&str> = path.split('.').collect();
-        let mut current = &self.parsed;
-
-        for part in parts {
-            if let Some(map) = current.as_mapping() {
-                if let Some(value) = map.get(part) {
-                    current = value;
-                } else {
-                    return None;
-                }
-            } else {
-                return None;
-            }
-        }
-
-        if let Some(str_value) = current.as_str() {
-            Some(str_value.to_string())
-        } else {
-            None
-        }
-    }
 }
 
 /// Teste de consistência de dados entre entidades
@@ -133,7 +110,7 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
     for (name, role, company_code) in resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", company_code]);
+        cmd.args(["create", "resource", name, role, "--company-code", company_code]);
         cmd.assert().success();
     }
 
@@ -146,7 +123,7 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
     for (name, description, company_code) in projects {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "project", name, description, "--company-code", company_code]);
+        cmd.args(["create", "project", name, description, "--company-code", company_code]);
         cmd.assert().success();
     }
 
@@ -168,7 +145,7 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     // Criar recursos
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "John Developer",
@@ -181,7 +158,7 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Test Project",
@@ -198,10 +175,10 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
         for entry in entries.flatten() {
             if entry.path().is_dir() {
                 let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
+                if project_yaml.exists()
+                    && let Ok(content) = std::fs::read_to_string(&project_yaml)
+                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                            && let Some(code) = yaml
                                 .get("metadata")
                                 .and_then(|m| m.get("code"))
                                 .and_then(|c| c.as_str())
@@ -209,9 +186,6 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
                                 project_code = Some(code.to_string());
                                 break;
                             }
-                        }
-                    }
-                }
             }
         }
     }
@@ -220,7 +194,7 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     // Criar tarefa referenciando projeto existente
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "task",
         "--name",
@@ -249,14 +223,12 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     let mut task_code = None;
     if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_file() && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml") {
-                if let Some(file_name) = entry.file_name().to_str() {
-                    if file_name.starts_with("task-") {
+            if entry.path().is_file() && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml")
+                && let Some(file_name) = entry.file_name().to_str()
+                    && file_name.starts_with("task-") {
                         task_code = Some(file_name.to_string());
                         break;
                     }
-                }
-            }
         }
     }
     let task_code = task_code.expect("Task code not found");
@@ -302,7 +274,7 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Testar regra: Nome de empresa deve ser único
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -327,7 +299,7 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Testar regra: Códigos de projeto devem ser únicos por empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Project 1",
@@ -339,7 +311,7 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Project 2",
@@ -380,7 +352,7 @@ fn test_constraint_violations() -> Result<(), Box<dyn std::error::Error>> {
     // Testar constraint: Nome não pode estar vazio
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "", // Nome vazio
@@ -394,7 +366,7 @@ fn test_constraint_violations() -> Result<(), Box<dyn std::error::Error>> {
     // Testar constraint: Email deve ter formato válido
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -408,7 +380,7 @@ fn test_constraint_violations() -> Result<(), Box<dyn std::error::Error>> {
     // Testar constraint: Código de empresa não pode estar vazio
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -421,7 +393,7 @@ fn test_constraint_violations() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -449,7 +421,7 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     // Criar dados que simulam uma versão anterior
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "Legacy Resource",
@@ -462,7 +434,7 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     // Simular migração: Atualizar dados para nova versão
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Migrated Project",
@@ -531,7 +503,7 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, role, "--company-code", "TECH-CORP"]);
+        cmd.args(["create", "resource", name, role, "--company-code", "TECH-CORP"]);
         cmd.assert().success();
     }
 
@@ -541,7 +513,7 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
             .child("companies")
             .child("TECH-CORP")
             .child("resources")
-            .child(&format!("resource_{}.yaml", i));
+            .child(format!("resource_{}.yaml", i));
         resource_file.assert(predicate::path::exists());
 
         let validator = YamlValidator::new(resource_file.path())?;
@@ -580,7 +552,7 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
     for name in &special_names {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&["create", "resource", name, "Developer", "--company-code", "TECH-CORP"]);
+        cmd.args(["create", "resource", name, "Developer", "--company-code", "TECH-CORP"]);
         cmd.assert().success();
     }
 
@@ -590,7 +562,7 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
             .child("companies")
             .child("TECH-CORP")
             .child("resources")
-            .child(&format!("{}.yaml", name.to_lowercase().replace(" ", "_")));
+            .child(format!("{}.yaml", name.to_lowercase().replace(" ", "_")));
         resource_file.assert(predicate::path::exists());
 
         let validator = YamlValidator::new(resource_file.path())?;
@@ -606,7 +578,7 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
 fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -619,7 +591,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
