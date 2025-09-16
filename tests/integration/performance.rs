@@ -30,7 +30,7 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=100 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "resource",
             &format!("Resource {}", i),
@@ -45,7 +45,7 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=50 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "project",
             &format!("Project {}", i),
@@ -63,10 +63,10 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
         for entry in entries.flatten() {
             if entry.path().is_dir() {
                 let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
+                if project_yaml.exists()
+                    && let Ok(content) = std::fs::read_to_string(&project_yaml)
+                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                            && let Some(code) = yaml
                                 .get("metadata")
                                 .and_then(|m| m.get("code"))
                                 .and_then(|c| c.as_str())
@@ -74,9 +74,6 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
                                 project_code = Some(code.to_string());
                                 break;
                             }
-                        }
-                    }
-                }
             }
         }
     }
@@ -86,7 +83,7 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=200 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "task",
             "--name",
@@ -214,7 +211,7 @@ fn test_concurrent_stress() -> Result<(), Box<dyn std::error::Error>> {
             for j in 0..10 {
                 let mut cmd = Command::cargo_bin("ttr").unwrap();
                 cmd.current_dir(&temp_path);
-                cmd.args(&[
+                cmd.args([
                     "create",
                     "resource",
                     &format!("Concurrent Resource {}-{}", i, j),
@@ -298,7 +295,7 @@ fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
     // Setup inicial
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Batch Manager",
@@ -315,7 +312,7 @@ fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=50 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "company",
             "--name",
@@ -334,7 +331,7 @@ fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=50 {
         let company_file = temp
             .child("companies")
-            .child(&format!("COMP-{}", i))
+            .child(format!("COMP-{}", i))
             .child("company.yaml");
         company_file.assert(predicate::path::exists());
     }
@@ -364,7 +361,7 @@ fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=1000 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "resource",
             &format!("Memory Test Resource {}", i),
@@ -414,7 +411,7 @@ fn test_resource_cleanup_validation() -> Result<(), Box<dyn std::error::Error>> 
     for i in 1..=100 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "resource",
             &format!("Temp Resource {}", i),
@@ -454,7 +451,7 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Benchmark Manager",
@@ -470,7 +467,7 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -487,7 +484,7 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "resource",
         "Benchmark Resource",
@@ -502,7 +499,7 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "project",
         "Benchmark Project",
@@ -560,7 +557,7 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
 fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "init",
         "--name",
         "Test Manager",
@@ -573,7 +570,7 @@ fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(&[
+    cmd.args([
         "create",
         "company",
         "--name",
@@ -595,7 +592,7 @@ fn setup_large_dataset(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
     for i in 1..=50 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "resource",
             &format!("Resource {}", i),
@@ -610,7 +607,7 @@ fn setup_large_dataset(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
     for i in 1..=25 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "project",
             &format!("Project {}", i),
@@ -625,7 +622,7 @@ fn setup_large_dataset(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
     for i in 1..=100 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "task",
             "--name",
