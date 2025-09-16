@@ -54,7 +54,7 @@ fn test_csv_export() -> Result<(), Box<dyn std::error::Error>> {
     for i in 1..=5 {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(&[
+        cmd.args([
             "create",
             "resource",
             &format!("CSV Resource {}", i),

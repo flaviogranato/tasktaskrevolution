@@ -11,8 +11,8 @@ use std::fs::File;
 pub fn handle_report_command(command: ReportCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         ReportCommand::Tasks {
-            project,
-            company,
+            project: _,
+            company: _,
             output,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
@@ -32,7 +32,7 @@ pub fn handle_report_command(command: ReportCommand) -> Result<(), Box<dyn std::
                 }
             }
         }
-        ReportCommand::Vacation { resource, output } => {
+        ReportCommand::Vacation { resource: _, output } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let resource_repository = FileResourceRepository::new(".");
             let report_use_case = VacationReportUseCase::new(project_repository, resource_repository);

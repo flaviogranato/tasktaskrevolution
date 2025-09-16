@@ -69,11 +69,11 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
             let company_code = match (&context, company) {
                 (ExecutionContext::Root, Some(company)) => company,
                 (ExecutionContext::Company(code), None) => code.clone(),
-                (ExecutionContext::Company(code), Some(_)) => {
+                (ExecutionContext::Company(_code), Some(_)) => {
                     return Err("Company parameter not needed in company context".into());
                 }
                 (ExecutionContext::Project(company, _), None) => company.clone(),
-                (ExecutionContext::Project(company, _), Some(_)) => {
+                (ExecutionContext::Project(_company, _), Some(_)) => {
                     return Err("Company parameter not needed in project context".into());
                 }
                 (ExecutionContext::Root, None) => {
@@ -136,10 +136,10 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                     return Err("Project parameter required in company context".into());
                 }
                 (ExecutionContext::Project(company, project), None, None) => (project.clone(), company.clone()),
-                (ExecutionContext::Project(_, project), Some(_), _) => {
+                (ExecutionContext::Project(_, _project), Some(_), _) => {
                     return Err("Project parameter not needed in project context".into());
                 }
-                (ExecutionContext::Project(company, _), None, Some(_)) => {
+                (ExecutionContext::Project(_company, _), None, Some(_)) => {
                     return Err("Company parameter not needed in project context".into());
                 }
             };
@@ -184,11 +184,11 @@ pub fn handle_list_command(command: ListCommand) -> Result<(), Box<dyn std::erro
                 (ExecutionContext::Root, None) => {
                     return Err("Company parameter required in root context for listing resources".into());
                 }
-                (ExecutionContext::Company(code), Some(_)) => {
+                (ExecutionContext::Company(_code), Some(_)) => {
                     return Err("Company parameter not needed in company context".into());
                 }
                 (ExecutionContext::Company(code), None) => code.clone(),
-                (ExecutionContext::Project(company, _), Some(_)) => {
+                (ExecutionContext::Project(_company, _), Some(_)) => {
                     return Err("Company parameter not needed in project context".into());
                 }
                 (ExecutionContext::Project(company, _), None) => company.clone(),

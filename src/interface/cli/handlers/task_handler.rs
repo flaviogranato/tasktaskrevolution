@@ -18,10 +18,10 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
     match command {
         TaskCommand::Create {
             name,
-            code,
+            code: _,
             project,
             company,
-            description,
+            description: _,
             start_date,
             due_date,
             assigned_resources,
@@ -61,7 +61,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        TaskCommand::Describe { code, project, company } => {
+        TaskCommand::Describe { code, project, company: _ } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let describe_use_case = DescribeTaskUseCase::new(project_repository);
 
@@ -79,7 +79,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
         TaskCommand::Update {
             code,
             project,
-            company,
+            company: _,
             name,
             description,
             start_date,
@@ -115,7 +115,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        TaskCommand::Delete { code, project, company } => {
+        TaskCommand::Delete { code, project, company: _ } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let delete_use_case = DeleteTaskUseCase::new(project_repository);
 
@@ -134,7 +134,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             from,
             to,
             project,
-            company,
+            company: _,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let link_use_case = LinkTaskUseCase::new(project_repository);
@@ -154,7 +154,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             from,
             to,
             project,
-            company,
+            company: _,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let unlink_use_case =
@@ -173,8 +173,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
         }
         TaskCommand::AssignResource {
             task,
-            project,
-            company,
+            project: _,
+            company: _,
             resource,
         } => {
             let task_repository = FileTaskRepository::new(".");

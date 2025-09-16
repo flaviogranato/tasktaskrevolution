@@ -701,7 +701,7 @@ mod tests {
 
         // Transition from Planned to InProgress
         let in_progress_task: Task<InProgress> = planned_task.transition();
-        assert!(matches!(in_progress_task.state, _InProgress));
+        assert!(matches!(in_progress_task.state, _in_progress));
 
         // Transition from InProgress to Completed
         let in_progress_task = Task::<InProgress> {

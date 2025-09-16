@@ -12,7 +12,7 @@ pub fn handle_company_command(command: CompanyCommand) -> Result<(), Box<dyn std
             // Use the company repository directly
             let _company_repo = &app.company_repository;
 
-            let args = CreateCompanyArgs {
+            let _args = CreateCompanyArgs {
                 code: code.clone(),
                 name: name.clone(),
                 description: description.clone(),

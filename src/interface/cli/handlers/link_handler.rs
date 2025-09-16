@@ -10,7 +10,7 @@ pub fn handle_link_command(command: LinkCommand) -> Result<(), Box<dyn std::erro
             from,
             to,
             project,
-            company,
+            company: _,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let link_use_case = LinkTaskUseCase::new(project_repository);

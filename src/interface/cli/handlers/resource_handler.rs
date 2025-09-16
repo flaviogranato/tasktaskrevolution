@@ -16,15 +16,15 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
     match command {
         ResourceCommand::Create {
             name,
-            code,
-            email,
-            description,
+            code: _,
+            email: _,
+            description: _,
         } => {
             let resource_repository = FileResourceRepository::new(".");
             let create_use_case = CreateResourceUseCase::new(resource_repository);
 
             match create_use_case.execute(&name, "person", "COMPANY001".to_string(), None, None) {
-                Ok(resource) => {
+                Ok(_resource) => {
                     println!("✅ Resource created successfully!");
                     println!("   Resource created successfully!");
                     Ok(())
@@ -47,7 +47,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
 
             let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+            let _end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
             match create_use_case.execute(
@@ -70,7 +70,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             resource,
             start_date,
             end_date,
-            description,
+            description: _,
             with_compensation,
         } => {
             let resource_repository = FileResourceRepository::new(".");

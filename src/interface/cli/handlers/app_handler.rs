@@ -54,22 +54,22 @@ mod tests {
     #[test]
     fn test_app_handler_new() {
         let handler = AppHandler::new();
-        let app = handler.get_app();
-        assert!(true); // If we get here, the handler was created successfully
+        let _app = handler.get_app();
+        // If we get here, the handler was created successfullyully
     }
 
     #[test]
     fn test_app_handler_with_base_path() {
         let handler = AppHandler::with_base_path("/tmp/test".to_string());
-        let app = handler.get_app();
-        assert!(true); // If we get here, the handler was created successfully
+        let _app = handler.get_app();
+        // If we get here, the handler was created successfullyully
     }
 
     #[test]
     fn test_init_and_get_app_handler() {
         let _ = init_app_handler();
         let handler = get_app_handler();
-        let app = handler.get_app();
-        assert!(true); // If we get here, the handler was initialized and retrieved successfully
+        let _app = handler.get_app();
+        // If we get here, the handler was initialized and retrieved successfully
     }
 }

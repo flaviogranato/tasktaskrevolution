@@ -50,22 +50,22 @@ mod tests {
 
     #[test]
     fn test_app_new() {
-        let app = App::new();
+        let _app = App::new();
         // Verify that all repositories are initialized
-        assert!(true); // If we get here, the app was created successfully
+        // If we get here, the app was created successfully
     }
 
     #[test]
     fn test_app_with_base_path() {
-        let app = App::with_base_path("/tmp/test".to_string());
+        let _app = App::with_base_path("/tmp/test".to_string());
         // Verify that all repositories are initialized with custom path
-        assert!(true); // If we get here, the app was created successfully
+        // If we get here, the app was created successfully
     }
 
     #[test]
     fn test_app_default() {
-        let app = App::default();
+        let _app = App::default();
         // Verify that default implementation works
-        assert!(true); // If we get here, the app was created successfully
+        // If we get here, the app was created successfully
     }
 }

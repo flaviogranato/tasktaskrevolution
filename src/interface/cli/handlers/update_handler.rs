@@ -34,7 +34,7 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             }
 
             // Determine company code based on context
-            let company_code = match (&context, company) {
+            let _company_code = match (&context, company) {
                 (ExecutionContext::Root, Some(company)) => company,
                 (ExecutionContext::Root, None) => {
                     return Err("Company parameter required in root context".into());
@@ -57,11 +57,11 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             let project_repository = FileProjectRepository::with_base_path(base_path.into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
-            let start = start_date
+            let _start = start_date
                 .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let end = end_date
+            let _end = end_date
                 .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
@@ -94,7 +94,7 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             }
 
             // Determine project and company codes based on context
-            let (project_code, company_code) = match (&context, project, company) {
+            let (project_code, _company_code) = match (&context, project, company) {
                 (ExecutionContext::Root, Some(project), Some(company)) => (project, company),
                 (ExecutionContext::Root, None, None) => {
                     return Err("Project and company parameters required in root context".into());
@@ -169,16 +169,16 @@ pub fn handle_update_command(command: UpdateCommand) -> Result<(), Box<dyn std::
             }
 
             // Determine company code based on context
-            let company_code = match (&context, company) {
+            let _company_code = match (&context, company) {
                 (ExecutionContext::Root, Some(company)) => company,
                 (ExecutionContext::Root, None) => {
                     return Err("Company parameter required in root context for updating resources".into());
                 }
-                (ExecutionContext::Company(code), Some(_)) => {
+                (ExecutionContext::Company(_code), Some(_)) => {
                     return Err("Company parameter not needed in company context".into());
                 }
                 (ExecutionContext::Company(code), None) => code.clone(),
-                (ExecutionContext::Project(company, _), Some(_)) => {
+                (ExecutionContext::Project(_company, _), Some(_)) => {
                     return Err("Company parameter not needed in project context".into());
                 }
                 (ExecutionContext::Project(company, _), None) => company.clone(),

@@ -1,5 +1,5 @@
 [package]
-name = "TaskTaskRevolution"
+name = "task_task_revolution"
 authors = ["Flávio Granato <flavio.granato@protonmail.com>"]
 version = "0.5.6"
 edition = "2024"
@@ -13,7 +13,7 @@ path = "src/main.rs"
 clap = { version = "4.5.40", features = ["derive"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0"
-serde_yaml = "0.9.34+deprecated"
+serde_yaml = "0.9.34"
 chrono = { version = "0.4.41", features = ["serde"] }
 uuid7 = { version = "1.1.0", features = ["serde"] }
 rand = "0.8.5"
