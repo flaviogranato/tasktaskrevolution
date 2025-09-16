@@ -3,7 +3,9 @@ use std::{env, path::PathBuf};
 
 pub mod command_executor;
 pub mod commands;
+pub mod context_manager;
 pub mod handlers;
+pub mod simplified_executor;
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"),
@@ -118,10 +120,10 @@ impl Cli {
                 work_hours_end,
                 work_days,
             ),
-            Commands::Create { command } => handlers::create_handler::handle_create_command(command),
-            Commands::List { command } => handlers::list_handler::handle_list_command(command),
-            Commands::Update { command } => handlers::update_handler::handle_update_command(command),
-            Commands::Delete { command } => handlers::delete_handler::handle_delete_command(command),
+            Commands::Create { command } => simplified_executor::SimplifiedExecutor::execute_create(command),
+            Commands::List { command } => simplified_executor::SimplifiedExecutor::execute_list(command),
+            Commands::Update { command } => simplified_executor::SimplifiedExecutor::execute_update(command),
+            Commands::Delete { command } => simplified_executor::SimplifiedExecutor::execute_delete(command),
             Commands::Link { command } => handlers::link_handler::handle_link_command(command),
             Commands::Unlink { command } => handlers::unlink_handler::handle_unlink_command(command),
             Commands::Report { command } => handlers::report_handler::handle_report_command(command),
