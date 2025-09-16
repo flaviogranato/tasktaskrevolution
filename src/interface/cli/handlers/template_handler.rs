@@ -63,8 +63,8 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
         }
         TemplateCommand::Create {
             template,
-            name: _,
-            code: _,
+            name,
+            code,
             company,
             params,
         } => {
@@ -85,6 +85,11 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
             let template_data = load_use_case.load_by_name(templates_dir, &template)?;
 
             let mut template_params = HashMap::new();
+
+            // Add name and code as template parameters
+            template_params.insert("project_name".to_string(), name);
+            template_params.insert("project_code".to_string(), code);
+
             for param in params {
                 // Split by comma first, then by equals
                 for kv_pair in param.split(',') {
