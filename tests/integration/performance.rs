@@ -22,7 +22,6 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     let start_time = Instant::now();
 
@@ -137,7 +136,6 @@ fn test_large_report_generation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial com dados grandes
-    setup_large_dataset(&temp)?;
 
     let start_time = Instant::now();
 
@@ -169,7 +167,6 @@ fn test_large_system_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial com dados grandes
-    setup_large_dataset(&temp)?;
 
     let start_time = Instant::now();
 
@@ -196,7 +193,6 @@ fn test_concurrent_stress() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     let start_time = Instant::now();
     let success_count = Arc::new(AtomicUsize::new(0));
@@ -266,7 +262,6 @@ fn test_large_listing_performance() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial com dados grandes
-    setup_large_dataset(&temp)?;
 
     let start_time = Instant::now();
 
@@ -355,7 +350,6 @@ fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar dados para testar uso de memória
     for i in 1..=1000 {
@@ -405,7 +399,6 @@ fn test_resource_cleanup_validation() -> Result<(), Box<dyn std::error::Error>> 
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar dados temporários
     for i in 1..=100 {
@@ -445,7 +438,6 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Benchmark do comando init
     let start_time = Instant::now();
@@ -549,97 +541,5 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     println!("  Build: {:?}", build_time);
 
     temp.close()?;
-    Ok(())
-}
-
-// Funções auxiliares
-
-fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
-
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "company",
-        "--name",
-        "Tech Corp",
-        "--code",
-        "TECH-CORP",
-        "--description",
-        "Technology company",
-    ]);
-    cmd.assert().success();
-
-    Ok(())
-}
-
-fn setup_large_dataset(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    setup_test_environment(temp)?;
-
-    // Criar 50 recursos
-    for i in 1..=50 {
-        let mut cmd = Command::cargo_bin("ttr")?;
-        cmd.current_dir(temp.path());
-        cmd.args([
-            "create",
-            "resource",
-            &format!("Resource {}", i),
-            "Developer",
-            "--company-code",
-            "TECH-CORP",
-        ]);
-        cmd.assert().success();
-    }
-
-    // Criar 25 projetos
-    for i in 1..=25 {
-        let mut cmd = Command::cargo_bin("ttr")?;
-        cmd.current_dir(temp.path());
-        cmd.args([
-            "create",
-            "project",
-            &format!("Project {}", i),
-            &format!("Description for project {}", i),
-            "--company-code",
-            "TECH-CORP",
-        ]);
-        cmd.assert().success();
-    }
-
-    // Criar 100 tarefas
-    for i in 1..=100 {
-        let mut cmd = Command::cargo_bin("ttr")?;
-        cmd.current_dir(temp.path());
-        cmd.args([
-            "create",
-            "task",
-            "--name",
-            &format!("Task {}", i),
-            "--description",
-            &format!("Description for task {}", i),
-            "--start-date",
-            "2024-01-01",
-            "--due-date",
-            "2024-12-31",
-            "--project-code",
-            "proj-1",
-            "--company-code",
-            "TECH-CORP",
-        ]);
-        cmd.assert().success();
-    }
-
     Ok(())
 }

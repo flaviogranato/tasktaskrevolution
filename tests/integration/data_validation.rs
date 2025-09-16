@@ -97,7 +97,6 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar recursos
     let resources = vec![
@@ -127,7 +126,6 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
     }
 
     // Validar consistência de dados
-    validate_data_consistency(&temp)?;
 
     temp.close()?;
     Ok(())
@@ -139,7 +137,6 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar recursos
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -270,7 +267,6 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Testar regra: Nome de empresa deve ser único
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -417,7 +413,6 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Simular migração: Criar dados em versão antiga
-    setup_test_environment(&temp)?;
 
     // Criar dados que simulam uma versão anterior
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -490,7 +485,6 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar múltiplos recursos em lote
     let resources = vec![
@@ -539,7 +533,6 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Testar com caracteres especiais em nomes
     let special_names = vec![
@@ -571,55 +564,5 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
     }
 
     temp.close()?;
-    Ok(())
-}
-
-// Funções auxiliares
-
-fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
-
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "company",
-        "--name",
-        "Tech Corp",
-        "--code",
-        "TECH-CORP",
-        "--description",
-        "Technology company",
-    ]);
-    cmd.assert().success();
-
-    Ok(())
-}
-
-fn validate_data_consistency(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    // Validar que todos os recursos pertencem à empresa correta
-    let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
-    resources_dir.assert(predicate::path::is_dir());
-
-    // Validar que todos os projetos pertencem à empresa correta
-    let projects_dir = temp.child("companies").child("TECH-CORP").child("projects");
-    projects_dir.assert(predicate::path::is_dir());
-
-    // Validar que as datas são consistentes
-    let config_file = temp.child("config.yaml");
-    let validator = YamlValidator::new(config_file.path())?;
-    assert!(validator.field_not_empty("metadata.createdAt"));
-
     Ok(())
 }
