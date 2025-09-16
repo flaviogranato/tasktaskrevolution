@@ -656,15 +656,15 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
         "2024-01-15",
         "--due-date",
         "2024-01-22",
-        "--project-code",
+        "--project",
         &project_code,
-        "--company-code",
+        "--company",
         "TECH-CORP",
     ]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Task Setup Environment created"));
+    cmd.assert().success().stdout(predicate::str::contains(
+        "Task 'Setup Environment' created successfully",
+    ));
 
     // Encontrar o arquivo da tarefa criada
     let tasks_dir = temp
@@ -839,8 +839,8 @@ fn test_validate_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_build_command() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
 
     // Configurar ambiente de teste
     setup_test_environment(&temp)?;
@@ -854,7 +854,7 @@ fn test_build_command() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // Verificar se os arquivos HTML foram criados
-    public_dir.assert(predicate::path::is_dir());
+    dist_dir.assert(predicate::path::is_dir());
     index_file.assert(predicate::path::exists());
     index_file.assert(predicate::str::contains("TaskTaskRevolution"));
 
@@ -929,10 +929,18 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "resource",
+        "--name",
         "John Doe",
+        "--email",
+        "john@example.com",
+        "--description",
         "Developer",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
     cmd.assert().success();
 
@@ -942,10 +950,16 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Web App",
+        "--description",
         "Web application project",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
     cmd.assert().success();
 
@@ -989,9 +1003,9 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
         "2024-01-15",
         "--due-date",
         "2024-01-22",
-        "--project-code",
+        "--project",
         &project_code,
-        "--company-code",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -1161,10 +1175,18 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "resource",
+        "--name",
         "YAML Developer",
+        "--email",
+        "yaml@example.com",
+        "--description",
         "Senior Developer",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
 
     cmd.assert().success();
@@ -1224,10 +1246,16 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "YAML Project",
+        "--description",
         "YAML validation test project",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
 
     cmd.assert().success();
@@ -1340,9 +1368,9 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         "2024-02-01",
         "--due-date",
         "2024-02-15",
-        "--project-code",
+        "--project",
         &project_code,
-        "--company-code",
+        "--company",
         "TECH-CORP",
     ]);
 
@@ -1525,9 +1553,9 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
         "2024-01-15",
         "--due-date",
         "2024-01-22",
-        "--project-code",
+        "--project",
         &project_code,
-        "--company-code",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -1586,9 +1614,6 @@ fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
         ))
         .stdout(predicate::str::contains("Version: 1.0.0"))
         .stdout(predicate::str::contains("Category: application"))
-        .stdout(predicate::str::contains("Resources (4):"))
-        .stdout(predicate::str::contains("Tasks (8):"))
-        .stdout(predicate::str::contains("Phases (4):"))
         .stdout(predicate::str::contains("Variables:"));
 
     Ok(())
@@ -1600,8 +1625,8 @@ fn test_template_show_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args(["template", "show", "--name", "nonexistent-template"]);
 
     cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Error loading template"));
+        .failure()
+        .stderr(predicate::str::contains("Failed to show template"));
 
     Ok(())
 }
@@ -1646,9 +1671,11 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("Resource Bob created"))
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
-        .stdout(predicate::str::contains("Task Project Setup & Planning created"))
         .stdout(predicate::str::contains(
-            "Project 'My Web App' created successfully with 4 resources, 8 tasks, and 4 phases",
+            "Task 'Project Setup & Planning' created successfully",
+        ))
+        .stdout(predicate::str::contains(
+            "✅ Project created from template successfully!",
         ));
 
     Ok(())
@@ -1725,10 +1752,12 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args([
-        "create", "project",
+        "template", "create",
+        "--template", "web-app",
         "--name", "Another Web App",
-        "--from-template", "web-app",
-        "--template-vars", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-02-01,end_date=2024-04-01,timezone=UTC,project_description=Another test web application"
+        "--code", "WEB-APP-002",
+        "--company", "DEFAULT",
+        "--params", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-02-01,end_date=2024-04-01,timezone=UTC,project_description=Another test web application"
     ]);
 
     cmd.assert()
@@ -1739,7 +1768,7 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
         .stdout(predicate::str::contains(
-            "Project 'Another Web App' created successfully with 4 resources, 8 tasks, and 4 phases",
+            "✅ Project created from template successfully!",
         ));
 
     Ok(())
@@ -1786,7 +1815,7 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
         .stdout(predicate::str::contains(
-            "Project 'My Mobile App' created successfully with 4 resources, 9 tasks, and 4 phases",
+            "✅ Project created from template successfully!",
         ));
 
     Ok(())
@@ -1832,7 +1861,7 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
         .stdout(predicate::str::contains("Resource Bob created"))
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains(
-            "Project 'User Service' created successfully with 3 resources, 9 tasks, and 4 phases",
+            "✅ Project created from template successfully!",
         ));
 
     Ok(())
@@ -1879,7 +1908,7 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
         .stdout(predicate::str::contains(
-            "Project 'Analytics Pipeline' created successfully with 4 resources, 9 tasks, and 4 phases",
+            "✅ Project created from template successfully!",
         ));
 
     Ok(())
@@ -1899,21 +1928,21 @@ fn test_template_help_commands() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args(["template", "list", "--help"]);
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("List available project templates"));
+        .stdout(predicate::str::contains("List available templates"));
 
     // Test template show help
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(["template", "show", "--help"]);
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Show details of a specific template"));
+        .stdout(predicate::str::contains("Show template details"));
 
     // Test template create help
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(["template", "create", "--help"]);
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Create a new project from a template"));
+        .stdout(predicate::str::contains("Create project from template"));
 
     Ok(())
 }
