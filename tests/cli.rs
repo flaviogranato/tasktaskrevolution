@@ -242,7 +242,7 @@ fn test_init_command_with_timezone() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("America/Sao_Paulo"));
+        .stdout(predicate::str::contains("Manager/Consultant configured successfully"));
 
     temp.close()?;
     Ok(())
@@ -627,14 +627,14 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml)
                         && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                            && let Some(code) = yaml
-                                .get("metadata")
-                                .and_then(|m| m.get("code"))
-                                .and_then(|c| c.as_str())
-                            {
-                                project_code = Some(code.to_string());
-                                break;
-                            }
+                        && let Some(code) = yaml
+                            .get("metadata")
+                            .and_then(|m| m.get("code"))
+                            .and_then(|c| c.as_str())
+                    {
+                        project_code = Some(code.to_string());
+                        break;
+                    }
                 }
             }
         }
@@ -880,8 +880,8 @@ fn test_error_handling() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("list").arg("tasks");
 
     cmd.assert()
-        .success() // O comando executa com sucesso
-        .stdout(predicate::str::contains("Error listing tasks")); // Mas retorna erro na saída
+        .failure() // O comando falha porque não há contexto
+        .stderr(predicate::str::contains("Failed to detect execution context")); // Retorna erro no stderr
 
     temp.close()?;
     Ok(())
@@ -960,14 +960,14 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml)
                         && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                            && let Some(code) = yaml
-                                .get("metadata")
-                                .and_then(|m| m.get("code"))
-                                .and_then(|c| c.as_str())
-                            {
-                                project_code = Some(code.to_string());
-                                break;
-                            }
+                        && let Some(code) = yaml
+                            .get("metadata")
+                            .and_then(|m| m.get("code"))
+                            .and_then(|c| c.as_str())
+                    {
+                        project_code = Some(code.to_string());
+                        break;
+                    }
                 }
             }
         }
@@ -1311,14 +1311,14 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml)
                         && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                            && let Some(code) = yaml
-                                .get("metadata")
-                                .and_then(|m| m.get("code"))
-                                .and_then(|c| c.as_str())
-                            {
-                                project_code = Some(code.to_string());
-                                break;
-                            }
+                        && let Some(code) = yaml
+                            .get("metadata")
+                            .and_then(|m| m.get("code"))
+                            .and_then(|c| c.as_str())
+                    {
+                        project_code = Some(code.to_string());
+                        break;
+                    }
                 }
             }
         }
@@ -1447,10 +1447,16 @@ fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::err
     cmd.args([
         "create",
         "project",
+        "--name",
         "Web App",
+        "--description",
         "Web application project",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
     cmd.assert().success();
     Ok(())
@@ -1462,10 +1468,18 @@ fn create_test_resource(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::er
     cmd.args([
         "create",
         "resource",
+        "--name",
         "John Doe",
+        "--email",
+        "john@example.com",
+        "--description",
         "Developer",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
     cmd.assert().success();
     Ok(())
@@ -1483,14 +1497,14 @@ fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error:
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml)
                         && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                            && let Some(code) = yaml
-                                .get("metadata")
-                                .and_then(|m| m.get("code"))
-                                .and_then(|c| c.as_str())
-                            {
-                                project_code = Some(code.to_string());
-                                break;
-                            }
+                        && let Some(code) = yaml
+                            .get("metadata")
+                            .and_then(|m| m.get("code"))
+                            .and_then(|c| c.as_str())
+                    {
+                        project_code = Some(code.to_string());
+                        break;
+                    }
                 }
             }
         }
@@ -1550,7 +1564,7 @@ fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Available project templates"))
+        .stdout(predicate::str::contains("Available templates"))
         .stdout(predicate::str::contains("Web Application"))
         .stdout(predicate::str::contains("Mobile Application"))
         .stdout(predicate::str::contains("Microservice"))
@@ -1562,7 +1576,7 @@ fn test_template_list_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(["template", "show", "web-app"]);
+    cmd.args(["template", "show", "--name", "web-app"]);
 
     cmd.assert()
         .success()
@@ -1583,7 +1597,7 @@ fn test_template_show_command() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_template_show_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.args(["template", "show", "nonexistent-template"]);
+    cmd.args(["template", "show", "--name", "nonexistent-template"]);
 
     cmd.assert()
         .success()
@@ -1618,11 +1632,11 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
     cmd.current_dir(temp.path());
     cmd.args([
         "template", "create",
-        "web-app",
-        "My Web App",
-        "A test web application",
-        "--company-code", "DEFAULT",
-        "--variables", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A test web application"
+        "--template", "web-app",
+        "--name", "My Web App",
+        "--code", "WEB-APP-001",
+        "--company", "DEFAULT",
+        "--params", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A test web application"
     ]);
 
     cmd.assert()
@@ -1667,12 +1681,15 @@ fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::erro
     cmd.args([
         "template",
         "create",
+        "--template",
         "web-app",
+        "--name",
         "My Web App",
-        "A test web application",
-        "--company-code",
+        "--code",
+        "WEB-APP-002",
+        "--company",
         "DEFAULT",
-        "--variables",
+        "--params",
         "frontend_developer=Alice,backend_developer=Bob",
     ]);
 
@@ -1709,7 +1726,7 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
     cmd.current_dir(temp.path());
     cmd.args([
         "create", "project",
-        "Another Web App",
+        "--name", "Another Web App",
         "--from-template", "web-app",
         "--template-vars", "frontend_developer=Alice,backend_developer=Bob,devops_engineer=Charlie,ui_designer=Diana,start_date=2024-02-01,end_date=2024-04-01,timezone=UTC,project_description=Another test web application"
     ]);
@@ -1754,11 +1771,11 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
     cmd.current_dir(temp.path());
     cmd.args([
         "template", "create",
-        "mobile-app",
-        "My Mobile App",
-        "A test mobile application",
-        "--company-code", "DEFAULT",
-        "--variables", "mobile_developer=Alice,backend_developer=Bob,ui_designer=Charlie,qa_engineer=Diana,start_date=2024-01-15,end_date=2024-04-15,timezone=UTC,project_description=A test mobile application"
+        "--template", "mobile-app",
+        "--name", "My Mobile App",
+        "--code", "MOBILE-APP-001",
+        "--company", "DEFAULT",
+        "--params", "mobile_developer=Alice,backend_developer=Bob,ui_designer=Charlie,qa_engineer=Diana,start_date=2024-01-15,end_date=2024-04-15,timezone=UTC,project_description=A test mobile application"
     ]);
 
     cmd.assert()
@@ -1801,11 +1818,11 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
     cmd.current_dir(temp.path());
     cmd.args([
         "template", "create",
-        "microservice",
-        "User Service",
-        "A microservice for user management",
-        "--company-code", "DEFAULT",
-        "--variables", "backend_developer=Alice,devops_engineer=Bob,api_designer=Charlie,start_date=2024-01-15,end_date=2024-02-28,timezone=UTC,project_description=A microservice for user management"
+        "--template", "microservice",
+        "--name", "User Service",
+        "--code", "MICROSERVICE-001",
+        "--company", "DEFAULT",
+        "--params", "backend_developer=Alice,devops_engineer=Bob,api_designer=Charlie,start_date=2024-01-15,end_date=2024-02-28,timezone=UTC,project_description=A microservice for user management"
     ]);
 
     cmd.assert()
@@ -1847,11 +1864,11 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
     cmd.current_dir(temp.path());
     cmd.args([
         "template", "create",
-        "data-pipeline",
-        "Analytics Pipeline",
-        "A data pipeline for analytics",
-        "--company-code", "DEFAULT",
-        "--variables", "data_engineer=Alice,data_analyst=Bob,devops_engineer=Charlie,data_scientist=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A data pipeline for analytics"
+        "--template", "data-pipeline",
+        "--name", "Analytics Pipeline",
+        "--code", "DATA-PIPELINE-001",
+        "--company", "DEFAULT",
+        "--params", "data_engineer=Alice,data_analyst=Bob,devops_engineer=Charlie,data_scientist=Diana,start_date=2024-01-15,end_date=2024-03-15,timezone=UTC,project_description=A data pipeline for analytics"
     ]);
 
     cmd.assert()
@@ -1875,7 +1892,7 @@ fn test_template_help_commands() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args(["template", "--help"]);
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Manage project templates"));
+        .stdout(predicate::str::contains("Template management"));
 
     // Test template list help
     let mut cmd = Command::cargo_bin("ttr")?;

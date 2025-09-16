@@ -61,7 +61,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        TaskCommand::Describe { code, project, company: _ } => {
+        TaskCommand::Describe {
+            code,
+            project,
+            company: _,
+        } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let describe_use_case = DescribeTaskUseCase::new(project_repository);
 
@@ -115,7 +119,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
-        TaskCommand::Delete { code, project, company: _ } => {
+        TaskCommand::Delete {
+            code,
+            project,
+            company: _,
+        } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let delete_use_case = DeleteTaskUseCase::new(project_repository);
 

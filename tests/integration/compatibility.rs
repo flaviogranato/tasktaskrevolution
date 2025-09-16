@@ -282,14 +282,14 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
                     // Ler o código do projeto do YAML
                     if let Ok(content) = std::fs::read_to_string(&project_yaml)
                         && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                            && let Some(code) = yaml
-                                .get("metadata")
-                                .and_then(|m| m.get("code"))
-                                .and_then(|c| c.as_str())
-                            {
-                                project_code = Some(code.to_string());
-                                break;
-                            }
+                        && let Some(code) = yaml
+                            .get("metadata")
+                            .and_then(|m| m.get("code"))
+                            .and_then(|c| c.as_str())
+                    {
+                        project_code = Some(code.to_string());
+                        break;
+                    }
                 }
             }
         }
