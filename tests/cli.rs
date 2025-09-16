@@ -407,10 +407,18 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args(&[
         "create",
         "resource",
+        "--name",
         "John Doe",
+        "--email",
+        "john@example.com",
+        "--description",
         "Developer",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
 
     cmd.assert()
@@ -494,10 +502,16 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args(&[
         "create",
         "project",
+        "--name",
         "Web App",
+        "--description",
         "Web application project",
-        "--company-code",
+        "--company",
         "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
     ]);
 
     cmd.assert()

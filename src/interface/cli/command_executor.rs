@@ -17,12 +17,12 @@ pub fn execute_init(
     let config_repo = &app.config_repository;
 
     let init_data = InitManagerData {
-        name,
-        email,
+        name: name.clone(),
+        email: email.clone(),
         timezone,
         work_hours_start,
         work_hours_end,
-        company_name,
+        company_name: company_name.clone(),
     };
 
     let init_use_case = InitManagerUseCase::new(Box::new(config_repo.clone()));
@@ -30,6 +30,9 @@ pub fn execute_init(
     match init_use_case.execute(init_data) {
         Ok(_config) => {
             println!("Manager/Consultant configured successfully");
+            println!("Name: {}", name);
+            println!("Email: {}", email);
+            println!("Company: {}", company_name);
             Ok(())
         }
         Err(e) => {

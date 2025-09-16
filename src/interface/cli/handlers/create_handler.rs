@@ -210,7 +210,7 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
             code,
             email: _,
             company,
-            description: _,
+            description,
             start_date: _,
             end_date: _,
         } => {
@@ -239,7 +239,8 @@ pub fn handle_create_command(command: CreateCommand) -> Result<(), Box<dyn std::
             let resource_repo = &app.resource_repository;
 
             let use_case = CreateResourceUseCase::new(resource_repo.clone());
-            match use_case.execute(&name, "employee", company_code.clone(), None, code) {
+            let resource_type = description.as_deref().unwrap_or("employee");
+            match use_case.execute(&name, resource_type, company_code.clone(), None, code) {
                 Ok(_) => {
                     println!("Resource '{}' created successfully in company '{}'", name, company_code);
                     Ok(())
