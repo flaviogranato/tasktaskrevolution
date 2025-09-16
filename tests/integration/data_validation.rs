@@ -89,7 +89,6 @@ impl YamlValidator {
             false
         }
     }
-
 }
 
 /// Teste de consistência de dados entre entidades
@@ -177,15 +176,15 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
                 let project_yaml = entry.path().join("project.yaml");
                 if project_yaml.exists()
                     && let Ok(content) = std::fs::read_to_string(&project_yaml)
-                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                            && let Some(code) = yaml
-                                .get("metadata")
-                                .and_then(|m| m.get("code"))
-                                .and_then(|c| c.as_str())
-                            {
-                                project_code = Some(code.to_string());
-                                break;
-                            }
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    project_code = Some(code.to_string());
+                    break;
+                }
             }
         }
     }
@@ -223,12 +222,14 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     let mut task_code = None;
     if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_file() && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml")
+            if entry.path().is_file()
+                && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml")
                 && let Some(file_name) = entry.file_name().to_str()
-                    && file_name.starts_with("task-") {
-                        task_code = Some(file_name.to_string());
-                        break;
-                    }
+                && file_name.starts_with("task-")
+            {
+                task_code = Some(file_name.to_string());
+                break;
+            }
         }
     }
     let task_code = task_code.expect("Task code not found");
