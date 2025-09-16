@@ -137,7 +137,6 @@ fn test_company_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar empresa com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -176,7 +175,6 @@ fn test_resource_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar recurso com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -217,7 +215,6 @@ fn test_project_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar projeto com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -268,8 +265,6 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
-    create_test_project(&temp)?;
 
     // Encontrar o código do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
@@ -422,7 +417,6 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar diferentes tipos de entidades para testar versões de API
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -494,7 +488,6 @@ fn test_required_vs_optional_fields() -> Result<(), Box<dyn std::error::Error>> 
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar recurso com campos mínimos
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -538,7 +531,6 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar estrutura completa
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -644,53 +636,5 @@ spec:
     cmd.assert().success();
 
     temp.close()?;
-    Ok(())
-}
-
-// Funções auxiliares
-
-fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
-
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "company",
-        "--name",
-        "Tech Corp",
-        "--code",
-        "TECH-CORP",
-        "--description",
-        "Technology company",
-    ]);
-    cmd.assert().success();
-
-    Ok(())
-}
-
-fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "project",
-        "Web App",
-        "Web application project",
-        "--company-code",
-        "TECH-CORP",
-    ]);
-    cmd.assert().success();
     Ok(())
 }

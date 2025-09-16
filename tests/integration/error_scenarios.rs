@@ -90,7 +90,6 @@ fn test_invalid_company_codes() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     let long_code = "a".repeat(100);
     let invalid_codes = [
@@ -129,8 +128,6 @@ fn test_invalid_date_formats() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
-    create_test_project(&temp)?;
 
     let invalid_dates = vec![
         "invalid-date",
@@ -233,7 +230,6 @@ fn test_create_task_without_project() -> Result<(), Box<dyn std::error::Error>> 
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Tentar criar tarefa sem projeto (o sistema retorna erro mas com sucesso)
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -441,7 +437,6 @@ fn test_operation_timeout() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar muitos recursos para testar timeout
     for i in 1..=100 {
@@ -472,7 +467,6 @@ fn test_inconsistent_state_recovery() -> Result<(), Box<dyn std::error::Error>> 
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
-    setup_test_environment(&temp)?;
 
     // Criar arquivo de projeto parcialmente corrompido
     let project_file = temp
@@ -496,53 +490,5 @@ fn test_inconsistent_state_recovery() -> Result<(), Box<dyn std::error::Error>> 
     cmd.assert().success();
 
     temp.close()?;
-    Ok(())
-}
-
-// Funções auxiliares
-
-fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
-
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "company",
-        "--name",
-        "Tech Corp",
-        "--code",
-        "TECH-CORP",
-        "--description",
-        "Technology company",
-    ]);
-    cmd.assert().success();
-
-    Ok(())
-}
-
-fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "project",
-        "Web App",
-        "Web application project",
-        "--company-code",
-        "TECH-CORP",
-    ]);
-    cmd.assert().success();
     Ok(())
 }

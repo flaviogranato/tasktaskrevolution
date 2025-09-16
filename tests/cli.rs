@@ -399,7 +399,6 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
         .child("john_doe.yaml");
 
     // Inicializar e criar empresa
-    setup_test_environment(&temp)?;
 
     // Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -494,7 +493,6 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Inicializar e criar empresa
-    setup_test_environment(&temp)?;
 
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -613,8 +611,6 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Inicializar, criar empresa e projeto
-    setup_test_environment(&temp)?;
-    create_test_project(&temp)?;
 
     // Encontrar o código do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
@@ -783,10 +779,6 @@ fn test_list_commands() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Configurar ambiente de teste
-    setup_test_environment(&temp)?;
-    create_test_project(&temp)?;
-    create_test_resource(&temp)?;
-    create_test_task(&temp)?;
 
     // Testar list projects
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -822,7 +814,6 @@ fn test_validate_command() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Configurar ambiente de teste
-    setup_test_environment(&temp)?;
 
     // Testar validação do sistema
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -843,8 +834,6 @@ fn test_build_command() -> Result<(), Box<dyn std::error::Error>> {
     let index_file = dist_dir.child("index.html");
 
     // Configurar ambiente de teste
-    setup_test_environment(&temp)?;
-    create_test_project(&temp)?;
 
     // Gerar HTML
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1088,7 +1077,6 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let company_file = temp.child("companies").child("YAML-CORP").child("company.yaml");
 
     // Setup
-    setup_test_environment(&temp)?;
 
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1167,7 +1155,6 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         .child("yaml_developer.yaml");
 
     // Setup
-    setup_test_environment(&temp)?;
 
     // Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1238,7 +1225,6 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup
-    setup_test_environment(&temp)?;
 
     // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1325,8 +1311,6 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup
-    setup_test_environment(&temp)?;
-    create_test_project(&temp)?;
 
     // Encontrar o código do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
@@ -1436,151 +1420,6 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-// Funções auxiliares para configurar ambiente de teste
-
-fn setup_test_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
-
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "company",
-        "--name",
-        "Tech Corp",
-        "--code",
-        "TECH-CORP",
-        "--description",
-        "Technology company",
-    ]);
-    cmd.assert().success();
-
-    Ok(())
-}
-
-fn create_test_project(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "project",
-        "--name",
-        "Web App",
-        "--description",
-        "Web application project",
-        "--company",
-        "TECH-CORP",
-        "--start-date",
-        "2024-01-01",
-        "--end-date",
-        "2024-12-31",
-    ]);
-    cmd.assert().success();
-    Ok(())
-}
-
-fn create_test_resource(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "resource",
-        "--name",
-        "John Doe",
-        "--email",
-        "john@example.com",
-        "--description",
-        "Developer",
-        "--company",
-        "TECH-CORP",
-        "--start-date",
-        "2024-01-01",
-        "--end-date",
-        "2024-12-31",
-    ]);
-    cmd.assert().success();
-    Ok(())
-}
-
-fn create_test_task(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    // Encontrar o código do projeto criado
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
-    let mut project_code = None;
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
-        for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
-                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                        && let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                    {
-                        project_code = Some(code.to_string());
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    let project_code = project_code.expect("Project code not found");
-
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "task",
-        "--name",
-        "Setup Environment",
-        "--description",
-        "Setup development environment",
-        "--start-date",
-        "2024-01-15",
-        "--due-date",
-        "2024-01-22",
-        "--project",
-        &project_code,
-        "--company",
-        "TECH-CORP",
-    ]);
-    cmd.assert().success();
-    Ok(())
-}
-
-fn copy_templates_to_temp(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
-    let templates_dir = temp.path().join("templates").join("projects");
-    std::fs::create_dir_all(&templates_dir)?;
-    std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
-    std::fs::copy(
-        "templates/projects/mobile-app.yaml",
-        templates_dir.join("mobile-app.yaml"),
-    )?;
-    std::fs::copy(
-        "templates/projects/microservice.yaml",
-        templates_dir.join("microservice.yaml"),
-    )?;
-    std::fs::copy(
-        "templates/projects/data-pipeline.yaml",
-        templates_dir.join("data-pipeline.yaml"),
-    )?;
-    Ok(())
-}
-
 // ============================================================================
 // TEMPLATE COMMAND TESTS
 // ============================================================================
@@ -1650,7 +1489,6 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // Copy templates to temp directory
-    copy_templates_to_temp(&temp)?;
 
     // Create project from template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1700,7 +1538,6 @@ fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::erro
     cmd.assert().success();
 
     // Copy templates to temp directory
-    copy_templates_to_temp(&temp)?;
 
     // Create project from template with missing variables
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1746,7 +1583,6 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
     cmd.assert().success();
 
     // Copy templates to temp directory
-    copy_templates_to_temp(&temp)?;
 
     // Create project using --from-template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1793,7 +1629,6 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // Copy templates to temp directory
-    copy_templates_to_temp(&temp)?;
 
     // Create mobile app from template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1840,7 +1675,6 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
     cmd.assert().success();
 
     // Copy templates to temp directory
-    copy_templates_to_temp(&temp)?;
 
     // Create microservice from template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1886,7 +1720,6 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
     cmd.assert().success();
 
     // Copy templates to temp directory
-    copy_templates_to_temp(&temp)?;
 
     // Create data pipeline from template
     let mut cmd = Command::cargo_bin("ttr")?;
