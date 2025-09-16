@@ -398,9 +398,10 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
         .child("resources")
         .child("john_doe.yaml");
 
-    // Inicializar e criar empresa
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Criar recurso
+    // Create resource
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args([
@@ -492,9 +493,10 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
 fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Inicializar e criar empresa
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Criar projeto
+    // Create project
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args([
@@ -610,9 +612,29 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
 fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Inicializar, criar empresa e projeto
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Encontrar o código do projeto criado
+    // Create a project first
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "project",
+        "--name",
+        "Test Project",
+        "--description",
+        "Test project for task creation",
+        "--company",
+        "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    cmd.assert().success();
+
+    // Find the created project code
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
@@ -688,8 +710,8 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     // Validar conteúdo YAML do task.yaml
     let validator = YamlValidator::new(&task_file)?;
 
-    // Validar estrutura básica (task usa api_version em vez de apiVersion)
-    assert!(validator.has_field("api_version"), "Task deve ter api_version");
+    // Validar estrutura básica (task usa apiVersion)
+    assert!(validator.has_field("apiVersion"), "Task deve ter apiVersion");
     assert!(validator.has_field("kind"), "Task deve ter kind");
     assert!(validator.has_field("metadata"), "Task deve ter metadata");
     assert!(validator.has_field("spec"), "Task deve ter spec");
@@ -778,19 +800,59 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
 fn test_list_commands() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Configurar ambiente de teste
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Testar list projects
+    // Create some test data
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.arg("list").arg("projects");
+    cmd.args([
+        "create",
+        "project",
+        "--name",
+        "Web App",
+        "--description",
+        "Test project",
+        "--company",
+        "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    cmd.assert().success();
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "resource",
+        "--name",
+        "John Doe",
+        "--email",
+        "john@example.com",
+        "--description",
+        "Developer",
+        "--company",
+        "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    cmd.assert().success();
+
+    // Test list projects
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["list", "projects", "--company", "TECH-CORP"]);
 
     cmd.assert().success().stdout(predicate::str::contains("Web App"));
 
-    // Testar list resources
+    // Test list resources
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.arg("list").arg("resources");
+    cmd.args(["list", "resources", "--company", "TECH-CORP"]);
 
     cmd.assert().success().stdout(predicate::str::contains("John Doe"));
 
@@ -833,9 +895,29 @@ fn test_build_command() -> Result<(), Box<dyn std::error::Error>> {
     let dist_dir = temp.child("dist");
     let index_file = dist_dir.child("index.html");
 
-    // Configurar ambiente de teste
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Gerar HTML
+    // Create some test data
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "project",
+        "--name",
+        "Test Project",
+        "--description",
+        "Test project for build",
+        "--company",
+        "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    cmd.assert().success();
+
+    // Generate HTML
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.arg("build");
@@ -880,37 +962,11 @@ fn test_error_handling() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
 
-    // 1. Inicializar
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
-
-    // 2. Criar empresa
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "create",
-        "company",
-        "--name",
-        "Tech Corp",
-        "--code",
-        "TECH-CORP",
-        "--description",
-        "Technology company",
-    ]);
-    cmd.assert().success();
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
     // 3. Criar recurso
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1006,7 +1062,7 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // 7. Verificar resultado
-    public_dir.assert(predicate::path::is_dir());
+    dist_dir.assert(predicate::path::is_dir());
     index_file.assert(predicate::path::exists());
     index_file.assert(predicate::str::contains("Tech Corp"));
 
@@ -1076,9 +1132,10 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let company_file = temp.child("companies").child("YAML-CORP").child("company.yaml");
 
-    // Setup
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Criar empresa
+    // Create company
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args([
@@ -1154,9 +1211,10 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         .child("resources")
         .child("yaml_developer.yaml");
 
-    // Setup
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Criar recurso
+    // Create resource
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args([
@@ -1224,9 +1282,10 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Criar projeto
+    // Create project
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args([
@@ -1310,9 +1369,29 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
-    // Encontrar o código do projeto criado
+    // Create a project first
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "project",
+        "--name",
+        "Test Project",
+        "--description",
+        "Test project for task validation",
+        "--company",
+        "TECH-CORP",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+    ]);
+    cmd.assert().success();
+
+    // Find the created project code
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
@@ -1385,7 +1464,7 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let validator = YamlValidator::new(&task_file)?;
 
     // Estrutura básica obrigatória (task usa api_version em vez de apiVersion)
-    assert!(validator.has_field("api_version"), "Task deve ter api_version");
+    assert!(validator.has_field("apiVersion"), "Task deve ter apiVersion");
     assert!(validator.has_field("kind"), "Task deve ter kind");
     assert!(validator.has_field("metadata"), "Task deve ter metadata");
     assert!(validator.has_field("spec"), "Task deve ter spec");
@@ -1417,6 +1496,73 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     assert!(validator.field_equals("spec.projectCode", &project_code));
 
     temp.close()?;
+    Ok(())
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+fn setup_basic_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize TTR
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+    ]);
+    cmd.assert().success();
+
+    // Create company
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
+    cmd.assert().success();
+
+    Ok(())
+}
+
+fn copy_templates(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std::error::Error>> {
+    let templates_dir = temp.path().join("templates").join("projects");
+    std::fs::create_dir_all(&templates_dir)?;
+
+    // Copy template files if they exist
+    if std::path::Path::new("templates/projects/web-app.yaml").exists() {
+        std::fs::copy("templates/projects/web-app.yaml", templates_dir.join("web-app.yaml"))?;
+    }
+    if std::path::Path::new("templates/projects/mobile-app.yaml").exists() {
+        std::fs::copy(
+            "templates/projects/mobile-app.yaml",
+            templates_dir.join("mobile-app.yaml"),
+        )?;
+    }
+    if std::path::Path::new("templates/projects/microservice.yaml").exists() {
+        std::fs::copy(
+            "templates/projects/microservice.yaml",
+            templates_dir.join("microservice.yaml"),
+        )?;
+    }
+    if std::path::Path::new("templates/projects/data-pipeline.yaml").exists() {
+        std::fs::copy(
+            "templates/projects/data-pipeline.yaml",
+            templates_dir.join("data-pipeline.yaml"),
+        )?;
+    }
+
     Ok(())
 }
 
@@ -1474,21 +1620,11 @@ fn test_template_show_nonexistent() -> Result<(), Box<dyn std::error::Error>> {
 fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Initialize TTR
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
     // Copy templates to temp directory
+    copy_templates(&temp)?;
 
     // Create project from template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1523,21 +1659,11 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
 fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Initialize TTR
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
     // Copy templates to temp directory
+    copy_templates(&temp)?;
 
     // Create project from template with missing variables
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1568,21 +1694,11 @@ fn test_template_create_with_missing_variables() -> Result<(), Box<dyn std::erro
 fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Initialize TTR
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
     // Copy templates to temp directory
+    copy_templates(&temp)?;
 
     // Create project using --from-template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1614,21 +1730,11 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
 fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Initialize TTR
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
     // Copy templates to temp directory
+    copy_templates(&temp)?;
 
     // Create mobile app from template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1660,21 +1766,11 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
 fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Initialize TTR
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
     // Copy templates to temp directory
+    copy_templates(&temp)?;
 
     // Create microservice from template
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -1705,21 +1801,11 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
 fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Initialize TTR
-    let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(temp.path());
-    cmd.args([
-        "init",
-        "--name",
-        "Test Manager",
-        "--email",
-        "test@example.com",
-        "--company-name",
-        "Test Company",
-    ]);
-    cmd.assert().success();
+    // Setup basic environment
+    setup_basic_environment(&temp)?;
 
     // Copy templates to temp directory
+    copy_templates(&temp)?;
 
     // Create data pipeline from template
     let mut cmd = Command::cargo_bin("ttr")?;
