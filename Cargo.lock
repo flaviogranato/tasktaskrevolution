@@ -3,35 +3,6 @@
 version = 4
 
 [[package]]
-name = "TaskTaskRevolution"
-version = "0.5.6"
-dependencies = [
- "assert_cmd",
- "assert_fs",
- "chrono",
- "clap",
- "criterion",
- "csv",
- "glob",
- "globwalk",
- "mockall",
- "predicates",
- "rand",
- "regex",
- "rust-embed",
- "serde",
- "serde_json",
- "serde_yaml",
- "speculate",
- "strum",
- "tempfile",
- "tera",
- "test-case",
- "uuid7",
- "validator",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1451,6 +1422,35 @@ dependencies = [
  "proc-macro2 1.0.94",
  "quote 1.0.39",
  "syn 2.0.101",
+]
+
+[[package]]
+name = "task_task_revolution"
+version = "0.5.6"
+dependencies = [
+ "assert_cmd",
+ "assert_fs",
+ "chrono",
+ "clap",
+ "criterion",
+ "csv",
+ "glob",
+ "globwalk",
+ "mockall",
+ "predicates",
+ "rand",
+ "regex",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "speculate",
+ "strum",
+ "tempfile",
+ "tera",
+ "test-case",
+ "uuid7",
+ "validator",
 ]
 
 [[package]]

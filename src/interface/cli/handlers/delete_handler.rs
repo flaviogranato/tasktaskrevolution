@@ -24,7 +24,7 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
             }
 
             // Determine company code based on context
-            let company_code = match (&context, company) {
+            let _company_code = match (&context, company) {
                 (ExecutionContext::Root, Some(company)) => company,
                 (ExecutionContext::Root, None) => {
                     return Err("Company parameter required in root context".into());
@@ -65,7 +65,7 @@ pub fn handle_delete_command(command: DeleteCommand) -> Result<(), Box<dyn std::
             }
 
             // Determine project and company codes based on context
-            let (project_code, company_code) = match (&context, project, company) {
+            let (project_code, _company_code) = match (&context, project, company) {
                 (ExecutionContext::Root, Some(project), Some(company)) => (project, company),
                 (ExecutionContext::Root, None, _) => {
                     return Err("Project parameter required in root context".into());

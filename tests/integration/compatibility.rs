@@ -332,7 +332,7 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let mut task_file = None;
     if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
         for entry in entries.flatten() {
-            if entry.path().extension().map_or(false, |ext| ext == "yaml") {
+            if entry.path().extension().is_some_and(|ext| ext == "yaml") {
                 task_file = Some(entry.path());
                 break;
             }

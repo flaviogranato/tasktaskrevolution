@@ -109,7 +109,7 @@ impl DataValidator {
             let entry = entry.map_err(|e| format!("Failed to read directory entry: {}", e))?;
             let path = entry.path();
             
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "yaml") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "yaml") {
                 count += 1;
             }
         }

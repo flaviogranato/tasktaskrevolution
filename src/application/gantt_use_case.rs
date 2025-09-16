@@ -127,7 +127,7 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let _use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
         // Teste que a criação funciona sem erros
-        assert!(true);
+        // Test completed successfully
     }
 
     #[test]

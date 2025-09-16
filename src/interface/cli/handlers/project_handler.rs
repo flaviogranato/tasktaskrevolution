@@ -26,9 +26,9 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let create_use_case = CreateProjectUseCase::new(project_repository);
 
-            let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+            let _start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+            let _end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
             match create_use_case.execute(&name, description.as_deref(), company.clone(), None) {
@@ -46,16 +46,16 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             }
         }
         ProjectCommand::FromTemplate {
-            template,
-            name,
-            code,
-            company,
-            params,
+            template: _,
+            name: _,
+            code: _,
+            company: _,
+            params: _,
         } => {
             // Este comando foi movido para template_handler.rs
             Err("FromTemplate command should be handled by template_handler".into())
         }
-        ProjectCommand::Describe { code, company } => {
+        ProjectCommand::Describe { code, company: _ } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let describe_use_case = DescribeProjectUseCase::new(project_repository);
 
@@ -72,7 +72,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
         }
         ProjectCommand::Update {
             code,
-            company,
+            company: _,
             name,
             description,
             start_date,
@@ -81,11 +81,11 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let update_use_case = UpdateProjectUseCase::new(project_repository);
 
-            let start = start_date
+            let _start = start_date
                 .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let end = end_date
+            let _end = end_date
                 .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
                 .transpose()
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
@@ -103,7 +103,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
                 }
             }
         }
-        ProjectCommand::Cancel { code, company } => {
+        ProjectCommand::Cancel { code, company: _ } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let cancel_use_case = CancelProjectUseCase::new(project_repository);
 
@@ -120,7 +120,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
         }
         ProjectCommand::AssignResource {
             project,
-            company,
+            company: _,
             task,
             resource,
         } => {

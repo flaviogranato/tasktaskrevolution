@@ -10,7 +10,7 @@ pub fn handle_unlink_command(command: UnlinkCommand) -> Result<(), Box<dyn std::
             from,
             to,
             project,
-            company,
+            company: _,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let unlink_use_case = RemoveTaskDependencyUseCase::new(project_repository);

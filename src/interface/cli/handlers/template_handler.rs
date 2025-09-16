@@ -63,15 +63,15 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
         }
         TemplateCommand::Create {
             template,
-            name,
-            code,
+            name: _,
+            code: _,
             company,
             params,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let resource_repository = FileResourceRepository::new(".");
-            let company_repository = FileCompanyRepository::new(".");
-            let task_repository = FileTaskRepository::new(".");
+            let _company_repository = FileCompanyRepository::new(".");
+            let _task_repository = FileTaskRepository::new(".");
 
             let create_project_use_case = CreateProjectUseCase::new(project_repository);
             let create_resource_use_case = CreateResourceUseCase::new(resource_repository);
@@ -95,7 +95,7 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
             }
 
             match create_use_case.execute(&template_data, &template_params, company) {
-                Ok(project) => {
+                Ok(_project) => {
                     println!("✅ Project created from template successfully!");
                     println!("   Project created from template successfully!");
                     Ok(())
