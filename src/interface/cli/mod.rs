@@ -6,6 +6,7 @@ pub mod commands;
 pub mod context_manager;
 pub mod handlers;
 pub mod simplified_executor;
+pub mod table_formatter;
 
 #[derive(Parser)]
 #[clap(author = env!("CARGO_PKG_AUTHORS"),

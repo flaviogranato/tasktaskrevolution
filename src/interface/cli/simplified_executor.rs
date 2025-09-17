@@ -26,6 +26,7 @@ use crate::application::{
 use crate::interface::cli::{
     commands::{CreateCommand, DeleteCommand, ListCommand, UpdateCommand},
     context_manager::ContextManager,
+    table_formatter::TableFormatter,
     Cli,
 };
 use chrono::NaiveDate;
@@ -219,15 +220,23 @@ impl SimplifiedExecutor {
                                 if companies.is_empty() {
                                     println!("No companies found.");
                                 } else {
-                                    println!("Companies:");
+                                    let mut table = TableFormatter::new(vec![
+                                        "NAME".to_string(),
+                                        "CODE".to_string(),
+                                        "DESCRIPTION".to_string(),
+                                        "STATUS".to_string(),
+                                    ]);
+                                    
                                     for company in companies {
-                                        println!(
-                                            "  - {} ({}) - {}",
-                                            company.name(),
-                                            company.code(),
-                                            company.description.as_deref().unwrap_or("No description")
-                                        );
+                                    table.add_row(vec![
+                                        company.name().to_string(),
+                                        company.code().to_string(),
+                                        company.description.as_deref().unwrap_or("-").to_string(),
+                                        if company.is_active() { "Active".to_string() } else { "Inactive".to_string() },
+                                    ]);
                                     }
+                                    
+                                    println!("{}", table);
                                 }
                                 Ok(())
                             }
@@ -254,16 +263,23 @@ impl SimplifiedExecutor {
                             if projects.is_empty() {
                                 println!("No projects found.");
                             } else {
-                                println!("All projects:");
+                                let mut table = TableFormatter::new(vec![
+                                    "NAME".to_string(),
+                                    "CODE".to_string(),
+                                    "COMPANY".to_string(),
+                                    "STATUS".to_string(),
+                                ]);
+                                
                                 for project in projects {
-                                    println!(
-                                        "  - {} ({}) - Company: {} - Status: {}",
-                                        project.name(),
-                                        project.code(),
-                                        project.company_code(),
-                                        project.status()
-                                    );
+                                    table.add_row(vec![
+                                        project.name().to_string(),
+                                        project.code().to_string(),
+                                        project.company_code().to_string(),
+                                        project.status().to_string(),
+                                    ]);
                                 }
+                                
+                                println!("{}", table);
                             }
                         } else {
                             // Company-specific listing
@@ -275,15 +291,21 @@ impl SimplifiedExecutor {
                             if filtered_projects.is_empty() {
                                 println!("No projects found for company '{}'.", company_code);
                             } else {
-                                println!("Projects for company '{}':", company_code);
+                                let mut table = TableFormatter::new(vec![
+                                    "NAME".to_string(),
+                                    "CODE".to_string(),
+                                    "STATUS".to_string(),
+                                ]);
+                                
                                 for project in filtered_projects {
-                                    println!(
-                                        "  - {} ({}) - Status: {}",
-                                        project.name(),
-                                        project.code(),
-                                        project.status()
-                                    );
+                                    table.add_row(vec![
+                                        project.name().to_string(),
+                                        project.code().to_string(),
+                                        project.status().to_string(),
+                                    ]);
                                 }
+                                
+                                println!("{}", table);
                             }
                         }
                         Ok(())
@@ -303,18 +325,33 @@ impl SimplifiedExecutor {
                     let project_repo = context_manager.get_project_repository();
                     let use_case = ListTasksUseCase::new(project_repo);
 
-                    match use_case.execute(&project_code, &company_code) {
-                        Ok(tasks) => {
-                            if tasks.is_empty() {
-                                println!("No tasks found for project '{}'.", project_code);
-                            } else {
-                                println!("Tasks for project '{}':", project_code);
-                                for task in tasks {
-                                    println!("  - {} ({}) - Status: {}", task.name(), task.code(), task.status());
+                        match use_case.execute(&project_code, &company_code) {
+                            Ok(tasks) => {
+                                if tasks.is_empty() {
+                                    println!("No tasks found for project '{}'.", project_code);
+                                } else {
+                                    let mut table = TableFormatter::new(vec![
+                                        "NAME".to_string(),
+                                        "CODE".to_string(),
+                                        "STATUS".to_string(),
+                                        "START DATE".to_string(),
+                                        "DUE DATE".to_string(),
+                                    ]);
+                                    
+                                    for task in tasks {
+                                        table.add_row(vec![
+                                            task.name().to_string(),
+                                            task.code().to_string(),
+                                            task.status().to_string(),
+                                            task.start_date().format("%Y-%m-%d").to_string(),
+                                            task.due_date().format("%Y-%m-%d").to_string(),
+                                        ]);
+                                    }
+                                    
+                                    println!("{}", table);
                                 }
+                                Ok(())
                             }
-                            Ok(())
-                        }
                         Err(e) => {
                             eprintln!("❌ Failed to list tasks: {}", e);
                             Err(e.into())
@@ -331,10 +368,27 @@ impl SimplifiedExecutor {
                             if tasks.is_empty() {
                                 println!("No tasks found for company '{}'.", company_code);
                             } else {
-                                println!("Tasks for company '{}':", company_code);
+                                let mut table = TableFormatter::new(vec![
+                                    "NAME".to_string(),
+                                    "CODE".to_string(),
+                                    "PROJECT".to_string(),
+                                    "STATUS".to_string(),
+                                    "START DATE".to_string(),
+                                    "DUE DATE".to_string(),
+                                ]);
+                                
                                 for task in tasks {
-                                    println!("  - {} ({}) - Project: {} - Status: {}", task.name(), task.code(), task.project_code(), task.status());
+                                    table.add_row(vec![
+                                        task.name().to_string(),
+                                        task.code().to_string(),
+                                        task.project_code().to_string(),
+                                        task.status().to_string(),
+                                        task.start_date().format("%Y-%m-%d").to_string(),
+                                        task.due_date().format("%Y-%m-%d").to_string(),
+                                    ]);
                                 }
+                                
+                                println!("{}", table);
                             }
                             Ok(())
                         }
@@ -357,16 +411,25 @@ impl SimplifiedExecutor {
                         if resources.is_empty() {
                             println!("No resources found for company '{}'.", company_code);
                         } else {
-                            println!("Resources for company '{}':", company_code);
+                            let mut table = TableFormatter::new(vec![
+                                "NAME".to_string(),
+                                "CODE".to_string(),
+                                "EMAIL".to_string(),
+                                "TYPE".to_string(),
+                                "STATUS".to_string(),
+                            ]);
+                            
                             for resource in resources {
-                                println!(
-                                    "  - {} ({}) - {} - Status: {}",
-                                    resource.name(),
-                                    resource.code(),
-                                    resource.email().unwrap_or("N/A"),
-                                    resource.status()
-                                );
+                                table.add_row(vec![
+                                    resource.name().to_string(),
+                                    resource.code().to_string(),
+                                    resource.email().unwrap_or("-").to_string(),
+                                    resource.resource_type().to_string(),
+                                    resource.status().to_string(),
+                                ]);
                             }
+                            
+                            println!("{}", table);
                         }
                         Ok(())
                     }
