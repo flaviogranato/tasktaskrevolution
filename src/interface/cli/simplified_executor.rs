@@ -208,8 +208,41 @@ impl SimplifiedExecutor {
     /// Execute list commands
     pub fn execute_list(command: ListCommand) -> Result<(), Box<dyn std::error::Error>> {
         let context_manager = ContextManager::new()?;
+        
+        // Determine context based on command parameters
+        let display_context = match &command {
+            ListCommand::Resources { company } => {
+                if let Some(company_code) = company {
+                    ExecutionContext::Company(company_code.clone())
+                } else {
+                    context_manager.context().clone()
+                }
+            }
+            ListCommand::Projects { company } => {
+                if let Some(company_code) = company {
+                    ExecutionContext::Company(company_code.clone())
+                } else {
+                    context_manager.context().clone()
+                }
+            }
+            ListCommand::Tasks { project, company } => {
+                if let Some(project_code) = project {
+                    if let Some(company_code) = company {
+                        ExecutionContext::Project(company_code.clone(), project_code.clone())
+                    } else {
+                        ExecutionContext::Project("UNKNOWN".to_string(), project_code.clone())
+                    }
+                } else if let Some(company_code) = company {
+                    ExecutionContext::Company(company_code.clone())
+                } else {
+                    context_manager.context().clone()
+                }
+            }
+            _ => context_manager.context().clone(),
+        };
+        
         if Cli::is_verbose() {
-            println!("[INFO] Current context: {}", context_manager.context().display_name());
+            println!("[INFO] Current context: {}", display_context.display_name());
         }
 
         match command {

@@ -17,6 +17,11 @@ impl ContextManager {
         Ok(Self { context })
     }
 
+    /// Create ContextManager with specific context
+    pub fn with_context(context: ExecutionContext) -> Self {
+        Self { context }
+    }
+
     /// Get current context
     pub fn context(&self) -> &ExecutionContext {
         &self.context
