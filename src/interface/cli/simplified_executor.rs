@@ -504,11 +504,11 @@ impl SimplifiedExecutor {
 
                 match use_case.execute(&project_code, &code) {
                     Ok(_) => {
-                        println!("✅ Task deleted successfully!");
+                        println!("✅ Task cancelled successfully!");
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to delete task: {}", e);
+                        eprintln!("❌ Failed to cancel task: {}", e);
                         Err(e.into())
                     }
                 }
