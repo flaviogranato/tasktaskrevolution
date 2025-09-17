@@ -136,7 +136,27 @@ spec:
 fn test_company_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar empresa com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -174,7 +194,27 @@ fn test_company_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
 fn test_resource_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar recurso com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -182,9 +222,17 @@ fn test_resource_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "resource",
+        "--name",
         "Modern Resource",
+        "--description",
         "Developer",
-        "--company-code",
+        "--email",
+        "test@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -214,7 +262,27 @@ fn test_resource_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
 fn test_project_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar projeto com formato atual
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -222,9 +290,15 @@ fn test_project_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Modern Project",
+        "--description",
         "Modern project description",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -264,7 +338,46 @@ fn test_project_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
 fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
+
+    // Criar projeto primeiro
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "project",
+        "--name",
+        "Test Project",
+        "--description",
+        "Test project for task evolution",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
+        "TECH-CORP",
+    ]);
+    cmd.assert().success();
 
     // Encontrar o código do projeto criado
     let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
@@ -306,9 +419,9 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
         "2024-01-01",
         "--due-date",
         "2024-12-31",
-        "--project-code",
+        "--project",
         &project_code,
-        "--company-code",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -335,7 +448,7 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     assert!(task_file.exists(), "Task file should exist");
 
     let validator = YamlValidator::new(&task_file)?;
-    assert!(validator.has_field("api_version")); // Tarefas usam api_version
+    assert!(validator.has_field("apiVersion")); // Tarefas usam apiVersion
     assert!(validator.has_field("kind"));
     assert!(validator.has_field("metadata"));
     assert!(validator.has_field("spec"));
@@ -384,6 +497,7 @@ metadata:
   description: "Legacy company description"
   createdAt: "2024-01-01T00:00:00Z"
   updatedAt: "2024-01-01T00:00:00Z"
+  createdBy: "CLI"
 spec:
   status: "active"
   size: "small"
@@ -416,7 +530,27 @@ spec:
 fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar diferentes tipos de entidades para testar versões de API
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -424,9 +558,17 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "resource",
+        "--name",
         "API Test Resource",
+        "--description",
         "Developer",
-        "--company-code",
+        "--email",
+        "test@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -436,9 +578,15 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "API Test Project",
+        "--description",
         "API test project description",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -487,7 +635,27 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
 fn test_required_vs_optional_fields() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar recurso com campos mínimos
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -495,9 +663,17 @@ fn test_required_vs_optional_fields() -> Result<(), Box<dyn std::error::Error>> 
     cmd.args([
         "create",
         "resource",
+        "--name",
         "Minimal Resource",
+        "--description",
         "Developer",
-        "--company-code",
+        "--email",
+        "test@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -530,7 +706,27 @@ fn test_required_vs_optional_fields() -> Result<(), Box<dyn std::error::Error>> 
 fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar estrutura completa
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -538,9 +734,17 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
     cmd.args([
         "create",
         "resource",
+        "--name",
         "Structure Test Resource",
+        "--description",
         "Developer",
-        "--company-code",
+        "--email",
+        "test@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -550,9 +754,15 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
     cmd.args([
         "create",
         "project",
+        "--name",
         "Structure Test Project",
+        "--description",
         "Structure test project description",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
