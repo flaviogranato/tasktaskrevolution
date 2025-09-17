@@ -1,7 +1,7 @@
 apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Config
 metadata:
-  createdAt: 2025-09-17T21:19:26.116297242Z
+  createdAt: 2025-09-17T21:28:33.643530175Z
 spec:
   managerName: Test User
   managerEmail: test@example.com
@@ -9,3 +9,9 @@ spec:
   companyName: Default Company
   workHoursStart: 09:00
   workHoursEnd: 18:00
+  workDaysPerWeek:
+  - Monday
+  - Tuesday
+  - Wednesday
+  - Thursday
+  - Friday

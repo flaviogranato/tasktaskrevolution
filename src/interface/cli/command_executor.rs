@@ -8,7 +8,7 @@ pub fn execute_init(
     timezone: String,
     work_hours_start: String,
     work_hours_end: String,
-    _work_days: String,
+    work_days: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::application::init::{InitManagerData, InitManagerUseCase};
     use crate::interface::cli::handlers::get_app_handler;
@@ -22,6 +22,7 @@ pub fn execute_init(
         timezone,
         work_hours_start,
         work_hours_end,
+        work_days,
         company_name: company_name.clone(),
     };
 
