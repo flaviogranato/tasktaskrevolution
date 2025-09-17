@@ -135,7 +135,7 @@ mod tests {
             unimplemented!()
         }
         fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
-            unimplemented!()
+            Ok(Some(self.project.clone()))
         }
         fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
@@ -513,7 +513,10 @@ mod tests {
                 unimplemented!()
             }
             fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
-                unimplemented!()
+                Err(AppError::RepositoryError { 
+                    operation: "find_by_code".to_string(), 
+                    details: "Repository error".to_string() 
+                })
             }
             fn get_next_code(&self) -> Result<String, AppError> {
                 unimplemented!()

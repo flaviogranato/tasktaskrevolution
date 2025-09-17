@@ -177,7 +177,7 @@ mod tests {
             resource_type: None,
         };
 
-        let result = use_case.execute("DEV-1", args);
+        let result = use_case.execute("DEV-1", "TEST-001", args);
 
         assert!(result.is_ok());
         let updated_resource = result.unwrap();
@@ -198,7 +198,7 @@ mod tests {
             ..Default::default()
         };
 
-        let result = use_case.execute("DEV-NONEXISTENT", args);
+        let result = use_case.execute("DEV-NONEXISTENT", "TEST-001", args);
 
         assert!(matches!(result, Err(UpdateAppError::ResourceNotFound(_))));
     }
