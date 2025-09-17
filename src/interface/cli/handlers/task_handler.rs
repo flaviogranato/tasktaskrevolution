@@ -129,11 +129,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             match delete_use_case.execute(&code, &project) {
                 Ok(_) => {
-                    println!("✅ Task deleted successfully!");
+                    println!("✅ Task cancelled successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to delete task: {}", e);
+                    eprintln!("❌ Failed to cancel task: {}", e);
                     Err(e.into())
                 }
             }
