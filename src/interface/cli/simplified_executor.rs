@@ -26,6 +26,7 @@ use crate::application::{
 use crate::interface::cli::{
     commands::{CreateCommand, DeleteCommand, ListCommand, UpdateCommand},
     context_manager::ContextManager,
+    Cli,
 };
 use chrono::NaiveDate;
 
@@ -36,7 +37,9 @@ impl SimplifiedExecutor {
     /// Execute create commands
     pub fn execute_create(command: CreateCommand) -> Result<(), Box<dyn std::error::Error>> {
         let context_manager = ContextManager::new()?;
-        println!("[INFO] Current context: {}", context_manager.context().display_name());
+        if Cli::is_verbose() {
+            println!("[INFO] Current context: {}", context_manager.context().display_name());
+        }
 
         match command {
             CreateCommand::Company {
@@ -198,7 +201,9 @@ impl SimplifiedExecutor {
     /// Execute list commands
     pub fn execute_list(command: ListCommand) -> Result<(), Box<dyn std::error::Error>> {
         let context_manager = ContextManager::new()?;
-        println!("[INFO] Current context: {}", context_manager.context().display_name());
+        if Cli::is_verbose() {
+            println!("[INFO] Current context: {}", context_manager.context().display_name());
+        }
 
         match command {
             ListCommand::Companies => {
@@ -331,7 +336,9 @@ impl SimplifiedExecutor {
     /// Execute update commands
     pub fn execute_update(command: UpdateCommand) -> Result<(), Box<dyn std::error::Error>> {
         let context_manager = ContextManager::new()?;
-        println!("[INFO] Current context: {}", context_manager.context().display_name());
+        if Cli::is_verbose() {
+            println!("[INFO] Current context: {}", context_manager.context().display_name());
+        }
 
         match command {
             UpdateCommand::Project {
@@ -439,7 +446,9 @@ impl SimplifiedExecutor {
     /// Execute delete commands
     pub fn execute_delete(command: DeleteCommand) -> Result<(), Box<dyn std::error::Error>> {
         let context_manager = ContextManager::new()?;
-        println!("[INFO] Current context: {}", context_manager.context().display_name());
+        if Cli::is_verbose() {
+            println!("[INFO] Current context: {}", context_manager.context().display_name());
+        }
 
         match command {
             DeleteCommand::Project { code, company } => {
