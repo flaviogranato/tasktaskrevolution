@@ -412,7 +412,7 @@ impl SimplifiedExecutor {
             } => {
                 context_manager.validate_command("update", "resource")?;
 
-                let _company_code = context_manager.resolve_company_code(company)?;
+                let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
                 let use_case = UpdateResourceUseCase::new(resource_repo);
 
@@ -422,7 +422,7 @@ impl SimplifiedExecutor {
                     resource_type: description,
                 };
 
-                match use_case.execute(&code, args) {
+                match use_case.execute(&code, &company_code, args) {
                     Ok(_) => {
                         println!("✅ Resource updated successfully!");
                         Ok(())

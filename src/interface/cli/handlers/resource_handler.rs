@@ -128,7 +128,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
                 resource_type: description,
             };
 
-            match update_use_case.execute(&code, args) {
+            match update_use_case.execute(&code, "DEFAULT", args) {
                 Ok(_) => {
                     println!("✅ Resource updated successfully!");
                     Ok(())
