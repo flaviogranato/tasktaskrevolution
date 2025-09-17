@@ -342,10 +342,11 @@ impl SimplifiedExecutor {
                             println!("Resources for company '{}':", company_code);
                             for resource in resources {
                                 println!(
-                                    "  - {} ({}) - {}",
+                                    "  - {} ({}) - {} - Status: {}",
                                     resource.name(),
                                     resource.code(),
-                                    resource.email().unwrap_or("N/A")
+                                    resource.email().unwrap_or("N/A"),
+                                    resource.status()
                                 );
                             }
                         }
