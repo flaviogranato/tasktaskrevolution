@@ -96,7 +96,27 @@ impl YamlValidator {
 fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar recursos
     let resources = vec![
@@ -108,7 +128,22 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
     for (name, role, company_code) in resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", name, role, "--company-code", company_code]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--description",
+            role,
+            "--email",
+            "test@example.com",
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-12-31",
+            "--company",
+            company_code,
+        ]);
         cmd.assert().success();
     }
 
@@ -121,7 +156,20 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
     for (name, description, company_code) in projects {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "project", name, description, "--company-code", company_code]);
+        cmd.args([
+            "create",
+            "project",
+            "--name",
+            name,
+            "--description",
+            description,
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-12-31",
+            "--company",
+            company_code,
+        ]);
         cmd.assert().success();
     }
 
@@ -136,7 +184,27 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
 fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar recursos
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -144,9 +212,17 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "resource",
+        "--name",
         "John Developer",
+        "--description",
         "Senior Developer",
-        "--company-code",
+        "--email",
+        "john@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -157,9 +233,15 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Test Project",
+        "--description",
         "Project for testing",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -201,9 +283,9 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
         "2024-01-01",
         "--due-date",
         "2024-01-10",
-        "--project-code",
+        "--project",
         &project_code,
-        "--company-code",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -266,7 +348,42 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
 fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
+
+    // Criar primeira empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Tech company",
+    ]);
+    cmd.assert().success();
 
     // Testar regra: Nome de empresa deve ser único
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -299,9 +416,15 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Project 1",
+        "--description",
         "First project",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -311,9 +434,15 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Project 2",
+        "--description",
         "Second project",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -412,6 +541,28 @@ fn test_constraint_violations() -> Result<(), Box<dyn std::error::Error>> {
 fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
+
     // Simular migração: Criar dados em versão antiga
 
     // Criar dados que simulam uma versão anterior
@@ -420,9 +571,17 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "resource",
+        "--name",
         "Legacy Resource",
+        "--description",
         "Legacy Developer",
-        "--company-code",
+        "--email",
+        "legacy@example.com",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -433,9 +592,15 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Migrated Project",
+        "--description",
         "Project migrated from old version",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "TECH-CORP",
     ]);
     cmd.assert().success();
@@ -484,7 +649,27 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
 fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Criar múltiplos recursos em lote
     let resources = vec![
@@ -498,7 +683,22 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
     for (name, role) in resources {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", name, role, "--company-code", "TECH-CORP"]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--description",
+            role,
+            "--email",
+            "test@example.com",
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-12-31",
+            "--company",
+            "TECH-CORP",
+        ]);
         cmd.assert().success();
     }
 
@@ -532,7 +732,27 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
 fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
-    // Setup inicial
+    // Setup inicial - criar config.yaml
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test User",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+        "--timezone",
+        "UTC",
+        "--work-hours-start",
+        "09:00",
+        "--work-hours-end",
+        "18:00",
+        "--work-days",
+        "monday,tuesday,wednesday,thursday,friday",
+    ]);
+    cmd.assert().success();
 
     // Testar com caracteres especiais em nomes
     let special_names = vec![
@@ -546,7 +766,22 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
     for name in &special_names {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", name, "Developer", "--company-code", "TECH-CORP"]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--description",
+            "Developer",
+            "--email",
+            "test@example.com",
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-12-31",
+            "--company",
+            "TECH-CORP",
+        ]);
         cmd.assert().success();
     }
 

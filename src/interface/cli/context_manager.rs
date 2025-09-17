@@ -83,6 +83,11 @@ impl ContextManager {
         FileProjectRepository::with_base_path(base_path.into())
     }
 
+    /// Get project repository with correct base path (alias for create_project_repository)
+    pub fn get_project_repository(&self) -> FileProjectRepository {
+        self.create_project_repository()
+    }
+
     /// Create resource repository with correct base path
     pub fn create_resource_repository(&self) -> FileResourceRepository {
         let base_path = self.get_base_path();

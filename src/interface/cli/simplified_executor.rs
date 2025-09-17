@@ -94,7 +94,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("create", "project")?;
 
                 let company_code = context_manager.resolve_company_code(company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
                 let use_case = CreateProjectUseCase::new(project_repo);
 
                 match use_case.execute(&name, description.as_deref(), company_code.clone(), code) {
@@ -124,7 +124,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("create", "task")?;
 
                 let (project_code, company_code) = context_manager.resolve_project_codes(project, company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
 
                 // Parse dates
                 let start_date_parsed = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
@@ -239,7 +239,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("list", "projects")?;
 
                 let company_code = context_manager.resolve_company_code(company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
                 let use_case = ListProjectsUseCase::new(project_repo);
 
                 match use_case.execute() {
@@ -274,7 +274,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("list", "tasks")?;
 
                 let (project_code, company_code) = context_manager.resolve_project_codes(project, company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
                 let use_case = ListTasksUseCase::new(project_repo);
 
                 match use_case.execute(&project_code, &company_code) {
@@ -345,7 +345,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("update", "project")?;
 
                 let _company_code = context_manager.resolve_company_code(company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
                 let use_case = UpdateProjectUseCase::new(project_repo);
 
                 let args = UpdateProjectArgs { name, description };
@@ -373,7 +373,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("update", "task")?;
 
                 let (project_code, _company_code) = context_manager.resolve_project_codes(project, company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
                 let use_case = UpdateTaskUseCase::new(project_repo);
 
                 let start = start_date
@@ -446,7 +446,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("delete", "project")?;
 
                 let _company_code = context_manager.resolve_company_code(company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
                 let use_case = CancelProjectUseCase::new(project_repo);
 
                 match use_case.execute(&code) {
@@ -464,7 +464,7 @@ impl SimplifiedExecutor {
                 context_manager.validate_command("delete", "task")?;
 
                 let (project_code, _company_code) = context_manager.resolve_project_codes(project, company)?;
-                let project_repo = context_manager.create_project_repository();
+                let project_repo = context_manager.get_project_repository();
                 let use_case = DeleteTaskUseCase::new(project_repo);
 
                 match use_case.execute(&project_code, &code) {
