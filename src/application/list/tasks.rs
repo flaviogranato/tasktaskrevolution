@@ -31,6 +31,20 @@ impl<R: ProjectRepository> ListTasksUseCase<R> {
             }),
         }
     }
+
+    pub fn execute_all_by_company(&self, company_code: &str) -> Result<Vec<AnyTask>, AppError> {
+        let projects = self.repository.find_all()?;
+        let mut all_tasks = Vec::new();
+
+        for project in projects {
+            if project.company_code() == company_code {
+                let tasks = project.tasks().values().cloned().collect::<Vec<_>>();
+                all_tasks.extend(tasks);
+            }
+        }
+
+        Ok(all_tasks)
+    }
 }
 
 #[cfg(test)]

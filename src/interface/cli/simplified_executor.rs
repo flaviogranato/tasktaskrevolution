@@ -278,25 +278,51 @@ impl SimplifiedExecutor {
             ListCommand::Tasks { project, company } => {
                 context_manager.validate_command("list", "tasks")?;
 
-                let (project_code, company_code) = context_manager.resolve_project_codes(project, company)?;
-                let project_repo = context_manager.get_project_repository();
-                let use_case = ListTasksUseCase::new(project_repo);
+                if let Some(project_code) = project {
+                    // List tasks for specific project
+                    let (project_code, company_code) = context_manager.resolve_project_codes(Some(project_code), company)?;
+                    let project_repo = context_manager.get_project_repository();
+                    let use_case = ListTasksUseCase::new(project_repo);
 
-                match use_case.execute(&project_code, &company_code) {
-                    Ok(tasks) => {
-                        if tasks.is_empty() {
-                            println!("No tasks found for project '{}'.", project_code);
-                        } else {
-                            println!("Tasks for project '{}':", project_code);
-                            for task in tasks {
-                                println!("  - {} ({})", task.name(), task.code());
+                    match use_case.execute(&project_code, &company_code) {
+                        Ok(tasks) => {
+                            if tasks.is_empty() {
+                                println!("No tasks found for project '{}'.", project_code);
+                            } else {
+                                println!("Tasks for project '{}':", project_code);
+                                for task in tasks {
+                                    println!("  - {} ({})", task.name(), task.code());
+                                }
                             }
+                            Ok(())
                         }
-                        Ok(())
+                        Err(e) => {
+                            eprintln!("❌ Failed to list tasks: {}", e);
+                            Err(e.into())
+                        }
                     }
-                    Err(e) => {
-                        eprintln!("❌ Failed to list tasks: {}", e);
-                        Err(e.into())
+                } else {
+                    // List tasks for all projects in company
+                    let company_code = context_manager.resolve_company_code(company)?;
+                    let project_repo = context_manager.get_project_repository();
+                    let use_case = ListTasksUseCase::new(project_repo);
+
+                    match use_case.execute_all_by_company(&company_code) {
+                        Ok(tasks) => {
+                            if tasks.is_empty() {
+                                println!("No tasks found for company '{}'.", company_code);
+                            } else {
+                                println!("Tasks for company '{}':", company_code);
+                                for task in tasks {
+                                    println!("  - {} ({}) - Project: {}", task.name(), task.code(), task.project_code());
+                                }
+                            }
+                            Ok(())
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Failed to list tasks: {}", e);
+                            Err(e.into())
+                        }
                     }
                 }
             }
