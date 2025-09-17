@@ -66,6 +66,8 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
                 None, // Global to company
                 None, // Auto-generate code
                 None, // No email from template
+                None, // No start date from template
+                None, // No end date from template
             )?;
 
             created_resources.push(CreatedResource {

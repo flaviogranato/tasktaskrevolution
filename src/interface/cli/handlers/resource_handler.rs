@@ -23,7 +23,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let resource_repository = FileResourceRepository::new(".");
             let create_use_case = CreateResourceUseCase::new(resource_repository);
 
-            match create_use_case.execute(&name, "person", "COMPANY001".to_string(), None, None, Some(email)) {
+            match create_use_case.execute(&name, "person", "COMPANY001".to_string(), None, None, Some(email), None, None) {
                 Ok(_resource) => {
                     println!("✅ Resource created successfully!");
                     println!("   Resource created successfully!");

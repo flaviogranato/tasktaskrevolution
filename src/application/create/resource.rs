@@ -17,12 +17,14 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         project_code: Option<String>,
         code: Option<String>,
         email: Option<String>,
+        _start_date: Option<chrono::NaiveDate>,
+        _end_date: Option<chrono::NaiveDate>,
     ) -> Result<(), AppError> {
         let code = match code {
             Some(c) => c,
             None => self.repository.get_next_code(resource_type)?,
         };
-        let r = Resource::new(code, name.to_string(), email, resource_type.to_string(), None, 0);
+        let r = Resource::new(code, name.to_string(), email, resource_type.to_string(), _start_date, _end_date, None, 0);
 
         // Use the new hierarchical save method
         self.repository
@@ -128,7 +130,7 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None);
+        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None, None, None);
         assert!(result.is_ok());
     }
 
@@ -139,7 +141,7 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None);
+        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None, None, None);
         assert!(result.is_err());
     }
 

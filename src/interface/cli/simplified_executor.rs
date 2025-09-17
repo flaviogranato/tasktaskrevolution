@@ -179,8 +179,8 @@ impl SimplifiedExecutor {
                 email,
                 company,
                 description,
-                start_date: _,
-                end_date: _,
+                start_date,
+                end_date,
             } => {
                 context_manager.validate_command("create", "resource")?;
 
@@ -189,7 +189,23 @@ impl SimplifiedExecutor {
                 let use_case = CreateResourceUseCase::new(resource_repo);
 
                 let resource_type = description.as_deref().unwrap_or("employee");
-                match use_case.execute(&name, resource_type, company_code.clone(), None, code, Some(email)) {
+                
+                // Parse dates if provided
+                let start_date_parsed = if let Some(start_date_str) = start_date {
+                    Some(chrono::NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")
+                        .map_err(|e| format!("Invalid start date format: {}", e))?)
+                } else {
+                    None
+                };
+                
+                let end_date_parsed = if let Some(end_date_str) = end_date {
+                    Some(chrono::NaiveDate::parse_from_str(&end_date_str, "%Y-%m-%d")
+                        .map_err(|e| format!("Invalid end date format: {}", e))?)
+                } else {
+                    None
+                };
+                
+                match use_case.execute(&name, resource_type, company_code.clone(), None, code, Some(email), start_date_parsed, end_date_parsed) {
                     Ok(_) => {
                         println!("✅ Resource created successfully!");
                         println!("   Name: {}", name);

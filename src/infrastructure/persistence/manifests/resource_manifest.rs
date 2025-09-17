@@ -28,6 +28,10 @@ pub struct ResourceManifest {
 #[serde(rename_all = "camelCase")]
 pub struct ResourceSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<chrono::NaiveDate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_date: Option<chrono::NaiveDate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub vacations: Option<Vec<PeriodManifest>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub project_assignments: Option<Vec<ProjectAssignmentManifest>>,
@@ -178,6 +182,8 @@ impl From<AnyResource> for ResourceManifest {
                 r.resource_type,
                 "Available".to_string(),
                 ResourceSpec {
+                    start_date: r.start_date,
+                    end_date: r.end_date,
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
                     project_assignments: None,
                     time_off_balance: r.time_off_balance,
@@ -192,6 +198,8 @@ impl From<AnyResource> for ResourceManifest {
                 r.resource_type,
                 "Assigned".to_string(),
                 ResourceSpec {
+                    start_date: r.start_date,
+                    end_date: r.end_date,
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
                     project_assignments: Some(
                         r.state
@@ -212,6 +220,8 @@ impl From<AnyResource> for ResourceManifest {
                 r.resource_type,
                 "Inactive".to_string(),
                 ResourceSpec {
+                    start_date: r.start_date,
+                    end_date: r.end_date,
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
                     project_assignments: None,
                     time_off_balance: r.time_off_balance,
@@ -258,6 +268,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
             Some(manifest.metadata.email.clone())
         };
         let resource_type = manifest.metadata.resource_type.clone();
+        let start_date = manifest.spec.start_date;
+        let end_date = manifest.spec.end_date;
         let vacations = manifest
             .spec
             .vacations
@@ -280,6 +292,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     name,
                     email,
                     resource_type,
+                    start_date,
+                    end_date,
                     vacations,
                     time_off_balance,
                     time_off_history,
@@ -293,6 +307,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     name,
                     email,
                     resource_type,
+                    start_date,
+                    end_date,
                     vacations,
                     time_off_balance,
                     time_off_history,
@@ -307,6 +323,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     name,
                     email,
                     resource_type,
+                    start_date,
+                    end_date,
                     vacations,
                     time_off_balance,
                     time_off_history,
