@@ -191,27 +191,6 @@ impl ProjectRepository for FileProjectRepository {
             details: e.to_string(),
         })?;
 
-        // Save tasks
-        let tasks_dir = project_dir.join("tasks");
-        fs::create_dir_all(&tasks_dir).map_err(|e| AppError::IoErrorWithPath {
-            operation: "create directory".to_string(),
-            path: tasks_dir.to_string_lossy().to_string(),
-            details: e.to_string(),
-        })?;
-
-        for task in project.tasks().values() {
-            let task_manifest = TaskManifest::from(task.clone());
-            let task_yaml = serde_yaml::to_string(&task_manifest).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
-                details: format!("Error serializing task: {e}"),
-            })?;
-            let task_path = tasks_dir.join(format!("{}.yaml", task.code()));
-            fs::write(&task_path, task_yaml).map_err(|e| AppError::IoErrorWithPath {
-                operation: "file write".to_string(),
-                path: task_path.to_string_lossy().to_string(),
-                details: e.to_string(),
-            })?;
-        }
 
         Ok(())
     }
@@ -368,7 +347,6 @@ mod tests {
                 start_date: Some("2024-01-01".to_string()),
                 end_date: Some("2024-12-31".to_string()),
                 status: ProjectStatusManifest::Planned,
-                tasks: None,
                 vacation_rules: Some(VacationRulesManifest {
                     max_concurrent_vacations: None,
                     allow_layoff_vacations: None,
@@ -525,14 +503,8 @@ mod tests {
             .join("project.yaml");
         assert!(project_file.exists(), "Project file should exist after save");
 
-        // Verify project directory structure
-        let tasks_dir = repo_path
-            .join("companies")
-            .join("COMP-001")
-            .join("projects")
-            .join("TEST-001")
-            .join("tasks");
-        assert!(tasks_dir.exists(), "Tasks directory should exist");
+        // Note: Tasks are no longer saved in the project directory
+        // They are saved separately in individual task files
     }
 
     #[test]

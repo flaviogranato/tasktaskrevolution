@@ -1,6 +1,4 @@
 use crate::domain::project_management::{AnyProject, layoff_period::LayoffPeriod, vacation_rules::VacationRules};
-use crate::domain::task_management::AnyTask;
-use crate::infrastructure::persistence::manifests::task_manifest::TaskManifest;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
@@ -46,8 +44,6 @@ pub struct ProjectSpec {
     pub status: ProjectStatusManifest,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vacation_rules: Option<VacationRulesManifest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tasks: Option<Vec<TaskManifest>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -93,7 +89,7 @@ impl From<&crate::domain::project_management::project::ProjectStatus> for Projec
 
 impl From<AnyProject> for ProjectManifest {
     fn from(source: AnyProject) -> Self {
-        let (id, code, name, description, start_date, end_date, vacation_rules, timezone, status_manifest, tasks) =
+        let (id, code, name, description, start_date, end_date, vacation_rules, timezone, status_manifest) =
             match source {
                 AnyProject::Project(p) => (
                     p.id,
@@ -105,10 +101,6 @@ impl From<AnyProject> for ProjectManifest {
                     p.settings.vacation_rules,
                     p.settings.timezone,
                     ProjectStatusManifest::from(&p.status),
-                    p.tasks
-                        .values()
-                        .map(|task| TaskManifest::from(task.clone()))
-                        .collect::<Vec<_>>(),
                 ),
             };
 
@@ -130,7 +122,6 @@ impl From<AnyProject> for ProjectManifest {
                 end_date: end_date.map(|d| d.format("%Y-%m-%d").to_string()),
                 status: status_manifest,
                 vacation_rules: vacation_rules.map(|vr| VacationRulesManifest::from(&vr)),
-                tasks: if tasks.is_empty() { None } else { Some(tasks) },
             },
         }
     }
@@ -174,14 +165,6 @@ impl TryFrom<ProjectManifest> for AnyProject {
         project.id = id.to_string();
         project.description = description;
 
-        // Load tasks from manifest
-        if let Some(task_manifests) = manifest.spec.tasks {
-            for task_manifest in task_manifests {
-                if let Ok(task) = AnyTask::try_from(task_manifest) {
-                    let _ = project.add_task(task);
-                }
-            }
-        }
 
         Ok(AnyProject::Project(project))
     }
