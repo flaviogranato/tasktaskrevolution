@@ -51,7 +51,7 @@ where
         Self { resource_repository }
     }
 
-    pub fn execute(&self, resource_code: &str, args: UpdateResourceArgs) -> Result<AnyResource, UpdateAppError> {
+    pub fn execute(&self, resource_code: &str, company_code: &str, args: UpdateResourceArgs) -> Result<AnyResource, UpdateAppError> {
         // 1. Load the resource aggregate.
         let mut resource = self
             .resource_repository
@@ -71,9 +71,8 @@ where
             resource.set_resource_type(resource_type);
         }
 
-        // 3. Save the updated resource aggregate.
-        // The repository's `save` method should handle the update.
-        let updated_resource = self.resource_repository.save(resource)?;
+        // 3. Save the updated resource aggregate using save_in_hierarchy.
+        let updated_resource = self.resource_repository.save_in_hierarchy(resource, company_code, None)?;
 
         // 4. Return the updated resource.
         Ok(updated_resource)
