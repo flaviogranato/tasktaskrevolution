@@ -129,7 +129,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
                 crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
             let assign_use_case = AssignResourceToTaskUseCase::new(project_repository, resource_repository);
 
-            match assign_use_case.execute(&project, &task, &resource) {
+            match assign_use_case.execute(&task, &resource, &project) {
                 Ok(_) => {
                     println!("✅ Resource assigned to task successfully!");
                     Ok(())

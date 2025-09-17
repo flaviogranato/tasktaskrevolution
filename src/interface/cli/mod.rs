@@ -98,6 +98,11 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::TemplateCommand,
     },
+    /// Task management
+    Task {
+        #[clap(subcommand)]
+        command: commands::TaskCommand,
+    },
 }
 
 impl Cli {
@@ -130,6 +135,7 @@ impl Cli {
             Commands::Validate { command } => command_executor::execute_validate(command),
             Commands::Build { output, base_url } => command_executor::execute_build(output, base_url),
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
+            Commands::Task { command } => handlers::task_handler::handle_task_command(command),
         }
     }
 }

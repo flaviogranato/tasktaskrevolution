@@ -59,7 +59,7 @@ where
         }
     }
 
-    pub fn execute(&self, task_code: &str, resource_code: &str) -> Result<AnyTask, AssignResourceToAppError> {
+    pub fn execute(&self, task_code: &str, resource_code: &str, project_code: &str) -> Result<AnyTask, AssignResourceToAppError> {
         // 1. Find the task
         let task = self
             .task_repository
@@ -81,12 +81,20 @@ where
         }
 
         // 4. Assign the resource to the task
-        let updated_task = self.assign_resource_to_task(task, resource)?;
+        let updated_task = self.assign_resource_to_task(task, resource.clone())?;
 
-        // 5. Save the updated task
+        // 5. Update resource with project assignment
+        let updated_resource = self.assign_resource_to_project(resource, project_code)?;
+
+        // 6. Save the updated task
         let saved_task = self
             .task_repository
             .save(updated_task)
+            .map_err(AssignResourceToAppError::RepositoryError)?;
+
+        // 7. Save the updated resource using save_in_hierarchy
+        self.resource_repository
+            .save_in_hierarchy(updated_resource, project_code, None)
             .map_err(AssignResourceToAppError::RepositoryError)?;
 
         Ok(saved_task)
@@ -107,6 +115,48 @@ where
         // This will be implemented in the domain layer
         // For now, return the task as-is
         Ok(task)
+    }
+
+    fn assign_resource_to_project(
+        &self,
+        resource: AnyResource,
+        project_code: &str,
+    ) -> Result<AnyResource, AssignResourceToAppError> {
+        use crate::domain::resource_management::resource::ProjectAssignment;
+        use chrono::Local;
+
+        match resource {
+            AnyResource::Available(resource) => {
+                // Create project assignment
+                let assignment = ProjectAssignment {
+                    project_id: project_code.to_string(),
+                    start_date: Local::now(),
+                    end_date: Local::now() + chrono::Duration::days(30), // Default 30 days
+                    allocation_percentage: 100, // Default 100% allocation
+                };
+
+                // Convert to Assigned state
+                let assigned_resource = resource.assign_to_project(assignment);
+                Ok(AnyResource::Assigned(assigned_resource))
+            }
+            AnyResource::Assigned(mut resource) => {
+                // Add new project assignment to existing assignments
+                let assignment = ProjectAssignment {
+                    project_id: project_code.to_string(),
+                    start_date: Local::now(),
+                    end_date: Local::now() + chrono::Duration::days(30), // Default 30 days
+                    allocation_percentage: 100, // Default 100% allocation
+                };
+
+                resource.state.project_assignments.push(assignment);
+                Ok(AnyResource::Assigned(resource))
+            }
+            AnyResource::Inactive(_) => {
+                Err(AssignResourceToAppError::AppError(
+                    "Cannot assign inactive resource to project".to_string(),
+                ))
+            }
+        }
     }
 }
 
