@@ -7,23 +7,35 @@ use crate::{
 };
 use csv::Writer;
 use std::fs::File;
+use std::path::PathBuf;
+use chrono::Utc;
+
+/// Generate automatic file name based on entity type and timestamp
+fn generate_filename(entity_type: &str, project_code: &str) -> PathBuf {
+    let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
+    let filename = format!("{}_{}_{}.csv", entity_type, project_code, timestamp);
+    PathBuf::from(filename)
+}
 
 pub fn handle_report_command(command: ReportCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         ReportCommand::Tasks {
-            project: _,
-            company: _,
+            project,
+            company,
             output,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let report_use_case = TaskReportUseCase::new(project_repository);
 
-            let file = File::create(&output)?;
+            // Generate filename if not provided
+            let output_path = output.unwrap_or_else(|| generate_filename("tasks", &project));
+
+            let file = File::create(&output_path)?;
             let mut writer = Writer::from_writer(file);
-            match report_use_case.execute(&mut writer) {
+            match report_use_case.execute(&project, &company, &mut writer) {
                 Ok(_) => {
                     println!("✅ Task report generated successfully!");
-                    println!("   Output: {}", output.display());
+                    println!("   Output: {}", output_path.display());
                     Ok(())
                 }
                 Err(e) => {
@@ -32,17 +44,20 @@ pub fn handle_report_command(command: ReportCommand) -> Result<(), Box<dyn std::
                 }
             }
         }
-        ReportCommand::Vacation { resource: _, output } => {
+        ReportCommand::Vacation { resource, output } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let resource_repository = FileResourceRepository::new(".");
             let report_use_case = VacationReportUseCase::new(project_repository, resource_repository);
 
-            let file = File::create(&output)?;
+            // Generate filename if not provided
+            let output_path = output.unwrap_or_else(|| generate_filename("vacation", &resource));
+
+            let file = File::create(&output_path)?;
             let mut writer = Writer::from_writer(file);
             match report_use_case.execute(&mut writer) {
                 Ok(_) => {
                     println!("✅ Vacation report generated successfully!");
-                    println!("   Output: {}", output.display());
+                    println!("   Output: {}", output_path.display());
                     Ok(())
                 }
                 Err(e) => {
