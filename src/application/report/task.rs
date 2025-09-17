@@ -72,7 +72,7 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
                     task.due_date,            // Copy is OK
                     &task.assigned_resources, // Reference
                     "Blocked",                // &'static str
-                    "N/A",                    // &'static str
+                    "No assigned resources",  // &'static str
                 ),
                 AnyTask::Cancelled(task) => (
                     &task.code,               // Reference
@@ -81,7 +81,7 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
                     task.due_date,            // Copy is OK
                     &task.assigned_resources, // Reference
                     "Cancelled",              // &'static str
-                    "N/A",                    // &'static str
+                    "No assigned resources",  // &'static str
                 ),
             };
 
@@ -296,8 +296,8 @@ mod tests {
 
         // Verify all task variants
         assert!(lines_set.contains("TSK-PLAN,Planning Phase,Planned,0,2025-01-01,2025-01-15,"));
-        assert!(lines_set.contains("TSK-BLOCK,Blocked Task,Blocked,N/A,2025-01-05,2025-01-20,Developer"));
-        assert!(lines_set.contains("TSK-CANCEL,Cancelled Task,Cancelled,N/A,2025-01-10,2025-01-25,"));
+        assert!(lines_set.contains("TSK-BLOCK,Blocked Task,Blocked,No assigned resources,2025-01-05,2025-01-20,Developer"));
+        assert!(lines_set.contains("TSK-CANCEL,Cancelled Task,Cancelled,No assigned resources,2025-01-10,2025-01-25,"));
     }
 
     #[test]
