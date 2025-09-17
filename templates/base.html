@@ -16,7 +16,7 @@
                     <div class="flex items-center space-x-4">
                         <h1 class="text-2xl font-bold text-slate-900">
                             <a href="/index.html" class="hover:text-blue-600 transition-colors">
-                                TaskTaskRevolution
+                                {% if company_name %}{{ company_name }}{% else %}TaskTaskRevolution{% endif %}
                             </a>
                         </h1>
                         {% if manager %}
