@@ -14,6 +14,9 @@ pub mod simplified_executor;
        long_about = None,
        name = "ttr")]
 pub struct Cli {
+    /// Enable verbose output
+    #[clap(short, long, global = true)]
+    pub verbose: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -106,7 +109,17 @@ pub enum Commands {
 }
 
 impl Cli {
+    /// Check if verbose output is enabled
+    pub fn is_verbose() -> bool {
+        std::env::var("TTR_VERBOSE").unwrap_or_default() == "1"
+    }
+
     pub fn execute(self) -> Result<(), Box<dyn std::error::Error>> {
+        // Set global verbose flag
+        unsafe {
+            std::env::set_var("TTR_VERBOSE", if self.verbose { "1" } else { "0" });
+        }
+        
         match self.command {
             Commands::Init {
                 name,
