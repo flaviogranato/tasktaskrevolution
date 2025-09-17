@@ -1,5 +1,7 @@
 use crate::application::errors::AppError;
 use crate::domain::project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository};
+use crate::domain::company_settings::repository::ConfigRepository;
+use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 pub struct CreateProjectUseCase<R: ProjectRepository> {
     repository: R,
@@ -43,6 +45,13 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         // Add description if provided
         if let Some(desc) = description {
             project = project.description(Some(desc.to_string()));
+        }
+
+        // Load config to get default timezone
+        let config_repo = FileConfigRepository::new();
+        if let Ok((config, _)) = config_repo.load() {
+            // Apply default timezone from config if not already set
+            project = project.timezone(config.default_timezone);
         }
 
         let project = project.build()?; // This returns Result<Project, AppError>
