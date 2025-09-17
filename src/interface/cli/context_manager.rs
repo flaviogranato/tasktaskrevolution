@@ -31,7 +31,7 @@ impl ContextManager {
     pub fn resolve_company_code(&self, company_param: Option<String>) -> Result<String, String> {
         match (&self.context, company_param) {
             (ExecutionContext::Root, Some(company)) => Ok(company),
-            (ExecutionContext::Root, None) => Err("Company parameter required in root context".to_string()),
+            (ExecutionContext::Root, None) => Ok("ALL".to_string()), // Allow global listing
             (ExecutionContext::Company(code), None) => Ok(code.clone()),
             (ExecutionContext::Company(company), Some(company_param)) => {
                 if company_param == *company {

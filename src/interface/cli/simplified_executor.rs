@@ -249,23 +249,41 @@ impl SimplifiedExecutor {
 
                 match use_case.execute() {
                     Ok(projects) => {
-                        let filtered_projects: Vec<_> = projects
-                            .into_iter()
-                            .filter(|p| p.company_code() == company_code)
-                            .collect();
-
-                        if filtered_projects.is_empty() {
-                            println!("No projects found for company '{}'.", company_code);
+                        if company_code == "ALL" {
+                            // Global listing - show all projects
+                            if projects.is_empty() {
+                                println!("No projects found.");
+                            } else {
+                                println!("All projects:");
+                                for project in projects {
+                                    println!(
+                                        "  - {} ({}) - Company: {} - Status: {}",
+                                        project.name(),
+                                        project.code(),
+                                        project.company_code(),
+                                        project.status()
+                                    );
+                                }
+                            }
                         } else {
-                            println!("Projects for company '{}':", company_code);
-                            for project in filtered_projects {
-                                println!(
-                                    "  - {} ({}) - {} - Status: {}",
-                                    project.name(),
-                                    project.code(),
-                                    project.company_code(),
-                                    project.status()
-                                );
+                            // Company-specific listing
+                            let filtered_projects: Vec<_> = projects
+                                .into_iter()
+                                .filter(|p| p.company_code() == company_code)
+                                .collect();
+
+                            if filtered_projects.is_empty() {
+                                println!("No projects found for company '{}'.", company_code);
+                            } else {
+                                println!("Projects for company '{}':", company_code);
+                                for project in filtered_projects {
+                                    println!(
+                                        "  - {} ({}) - Status: {}",
+                                        project.name(),
+                                        project.code(),
+                                        project.status()
+                                    );
+                                }
                             }
                         }
                         Ok(())
