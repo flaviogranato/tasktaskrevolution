@@ -292,7 +292,7 @@ impl SimplifiedExecutor {
                             } else {
                                 println!("Tasks for project '{}':", project_code);
                                 for task in tasks {
-                                    println!("  - {} ({})", task.name(), task.code());
+                                    println!("  - {} ({}) - Status: {}", task.name(), task.code(), task.status());
                                 }
                             }
                             Ok(())
@@ -315,7 +315,7 @@ impl SimplifiedExecutor {
                             } else {
                                 println!("Tasks for company '{}':", company_code);
                                 for task in tasks {
-                                    println!("  - {} ({}) - Project: {}", task.name(), task.code(), task.project_code());
+                                    println!("  - {} ({}) - Project: {} - Status: {}", task.name(), task.code(), task.project_code(), task.status());
                                 }
                             }
                             Ok(())
