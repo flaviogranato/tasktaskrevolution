@@ -27,10 +27,12 @@ pub struct ResourceManifest {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub vacations: Option<Vec<PeriodManifest>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub project_assignments: Option<Vec<ProjectAssignmentManifest>>,
     pub time_off_balance: u32,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub time_off_history: Option<Vec<TimeOffEntry>>,
 }
 
