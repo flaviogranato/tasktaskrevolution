@@ -1,0 +1,11 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Config
+metadata:
+  createdAt: 2025-09-17T20:30:25.671302717Z
+spec:
+  managerName: Test Company
+  managerEmail: test@example.com
+  defaultTimezone: UTC
+  companyName: Default Company
+  workHoursStart: 09:00
+  workHoursEnd: 18:00

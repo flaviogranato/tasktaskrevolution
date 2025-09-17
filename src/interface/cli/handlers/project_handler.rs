@@ -26,12 +26,12 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let create_use_case = CreateProjectUseCase::new(project_repository);
 
-            let _start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
+            let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
-            let _end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
+            let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-            match create_use_case.execute(&name, description.as_deref(), company.clone(), None) {
+            match create_use_case.execute(&name, description.as_deref(), company.clone(), Some(code.clone()), Some(start), Some(end)) {
                 Ok(_) => {
                     println!("✅ Project created successfully!");
                     println!("   Name: {}", name);
