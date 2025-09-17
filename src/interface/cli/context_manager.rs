@@ -33,8 +33,12 @@ impl ContextManager {
             (ExecutionContext::Root, Some(company)) => Ok(company),
             (ExecutionContext::Root, None) => Err("Company parameter required in root context".to_string()),
             (ExecutionContext::Company(code), None) => Ok(code.clone()),
-            (ExecutionContext::Company(_), Some(_)) => {
-                Err("Company parameter not needed in company context".to_string())
+            (ExecutionContext::Company(company), Some(company_param)) => {
+                if company_param == *company {
+                    Ok(company.clone())
+                } else {
+                    Err(format!("Company parameter '{}' does not match current context '{}'", company_param, company))
+                }
             }
             (ExecutionContext::Project(company, _), None) => Ok(company.clone()),
             (ExecutionContext::Project(_, _), Some(_)) => {
@@ -55,8 +59,12 @@ impl ContextManager {
             (ExecutionContext::Root, Some(_), None) => Err("Company parameter required in root context".to_string()),
             (ExecutionContext::Company(company), Some(project), None) => Ok((project, company.clone())),
             (ExecutionContext::Company(_), None, _) => Err("Project parameter required in company context".to_string()),
-            (ExecutionContext::Company(_), Some(_), Some(_)) => {
-                Err("Company parameter not needed in company context".to_string())
+            (ExecutionContext::Company(company), Some(project), Some(company_param)) => {
+                if company_param == *company {
+                    Ok((project, company.clone()))
+                } else {
+                    Err(format!("Company parameter '{}' does not match current context '{}'", company_param, company))
+                }
             }
             (ExecutionContext::Project(company, project), None, None) => Ok((project.clone(), company.clone())),
             (ExecutionContext::Project(_, _), Some(_), _) => {
