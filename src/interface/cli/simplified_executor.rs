@@ -260,10 +260,11 @@ impl SimplifiedExecutor {
                             println!("Projects for company '{}':", company_code);
                             for project in filtered_projects {
                                 println!(
-                                    "  - {} ({}) - {}",
+                                    "  - {} ({}) - {} - Status: {}",
                                     project.name(),
                                     project.code(),
-                                    project.company_code()
+                                    project.company_code(),
+                                    project.status()
                                 );
                             }
                         }
