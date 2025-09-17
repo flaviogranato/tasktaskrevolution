@@ -396,6 +396,7 @@ mod tests {
                 email: "".to_string(),
                 code: "former-1".to_string(),
                 resource_type: "Former".to_string(),
+                status: "Inactive".to_string(),
                 description: None,
                 created_at: None,
                 updated_at: None,
@@ -408,9 +409,9 @@ mod tests {
         };
 
         let converted_any = AnyResource::try_from(manifest).unwrap();
-        // Currently defaults to Available, which is correct based on implementation.
-        assert!(matches!(converted_any, AnyResource::Available(_)));
-        if let AnyResource::Available(r) = converted_any {
+        // Resource with status "Inactive" should be converted to Inactive state
+        assert!(matches!(converted_any, AnyResource::Inactive(_)));
+        if let AnyResource::Inactive(r) = converted_any {
             assert_eq!(r.id, id);
             assert_eq!(r.code, "former-1");
         }

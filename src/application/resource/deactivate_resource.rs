@@ -161,7 +161,7 @@ mod tests {
         };
         let use_case = DeactivateResourceUseCase::new(resource_repo.clone());
 
-        let result = use_case.execute("RES-1");
+        let result = use_case.execute("RES-1", "TEST-001");
 
         assert!(result.is_ok());
 
@@ -176,7 +176,7 @@ mod tests {
         };
         let use_case = DeactivateResourceUseCase::new(resource_repo);
 
-        let result = use_case.execute("RES-NONEXISTENT");
+        let result = use_case.execute("RES-NONEXISTENT", "TEST-001");
 
         assert!(matches!(result, Err(DeactivateAppError::ResourceNotFound(_))));
     }

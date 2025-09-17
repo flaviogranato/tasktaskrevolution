@@ -61,14 +61,14 @@ pub struct Spec {
     pub actual_start_date: Option<NaiveDate>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub actual_end_date: Option<NaiveDate>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub dependencies: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub tags: Vec<String>,
     pub effort: Effort,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub acceptance_criteria: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub comments: Vec<Comment>,
 }
 

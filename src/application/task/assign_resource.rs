@@ -319,7 +319,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("TASK-001", "RES-001");
+        let result = use_case.execute("TASK-001", "RES-001", "PROJ-001");
 
         // Assert
         assert!(result.is_ok());
@@ -342,7 +342,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("NONEXISTENT-TASK", "RES-001");
+        let result = use_case.execute("NONEXISTENT-TASK", "RES-001", "PROJ-001");
 
         // Assert
         assert!(matches!(result, Err(AssignResourceToAppError::TaskNotFound(_))));
@@ -363,7 +363,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("TASK-001", "NONEXISTENT-RESOURCE");
+        let result = use_case.execute("TASK-001", "NONEXISTENT-RESOURCE", "PROJ-001");
 
         // Assert
         assert!(matches!(result, Err(AssignResourceToAppError::ResourceNotFound(_))));
@@ -511,7 +511,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("TASK-001", "RES-001");
+        let result = use_case.execute("TASK-001", "RES-001", "PROJ-001");
 
         // Assert
         assert!(result.is_err());

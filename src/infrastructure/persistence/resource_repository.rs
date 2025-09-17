@@ -616,6 +616,7 @@ mod tests {
                 name: name.to_string(),
                 email: "test@example.com".to_string(),
                 resource_type: resource_type.to_string(),
+                status: "Available".to_string(),
                 description: None,
                 created_at: None,
                 updated_at: None,
