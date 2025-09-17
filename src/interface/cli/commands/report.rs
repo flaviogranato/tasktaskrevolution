@@ -11,17 +11,17 @@ pub enum ReportCommand {
         /// Company code
         #[clap(short, long)]
         company: String,
-        /// Output file
+        /// Output file (optional - will auto-generate if not provided)
         #[clap(short, long)]
-        output: PathBuf,
+        output: Option<PathBuf>,
     },
     /// Generate vacation report
     Vacation {
         /// Resource code
         #[clap(short, long)]
         resource: String,
-        /// Output file
+        /// Output file (optional - will auto-generate if not provided)
         #[clap(short, long)]
-        output: PathBuf,
+        output: Option<PathBuf>,
     },
 }

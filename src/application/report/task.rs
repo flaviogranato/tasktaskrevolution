@@ -17,7 +17,7 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
     }
 
     /// Executa a geração do relatório, escrevendo o resultado em um `Writer` fornecido.
-    pub fn execute<W: io::Write>(&self, writer: &mut Writer<W>) -> Result<(), Box<dyn Error>> {
+    pub fn execute<W: io::Write>(&self, project_code: &str, _company_code: &str, writer: &mut Writer<W>) -> Result<(), Box<dyn Error>> {
         // Escrever o cabeçalho do CSV
         writer.write_record([
             "Code",
@@ -29,7 +29,8 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
             "Assignees",
         ])?;
 
-        let project = self.project_repository.load()?;
+        let project = self.project_repository.find_by_code(project_code)?
+            .ok_or_else(|| format!("Project with code '{}' not found", project_code))?;
         let tasks: Vec<&AnyTask> = project.tasks().values().collect();
 
         // Iterate over tasks and write records
@@ -192,7 +193,7 @@ mod tests {
 
         // 2. Act: Executar e escrever para um buffer
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_ok());
 
         // 3. Assert: Verificar o conteúdo do CSV
@@ -279,7 +280,7 @@ mod tests {
         let use_case = TaskReportUseCase::new(mock_repo);
 
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_ok());
 
         let csv_data = String::from_utf8(writer.into_inner().unwrap()).unwrap();
@@ -314,7 +315,7 @@ mod tests {
         let use_case = TaskReportUseCase::new(mock_repo);
 
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_ok());
 
         let csv_data = String::from_utf8(writer.into_inner().unwrap()).unwrap();
@@ -362,7 +363,7 @@ mod tests {
         let use_case = TaskReportUseCase::new(mock_repo);
 
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_ok());
 
         let csv_data = String::from_utf8(writer.into_inner().unwrap()).unwrap();
@@ -418,7 +419,7 @@ mod tests {
         let use_case = TaskReportUseCase::new(mock_repo);
 
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_ok());
 
         let csv_data = String::from_utf8(writer.into_inner().unwrap()).unwrap();
@@ -470,7 +471,7 @@ mod tests {
         let use_case = TaskReportUseCase::new(mock_repo);
 
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_ok());
 
         let csv_data = String::from_utf8(writer.into_inner().unwrap()).unwrap();
@@ -523,7 +524,7 @@ mod tests {
         let use_case = TaskReportUseCase::new(mock_repo);
 
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_err());
 
         let error = result.unwrap_err();
@@ -565,7 +566,7 @@ mod tests {
 
         // Criar um writer que falha ao escrever
         let mut writer = Writer::from_writer(vec![]);
-        let result = use_case.execute(&mut writer);
+        let result = use_case.execute("PROJ-1", "COMP-001", &mut writer);
         assert!(result.is_ok());
     }
 }

@@ -84,32 +84,87 @@ where
     }
 
     fn print_summary(&self, results: &[ValidationResult]) {
-        let errors = results
+        let errors: Vec<_> = results
             .iter()
             .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Error))
-            .count();
-        let warnings = results
+            .collect();
+        let warnings: Vec<_> = results
             .iter()
             .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Warning))
-            .count();
-        let info = results
+            .collect();
+        let info: Vec<_> = results
             .iter()
             .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Info))
-            .count();
+            .collect();
+
+        // Print detailed results
+        if !errors.is_empty() {
+            println!("\n❌ ERRORS FOUND:");
+            println!("=================");
+            for (i, result) in errors.iter().enumerate() {
+                println!("{}. {}", i + 1, result.message);
+                if let Some(entity_type) = &result.entity_type {
+                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("N/A"));
+                }
+                if let Some(field) = &result.field {
+                    println!("   Field: {}", field);
+                }
+                if let Some(details) = &result.details {
+                    println!("   Details: {}", details);
+                }
+                println!();
+            }
+        }
+
+        if !warnings.is_empty() {
+            println!("\n⚠️  WARNINGS FOUND:");
+            println!("===================");
+            for (i, result) in warnings.iter().enumerate() {
+                println!("{}. {}", i + 1, result.message);
+                if let Some(entity_type) = &result.entity_type {
+                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("N/A"));
+                }
+                if let Some(field) = &result.field {
+                    println!("   Field: {}", field);
+                }
+                if let Some(details) = &result.details {
+                    println!("   Details: {}", details);
+                }
+                println!();
+            }
+        }
+
+        if !info.is_empty() {
+            println!("\nℹ️  INFO:");
+            println!("=========");
+            for (i, result) in info.iter().enumerate() {
+                println!("{}. {}", i + 1, result.message);
+                if let Some(entity_type) = &result.entity_type {
+                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("N/A"));
+                }
+                if let Some(field) = &result.field {
+                    println!("   Field: {}", field);
+                }
+                if let Some(details) = &result.details {
+                    println!("   Details: {}", details);
+                }
+                println!();
+            }
+        }
 
         println!("\nVALIDATION SUMMARY:");
         println!("===================");
-        println!("Errors:   {}", errors);
-        println!("Warnings: {}", warnings);
-        println!("Info:     {}", info);
+        println!("Errors:   {}", errors.len());
+        println!("Warnings: {}", warnings.len());
+        println!("Info:     {}", info.len());
         println!("Total:    {}", results.len());
 
-        if errors == 0 && warnings == 0 {
-            println!("System validation completed successfully!");
-        } else if errors == 0 {
-            println!("System validation completed with warnings");
+        if errors.is_empty() && warnings.is_empty() {
+            println!("\n✅ System validation completed successfully!");
+        } else if errors.is_empty() {
+            println!("\n⚠️  System validation completed with warnings");
         } else {
-            println!("System validation failed with errors");
+            println!("\n❌ System validation failed with errors");
         }
     }
 }
