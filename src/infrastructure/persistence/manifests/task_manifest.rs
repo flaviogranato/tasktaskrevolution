@@ -39,6 +39,7 @@ pub struct Metadata {
     pub id: Option<String>,
     pub code: String,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -58,11 +59,16 @@ pub struct Spec {
     pub estimated_start_date: Option<NaiveDate>,
     pub estimated_end_date: Option<NaiveDate>,
     pub actual_start_date: Option<NaiveDate>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub actual_end_date: Option<NaiveDate>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub dependencies: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<String>,
     pub effort: Effort,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub acceptance_criteria: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub comments: Vec<Comment>,
 }
 
@@ -88,6 +94,7 @@ pub enum Priority {
 #[serde(rename_all = "camelCase")]
 pub struct Effort {
     estimated_hours: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
     actual_hours: Option<f32>,
 }
 
