@@ -87,9 +87,9 @@ pub enum CreateCommand {
         description: Option<String>,
         /// Start date (YYYY-MM-DD)
         #[clap(long)]
-        start_date: String,
+        start_date: Option<String>,
         /// End date (YYYY-MM-DD)
         #[clap(long)]
-        end_date: String,
+        end_date: Option<String>,
     },
 }
