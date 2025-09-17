@@ -66,6 +66,7 @@ fn test_init_manager_success() {
         timezone: "America/Sao_Paulo".to_string(),
         work_hours_start: "08:00".to_string(),
         work_hours_end: "18:00".to_string(),
+        work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
     };
 
     // Act
@@ -96,6 +97,7 @@ fn test_init_manager_invalid_email() {
         timezone: "America/Sao_Paulo".to_string(),
         work_hours_start: "08:00".to_string(),
         work_hours_end: "18:00".to_string(),
+        work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
     };
 
     // Act
@@ -120,6 +122,7 @@ fn test_init_manager_invalid_timezone() {
         timezone: "Timezone/Invalido".to_string(),
         work_hours_start: "08:00".to_string(),
         work_hours_end: "18:00".to_string(),
+        work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
     };
 
     // Act
@@ -144,6 +147,7 @@ fn test_init_manager_invalid_work_hours() {
         timezone: "America/Sao_Paulo".to_string(),
         work_hours_start: "18:00".to_string(),
         work_hours_end: "08:00".to_string(), // End before start
+        work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
     };
 
     // Act
@@ -168,6 +172,7 @@ fn test_init_manager_empty_name() {
         timezone: "America/Sao_Paulo".to_string(),
         work_hours_start: "08:00".to_string(),
         work_hours_end: "18:00".to_string(),
+        work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
     };
 
     // Act
@@ -192,6 +197,7 @@ fn test_init_manager_empty_company_name() {
         timezone: "America/Sao_Paulo".to_string(),
         work_hours_start: "08:00".to_string(),
         work_hours_end: "18:00".to_string(),
+        work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
     };
 
     // Act
@@ -216,6 +222,7 @@ fn test_init_manager_repository_error() {
         timezone: "America/Sao_Paulo".to_string(),
         work_hours_start: "08:00".to_string(),
         work_hours_end: "18:00".to_string(),
+        work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
     };
 
     // Act
@@ -248,6 +255,7 @@ fn test_init_manager_different_timezones() {
             timezone: timezone.to_string(),
             work_hours_start: "08:00".to_string(),
             work_hours_end: "18:00".to_string(),
+            work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
         };
 
         // Act
@@ -280,6 +288,7 @@ fn test_init_manager_work_hours_edge_cases() {
             timezone: "UTC".to_string(),
             work_hours_start: start.to_string(),
             work_hours_end: end.to_string(),
+            work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
         };
 
         // Act

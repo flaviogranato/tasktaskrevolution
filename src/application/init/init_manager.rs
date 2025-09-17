@@ -14,6 +14,7 @@ pub struct InitManagerData {
     pub timezone: String,
     pub work_hours_start: String,
     pub work_hours_end: String,
+    pub work_days: String,
 }
 
 /// Use case for initializing a manager/consultant
@@ -39,6 +40,14 @@ impl InitManagerUseCase {
 
         // Set work hours
         config = config.with_work_hours(data.work_hours_start.clone(), data.work_hours_end.clone());
+
+        // Set work days
+        let work_days: Vec<crate::domain::company_settings::config::WorkDay> = data
+            .work_days
+            .split(',')
+            .filter_map(|day| crate::domain::company_settings::config::WorkDay::parse_day(day.trim()))
+            .collect();
+        config = config.with_work_days(work_days);
 
         // Save to repository
         use crate::domain::shared::convertable::Convertible;
@@ -170,6 +179,7 @@ mod tests {
             timezone: "UTC".to_string(),
             work_hours_start: "08:00".to_string(),
             work_hours_end: "18:00".to_string(),
+            work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
         };
 
         let result = use_case.validate_input(&data);
@@ -186,6 +196,7 @@ mod tests {
             timezone: "UTC".to_string(),
             work_hours_start: "08:00".to_string(),
             work_hours_end: "18:00".to_string(),
+            work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
         };
 
         let result = use_case.validate_input(&data);
@@ -202,6 +213,7 @@ mod tests {
             timezone: "UTC".to_string(),
             work_hours_start: "08:00".to_string(),
             work_hours_end: "18:00".to_string(),
+            work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
         };
 
         let result = use_case.validate_input(&data);
