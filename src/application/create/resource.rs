@@ -16,12 +16,13 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         company_code: String,
         project_code: Option<String>,
         code: Option<String>,
+        email: Option<String>,
     ) -> Result<(), AppError> {
         let code = match code {
             Some(c) => c,
             None => self.repository.get_next_code(resource_type)?,
         };
-        let r = Resource::new(code, name.to_string(), None, resource_type.to_string(), None, 0);
+        let r = Resource::new(code, name.to_string(), email, resource_type.to_string(), None, 0);
 
         // Use the new hierarchical save method
         self.repository
@@ -127,7 +128,7 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None);
+        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None);
         assert!(result.is_ok());
     }
 
@@ -138,7 +139,7 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None);
+        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None);
         assert!(result.is_err());
     }
 
@@ -148,7 +149,7 @@ mod test {
         let use_case = CreateResourceUseCase::new(mock_repo);
         let name = "John";
         let resource_type = "Developer";
-        let _ = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None);
+        let _ = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None);
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());

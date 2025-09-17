@@ -176,7 +176,7 @@ impl SimplifiedExecutor {
             CreateCommand::Resource {
                 name,
                 code,
-                email: _,
+                email,
                 company,
                 description,
                 start_date: _,
@@ -189,7 +189,7 @@ impl SimplifiedExecutor {
                 let use_case = CreateResourceUseCase::new(resource_repo);
 
                 let resource_type = description.as_deref().unwrap_or("employee");
-                match use_case.execute(&name, resource_type, company_code.clone(), None, code) {
+                match use_case.execute(&name, resource_type, company_code.clone(), None, code, Some(email)) {
                     Ok(_) => {
                         println!("✅ Resource created successfully!");
                         println!("   Name: {}", name);
