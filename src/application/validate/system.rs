@@ -104,7 +104,7 @@ where
             for (i, result) in errors.iter().enumerate() {
                 println!("{}. {}", i + 1, result.message);
                 if let Some(entity_type) = &result.entity_type {
-                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("N/A"));
+                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("Unknown"));
                 }
                 if let Some(field) = &result.field {
                     println!("   Field: {}", field);
@@ -122,7 +122,7 @@ where
             for (i, result) in warnings.iter().enumerate() {
                 println!("{}. {}", i + 1, result.message);
                 if let Some(entity_type) = &result.entity_type {
-                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("N/A"));
+                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("Unknown"));
                 }
                 if let Some(field) = &result.field {
                     println!("   Field: {}", field);
@@ -140,7 +140,7 @@ where
             for (i, result) in info.iter().enumerate() {
                 println!("{}. {}", i + 1, result.message);
                 if let Some(entity_type) = &result.entity_type {
-                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("N/A"));
+                    println!("   Entity: {} ({})", entity_type, result.entity_code.as_deref().unwrap_or("Unknown"));
                 }
                 if let Some(field) = &result.field {
                     println!("   Field: {}", field);
