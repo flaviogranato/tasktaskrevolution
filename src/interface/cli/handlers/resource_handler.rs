@@ -143,7 +143,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let resource_repository = FileResourceRepository::new(".");
             let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository);
 
-            match deactivate_use_case.execute(&code) {
+            match deactivate_use_case.execute(&code, "DEFAULT") {
                 Ok(_) => {
                     println!("✅ Resource deactivated successfully!");
                     Ok(())

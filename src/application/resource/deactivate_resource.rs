@@ -48,7 +48,7 @@ where
         Self { resource_repository }
     }
 
-    pub fn execute(&self, resource_code: &str) -> Result<AnyResource, DeactivateAppError> {
+    pub fn execute(&self, resource_code: &str, company_code: &str) -> Result<AnyResource, DeactivateAppError> {
         // 1. Find the resource from the repository.
         let resource = self
             .resource_repository
@@ -59,8 +59,8 @@ where
         // This consumes the resource and returns a new one in the `Inactive` state.
         let deactivated_resource = resource.deactivate().map_err(DeactivateAppError::AppError)?;
 
-        // 3. Save the now-inactive resource back to the repository.
-        let saved_resource = self.resource_repository.save(deactivated_resource)?;
+        // 3. Save the now-inactive resource back to the repository using save_in_hierarchy.
+        let saved_resource = self.resource_repository.save_in_hierarchy(deactivated_resource, company_code, None)?;
 
         Ok(saved_resource)
     }

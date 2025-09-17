@@ -11,6 +11,10 @@ use crate::domain::resource_management::{
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
 
+fn default_status() -> String {
+    "Available".to_string()
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourceManifest {
@@ -40,6 +44,8 @@ pub struct ResourceMetadata {
     pub email: String,
     pub code: String,
     pub resource_type: String,
+    #[serde(default = "default_status")]
+    pub status: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -161,13 +167,14 @@ impl PeriodTypeManifest {
 
 impl From<AnyResource> for ResourceManifest {
     fn from(source: AnyResource) -> Self {
-        let (id, code, name, email, resource_type, spec) = match source {
+        let (id, code, name, email, resource_type, status, spec) = match source {
             AnyResource::Available(r) => (
                 r.id,
                 r.code,
                 r.name,
                 r.email,
                 r.resource_type,
+                "Available".to_string(),
                 ResourceSpec {
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
                     project_assignments: None,
@@ -181,6 +188,7 @@ impl From<AnyResource> for ResourceManifest {
                 r.name,
                 r.email,
                 r.resource_type,
+                "Assigned".to_string(),
                 ResourceSpec {
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
                     project_assignments: Some(
@@ -200,6 +208,7 @@ impl From<AnyResource> for ResourceManifest {
                 r.name,
                 r.email,
                 r.resource_type,
+                "Inactive".to_string(),
                 ResourceSpec {
                     vacations: r.vacations.map(|v| v.into_iter().map(PeriodManifest::from).collect()),
                     project_assignments: None,
@@ -218,6 +227,7 @@ impl From<AnyResource> for ResourceManifest {
                 email: email.unwrap_or_default(),
                 code,
                 resource_type,
+                status,
                 description: None,
                 created_at: None,
                 updated_at: None,
@@ -253,36 +263,55 @@ impl TryFrom<ResourceManifest> for AnyResource {
             .map(|v| v.iter().map(|p| p.to()).collect());
         let time_off_balance = manifest.spec.time_off_balance;
         let time_off_history = manifest.spec.time_off_history.clone();
+        let status = manifest.metadata.status.as_str();
 
-        if let Some(assignments_manifest) = manifest.spec.project_assignments
-            && !assignments_manifest.is_empty()
-        {
-            let project_assignments = assignments_manifest.into_iter().map(|a| a.to()).collect();
-            return Ok(AnyResource::Assigned(Resource {
-                id,
-                code,
-                name,
-                email: None,                          // Email não está disponível no spec
-                resource_type: "Unknown".to_string(), // Tipo padrão
-                vacations,
-                time_off_balance: 0, // Valor padrão
-                time_off_history,
-                state: Assigned { project_assignments },
-            }));
+        match status {
+            "Assigned" => {
+                let project_assignments = manifest.spec.project_assignments
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|a| a.to())
+                    .collect();
+                Ok(AnyResource::Assigned(Resource {
+                    id,
+                    code,
+                    name,
+                    email,
+                    resource_type,
+                    vacations,
+                    time_off_balance,
+                    time_off_history,
+                    state: Assigned { project_assignments },
+                }))
+            }
+            "Inactive" => {
+                Ok(AnyResource::Inactive(Resource {
+                    id,
+                    code,
+                    name,
+                    email,
+                    resource_type,
+                    vacations,
+                    time_off_balance,
+                    time_off_history,
+                    state: crate::domain::resource_management::state::Inactive,
+                }))
+            }
+            _ => {
+                // Default to Available
+                Ok(AnyResource::Available(Resource {
+                    id,
+                    code,
+                    name,
+                    email,
+                    resource_type,
+                    vacations,
+                    time_off_balance,
+                    time_off_history,
+                    state: Available,
+                }))
+            }
         }
-
-        // Default to Available
-        Ok(AnyResource::Available(Resource {
-            id,
-            code,
-            name,
-            email,
-            resource_type,
-            vacations,
-            time_off_balance,
-            time_off_history,
-            state: Available,
-        }))
     }
 }
 
