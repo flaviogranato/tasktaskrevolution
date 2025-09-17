@@ -50,6 +50,8 @@ impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR
             project_description,
             company_code.clone(),
             None,
+            None,
+            None,
         )?;
 
         let mut created_resources = Vec::new();

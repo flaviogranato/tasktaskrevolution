@@ -90,8 +90,8 @@ impl SimplifiedExecutor {
                 code,
                 company,
                 description,
-                start_date: _,
-                end_date: _,
+                start_date,
+                end_date,
                 template: _,
                 template_vars: _,
             } => {
@@ -101,7 +101,13 @@ impl SimplifiedExecutor {
                 let project_repo = context_manager.get_project_repository();
                 let use_case = CreateProjectUseCase::new(project_repo);
 
-                match use_case.execute(&name, description.as_deref(), company_code.clone(), code) {
+                // Parse dates
+                let start_date_parsed = start_date.parse::<chrono::NaiveDate>()
+                    .map_err(|e| format!("Invalid start date format: {}", e))?;
+                let end_date_parsed = end_date.parse::<chrono::NaiveDate>()
+                    .map_err(|e| format!("Invalid end date format: {}", e))?;
+
+                match use_case.execute(&name, description.as_deref(), company_code.clone(), code, Some(start_date_parsed), Some(end_date_parsed)) {
                     Ok(project) => {
                         println!("✅ Project created successfully!");
                         println!("   Name: {}", project.name());

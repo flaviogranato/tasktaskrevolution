@@ -16,6 +16,8 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         description: Option<&str>,
         company_code: String,
         code: Option<String>,
+        start_date: Option<chrono::NaiveDate>,
+        end_date: Option<chrono::NaiveDate>,
     ) -> Result<AnyProject, AppError> {
         // Get the next available code or use provided code
         let code = match code {
@@ -28,8 +30,15 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
             .name(name.to_string())
             .code(code)
             .company_code(company_code)
-            .created_by("system".to_string()) // TODO: Get from config
-            .end_date(chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap());
+            .created_by("system".to_string()); // TODO: Get from config
+
+        // Add dates if provided
+        if let Some(start) = start_date {
+            project = project.start_date(start);
+        }
+        if let Some(end) = end_date {
+            project = project.end_date(end);
+        }
 
         // Add description if provided
         if let Some(desc) = description {
@@ -122,7 +131,7 @@ mod test {
         let name = "John";
         let description = Some("a simple test project");
 
-        let result = use_case.execute(name, description, "TEST_COMPANY".to_string(), None);
+        let result = use_case.execute(name, description, "TEST_COMPANY".to_string(), None, None, None);
         assert!(result.is_ok());
     }
 
@@ -133,7 +142,7 @@ mod test {
         let name = "John";
         let description = Some("a simple test project");
 
-        let result = use_case.execute(name, description, "TEST_COMPANY".to_string(), None);
+        let result = use_case.execute(name, description, "TEST_COMPANY".to_string(), None, None, None);
         assert!(result.is_err());
     }
 
@@ -143,7 +152,7 @@ mod test {
         let use_case = CreateProjectUseCase::new(mock_repo);
         let name = "John";
         let description = Some("a simple test project");
-        let _ = use_case.execute(name, description, "TEST_COMPANY".to_string(), None);
+        let _ = use_case.execute(name, description, "TEST_COMPANY".to_string(), None, None, None);
 
         let saved_config = use_case.get_repository().saved_config.borrow();
         assert!(saved_config.is_some());
