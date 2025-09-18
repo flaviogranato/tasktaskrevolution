@@ -29,14 +29,14 @@ impl FileTaskRepository {
     }
 
     /// Gets the path to a task in a specific project
-    fn get_project_task_path(&self, company_code: &str, project_code: &str, task_name: &str) -> PathBuf {
+    fn get_project_task_path(&self, company_code: &str, project_code: &str, task_code: &str) -> PathBuf {
         self.base_path
             .join("companies")
             .join(company_code)
             .join("projects")
             .join(project_code)
             .join("tasks")
-            .join(format!("{}.yaml", task_name.replace(' ', "_").to_lowercase()))
+            .join(format!("{}.yaml", task_code))
     }
 
     /// Gets the path to project tasks directory
@@ -80,7 +80,7 @@ impl TaskRepository for FileTaskRepository {
 
     /// Save task in the new hierarchical structure
     fn save_in_hierarchy(&self, task: AnyTask, company_code: &str, project_code: &str) -> Result<AnyTask, AppError> {
-        let file_path = self.get_project_task_path(company_code, project_code, task.name());
+        let file_path = self.get_project_task_path(company_code, project_code, task.code());
         let task_manifest = TaskManifest::from(task.clone());
         let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),

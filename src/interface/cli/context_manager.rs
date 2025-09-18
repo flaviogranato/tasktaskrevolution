@@ -1,7 +1,7 @@
 use crate::application::execution_context::ExecutionContext;
 use crate::infrastructure::persistence::{
     company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
-    resource_repository::FileResourceRepository,
+    resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
 };
 
 /// Centralized context management for CLI operations
@@ -110,5 +110,11 @@ impl ContextManager {
     /// Create company repository
     pub fn create_company_repository(&self) -> FileCompanyRepository {
         FileCompanyRepository::new(".")
+    }
+
+    /// Create task repository with correct base path
+    pub fn create_task_repository(&self) -> FileTaskRepository {
+        let base_path = self.get_base_path();
+        FileTaskRepository::new(base_path)
     }
 }

@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Gantt Chart - Project</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <style>
+            .gantt-chart {
+                font-family: Arial, sans-serif;
+            }
+            .gantt-task {
+                fill: #3b82f6;
+                stroke: #1e40af;
+                stroke-width: 1;
+            }
+            .gantt-task.completed {
+                fill: #10b981;
+            }
+            .gantt-task.in-progress {
+                fill: #f59e0b;
+            }
+            .gantt-task.not-started {
+                fill: #6b7280;
+            }
+            .gantt-dependency {
+                stroke: #374151;
+                stroke-width: 2;
+                fill: none;
+                marker-end: url(#arrowhead);
+            }
+            .gantt-axis {
+                stroke: #374151;
+                stroke-width: 1;
+            }
+            .gantt-label {
+                font-size: 12px;
+                fill: #374151;
+            }
+            .gantt-tooltip {
+                position: absolute;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                pointer-events: none;
+                z-index: 1000;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-slate-800 font-sans">
+        <header class="bg-white shadow-sm border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-2xl font-bold text-slate-900">
+                            <a href="../../../index.html" class="hover:text-blue-600 transition-colors">
+                                TaskTaskRevolution
+                            </a>
+                        </h1>
+                        <div class="text-sm text-slate-600">
+                            <span class="font-medium">Gantt Chart:</span> Project
+                        </div>
+                    </div>
+                    <nav class="hidden md:flex space-x-6">
+                        <a
+                            href="../../../index.html"
+                            class="text-slate-600 hover:text-slate-900 transition-colors"
+                        >
+                            Home
+                        </a>
+                        <a
+                            href="../../../projects.html"
+                            class="text-slate-600 hover:text-slate-900 transition-colors"
+                        >
+                            Projects
+                        </a>
+                        <a
+                            href="../../../companies.html"
+                            class="text-slate-600 hover:text-slate-900 transition-colors"
+                        >
+                            Companies
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-slate-900">
+                        Gantt Chart - Project
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button
+                            id="zoom-in"
+                            class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                        >
+                            Zoom In
+                        </button>
+                        <button
+                            id="zoom-out"
+                            class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                        >
+                            Zoom Out
+                        </button>
+                        <button
+                            id="reset-zoom"
+                            class="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex items-center space-x-4 text-sm">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-green-500 rounded"></div>
+                            <span>Completed</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-yellow-500 rounded"></div>
+                            <span>In Progress</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="w-4 h-4 bg-gray-500 rounded"></div>
+                            <span>Not Started</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="gantt-container" class="border border-slate-200 rounded-lg overflow-auto">
+                    <svg id="gantt-svg" class="gantt-chart"></svg>
+                </div>
+
+                <div class="mt-4 text-sm text-slate-600">
+                    <p>Generated on 2025-09-18 00:11</p>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            // Gantt Chart Data
+            const ganttData = {
+                config: {
+                    title: "Project - Gantt Chart",
+                    startDate: "2024-01-01",
+                    endDate: "2024-12-31",
+                    viewType: "days",
+                    dependencies: true,
+                    resources: true,
+                    progress: true,
+                    width: 1200,
+                    height: 600
+                },
+                tasks: [
+                    
+                ]
+            };
+
+            // Simple Gantt Chart Implementation
+            function renderGanttChart() {
+                const svg = d3.select("#gantt-svg");
+                const container = d3.select("#gantt-container");
+                
+                // Clear previous content
+                svg.selectAll("*").remove();
+                
+                const margin = { top: 20, right: 20, bottom: 40, left: 200 };
+                const width = Math.max(1200, container.node().clientWidth - 40);
+                const height = Math.max(400, ganttData.tasks.length * 30 + 100);
+                
+                svg.attr("width", width).attr("height", height);
+                
+                const chartWidth = width - margin.left - margin.right;
+                const chartHeight = height - margin.top - margin.bottom;
+                
+                // Parse dates
+                const startDate = new Date(ganttData.config.startDate);
+                const endDate = new Date(ganttData.config.endDate);
+                const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                
+                // Create scales
+                const xScale = d3.scaleLinear()
+                    .domain([0, totalDays])
+                    .range([0, chartWidth]);
+                
+                const yScale = d3.scaleBand()
+                    .domain(ganttData.tasks.map(d => d.id))
+                    .range([0, chartHeight])
+                    .padding(0.1);
+                
+                // Create main group
+                const g = svg.append("g")
+                    .attr("transform", `translate(${margin.left},${margin.top})`);
+                
+                // Add axes
+                g.append("g")
+                    .attr("class", "gantt-axis")
+                    .attr("transform", `translate(0,${chartHeight})`)
+                    .call(d3.axisBottom(xScale).tickFormat(d => {
+                        const date = new Date(startDate);
+                        date.setDate(date.getDate() + d);
+                        return date.toLocaleDateString();
+                    }));
+                
+                g.append("g")
+                    .attr("class", "gantt-axis")
+                    .call(d3.axisLeft(yScale).tickFormat(d => {
+                        const task = ganttData.tasks.find(t => t.id === d);
+                        return task ? task.name : d;
+                    }));
+                
+                // Add tasks
+                g.selectAll(".gantt-task")
+                    .data(ganttData.tasks)
+                    .enter()
+                    .append("rect")
+                    .attr("class", d => `gantt-task ${d.status.toLowerCase().replace(' ', '-')}`)
+                    .attr("x", d => {
+                        const taskStart = new Date(d.startDate);
+                        const daysFromStart = Math.ceil((taskStart - startDate) / (1000 * 60 * 60 * 24));
+                        return xScale(daysFromStart);
+                    })
+                    .attr("y", d => yScale(d.id))
+                    .attr("width", d => {
+                        const taskStart = new Date(d.startDate);
+                        const taskEnd = new Date(d.endDate);
+                        const taskDays = Math.ceil((taskEnd - taskStart) / (1000 * 60 * 60 * 24));
+                        return Math.max(xScale(taskDays), 10);
+                    })
+                    .attr("height", yScale.bandwidth())
+                    .attr("rx", 4)
+                    .attr("ry", 4)
+                    .on("mouseover", function(event, d) {
+                        const tooltip = d3.select("body").append("div")
+                            .attr("class", "gantt-tooltip")
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 10) + "px")
+                            .html(`
+                                <strong>${d.name}</strong><br/>
+                                Status: ${d.status}<br/>
+                                Progress: ${Math.round(d.progress * 100)}%<br/>
+                                Start: ${d.startDate}<br/>
+                                End: ${d.endDate}
+                            `);
+                    })
+                    .on("mouseout", function() {
+                        d3.selectAll(".gantt-tooltip").remove();
+                    });
+                
+                // Add progress bars
+                g.selectAll(".gantt-progress")
+                    .data(ganttData.tasks)
+                    .enter()
+                    .append("rect")
+                    .attr("class", "gantt-progress")
+                    .attr("x", d => {
+                        const taskStart = new Date(d.startDate);
+                        const daysFromStart = Math.ceil((taskStart - startDate) / (1000 * 60 * 60 * 24));
+                        return xScale(daysFromStart);
+                    })
+                    .attr("y", d => yScale(d.id) + 2)
+                    .attr("width", d => {
+                        const taskStart = new Date(d.startDate);
+                        const taskEnd = new Date(d.endDate);
+                        const taskDays = Math.ceil((taskEnd - taskStart) / (1000 * 60 * 60 * 24));
+                        const totalWidth = Math.max(xScale(taskDays), 10);
+                        return totalWidth * d.progress;
+                    })
+                    .attr("height", yScale.bandwidth() - 4)
+                    .attr("rx", 2)
+                    .attr("ry", 2)
+                    .style("fill", "rgba(255, 255, 255, 0.3)");
+            }
+            
+            // Initialize chart
+            renderGanttChart();
+            
+            // Handle window resize
+            window.addEventListener('resize', renderGanttChart);
+        </script>
+    </body>
+</html>
