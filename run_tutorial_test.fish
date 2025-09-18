@@ -3,7 +3,7 @@
 # 🧪 Script de Teste Automatizado - TaskTaskRevolution
 # Este script executa todos os comandos do tutorial para validação completa
 
-set -x TEST_DIR "$HOME/ttr_tutorial_test"
+set -x TEST_DIR "/tmp/ttr_tutorial_test_$(date +%s)"
 set -x SITE_DIR "$TEST_DIR/site"
 
 echo "🚀 Iniciando Teste Automatizado do TaskTaskRevolution"
@@ -618,6 +618,24 @@ echo "  - ✅ Operações de link/unlink"
 echo ""
 echo "📁 Arquivos gerados em: $TEST_DIR"
 echo "🌐 Site estático em: $SITE_DIR"
+echo ""
+echo "🧹 Limpeza do diretório temporário..."
+echo "💡 Para manter os arquivos de teste, copie de: $TEST_DIR"
+echo "🗑️  Para limpar automaticamente, pressione Enter ou aguarde 10 segundos..."
+echo ""
+
+# Aguardar 10 segundos ou entrada do usuário
+read -t 10 -P "Pressione Enter para limpar ou aguarde 10 segundos... " || true
+
+# Limpar diretório temporário
+if test -d "$TEST_DIR"
+    echo "🧹 Removendo diretório temporário: $TEST_DIR"
+    rm -rf "$TEST_DIR"
+    echo "✅ Diretório temporário removido com sucesso"
+else
+    echo "ℹ️  Diretório temporário já foi removido"
+end
+
 echo ""
 echo "🚀 TaskTaskRevolution está funcionando perfeitamente!"
 echo "🎯 Todas as funcionalidades implementadas foram validadas com sucesso!"
