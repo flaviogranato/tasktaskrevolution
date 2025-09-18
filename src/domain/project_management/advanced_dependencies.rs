@@ -14,7 +14,7 @@ use crate::application::errors::AppError;
 // ============================================================================
 
 /// Tipos de dependência entre tarefas
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DependencyType {
     /// Predecessor deve terminar antes do successor começar
     FinishToStart,
@@ -49,7 +49,7 @@ impl DependencyType {
 }
 
 /// Tipos de lag (gap temporal) entre dependências
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum LagType {
     /// Delay positivo após a dependência
     Positive(Duration),
@@ -115,7 +115,7 @@ impl LagType {
 // ============================================================================
 
 /// Dependência avançada entre tarefas
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AdvancedDependency {
     pub id: String,
     pub predecessor_id: String,
