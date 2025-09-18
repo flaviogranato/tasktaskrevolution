@@ -176,6 +176,36 @@ impl FileProjectRepository {
 
         Ok(())
     }
+
+    /// Save individual task files for a project
+    fn save_tasks_for_project(&self, project: &AnyProject) -> Result<(), AppError> {
+        let project_dir = self.get_project_path(project.company_code(), project.code());
+        let tasks_dir = project_dir.join("tasks");
+        
+        // Create tasks directory if it doesn't exist
+        fs::create_dir_all(&tasks_dir).map_err(|e| AppError::IoErrorWithPath {
+            operation: "create directory".to_string(),
+            path: tasks_dir.to_string_lossy().to_string(),
+            details: e.to_string(),
+        })?;
+
+        // Save each task as individual YAML file
+        for task in project.tasks().values() {
+            let task_file_path = tasks_dir.join(format!("{}.yaml", task.code()));
+            let task_manifest = TaskManifest::from(task.clone());
+            let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| AppError::SerializationError {
+                format: "YAML".to_string(),
+                details: format!("Error serializing task: {e}"),
+            })?;
+            fs::write(&task_file_path, yaml).map_err(|e| AppError::IoErrorWithPath {
+                operation: "file write".to_string(),
+                path: task_file_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
+        }
+
+        Ok(())
+    }
 }
 
 impl ProjectRepository for FileProjectRepository {
@@ -202,8 +232,12 @@ impl ProjectRepository for FileProjectRepository {
             details: e.to_string(),
         })?;
 
+        // Save individual task files
+        self.save_tasks_for_project(&project)?;
+
         Ok(())
     }
+
 
     /// Carrega um projeto.
     /// `path` deve ser o caminho para o diretório do projeto.

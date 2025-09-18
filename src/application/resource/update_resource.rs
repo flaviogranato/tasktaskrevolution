@@ -111,6 +111,9 @@ mod tests {
         fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(self.resources.borrow().get(code).cloned())
         }
+        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+            Ok(vec![])
+        }
 
         fn save_in_hierarchy(
             &self,

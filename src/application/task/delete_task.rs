@@ -55,7 +55,7 @@ where
             .find_by_code(project_code)?
             .ok_or_else(|| DeleteAppError::ProjectNotFound(project_code.to_string()))?;
 
-        // 2. Cancel the task (change its state to Cancelled)
+        // 2. Cancel the task (soft delete - change status to Cancelled)
         let cancelled_task = project.cancel_task(task_code).map_err(DeleteAppError::AppError)?;
 
         // 3. Save the updated project aggregate.
