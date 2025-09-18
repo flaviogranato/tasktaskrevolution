@@ -76,6 +76,10 @@ path = "tests/integration/delete_resource_test.rs"
 name = "list_resources_test"
 path = "tests/integration/list_resources_test.rs"
 
+[[test]]
+name = "verbose_test"
+path = "tests/integration/verbose_test.rs"
+
 [profile.release]
 opt-level = 3
 lto = true
