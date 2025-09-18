@@ -300,7 +300,7 @@ pub struct GanttPagination {
 
 impl GanttPagination {
     pub fn new(current_page: usize, total_tasks: usize, tasks_per_page: usize) -> Self {
-        let total_pages = (total_tasks + tasks_per_page - 1) / tasks_per_page;
+        let total_pages = total_tasks.div_ceil(tasks_per_page);
         Self {
             current_page,
             total_pages,
@@ -418,7 +418,7 @@ impl GanttChart {
             } else {
                 self.config.tasks_per_page
             };
-            
+
             self.tasks.extend(tasks.into_iter().take(max_tasks));
         } else {
             self.tasks.extend(tasks);
@@ -439,17 +439,12 @@ impl GanttChart {
     pub fn get_current_page_dependencies(&self) -> Vec<&GanttDependency> {
         if let Some(pagination) = &self.pagination {
             let (start, end) = pagination.get_page_range();
-            let current_task_ids: std::collections::HashSet<String> = self.tasks[start..end]
-                .iter()
-                .map(|t| t.id.clone())
-                .collect();
-            
+            let current_task_ids: std::collections::HashSet<String> =
+                self.tasks[start..end].iter().map(|t| t.id.clone()).collect();
+
             self.dependencies
                 .iter()
-                .filter(|dep| {
-                    current_task_ids.contains(&dep.from_task) || 
-                    current_task_ids.contains(&dep.to_task)
-                })
+                .filter(|dep| current_task_ids.contains(&dep.from_task) || current_task_ids.contains(&dep.to_task))
                 .collect()
         } else {
             self.dependencies.iter().collect()
@@ -458,39 +453,39 @@ impl GanttChart {
 
     /// Navega para a próxima página
     pub fn next_page(&mut self) -> bool {
-        if let Some(pagination) = &mut self.pagination {
-            if pagination.has_next_page {
-                pagination.current_page += 1;
-                pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
-                pagination.has_previous_page = pagination.current_page > 0;
-                return true;
-            }
+        if let Some(pagination) = &mut self.pagination
+            && pagination.has_next_page
+        {
+            pagination.current_page += 1;
+            pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
+            pagination.has_previous_page = pagination.current_page > 0;
+            return true;
         }
         false
     }
 
     /// Navega para a página anterior
     pub fn previous_page(&mut self) -> bool {
-        if let Some(pagination) = &mut self.pagination {
-            if pagination.has_previous_page {
-                pagination.current_page -= 1;
-                pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
-                pagination.has_previous_page = pagination.current_page > 0;
-                return true;
-            }
+        if let Some(pagination) = &mut self.pagination
+            && pagination.has_previous_page
+        {
+            pagination.current_page -= 1;
+            pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
+            pagination.has_previous_page = pagination.current_page > 0;
+            return true;
         }
         false
     }
 
     /// Vai para uma página específica
     pub fn go_to_page(&mut self, page: usize) -> bool {
-        if let Some(pagination) = &mut self.pagination {
-            if page < pagination.total_pages {
-                pagination.current_page = page;
-                pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
-                pagination.has_previous_page = pagination.current_page > 0;
-                return true;
-            }
+        if let Some(pagination) = &mut self.pagination
+            && page < pagination.total_pages
+        {
+            pagination.current_page = page;
+            pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
+            pagination.has_previous_page = pagination.current_page > 0;
+            return true;
         }
         false
     }
@@ -511,7 +506,7 @@ impl GanttChart {
     fn estimate_memory_usage(&self) -> usize {
         let task_size = std::mem::size_of::<GanttTask>();
         let dependency_size = std::mem::size_of::<GanttDependency>();
-        
+
         (self.tasks.len() * task_size) + (self.dependencies.len() * dependency_size)
     }
 
@@ -526,17 +521,12 @@ impl GanttChart {
             return Vec::new();
         }
 
-        let filtered_tasks: std::collections::HashSet<String> = self.get_filtered_tasks()
-            .iter()
-            .map(|t| t.id.clone())
-            .collect();
+        let filtered_tasks: std::collections::HashSet<String> =
+            self.get_filtered_tasks().iter().map(|t| t.id.clone()).collect();
 
         self.dependencies
             .iter()
-            .filter(|dep| {
-                filtered_tasks.contains(&dep.from_task) || 
-                filtered_tasks.contains(&dep.to_task)
-            })
+            .filter(|dep| filtered_tasks.contains(&dep.from_task) || filtered_tasks.contains(&dep.to_task))
             .collect()
     }
 
@@ -568,13 +558,13 @@ impl GanttChart {
 
     /// Verifica se algum filtro está ativo
     pub fn is_filter_active(&self) -> bool {
-        self.filters.status_filter.is_some() ||
-        self.filters.resource_filter.is_some() ||
-        self.filters.date_range_filter.is_some() ||
-        self.filters.progress_filter.is_some() ||
-        self.filters.search_text.is_some() ||
-        !self.filters.show_dependencies ||
-        !self.filters.show_milestones
+        self.filters.status_filter.is_some()
+            || self.filters.resource_filter.is_some()
+            || self.filters.date_range_filter.is_some()
+            || self.filters.progress_filter.is_some()
+            || self.filters.search_text.is_some()
+            || !self.filters.show_dependencies
+            || !self.filters.show_milestones
     }
 
     /// Limpa todos os filtros
@@ -584,21 +574,16 @@ impl GanttChart {
 
     /// Obtém recursos únicos das tarefas
     pub fn get_unique_resources(&self) -> Vec<String> {
-        let resources: std::collections::HashSet<String> = self.tasks
-            .iter()
-            .filter_map(|t| t.resource.clone())
-            .collect();
-        
+        let resources: std::collections::HashSet<String> =
+            self.tasks.iter().filter_map(|t| t.resource.clone()).collect();
+
         resources.into_iter().collect()
     }
 
     /// Obtém status únicos das tarefas
     pub fn get_unique_statuses(&self) -> Vec<TaskStatus> {
-        let mut statuses: std::collections::HashSet<TaskStatus> = self.tasks
-            .iter()
-            .map(|t| t.status.clone())
-            .collect();
-        
+        let statuses: std::collections::HashSet<TaskStatus> = self.tasks.iter().map(|t| t.status.clone()).collect();
+
         statuses.into_iter().collect()
     }
 
@@ -636,15 +621,9 @@ impl GanttChart {
         }
 
         match format {
-            GanttExportFormat::Json => {
-                serde_json::to_string(self).map_err(|e| e.into())
-            }
-            GanttExportFormat::Csv => {
-                self.export_to_csv()
-            }
-            GanttExportFormat::Html => {
-                Ok(self.generate_html())
-            }
+            GanttExportFormat::Json => serde_json::to_string(self).map_err(|e| e.into()),
+            GanttExportFormat::Csv => self.export_to_csv(),
+            GanttExportFormat::Html => Ok(self.generate_html()),
         }
     }
 
@@ -652,7 +631,7 @@ impl GanttChart {
     fn export_to_csv(&self) -> Result<String, Box<dyn Error>> {
         let mut csv = String::new();
         csv.push_str("Task ID,Task Name,Start Date,End Date,Status,Progress,Resource\n");
-        
+
         for task in &self.tasks {
             csv.push_str(&format!(
                 "{},{},{},{},{},{},{}\n",
@@ -665,7 +644,7 @@ impl GanttChart {
                 task.resource.as_deref().unwrap_or("")
             ));
         }
-        
+
         Ok(csv)
     }
 
@@ -1066,7 +1045,15 @@ impl GanttFilters {
             show_milestones: true,
         }
     }
+}
 
+impl Default for GanttFilters {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GanttFilters {
     pub fn with_status_filter(mut self, statuses: Vec<TaskStatus>) -> Self {
         self.status_filter = Some(statuses);
         self
@@ -1098,10 +1085,10 @@ impl GanttFilters {
 
     fn matches_task(&self, task: &GanttTask) -> bool {
         // Status filter
-        if let Some(ref statuses) = self.status_filter {
-            if !statuses.contains(&task.status) {
-                return false;
-            }
+        if let Some(ref statuses) = self.status_filter
+            && !statuses.contains(&task.status)
+        {
+            return false;
         }
 
         // Resource filter
@@ -1116,24 +1103,24 @@ impl GanttFilters {
         }
 
         // Date range filter
-        if let Some((start, end)) = self.date_range_filter {
-            if task.start_date < start || task.end_date > end {
-                return false;
-            }
+        if let Some((start, end)) = self.date_range_filter
+            && (task.start_date < start || task.end_date > end)
+        {
+            return false;
         }
 
         // Progress filter
-        if let Some((min, max)) = self.progress_filter {
-            if task.progress < min || task.progress > max {
-                return false;
-            }
+        if let Some((min, max)) = self.progress_filter
+            && (task.progress < min || task.progress > max)
+        {
+            return false;
         }
 
         // Search text filter
-        if let Some(ref text) = self.search_text {
-            if !task.name.to_lowercase().contains(&text.to_lowercase()) {
-                return false;
-            }
+        if let Some(ref text) = self.search_text
+            && !task.name.to_lowercase().contains(&text.to_lowercase())
+        {
+            return false;
         }
 
         true
@@ -1174,7 +1161,15 @@ impl GanttAdvancedFeatures {
             enable_milestone_tracking: true,
         }
     }
+}
 
+impl Default for GanttAdvancedFeatures {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl GanttAdvancedFeatures {
     pub fn with_drag_drop(mut self) -> Self {
         self.enable_drag_drop = true;
         self
@@ -1495,8 +1490,7 @@ mod tests {
         chart.add_task(task2);
 
         // Test status filter
-        let filters = GanttFilters::new()
-            .with_status_filter(vec![TaskStatus::InProgress]);
+        let filters = GanttFilters::new().with_status_filter(vec![TaskStatus::InProgress]);
         chart.set_filters(filters);
 
         let filtered_tasks = chart.get_filtered_tasks();
@@ -1504,8 +1498,7 @@ mod tests {
         assert_eq!(filtered_tasks[0].id, "task1");
 
         // Test search filter
-        let filters = GanttFilters::new()
-            .with_search_text("Task 2".to_string());
+        let filters = GanttFilters::new().with_search_text("Task 2".to_string());
         chart.set_filters(filters);
 
         let filtered_tasks = chart.get_filtered_tasks();
@@ -1522,9 +1515,7 @@ mod tests {
         let mut chart = GanttChart::new(config);
 
         // Test advanced features
-        let features = GanttAdvancedFeatures::new()
-            .with_drag_drop()
-            .with_baseline();
+        let features = GanttAdvancedFeatures::new().with_drag_drop().with_baseline();
         chart.set_advanced_features(features);
 
         assert!(chart.advanced_features.enable_drag_drop);
@@ -1597,8 +1588,7 @@ mod tests {
         assert!(!stats.filter_active);
 
         // Apply filter
-        let filters = GanttFilters::new()
-            .with_status_filter(vec![TaskStatus::InProgress]);
+        let filters = GanttFilters::new().with_status_filter(vec![TaskStatus::InProgress]);
         chart.set_filters(filters);
 
         let stats = chart.get_filter_stats();

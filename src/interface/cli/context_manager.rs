@@ -94,7 +94,7 @@ impl ContextManager {
         match self.context {
             ExecutionContext::Root => ".".to_string(),
             ExecutionContext::Company(_) => "../".to_string(),
-            ExecutionContext::Project(_, _) => "../../".to_string(),
+            ExecutionContext::Project(_, _) => ".".to_string(), // In project context, we're already in the project directory
         }
     }
 
