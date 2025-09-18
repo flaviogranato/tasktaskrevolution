@@ -30,23 +30,44 @@ impl FileTaskRepository {
 
     /// Gets the path to a task in a specific project
     fn get_project_task_path(&self, company_code: &str, project_code: &str, task_code: &str) -> PathBuf {
-        self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("projects")
-            .join(project_code)
-            .join("tasks")
-            .join(format!("{}.yaml", task_code))
+        if self.base_path.ends_with("companies") {
+            // If base_path already includes "companies", don't add it again
+            self.base_path
+                .join(company_code)
+                .join("projects")
+                .join(project_code)
+                .join("tasks")
+                .join(format!("{}.yaml", task_code))
+        } else {
+            // If base_path doesn't include "companies", add it
+            self.base_path
+                .join("companies")
+                .join(company_code)
+                .join("projects")
+                .join(project_code)
+                .join("tasks")
+                .join(format!("{}.yaml", task_code))
+        }
     }
 
     /// Gets the path to project tasks directory
     fn get_project_tasks_path(&self, company_code: &str, project_code: &str) -> PathBuf {
-        self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("projects")
-            .join(project_code)
-            .join("tasks")
+        if self.base_path.ends_with("companies") {
+            // If base_path already includes "companies", don't add it again
+            self.base_path
+                .join(company_code)
+                .join("projects")
+                .join(project_code)
+                .join("tasks")
+        } else {
+            // If base_path doesn't include "companies", add it
+            self.base_path
+                .join("companies")
+                .join(company_code)
+                .join("projects")
+                .join(project_code)
+                .join("tasks")
+        }
     }
 
     fn load_manifest(&self, path: &Path) -> Result<TaskManifest, Box<dyn std::error::Error>> {
