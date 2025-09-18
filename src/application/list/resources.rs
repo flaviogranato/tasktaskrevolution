@@ -1,6 +1,13 @@
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
 
+#[derive(Debug, Clone)]
+pub struct ResourceWithContext {
+    pub resource: AnyResource,
+    pub company_code: String,
+    pub project_codes: Vec<String>,
+}
+
 pub struct ListResourcesUseCase<R: ResourceRepository> {
     repository: R,
 }
@@ -16,6 +23,21 @@ impl<R: ResourceRepository> ListResourcesUseCase<R> {
 
     pub fn execute_by_company(&self, company_code: &str) -> Result<Vec<AnyResource>, AppError> {
         self.repository.find_by_company(company_code)
+    }
+
+    pub fn execute_with_context(&self) -> Result<Vec<ResourceWithContext>, AppError> {
+        let resources_with_context = self.repository.find_all_with_context()?;
+        let mut result = Vec::new();
+
+        for (resource, company_code, project_codes) in resources_with_context {
+            result.push(ResourceWithContext {
+                resource,
+                company_code,
+                project_codes,
+            });
+        }
+
+        Ok(result)
     }
 }
 
@@ -34,6 +56,9 @@ mod tests {
         }
         fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.clone())
+        }
+        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+            Ok(self.resources.iter().map(|r| (r.clone(), "TEST-COMPANY".to_string(), vec![])).collect())
         }
         fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)

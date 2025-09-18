@@ -544,43 +544,82 @@ impl SimplifiedExecutor {
                 let resource_repo = context_manager.create_resource_repository();
                 let use_case = ListResourcesUseCase::new(resource_repo);
 
-                // Use execute_by_company to filter resources by company, or execute() for all companies
-                let result = if company_code == "ALL" {
-                    use_case.execute()
-                } else {
-                    use_case.execute_by_company(&company_code)
-                };
-                
-                match result {
-                    Ok(resources) => {
-                        if resources.is_empty() {
-                            println!("No resources found for company '{}'.", company_code);
-                        } else {
-                            let mut table = TableFormatter::new(vec![
-                                "NAME".to_string(),
-                                "CODE".to_string(),
-                                "EMAIL".to_string(),
-                                "TYPE".to_string(),
-                                "STATUS".to_string(),
-                            ]);
-
-                            for resource in resources {
-                                table.add_row(vec![
-                                    resource.name().to_string(),
-                                    resource.code().to_string(),
-                                    resource.email().unwrap_or("-").to_string(),
-                                    resource.resource_type().to_string(),
-                                    resource.status().to_string(),
+                // Use execute_with_context for global listing, or execute_by_company for specific company
+                if company_code == "ALL" {
+                    match use_case.execute_with_context() {
+                        Ok(resources_with_context) => {
+                            if resources_with_context.is_empty() {
+                                println!("No resources found.");
+                            } else {
+                                let mut table = TableFormatter::new(vec![
+                                    "NAME".to_string(),
+                                    "CODE".to_string(),
+                                    "EMAIL".to_string(),
+                                    "TYPE".to_string(),
+                                    "STATUS".to_string(),
+                                    "COMPANY".to_string(),
+                                    "PROJECTS".to_string(),
                                 ]);
-                            }
 
-                            println!("{}", table);
+                                for resource_context in resources_with_context {
+                                    let projects_str = if resource_context.project_codes.is_empty() {
+                                        "-".to_string()
+                                    } else {
+                                        resource_context.project_codes.join(", ")
+                                    };
+
+                                    table.add_row(vec![
+                                        resource_context.resource.name().to_string(),
+                                        resource_context.resource.code().to_string(),
+                                        resource_context.resource.email().unwrap_or("-").to_string(),
+                                        resource_context.resource.resource_type().to_string(),
+                                        resource_context.resource.status().to_string(),
+                                        resource_context.company_code,
+                                        projects_str,
+                                    ]);
+                                }
+
+                                println!("{}", table);
+                            }
+                            Ok(())
                         }
-                        Ok(())
+                        Err(e) => {
+                            eprintln!("❌ Failed to list resources: {}", e);
+                            Err(e.into())
+                        }
                     }
-                    Err(e) => {
-                        eprintln!("❌ Failed to list resources: {}", e);
-                        Err(e.into())
+                } else {
+                    match use_case.execute_by_company(&company_code) {
+                        Ok(resources) => {
+                            if resources.is_empty() {
+                                println!("No resources found for company '{}'.", company_code);
+                            } else {
+                                let mut table = TableFormatter::new(vec![
+                                    "NAME".to_string(),
+                                    "CODE".to_string(),
+                                    "EMAIL".to_string(),
+                                    "TYPE".to_string(),
+                                    "STATUS".to_string(),
+                                ]);
+
+                                for resource in resources {
+                                    table.add_row(vec![
+                                        resource.name().to_string(),
+                                        resource.code().to_string(),
+                                        resource.email().unwrap_or("-").to_string(),
+                                        resource.resource_type().to_string(),
+                                        resource.status().to_string(),
+                                    ]);
+                                }
+
+                                println!("{}", table);
+                            }
+                            Ok(())
+                        }
+                        Err(e) => {
+                            eprintln!("❌ Failed to list resources: {}", e);
+                            Err(e.into())
+                        }
                     }
                 }
             }

@@ -276,6 +276,7 @@ impl ResourceRepository for FileResourceRepository {
             // Save as project-specific resource
             self.get_project_resource_path(company_code, proj_code, resource.name())
         } else {
+
             // Save as company global resource - always use code for filename to ensure updates work correctly
             self.get_company_resource_path_by_code(company_code, resource.code())
         };
@@ -453,6 +454,113 @@ impl ResourceRepository for FileResourceRepository {
         }
 
         Ok(resources)
+    }
+
+    /// Find all resources with their context information (company and project codes)
+    fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+        let mut resources_with_context = Vec::new();
+
+        // Search in company resources: companies/*/resources/*.yaml
+        let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
+        let company_pattern = if absolute_base.ends_with("companies") {
+            absolute_base.join("*/resources/*.yaml")
+        } else {
+            absolute_base.join("companies/*/resources/*.yaml")
+        };
+        let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+            field: "glob pattern".to_string(),
+            message: e.to_string(),
+        })?;
+
+        for entry in company_walker {
+            let entry = entry.map_err(|e| AppError::ValidationError {
+                field: "glob entry".to_string(),
+                message: e.to_string(),
+            })?;
+            let file_path = entry.as_path();
+            
+            // Extract company code from path: companies/{company}/resources/{file}
+            let path_str = file_path.to_string_lossy();
+            let company_code = if let Some(companies_idx) = path_str.find("companies/") {
+                let after_companies = &path_str[companies_idx + 10..];
+                if let Some(slash_idx) = after_companies.find('/') {
+                    after_companies[..slash_idx].to_string()
+                } else {
+                    "UNKNOWN".to_string()
+                }
+            } else {
+                "UNKNOWN".to_string()
+            };
+
+            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+                operation: "file read".to_string(),
+                path: file_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
+
+            let resource_manifest: ResourceManifest =
+                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing resource: {}", e),
+                })?;
+
+            let resource = AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
+                format: "YAML".to_string(),
+                details: format!("Error converting manifest: {}", e),
+            })?;
+
+            resources_with_context.push((resource, company_code, vec![]));
+        }
+
+        // Search in project resources: companies/*/projects/*/resources/*.yaml
+        let project_pattern = self.base_path.join("companies/*/projects/*/resources/*.yaml");
+        let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+            field: "glob pattern".to_string(),
+            message: e.to_string(),
+        })?;
+
+        for entry in project_walker {
+            let entry = entry.map_err(|e| AppError::ValidationError {
+                field: "glob entry".to_string(),
+                message: e.to_string(),
+            })?;
+            let file_path = entry.as_path();
+            
+            // Extract company and project codes from path: companies/{company}/projects/{project}/resources/{file}
+            let path_str = file_path.to_string_lossy();
+            let (company_code, project_code) = if let Some(companies_idx) = path_str.find("companies/") {
+                let after_companies = &path_str[companies_idx + 10..];
+                let parts: Vec<&str> = after_companies.split('/').collect();
+                if parts.len() >= 3 {
+                    (parts[0].to_string(), parts[2].to_string())
+                } else {
+                    ("UNKNOWN".to_string(), "UNKNOWN".to_string())
+                }
+            } else {
+                ("UNKNOWN".to_string(), "UNKNOWN".to_string())
+            };
+
+            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+                operation: "file read".to_string(),
+                path: file_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
+
+            let resource_manifest: ResourceManifest =
+                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing resource: {}", e),
+                })?;
+
+            let resource = AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
+                format: "YAML".to_string(),
+                details: format!("Error converting manifest: {}", e),
+            })?;
+
+            resources_with_context.push((resource, company_code, vec![project_code]));
+        }
+
+        Ok(resources_with_context)
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
