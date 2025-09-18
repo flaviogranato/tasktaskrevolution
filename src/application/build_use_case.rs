@@ -241,7 +241,7 @@ impl BuildUseCase {
         println!("[INFO] Companies base directory created successfully");
 
         // Gerar gráficos Gantt para cada empresa
-        let gantt_use_case = GanttUseCase::new(self.base_path.clone());
+        let _gantt_use_case = GanttUseCase::new(self.base_path.clone());
 
         for (company, company_projects, project_count, resource_count) in &companies_with_data {
             let company_code = company.code();
@@ -250,15 +250,6 @@ impl BuildUseCase {
             println!("[INFO] Company projects count: {}", company_projects.len());
             println!("[INFO] Project count: {}", project_count);
             println!("[INFO] Resource count: {}", resource_count);
-
-            // Gerar gráfico Gantt com dados reais da empresa
-            let company_gantt_path = self.output_dir.join("companies").join(company_code).join("gantt.html");
-            if let Err(e) = gantt_use_case.generate_and_save_company_gantt_html(company_code, &company_gantt_path) {
-                println!(
-                    "⚠️  Warning: Failed to generate Gantt chart for company {}: {}",
-                    company_code, e
-                );
-            }
 
             let company_output_dir = companies_base_dir.join(company_code);
             println!("[INFO] Creating company output directory: {:?}", company_output_dir);
@@ -332,6 +323,20 @@ impl BuildUseCase {
             company_context.insert("resources", &company_resources_filtered);
             company_context.insert("relative_path_prefix", "../");
             company_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+
+            // Gerar página Gantt da empresa (company_gantt.html)
+            println!("[INFO] Generating company Gantt page for: {}", company_name);
+            let company_gantt_page_path = company_output_dir.join("gantt.html");
+            let company_gantt_context = self.create_company_gantt_context(company, company_projects, &company_resources_filtered)?;
+            let company_gantt_html = match self.tera.render("company_gantt.html", &company_gantt_context) {
+                Ok(html) => html,
+                Err(e) => {
+                    eprintln!("Template render error for company_gantt.html: {:?}", e);
+                    return Err(format!("Template error: {}", e).into());
+                }
+            };
+            fs::write(company_gantt_page_path, company_gantt_html)?;
+            println!("✅ Company '{company_name}' Gantt page generated successfully.");
 
             // Create dummy project for base template
             let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
@@ -565,14 +570,19 @@ impl BuildUseCase {
                 fs::write(project_detail_path, project_detail_html)?;
                 println!("✅ Project '{project_name}' detail page generated successfully.");
 
-                // Gerar gráfico Gantt com dados reais do projeto
-                let project_gantt_path = project_output_dir.join("gantt.html");
-                if let Err(e) = gantt_use_case.generate_and_save_project_gantt_html(project_code, &project_gantt_path) {
-                    println!(
-                        "⚠️  Warning: Failed to generate Gantt chart for project {}: {}",
-                        project_code, e
-                    );
-                }
+                // Gerar página Gantt do projeto (project_gantt.html)
+                println!("[INFO] Generating project Gantt page for: {}", project_name);
+                let project_gantt_page_path = project_output_dir.join("gantt.html");
+                let project_gantt_context = self.create_project_gantt_context(project, tasks, resources, &company_map)?;
+                let project_gantt_html = match self.tera.render("project_gantt.html", &project_gantt_context) {
+                    Ok(html) => html,
+                    Err(e) => {
+                        eprintln!("Template render error for project_gantt.html: {:?}", e);
+                        return Err(format!("Template error: {}", e).into());
+                    }
+                };
+                fs::write(project_gantt_page_path, project_gantt_html)?;
+                println!("✅ Project '{project_name}' Gantt page generated successfully.");
 
                 // Generate task detail pages
                 println!("[INFO] About to generate task pages for project: {}", project_name);
@@ -623,6 +633,166 @@ impl BuildUseCase {
 
         println!("✅ Build completed successfully!");
         Ok(())
+    }
+
+    /// Cria o contexto para o template company_gantt.html
+    fn create_company_gantt_context(
+        &self,
+        company: &crate::domain::company_management::Company,
+        company_projects: &[&(crate::domain::project_management::AnyProject, Vec<crate::domain::task_management::AnyTask>, Vec<crate::domain::resource_management::AnyResource>, String)],
+        company_resources: &[crate::domain::resource_management::AnyResource],
+    ) -> Result<Context, Box<dyn Error>> {
+        let mut context = Context::new();
+
+        // Company data
+        let mut company_map = tera::Map::new();
+        company_map.insert("code".to_string(), tera::Value::String(company.code.clone()));
+        company_map.insert("name".to_string(), tera::Value::String(company.name.clone()));
+        company_map.insert(
+            "description".to_string(),
+            tera::Value::String(
+                company
+                    .description
+                    .as_deref()
+                    .unwrap_or("No description available.")
+                    .to_string(),
+            ),
+        );
+        company_map.insert(
+            "project_count".to_string(),
+            tera::Value::Number(tera::Number::from(company_projects.len())),
+        );
+        company_map.insert(
+            "resource_count".to_string(),
+            tera::Value::Number(tera::Number::from(company_resources.len())),
+        );
+
+        // Projects data for Gantt
+        let projects: Vec<_> = company_projects
+            .iter()
+            .map(|(project, _, _, _)| {
+                let mut project_map = tera::Map::new();
+                project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
+                project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+                project_map.insert(
+                    "description".to_string(),
+                    tera::Value::String(
+                        project
+                            .description()
+                            .map_or("No description available.".to_string(), |d| d.to_string()),
+                    ),
+                );
+                project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
+                project_map.insert(
+                    "task_count".to_string(),
+                    tera::Value::Number(tera::Number::from(0)), // Will be calculated from tasks
+                );
+                project_map.insert(
+                    "start_date".to_string(),
+                    project
+                        .start_date()
+                        .map_or(tera::Value::String("2024-01-01".to_string()), |d| tera::Value::String(d.to_string())),
+                );
+                project_map.insert(
+                    "end_date".to_string(),
+                    project
+                        .end_date()
+                        .map_or(tera::Value::String("2024-12-31".to_string()), |d| tera::Value::String(d.to_string())),
+                );
+                tera::Value::Object(project_map)
+            })
+            .collect();
+
+        // Calculate company date range
+        let company_start_date = company_projects
+            .iter()
+            .filter_map(|(project, _, _, _)| project.start_date())
+            .min()
+            .map(|d| d.to_string())
+            .unwrap_or_else(|| "2024-01-01".to_string());
+        let company_end_date = company_projects
+            .iter()
+            .filter_map(|(project, _, _, _)| project.end_date())
+            .max()
+            .map(|d| d.to_string())
+            .unwrap_or_else(|| "2024-12-31".to_string());
+
+        context.insert("company", &tera::Value::Object(company_map));
+        context.insert("projects", &projects);
+        context.insert("company_start_date", &company_start_date);
+        context.insert("company_end_date", &company_end_date);
+        context.insert("relative_path_prefix", "../");
+        context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+
+        // Create dummy project for base template
+        let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
+            .code("COMPANY_GANTT_DASHBOARD".to_string())
+            .name(format!("{} Gantt Dashboard", company.name))
+            .company_code(company.code.clone())
+            .created_by("system".to_string())
+            .build()
+            .unwrap()
+            .into();
+        context.insert("project", &dummy_project);
+
+        Ok(context)
+    }
+
+    /// Cria o contexto para o template project_gantt.html
+    fn create_project_gantt_context(
+        &self,
+        project: &crate::domain::project_management::AnyProject,
+        tasks: &[crate::domain::task_management::AnyTask],
+        resources: &[crate::domain::resource_management::AnyResource],
+        company_map: &tera::Map<String, tera::Value>,
+    ) -> Result<Context, Box<dyn Error>> {
+        let mut context = Context::new();
+
+        // Project data
+        let mut project_map = tera::Map::new();
+        project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
+        project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+        project_map.insert(
+            "description".to_string(),
+            tera::Value::String(
+                project
+                    .description()
+                    .map_or("No description available.".to_string(), |d| d.to_string()),
+            ),
+        );
+        project_map.insert("status".to_string(), tera::Value::String(project.status().to_string()));
+        project_map.insert(
+            "start_date".to_string(),
+            project
+                .start_date()
+                .map_or(tera::Value::String("2024-01-01".to_string()), |d| tera::Value::String(d.to_string())),
+        );
+        project_map.insert(
+            "end_date".to_string(),
+            project
+                .end_date()
+                .map_or(tera::Value::String("2024-12-31".to_string()), |d| tera::Value::String(d.to_string())),
+        );
+
+        context.insert("project", &tera::Value::Object(project_map.clone()));
+        context.insert("company", &tera::Value::Object(company_map.clone()));
+        context.insert("tasks", tasks);
+        context.insert("resources", resources);
+        context.insert("relative_path_prefix", "../../../");
+        context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+
+        // Create dummy project for base template
+        let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
+            .code("PROJECT_GANTT_DASHBOARD".to_string())
+            .name(format!("{} Gantt Dashboard", project.name()))
+            .company_code(project.company_code().to_string())
+            .created_by("system".to_string())
+            .build()
+            .unwrap()
+            .into();
+        context.insert("base_project", &dummy_project);
+
+        Ok(context)
     }
 }
 
