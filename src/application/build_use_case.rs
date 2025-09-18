@@ -327,7 +327,8 @@ impl BuildUseCase {
             // Gerar página Gantt da empresa (company_gantt.html)
             println!("[INFO] Generating company Gantt page for: {}", company_name);
             let company_gantt_page_path = company_output_dir.join("gantt.html");
-            let company_gantt_context = self.create_company_gantt_context(company, company_projects, &company_resources_filtered)?;
+            let company_gantt_context =
+                self.create_company_gantt_context(company, company_projects, &company_resources_filtered)?;
             let company_gantt_html = match self.tera.render("company_gantt.html", &company_gantt_context) {
                 Ok(html) => html,
                 Err(e) => {
@@ -573,7 +574,8 @@ impl BuildUseCase {
                 // Gerar página Gantt do projeto (project_gantt.html)
                 println!("[INFO] Generating project Gantt page for: {}", project_name);
                 let project_gantt_page_path = project_output_dir.join("gantt.html");
-                let project_gantt_context = self.create_project_gantt_context(project, tasks, resources, &company_map)?;
+                let project_gantt_context =
+                    self.create_project_gantt_context(project, tasks, resources, &company_map)?;
                 let project_gantt_html = match self.tera.render("project_gantt.html", &project_gantt_context) {
                     Ok(html) => html,
                     Err(e) => {
@@ -639,7 +641,12 @@ impl BuildUseCase {
     fn create_company_gantt_context(
         &self,
         company: &crate::domain::company_management::Company,
-        company_projects: &[&(crate::domain::project_management::AnyProject, Vec<crate::domain::task_management::AnyTask>, Vec<crate::domain::resource_management::AnyResource>, String)],
+        company_projects: &[&(
+            crate::domain::project_management::AnyProject,
+            Vec<crate::domain::task_management::AnyTask>,
+            Vec<crate::domain::resource_management::AnyResource>,
+            String,
+        )],
         company_resources: &[crate::domain::resource_management::AnyResource],
     ) -> Result<Context, Box<dyn Error>> {
         let mut context = Context::new();
@@ -691,13 +698,17 @@ impl BuildUseCase {
                     "start_date".to_string(),
                     project
                         .start_date()
-                        .map_or(tera::Value::String("2024-01-01".to_string()), |d| tera::Value::String(d.to_string())),
+                        .map_or(tera::Value::String("2024-01-01".to_string()), |d| {
+                            tera::Value::String(d.to_string())
+                        }),
                 );
                 project_map.insert(
                     "end_date".to_string(),
                     project
                         .end_date()
-                        .map_or(tera::Value::String("2024-12-31".to_string()), |d| tera::Value::String(d.to_string())),
+                        .map_or(tera::Value::String("2024-12-31".to_string()), |d| {
+                            tera::Value::String(d.to_string())
+                        }),
                 );
                 tera::Value::Object(project_map)
             })
@@ -765,19 +776,37 @@ impl BuildUseCase {
             "start_date".to_string(),
             project
                 .start_date()
-                .map_or(tera::Value::String("2024-01-01".to_string()), |d| tera::Value::String(d.to_string())),
+                .map_or(tera::Value::String("2024-01-01".to_string()), |d| {
+                    tera::Value::String(d.to_string())
+                }),
         );
         project_map.insert(
             "end_date".to_string(),
             project
                 .end_date()
-                .map_or(tera::Value::String("2024-12-31".to_string()), |d| tera::Value::String(d.to_string())),
+                .map_or(tera::Value::String("2024-12-31".to_string()), |d| {
+                    tera::Value::String(d.to_string())
+                }),
         );
+
+        // Convert resources to a format that Tera can handle
+        let mut resource_maps = Vec::new();
+        for resource in resources {
+            let mut resource_map = tera::Map::new();
+            resource_map.insert("name".to_string(), tera::Value::String(resource.name().to_string()));
+            resource_map.insert("code".to_string(), tera::Value::String(resource.code().to_string()));
+            resource_map.insert(
+                "resource_type".to_string(),
+                tera::Value::String(resource.resource_type().to_string()),
+            );
+            resource_map.insert("status".to_string(), tera::Value::String(resource.status().to_string()));
+            resource_maps.push(tera::Value::Object(resource_map));
+        }
 
         context.insert("project", &tera::Value::Object(project_map.clone()));
         context.insert("company", &tera::Value::Object(company_map.clone()));
         context.insert("tasks", tasks);
-        context.insert("resources", resources);
+        context.insert("resources", &resource_maps);
         context.insert("relative_path_prefix", "../../../");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 

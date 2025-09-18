@@ -82,21 +82,17 @@ impl ExecutionContext {
             return Ok(ExecutionContext::Root);
         }
 
-        // Check for company.yaml (company context)
-        if let Some(company_code) = Self::find_company_yaml(path)? {
-            // Check if we're also in a project context
-            if let Some(project_code) = Self::find_project_yaml(path)? {
-                return Ok(ExecutionContext::Project(company_code, project_code));
-            }
-            return Ok(ExecutionContext::Company(company_code));
-        }
-
-        // Check for project.yaml (project context) - this should be rare as projects are usually under companies
+        // Check for project.yaml first (project context)
         if let Some(project_code) = Self::find_project_yaml(path)? {
             // Try to find the company by looking at the directory structure
             if let Some(company_code) = Self::find_company_from_path(path)? {
                 return Ok(ExecutionContext::Project(company_code, project_code));
             }
+        }
+
+        // Check for company.yaml (company context)
+        if let Some(company_code) = Self::find_company_yaml(path)? {
+            return Ok(ExecutionContext::Company(company_code));
         }
 
         Err(ExecutionContextError::NoContextFound { path: path_str })

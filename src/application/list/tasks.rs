@@ -18,7 +18,7 @@ impl<R: ProjectRepository> ListTasksUseCase<R> {
             Some(p) => {
                 // Verify the project belongs to the correct company
                 if p.company_code() == company_code {
-                    let tasks = p.tasks().values().cloned().collect();
+                    let tasks = p.tasks().values().cloned().collect::<Vec<_>>();
                     Ok(tasks)
                 } else {
                     Err(AppError::ProjectNotFound {

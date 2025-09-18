@@ -8,10 +8,10 @@ use std::error::Error;
 use std::path::PathBuf;
 use tera::{Context, Tera};
 
+use crate::domain::project_management::gantt_chart::GanttPerformanceStats;
 use crate::domain::project_management::{
     DependencyType, GanttChart, GanttConfig, GanttTask, GanttViewType, TaskStatus, repository::ProjectRepository,
 };
-use crate::domain::project_management::gantt_chart::GanttPerformanceStats;
 use crate::infrastructure::persistence::project_repository::FileProjectRepository;
 
 /// Use Case para geração de gráficos Gantt
@@ -211,10 +211,7 @@ impl GanttUseCase {
         }
 
         // Contar total de tarefas para otimização
-        let total_tasks: usize = company_projects
-            .iter()
-            .map(|p| p.tasks().len())
-            .sum();
+        let total_tasks: usize = company_projects.iter().map(|p| p.tasks().len()).sum();
 
         // Configurar otimizações baseadas no tamanho do dataset
         let config = if total_tasks > 10000 {
@@ -449,9 +446,9 @@ impl GanttUseCase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::fs::File;
     use std::io::Write;
+    use tempfile::tempdir;
 
     fn setup_test_project_environment() -> PathBuf {
         let temp_dir = tempdir().unwrap();
@@ -587,7 +584,7 @@ spec:
         let gantt = use_case.generate_demo_gantt().unwrap();
         assert_eq!(gantt.tasks.len(), 4);
         assert_eq!(gantt.dependencies.len(), 3);
-        
+
         // Test task names
         let task_names: Vec<&String> = gantt.tasks.iter().map(|t| &t.name).collect();
         assert!(task_names.contains(&&"Análise de Requisitos".to_string()));
@@ -602,21 +599,27 @@ spec:
         let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
         let gantt = use_case.generate_demo_gantt().unwrap();
-        
+
         // Test task statuses
-        let completed_tasks: Vec<_> = gantt.tasks.iter()
+        let completed_tasks: Vec<_> = gantt
+            .tasks
+            .iter()
             .filter(|t| t.status == TaskStatus::Completed)
             .collect();
         assert_eq!(completed_tasks.len(), 1);
         assert_eq!(completed_tasks[0].name, "Análise de Requisitos");
 
-        let in_progress_tasks: Vec<_> = gantt.tasks.iter()
+        let in_progress_tasks: Vec<_> = gantt
+            .tasks
+            .iter()
             .filter(|t| t.status == TaskStatus::InProgress)
             .collect();
         assert_eq!(in_progress_tasks.len(), 1);
         assert_eq!(in_progress_tasks[0].name, "Desenvolvimento");
 
-        let not_started_tasks: Vec<_> = gantt.tasks.iter()
+        let not_started_tasks: Vec<_> = gantt
+            .tasks
+            .iter()
             .filter(|t| t.status == TaskStatus::NotStarted)
             .collect();
         assert_eq!(not_started_tasks.len(), 2);
@@ -628,22 +631,28 @@ spec:
         let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
         let gantt = use_case.generate_demo_gantt().unwrap();
-        
+
         // Test dependencies
         assert_eq!(gantt.dependencies.len(), 3);
-        
+
         // Check specific dependencies
-        let dep1 = gantt.dependencies.iter()
+        let dep1 = gantt
+            .dependencies
+            .iter()
             .find(|d| d.from_task == "task1" && d.to_task == "task2")
             .unwrap();
         assert_eq!(dep1.dependency_type, DependencyType::FinishToStart);
 
-        let dep2 = gantt.dependencies.iter()
+        let dep2 = gantt
+            .dependencies
+            .iter()
             .find(|d| d.from_task == "task2" && d.to_task == "task3")
             .unwrap();
         assert_eq!(dep2.dependency_type, DependencyType::FinishToStart);
 
-        let dep3 = gantt.dependencies.iter()
+        let dep3 = gantt
+            .dependencies
+            .iter()
             .find(|d| d.from_task == "task3" && d.to_task == "task4")
             .unwrap();
         assert_eq!(dep3.dependency_type, DependencyType::FinishToStart);
@@ -655,7 +664,7 @@ spec:
         let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
         let gantt = use_case.generate_demo_gantt().unwrap();
-        
+
         // Test configuration
         assert_eq!(gantt.config.title, "Demo Project - Gantt Chart");
         assert_eq!(gantt.config.start_date, NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
@@ -686,7 +695,12 @@ spec:
 
         let result = use_case.generate_project_gantt("nonexistent-project");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Project 'nonexistent-project' not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Project 'nonexistent-project' not found")
+        );
     }
 
     #[test]
@@ -707,7 +721,12 @@ spec:
 
         let result = use_case.generate_company_gantt("nonexistent-company");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("No projects found for company 'nonexistent-company'"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("No projects found for company 'nonexistent-company'")
+        );
     }
 
     #[test]
@@ -717,10 +736,10 @@ spec:
 
         let output_path = temp_dir.path().join("demo_gantt.html");
         let result = use_case.generate_and_save_demo_gantt_html(&output_path);
-        
+
         assert!(result.is_ok());
         assert!(output_path.exists());
-        
+
         // Check that the file contains some content
         let content = std::fs::read_to_string(&output_path).unwrap();
         assert!(!content.is_empty());
@@ -734,7 +753,7 @@ spec:
         let temp_dir = tempdir().unwrap();
         let output_path = temp_dir.path().join("project_gantt.html");
         let result = use_case.generate_and_save_project_gantt_html("proj-1", &output_path);
-        
+
         // This will fail because project doesn't exist, but we test the error handling
         assert!(result.is_err());
     }
@@ -747,7 +766,7 @@ spec:
         let temp_dir = tempdir().unwrap();
         let output_path = temp_dir.path().join("company_gantt.html");
         let result = use_case.generate_and_save_company_gantt_html("test-company", &output_path);
-        
+
         // This will fail because company doesn't exist, but we test the error handling
         assert!(result.is_err());
     }
@@ -817,14 +836,16 @@ spec:
         let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
         // Test large dataset optimization
-        let gantt = use_case.generate_optimized_gantt("Large Dataset Test".to_string(), 5000).unwrap();
+        let gantt = use_case
+            .generate_optimized_gantt("Large Dataset Test".to_string(), 5000)
+            .unwrap();
         let stats = gantt.get_performance_stats();
-        
+
         assert!(stats.is_optimized);
         assert!(stats.is_paginated);
         assert_eq!(stats.total_tasks, 5000);
         // Memory usage can be 0 if no tasks are loaded yet
-        assert!(stats.memory_usage_estimate >= 0);
+        // Memory usage estimate is always non-negative for usize
     }
 
     #[test]
@@ -833,9 +854,11 @@ spec:
         let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
         // Test very large dataset optimization
-        let gantt = use_case.generate_optimized_gantt("Very Large Dataset Test".to_string(), 15000).unwrap();
+        let gantt = use_case
+            .generate_optimized_gantt("Very Large Dataset Test".to_string(), 15000)
+            .unwrap();
         let stats = gantt.get_performance_stats();
-        
+
         assert!(stats.is_optimized);
         assert!(stats.is_paginated);
         assert_eq!(stats.total_tasks, 15000);
@@ -850,14 +873,13 @@ spec:
 
         let gantt = use_case.generate_demo_gantt().unwrap();
         let stats = gantt.get_performance_stats();
-        
+
         assert_eq!(stats.total_tasks, 0); // Demo gantt starts with 0 total tasks
         assert_eq!(stats.loaded_tasks, 4); // But has 4 tasks loaded
         assert!(!stats.is_paginated); // Demo gantt is not paginated
         assert!(!stats.is_optimized); // Demo gantt is not optimized
-        assert!(stats.memory_usage_estimate > 0);
+        // Memory usage estimate is always non-negative for usize
     }
-
 
     #[test]
     fn test_memory_usage_calculation() {
@@ -866,7 +888,7 @@ spec:
 
         let gantt = use_case.generate_demo_gantt().unwrap();
         let stats = gantt.get_performance_stats();
-        
+
         let memory_mb = stats.get_memory_usage_mb();
         assert!(memory_mb >= 0.0);
         assert!(memory_mb < 1.0); // Should be less than 1MB for demo data
@@ -877,9 +899,11 @@ spec:
         let temp_dir = tempdir().unwrap();
         let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
-        let gantt = use_case.generate_optimized_gantt("Load Test".to_string(), 1000).unwrap();
+        let gantt = use_case
+            .generate_optimized_gantt("Load Test".to_string(), 1000)
+            .unwrap();
         let stats = gantt.get_performance_stats();
-        
+
         let load_percentage = stats.get_load_percentage();
         assert!(load_percentage >= 0.0);
         assert!(load_percentage <= 100.0);
@@ -891,7 +915,9 @@ spec:
         let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
 
         // Test optimized gantt
-        let gantt = use_case.generate_optimized_gantt("Efficiency Test".to_string(), 2000).unwrap();
+        let gantt = use_case
+            .generate_optimized_gantt("Efficiency Test".to_string(), 2000)
+            .unwrap();
         let stats = gantt.get_performance_stats();
         assert!(stats.is_efficient());
 

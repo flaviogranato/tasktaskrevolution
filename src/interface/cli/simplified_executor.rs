@@ -275,6 +275,7 @@ impl SimplifiedExecutor {
                 } else if let Some(company_code) = company {
                     ExecutionContext::Company(company_code.clone())
                 } else {
+                    // Use current context - if we're in project context, list tasks for current project
                     context_manager.context().clone()
                 }
             }
@@ -401,6 +402,10 @@ impl SimplifiedExecutor {
             }
             ListCommand::Tasks { project, company } => {
                 context_manager.validate_command("list", "tasks")?;
+                println!(
+                    "DEBUG: ListCommand::Tasks - project: {:?}, company: {:?}",
+                    project, company
+                );
 
                 if let Some(project_code) = project {
                     // List tasks for specific project
@@ -442,43 +447,92 @@ impl SimplifiedExecutor {
                         }
                     }
                 } else {
-                    // List tasks for all projects in company
-                    let company_code = context_manager.resolve_company_code(company)?;
-                    let project_repo = context_manager.get_project_repository();
-                    let use_case = ListTasksUseCase::new(project_repo);
+                    // List tasks based on current context
+                    println!("DEBUG: No project parameter provided, using current context");
+                    println!("DEBUG: Current context: {:?}", context_manager.context());
+                    match context_manager.context() {
+                        ExecutionContext::Project(company_code, project_code) => {
+                            // In project context, list tasks for current project
+                            println!(
+                                "DEBUG: Project context detected - company: {}, project: {}",
+                                company_code, project_code
+                            );
+                            let project_repo = context_manager.get_project_repository();
+                            let use_case = ListTasksUseCase::new(project_repo);
 
-                    match use_case.execute_all_by_company(&company_code) {
-                        Ok(tasks) => {
-                            if tasks.is_empty() {
-                                println!("No tasks found for company '{}'.", company_code);
-                            } else {
-                                let mut table = TableFormatter::new(vec![
-                                    "NAME".to_string(),
-                                    "CODE".to_string(),
-                                    "PROJECT".to_string(),
-                                    "STATUS".to_string(),
-                                    "START DATE".to_string(),
-                                    "DUE DATE".to_string(),
-                                ]);
+                            match use_case.execute(project_code, company_code) {
+                                Ok(tasks) => {
+                                    if tasks.is_empty() {
+                                        println!("No tasks found for project '{}'.", project_code);
+                                    } else {
+                                        let mut table = TableFormatter::new(vec![
+                                            "NAME".to_string(),
+                                            "CODE".to_string(),
+                                            "STATUS".to_string(),
+                                            "START DATE".to_string(),
+                                            "DUE DATE".to_string(),
+                                        ]);
 
-                                for task in tasks {
-                                    table.add_row(vec![
-                                        task.name().to_string(),
-                                        task.code().to_string(),
-                                        task.project_code().to_string(),
-                                        task.status().to_string(),
-                                        task.start_date().format("%Y-%m-%d").to_string(),
-                                        task.due_date().format("%Y-%m-%d").to_string(),
-                                    ]);
+                                        for task in tasks {
+                                            table.add_row(vec![
+                                                task.name().to_string(),
+                                                task.code().to_string(),
+                                                task.status().to_string(),
+                                                task.start_date().format("%Y-%m-%d").to_string(),
+                                                task.due_date().format("%Y-%m-%d").to_string(),
+                                            ]);
+                                        }
+
+                                        println!("{}", table);
+                                    }
+                                    Ok(())
                                 }
-
-                                println!("{}", table);
+                                Err(e) => {
+                                    eprintln!("❌ Failed to list tasks: {}", e);
+                                    Err(e.into())
+                                }
                             }
-                            Ok(())
                         }
-                        Err(e) => {
-                            eprintln!("❌ Failed to list tasks: {}", e);
-                            Err(e.into())
+                        _ => {
+                            // In other contexts, list tasks for all projects in company
+                            let company_code = context_manager.resolve_company_code(company)?;
+                            let project_repo = context_manager.get_project_repository();
+                            let use_case = ListTasksUseCase::new(project_repo);
+
+                            match use_case.execute_all_by_company(&company_code) {
+                                Ok(tasks) => {
+                                    if tasks.is_empty() {
+                                        println!("No tasks found for company '{}'.", company_code);
+                                    } else {
+                                        let mut table = TableFormatter::new(vec![
+                                            "NAME".to_string(),
+                                            "CODE".to_string(),
+                                            "PROJECT".to_string(),
+                                            "STATUS".to_string(),
+                                            "START DATE".to_string(),
+                                            "DUE DATE".to_string(),
+                                        ]);
+
+                                        for task in tasks {
+                                            table.add_row(vec![
+                                                task.name().to_string(),
+                                                task.code().to_string(),
+                                                task.project_code().to_string(),
+                                                task.status().to_string(),
+                                                task.start_date().format("%Y-%m-%d").to_string(),
+                                                task.due_date().format("%Y-%m-%d").to_string(),
+                                            ]);
+                                        }
+
+                                        println!("{}", table);
+                                    }
+                                    Ok(())
+                                }
+                                Err(e) => {
+                                    eprintln!("❌ Failed to list tasks: {}", e);
+                                    Err(e.into())
+                                }
+                            }
                         }
                     }
                 }

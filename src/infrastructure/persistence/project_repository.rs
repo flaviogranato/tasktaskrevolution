@@ -138,14 +138,18 @@ impl FileProjectRepository {
             return Ok(());
         }
 
-        let pattern = tasks_dir.join("*.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+        // Use absolute path for glob pattern
+        let absolute_tasks_dir = std::fs::canonicalize(&tasks_dir).unwrap_or_else(|_| tasks_dir.clone());
+        let pattern = absolute_tasks_dir.join("*.yaml");
+        let pattern_str = pattern.to_str().unwrap();
+        let walker = glob(pattern_str).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
 
         for entry in walker.flatten() {
             let task_path = entry.path();
+            println!("DEBUG: Loading task from: {:?}", task_path);
             let yaml = fs::read_to_string(task_path).map_err(|e| AppError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: task_path.to_string_lossy().to_string(),
@@ -160,6 +164,7 @@ impl FileProjectRepository {
                 format: "YAML".to_string(),
                 details: format!("Error converting task manifest: {e}"),
             })?;
+            println!("DEBUG: Loaded task: {} - {}", task.code(), task.name());
             project.add_task(task);
         }
 
@@ -257,12 +262,14 @@ impl ProjectRepository for FileProjectRepository {
 
         // Verifica também o diretório atual
         let current_dir_manifest = self.base_path.join("project.yaml");
+        println!("DEBUG: Checking current directory manifest: {:?}", current_dir_manifest);
         if current_dir_manifest.exists()
             && !processed_paths.contains(&current_dir_manifest)
             && let Ok(manifest) = self.load_manifest(&current_dir_manifest)
             && let Ok(mut project) = AnyProject::try_from(manifest)
             && self.load_tasks_for_project(&mut project, &current_dir_manifest).is_ok()
         {
+            println!("DEBUG: Added project from current directory");
             projects.push(project);
         }
 
@@ -270,10 +277,13 @@ impl ProjectRepository for FileProjectRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        println!("DEBUG: find_by_code called with code: {}", code);
         // This is not the most performant implementation, but it is correct.
         // It avoids duplicating the task loading logic.
         let projects = self.find_all()?;
+        println!("DEBUG: Found {} projects", projects.len());
         for project in projects {
+            println!("DEBUG: Project code: {}", project.code());
             if project.code() == code {
                 return Ok(Some(project));
             }
