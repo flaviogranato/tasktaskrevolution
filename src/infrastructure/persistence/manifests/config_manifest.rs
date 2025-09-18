@@ -60,6 +60,8 @@ pub struct ConfigSpec {
     pub locale: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vacation_rules: Option<VacationRulesManifest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resource_types: Option<Vec<String>>,
 }
 
 fn default_timezone() -> String {
@@ -94,6 +96,7 @@ impl ConfigManifest {
                 default_task_duration: None,
                 locale: None,
                 vacation_rules: None,
+                resource_types: None,
             },
         }
     }
@@ -133,6 +136,7 @@ impl Convertible<Config> for ConfigManifest {
                 default_task_duration: None,
                 locale: None,
                 vacation_rules: None,
+                resource_types: Some(source.resource_types.clone()),
             },
         }
     }
@@ -164,6 +168,7 @@ impl Convertible<Config> for ConfigManifest {
                         crate::domain::company_settings::config::WorkDay::Friday,
                     ]
                 }),
+            resource_types: self.spec.resource_types.clone().unwrap_or_default(),
             created_at: Some(self.metadata.created_at),
             updated_at: Some(self.metadata.created_at),
         }

@@ -1,5 +1,5 @@
 use crate::application::errors::AppError;
-use crate::domain::resource_management::{repository::ResourceRepository, resource::Resource};
+use crate::domain::resource_management::{ResourceTypeValidator, repository::ResourceRepository, resource::Resource};
 
 #[derive(Debug, Clone)]
 pub struct CreateResourceParams {
@@ -15,13 +15,22 @@ pub struct CreateResourceParams {
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
+    type_validator: ResourceTypeValidator,
 }
 
 impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R) -> Self {
-        Self { repository }
+        Self {
+            repository,
+            type_validator: ResourceTypeValidator::new(),
+        }
     }
     pub fn execute(&self, params: CreateResourceParams) -> Result<(), AppError> {
+        // Validate resource type against config
+        self.type_validator
+            .validate_resource_type(&params.resource_type)
+            .map_err(|e| AppError::validation_error("resource_type", e))?;
+
         let code = match params.code {
             Some(c) => c,
             None => self.repository.get_next_code(&params.resource_type)?,

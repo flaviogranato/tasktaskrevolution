@@ -16,6 +16,8 @@ fn test_update_resource_updates_existing_file() -> Result<(), Box<dyn std::error
         "resource",
         "--name",
         "João Silva",
+        "--type",
+        "Developer",
         "--email",
         "joao@techcorp.com",
         "--code",

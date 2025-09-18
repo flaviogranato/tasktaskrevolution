@@ -15,3 +15,14 @@ spec:
   - Wednesday
   - Thursday
   - Friday
+  resourceTypes:
+  - Developer
+  - Designer
+  - Manager
+  - Database Administrator
+  - DevOps Engineer
+  - QA Engineer
+  - Product Owner
+  - Scrum Master
+  - Business Analyst
+  - Technical Writer

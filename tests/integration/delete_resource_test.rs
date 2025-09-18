@@ -16,6 +16,8 @@ fn test_delete_resource_updates_status_to_inactive() -> Result<(), Box<dyn std::
         "resource",
         "--name",
         "João Silva",
+        "--type",
+        "Developer",
         "--email",
         "joao@techcorp.com",
         "--code",
