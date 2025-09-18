@@ -6,7 +6,18 @@
 set -x TEST_DIR "/tmp/ttr_tutorial_test_$(date +%s)"
 set -x SITE_DIR "$TEST_DIR/site"
 
-echo "🚀 Iniciando Teste Automatizado do TaskTaskRevolution"
+echo "🚀 Iniciando Teste Interativo do TaskTaskRevolution"
+echo "📝 O script pausará após cada operação para você verificar o resultado"
+echo "⏸️  Pressione ENTER para continuar para a próxima operação"
+echo ""
+
+# Função para pausar o script e aguardar confirmação do usuário
+function pause_script
+    echo ""
+    echo "⏸️  Pressione ENTER para continuar..."
+    read -p ""
+    echo ""
+end
 echo "📁 Diretório de teste: $TEST_DIR"
 echo "🔧 Usando TTR do PATH"
 echo ""
@@ -48,6 +59,7 @@ ttr init \
 
 if test $status -eq 0
     echo "✅ Sistema inicializado com sucesso"
+pause_script
 else
     echo "❌ Falha na inicialização do sistema"
     exit 1
@@ -74,6 +86,7 @@ ttr create company \
 
 if test $status -eq 0
     echo "✅ Empresa TechCorp criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da empresa TechCorp"
     exit 1
@@ -87,6 +100,7 @@ ttr create company \
 
 if test $status -eq 0
     echo "✅ Empresa Design Studio criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da empresa Design Studio"
     exit 1
@@ -114,6 +128,7 @@ ttr create resource \
 
 if test $status -eq 0
     echo "✅ Recurso João Silva criado com sucesso"
+pause_script
 else
     echo "❌ Falha na criação do recurso João Silva"
     exit 1
@@ -130,6 +145,7 @@ ttr create resource \
 
 if test $status -eq 0
     echo "✅ Recurso Maria Santos criado com sucesso"
+pause_script
 else
     echo "❌ Falha na criação do recurso Maria Santos"
     exit 1
@@ -146,6 +162,7 @@ ttr create resource \
 
 if test $status -eq 0
     echo "✅ Recurso Ana Costa criado com sucesso"
+pause_script
 else
     echo "❌ Falha na criação do recurso Ana Costa"
     exit 1
@@ -161,6 +178,7 @@ ttr create resource \
 
 if test $status -ne 0
     echo "✅ Validação de tipo inválido funcionando corretamente"
+pause_script
 else
     echo "⚠️  Validação de tipo inválido não funcionou como esperado"
 end
@@ -188,6 +206,7 @@ ttr create project \
 
 if test $status -eq 0
     echo "✅ Projeto E-commerce criado com sucesso"
+pause_script
 else
     echo "❌ Falha na criação do projeto E-commerce"
     exit 1
@@ -204,6 +223,7 @@ ttr create project \
 
 if test $status -eq 0
     echo "✅ Projeto App Mobile criado com sucesso"
+pause_script
 else
     echo "❌ Falha na criação do projeto App Mobile"
     exit 1
@@ -220,6 +240,7 @@ ttr create project \
 
 if test $status -eq 0
     echo "✅ Projeto Rebranding criado com sucesso"
+pause_script
 else
     echo "❌ Falha na criação do projeto Rebranding"
     exit 1
@@ -249,6 +270,7 @@ ttr create task \
 
 if test $status -eq 0
     echo "✅ Tarefa Análise de Requisitos criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da tarefa Análise de Requisitos"
     exit 1
@@ -266,6 +288,7 @@ ttr create task \
 
 if test $status -eq 0
     echo "✅ Tarefa Desenvolvimento Backend criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da tarefa Desenvolvimento Backend"
     exit 1
@@ -283,6 +306,7 @@ ttr create task \
 
 if test $status -eq 0
     echo "✅ Tarefa Design de Interface criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da tarefa Design de Interface"
     exit 1
@@ -312,6 +336,7 @@ ttr create task \
 
 if test $status -eq 0
     echo "✅ Tarefa predecessora criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da tarefa predecessora"
     exit 1
@@ -328,6 +353,7 @@ ttr create task \
 
 if test $status -eq 0
     echo "✅ Tarefa dependente criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da tarefa dependente"
     exit 1
@@ -342,6 +368,7 @@ ttr link tasks \
 
 if test $status -eq 0
     echo "✅ Dependência criada com sucesso"
+pause_script
 else
     echo "❌ Falha na criação da dependência"
     exit 1
@@ -356,6 +383,7 @@ ttr update task \
 
 if test $status -eq 0
     echo "✅ Data da tarefa predecessora atualizada com sucesso"
+pause_script
 else
     echo "❌ Falha na atualização da data da tarefa predecessora"
     exit 1
@@ -370,6 +398,7 @@ ttr link tasks \
 
 if test $status -ne 0
     echo "✅ Detecção de dependência circular funcionando corretamente"
+pause_script
 else
     echo "⚠️  Detecção de dependência circular não funcionou como esperado"
 end
@@ -394,6 +423,7 @@ ttr update project \
 
 if test $status -eq 0
     echo "✅ Projeto atualizado com sucesso"
+pause_script
 else
     echo "❌ Falha na atualização do projeto"
     exit 1
@@ -409,6 +439,7 @@ ttr update task \
 
 if test $status -eq 0
     echo "✅ Tarefa atualizada com sucesso"
+pause_script
 else
     echo "❌ Falha na atualização da tarefa"
     exit 1
@@ -419,12 +450,12 @@ ttr update resource \
   --code "JS-001" \
   --company "TECH-001" \
   --name "João Silva Santos" \
-  --type "Tech Lead" \
   --email "joao.silva@techcorp.com" \
   --description "Tech Lead Senior"
 
 if test $status -eq 0
     echo "✅ Recurso atualizado com sucesso"
+pause_script
 else
     echo "❌ Falha na atualização do recurso"
     exit 1
@@ -451,6 +482,7 @@ ttr delete task \
 
 if test $status -eq 0
     echo "✅ Tarefa deletada com sucesso"
+pause_script
 else
     echo "❌ Falha na exclusão da tarefa"
     exit 1
@@ -463,6 +495,7 @@ ttr delete project \
 
 if test $status -eq 0
     echo "✅ Projeto deletado com sucesso"
+pause_script
 else
     echo "❌ Falha na exclusão do projeto"
     exit 1
@@ -475,6 +508,7 @@ ttr delete resource \
 
 if test $status -eq 0
     echo "✅ Recurso deletado com sucesso"
+pause_script
 else
     echo "❌ Falha na exclusão do recurso"
     exit 1
@@ -498,6 +532,7 @@ ttr build --output "site" --base-url "https://meusite.com"
 
 if test $status -eq 0
     echo "✅ Site estático gerado com sucesso"
+pause_script
 else
     echo "❌ Falha na geração do site estático"
     exit 1
@@ -529,15 +564,19 @@ echo "==============================="
 
 echo "9.1 Validando regras de negócio..."
 ttr validate business-rules
+pause_script
 
 echo "9.2 Validando integridade dos dados..."
 ttr validate data-integrity
+pause_script
 
 echo "9.3 Validando entidades..."
 ttr validate entities
+pause_script
 
 echo "9.4 Validando sistema completo..."
 ttr validate system
+pause_script
 echo ""
 
 # ============================================================================
@@ -569,9 +608,11 @@ echo "==============================="
 
 echo "11.1 Gerando relatório de tarefas..."
 ttr report task --project "ECOMM-001" --company "TECH-001"
+pause_script
 
 echo "11.2 Gerando relatório de férias..."
 ttr report vacation --company "TECH-001"
+pause_script
 echo ""
 
 # ============================================================================
@@ -583,9 +624,11 @@ echo "==========================="
 
 echo "12.1 Linkando tarefas..."
 ttr link tasks --from "TASK-001" --to "TASK-002" --project "ECOMM-001" --company "TECH-001"
+pause_script
 
 echo "12.2 Deslinkando tarefas..."
 ttr unlink tasks --from "TASK-001" --to "TASK-002" --project "ECOMM-001" --company "TECH-001"
+pause_script
 echo ""
 
 # ============================================================================
