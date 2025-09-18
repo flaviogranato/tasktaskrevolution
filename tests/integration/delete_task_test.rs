@@ -1,6 +1,6 @@
+use assert_cmd::Command;
 use assert_fs::TempDir;
 use predicates::prelude::*;
-use assert_cmd::Command;
 
 /// Test that delete task command actually removes the task from the file
 #[test]
@@ -22,7 +22,7 @@ fn test_delete_task_removes_task_from_file() -> Result<(), Box<dyn std::error::E
         .join(&project_code)
         .join("tasks")
         .join(&task_code);
-    
+
     assert!(task_file.exists(), "Task file should exist before deletion");
 
     // Delete the task
@@ -39,22 +39,23 @@ fn test_delete_task_removes_task_from_file() -> Result<(), Box<dyn std::error::E
         "TECH-CORP",
     ]);
 
-    cmd.assert().success().stdout(predicate::str::contains(
-        "Task cancelled successfully!",
-    ));
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Task cancelled successfully!"));
 
     // Verify task file is removed or task status is changed to Cancelled
     if task_file.exists() {
         // If file still exists, check that task status is Cancelled
         let content = std::fs::read_to_string(&task_file)?;
         let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
-        
+
         // Check if task status is Cancelled
-        let status = yaml.get("spec")
+        let status = yaml
+            .get("spec")
             .and_then(|s| s.get("status"))
             .and_then(|s| s.as_str())
             .unwrap_or("Unknown");
-        
+
         assert_eq!(status, "Cancelled", "Task status should be Cancelled after deletion");
     } else {
         // If file is removed, that's also acceptable
@@ -87,9 +88,9 @@ fn test_delete_task_shows_error_when_not_found() -> Result<(), Box<dyn std::erro
         "TECH-CORP",
     ]);
 
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "Failed to cancel task",
-    ));
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to cancel task"));
 
     temp.close()?;
     Ok(())
@@ -115,9 +116,9 @@ fn test_delete_task_shows_error_when_project_not_found() -> Result<(), Box<dyn s
         "TECH-CORP",
     ]);
 
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "Failed to cancel task",
-    ));
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to cancel task"));
 
     temp.close()?;
     Ok(())
@@ -218,12 +219,8 @@ spec:
 }
 
 fn find_project_code(temp: &TempDir) -> Result<String, Box<dyn std::error::Error>> {
-    let projects_dir = temp
-        .path()
-        .join("companies")
-        .join("TECH-CORP")
-        .join("projects");
-    
+    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
             if entry.path().is_dir() {
@@ -244,12 +241,10 @@ fn find_task_code(temp: &TempDir, project_code: &str) -> Result<String, Box<dyn 
         .join("projects")
         .join(project_code)
         .join("tasks");
-    
+
     if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_file()
-                && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml")
-            {
+            if entry.path().is_file() && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml") {
                 if let Some(file_name) = entry.file_name().to_str() {
                     return Ok(file_name.to_string());
                 }

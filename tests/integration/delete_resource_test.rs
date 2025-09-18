@@ -1,6 +1,6 @@
+use assert_cmd::Command;
 use assert_fs::TempDir;
 use predicates::prelude::*;
-use assert_cmd::Command;
 
 /// Test that delete resource command updates status to Inactive instead of creating duplicates
 #[test]
@@ -35,7 +35,7 @@ fn test_delete_resource_updates_status_to_inactive() -> Result<(), Box<dyn std::
         .join("TECH-CORP")
         .join("resources")
         .join("dev-001.yaml");
-    
+
     assert!(resource_file.exists(), "Resource file should exist after creation");
 
     // Verify initial status is Available
@@ -51,37 +51,26 @@ fn test_delete_resource_updates_status_to_inactive() -> Result<(), Box<dyn std::
     // Delete (deactivate) the resource
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args([
-        "delete",
-        "resource",
-        "--code",
-        "dev-001",
-        "--company",
-        "TECH-CORP",
-    ]);
+    cmd.args(["delete", "resource", "--code", "dev-001", "--company", "TECH-CORP"]);
 
-    cmd.assert().success().stdout(predicate::str::contains(
-        "Resource deactivated successfully!",
-    ));
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Resource deactivated successfully!"));
 
     // Verify only one file exists (no duplication)
-    let resources_dir = temp
-        .path()
-        .join("companies")
-        .join("TECH-CORP")
-        .join("resources");
-    
+    let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
+
     let files: Vec<_> = std::fs::read_dir(&resources_dir)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect();
-    
+
     assert_eq!(files.len(), 1, "Should have exactly one resource file, not duplicated");
 
     // Verify the file was updated with Inactive status
     let content = std::fs::read_to_string(&resource_file)?;
     let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
-    
+
     assert_eq!(
         yaml.get("metadata")
             .and_then(|m| m.get("status"))
@@ -110,18 +99,11 @@ fn test_delete_resource_shows_error_when_not_found() -> Result<(), Box<dyn std::
     // Try to delete non-existent resource
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args([
-        "delete",
-        "resource",
-        "--code",
-        "non-existent",
-        "--company",
-        "TECH-CORP",
-    ]);
+    cmd.args(["delete", "resource", "--code", "non-existent", "--company", "TECH-CORP"]);
 
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "Failed to deactivate resource",
-    ));
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to deactivate resource"));
 
     temp.close()?;
     Ok(())

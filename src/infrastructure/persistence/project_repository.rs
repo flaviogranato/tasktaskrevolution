@@ -185,7 +185,7 @@ impl FileProjectRepository {
     fn save_tasks_for_project(&self, project: &AnyProject) -> Result<(), AppError> {
         let project_dir = self.get_project_path(project.company_code(), project.code());
         let tasks_dir = project_dir.join("tasks");
-        
+
         // Create tasks directory if it doesn't exist
         fs::create_dir_all(&tasks_dir).map_err(|e| AppError::IoErrorWithPath {
             operation: "create directory".to_string(),
@@ -241,7 +241,6 @@ impl ProjectRepository for FileProjectRepository {
 
         Ok(())
     }
-
 
     /// Carrega um projeto.
     /// `path` deve ser o caminho para o diretório do projeto.

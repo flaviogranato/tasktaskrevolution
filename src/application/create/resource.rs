@@ -104,6 +104,9 @@ mod test {
         fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
             Ok(vec![])
         }
+        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+            Ok(vec![])
+        }
 
         fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)

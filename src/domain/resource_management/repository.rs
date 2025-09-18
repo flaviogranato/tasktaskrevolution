@@ -12,7 +12,7 @@ pub trait ResourceRepository {
     ) -> Result<AnyResource, AppError>;
     fn find_all(&self) -> Result<Vec<AnyResource>, AppError>;
     fn find_by_company(&self, company_code: &str) -> Result<Vec<AnyResource>, AppError>;
-    
+
     /// Find all resources with their context information (company and project codes)
     fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError>;
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError>;

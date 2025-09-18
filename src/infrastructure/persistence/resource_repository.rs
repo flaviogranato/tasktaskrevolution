@@ -276,7 +276,6 @@ impl ResourceRepository for FileResourceRepository {
             // Save as project-specific resource
             self.get_project_resource_path(company_code, proj_code, resource.name())
         } else {
-
             // Save as company global resource - always use code for filename to ensure updates work correctly
             self.get_company_resource_path_by_code(company_code, resource.code())
         };
@@ -388,7 +387,7 @@ impl ResourceRepository for FileResourceRepository {
         } else {
             absolute_base.join(format!("companies/{}/resources/*.yaml", company_code))
         };
-        
+
         let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
@@ -421,7 +420,9 @@ impl ResourceRepository for FileResourceRepository {
         }
 
         // Search in project resources: companies/{company_code}/projects/*/resources/*.yaml
-        let project_pattern = self.base_path.join(format!("companies/{}/projects/*/resources/*.yaml", company_code));
+        let project_pattern = self
+            .base_path
+            .join(format!("companies/{}/projects/*/resources/*.yaml", company_code));
         let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
@@ -478,7 +479,7 @@ impl ResourceRepository for FileResourceRepository {
                 message: e.to_string(),
             })?;
             let file_path = entry.as_path();
-            
+
             // Extract company code from path: companies/{company}/resources/{file}
             let path_str = file_path.to_string_lossy();
             let company_code = if let Some(companies_idx) = path_str.find("companies/") {
@@ -525,7 +526,7 @@ impl ResourceRepository for FileResourceRepository {
                 message: e.to_string(),
             })?;
             let file_path = entry.as_path();
-            
+
             // Extract company and project codes from path: companies/{company}/projects/{project}/resources/{file}
             let path_str = file_path.to_string_lossy();
             let (company_code, project_code) = if let Some(companies_idx) = path_str.find("companies/") {

@@ -1,6 +1,6 @@
+use assert_cmd::Command;
 use assert_fs::TempDir;
 use predicates::prelude::*;
-use assert_cmd::Command;
 
 /// Test that update resource command updates existing file instead of creating duplicate
 #[test]
@@ -35,7 +35,7 @@ fn test_update_resource_updates_existing_file() -> Result<(), Box<dyn std::error
         .join("TECH-CORP")
         .join("resources")
         .join("dev-001.yaml");
-    
+
     assert!(resource_file.exists(), "Resource file should exist after creation");
 
     // Update the resource
@@ -56,35 +56,31 @@ fn test_update_resource_updates_existing_file() -> Result<(), Box<dyn std::error
         "Tech Lead Senior",
     ]);
 
-    cmd.assert().success().stdout(predicate::str::contains(
-        "Resource updated successfully!",
-    ));
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Resource updated successfully!"));
 
     // Verify only one file exists (no duplication)
-    let resources_dir = temp
-        .path()
-        .join("companies")
-        .join("TECH-CORP")
-        .join("resources");
-    
+    let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
+
     let files: Vec<_> = std::fs::read_dir(&resources_dir)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect();
-    
+
     assert_eq!(files.len(), 1, "Should have exactly one resource file, not duplicated");
 
     // Verify the file was updated with new content
     let content = std::fs::read_to_string(&resource_file)?;
     let yaml: serde_yaml::Value = serde_yaml::from_str(&content)?;
-    
+
     assert_eq!(
         yaml.get("metadata")
             .and_then(|m| m.get("name"))
             .and_then(|n| n.as_str()),
         Some("João Silva Santos")
     );
-    
+
     assert_eq!(
         yaml.get("metadata")
             .and_then(|m| m.get("email"))
@@ -123,9 +119,9 @@ fn test_update_resource_shows_error_when_not_found() -> Result<(), Box<dyn std::
         "New Name",
     ]);
 
-    cmd.assert().failure().stderr(predicate::str::contains(
-        "Failed to update resource",
-    ));
+    cmd.assert()
+        .failure()
+        .stderr(predicate::str::contains("Failed to update resource"));
 
     temp.close()?;
     Ok(())
