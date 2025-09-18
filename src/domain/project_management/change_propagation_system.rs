@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 
-use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType, LagType, TaskNode};
+use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType, LagType};
 use super::dependency_calculation_engine::{CalculationConfig, CalculationResult, DependencyCalculationEngine};
 use crate::application::errors::AppError;
 
@@ -300,6 +300,7 @@ impl ChangePropagationSystem {
     }
 
     /// Encontra todos os sucessores de uma tarefa recursivamente
+    #[allow(clippy::only_used_in_recursion)]
     fn find_successors(&self, task_id: &str, graph: &AdvancedDependencyGraph, visited: &mut HashSet<String>) {
         if visited.contains(task_id) {
             return;
@@ -374,7 +375,7 @@ impl ChangePropagationSystem {
     fn validate_no_conflicts(
         &self,
         results: &HashMap<String, CalculationResult>,
-        graph: &AdvancedDependencyGraph,
+        _graph: &AdvancedDependencyGraph,
     ) -> Result<(), AppError> {
         // Verificar se todas as dependências são satisfeitas
         for (task_id, result) in results {
@@ -386,13 +387,13 @@ impl ChangePropagationSystem {
             }
 
             // Verificar se as datas são consistentes
-            if let (Some(start), Some(end)) = (result.calculated_start_date, result.calculated_end_date) {
-                if start > end {
-                    return Err(AppError::ValidationError {
-                        field: "date_range".to_string(),
-                        message: format!("Invalid date range for task {}: {} > {}", task_id, start, end),
-                    });
-                }
+            if let (Some(start), Some(end)) = (result.calculated_start_date, result.calculated_end_date)
+                && start > end
+            {
+                return Err(AppError::ValidationError {
+                    field: "date_range".to_string(),
+                    message: format!("Invalid date range for task {}: {} > {}", task_id, start, end),
+                });
             }
         }
 
@@ -456,7 +457,7 @@ impl ChangePropagationSystem {
                 dep.predecessor_id.clone(),
                 dep.successor_id.clone(),
             )),
-            ChangeType::DependencyRemoved(predecessor, successor) => {
+            ChangeType::DependencyRemoved(_predecessor, _successor) => {
                 // Para reverter remoção, precisaríamos recriar a dependência
                 // Isso requer informações adicionais que não temos aqui
                 Err(AppError::ValidationError {
@@ -530,7 +531,7 @@ impl fmt::Display for PropagationResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::NaiveDate;
+    use crate::domain::project_management::TaskNode;
 
     fn create_test_graph() -> AdvancedDependencyGraph {
         let mut graph = AdvancedDependencyGraph::new();

@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use super::advanced_dependencies::{AdvancedDependency, DependencyType, LagType};
+use super::advanced_dependencies::AdvancedDependency;
 use super::dependency_calculation_engine::CalculationResult;
 use crate::application::errors::AppError;
 
@@ -318,7 +318,7 @@ impl CalculationCacheSystem {
         for dep in dependencies {
             self.dependency_map
                 .entry(dep.id.clone())
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(key.clone());
         }
 
@@ -561,6 +561,7 @@ impl fmt::Display for CacheStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::project_management::{DependencyType, LagType};
     use chrono::NaiveDate;
 
     fn create_test_dependency() -> AdvancedDependency {
@@ -603,7 +604,7 @@ mod tests {
 
         // Armazenar no cache
         cache
-            .put("task1", &[dependency.clone()], &config, result.clone())
+            .put("task1", std::slice::from_ref(&dependency), &config, result.clone())
             .unwrap();
 
         // Recuperar do cache
@@ -632,7 +633,9 @@ mod tests {
         let config = super::super::dependency_calculation_engine::CalculationConfig::default();
 
         // Armazenar no cache
-        cache.put("task1", &[dependency.clone()], &config, result).unwrap();
+        cache
+            .put("task1", std::slice::from_ref(&dependency), &config, result)
+            .unwrap();
 
         // Invalidar por dependência
         let invalidated = cache.invalidate_by_dependency(&dependency.id).unwrap();
@@ -670,7 +673,9 @@ mod tests {
         let config = super::super::dependency_calculation_engine::CalculationConfig::default();
 
         // Armazenar no cache
-        cache.put("task1", &[dependency.clone()], &config, result).unwrap();
+        cache
+            .put("task1", std::slice::from_ref(&dependency), &config, result)
+            .unwrap();
 
         // Recuperar do cache
         cache.get("task1", &[dependency], &config);
@@ -690,7 +695,9 @@ mod tests {
         let config = super::super::dependency_calculation_engine::CalculationConfig::default();
 
         // Armazenar no cache
-        cache.put("task1", &[dependency.clone()], &config, result).unwrap();
+        cache
+            .put("task1", std::slice::from_ref(&dependency), &config, result)
+            .unwrap();
 
         // Desabilitar cache
         let mut new_config = cache.get_config().clone();

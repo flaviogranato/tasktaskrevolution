@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 
-use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType, LagType, TaskNode};
+use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType, TaskNode};
 use crate::application::errors::AppError;
 
 // ============================================================================
@@ -145,10 +145,10 @@ impl DependencyCalculationEngine {
         order: usize,
     ) -> Result<Option<CalculationResult>, AppError> {
         // Verificar se já está no cache
-        if self.config.cache_enabled {
-            if let Some(cached) = self.cache.get(task_id) {
-                return Ok(Some(cached.clone()));
-            }
+        if self.config.cache_enabled
+            && let Some(cached) = self.cache.get(task_id)
+        {
+            return Ok(Some(cached.clone()));
         }
 
         let task = graph.nodes.get(task_id).ok_or_else(|| AppError::ValidationError {
@@ -372,13 +372,13 @@ impl DependencyCalculationEngine {
             // Encontrar menor data de início dos sucessores
             if let Some(deps) = graph.dependencies.get(task_id) {
                 for dep in deps {
-                    if let Some(successor_result) = results.get(&dep.successor_id) {
-                        if let Some(successor_start) = successor_result.calculated_start_date {
-                            min_successor_start = Some(match min_successor_start {
-                                Some(current) => std::cmp::min(current, successor_start),
-                                None => successor_start,
-                            });
-                        }
+                    if let Some(successor_result) = results.get(&dep.successor_id)
+                        && let Some(successor_start) = successor_result.calculated_start_date
+                    {
+                        min_successor_start = Some(match min_successor_start {
+                            Some(current) => std::cmp::min(current, successor_start),
+                            None => successor_start,
+                        });
                     }
                 }
             }
@@ -498,6 +498,7 @@ impl fmt::Display for CalculationResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::project_management::LagType;
     use chrono::NaiveDate;
 
     fn create_test_graph() -> AdvancedDependencyGraph {
