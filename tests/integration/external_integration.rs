@@ -18,8 +18,31 @@ fn test_json_export() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Criar dados de teste
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "resource",
+        "--name",
+        "Test Resource",
+        "--email",
+        "test@example.com",
+        "--company",
+        "TECH-CORP",
+    ]);
+    cmd.assert().success();
 
     // Simular exportação JSON (usando build como proxy)
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -28,8 +51,8 @@ fn test_json_export() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // Validar que os dados foram processados e exportados
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
     index_file.assert(predicate::path::exists());
 
     // Verificar se o HTML contém dados estruturados (simulando JSON)
@@ -46,6 +69,16 @@ fn test_csv_export() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Criar múltiplos recursos para testar exportação CSV
     for i in 1..=5 {
@@ -54,8 +87,10 @@ fn test_csv_export() -> Result<(), Box<dyn std::error::Error>> {
         cmd.args([
             "create",
             "resource",
+            "--name",
             &format!("CSV Resource {}", i),
-            "Developer",
+            "--email",
+            "test@example.com",
             "--company",
             "TECH-CORP",
         ]);
@@ -84,8 +119,31 @@ fn test_xml_export() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Criar dados de teste
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "resource",
+        "--name",
+        "Test Resource",
+        "--email",
+        "test@example.com",
+        "--company",
+        "TECH-CORP",
+    ]);
+    cmd.assert().success();
 
     // Simular exportação XML (usando build como proxy)
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -94,8 +152,8 @@ fn test_xml_export() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // Validar que os dados foram processados
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
     index_file.assert(predicate::path::exists());
 
     // Verificar estrutura XML-like no HTML
@@ -113,6 +171,16 @@ fn test_external_data_import() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Simular importação de dados externos criando dados via CLI
     let external_data = vec![
@@ -161,6 +229,16 @@ fn test_webhook_simulation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Simular webhook de criação de recurso
     let webhook_data = vec![
@@ -191,8 +269,14 @@ fn test_webhook_simulation() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Webhook Project",
+        "--description",
         "Project created via webhook",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
         "--company",
         "TECH-CORP",
     ]);
@@ -218,6 +302,16 @@ fn test_external_api_integration() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Simular integração com API externa criando dados
     let api_data = vec![
@@ -262,6 +356,16 @@ fn test_third_party_tools_integration() -> Result<(), Box<dyn std::error::Error>
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Simular integração com ferramentas de terceiros
     let third_party_data = vec![
@@ -293,8 +397,8 @@ fn test_third_party_tools_integration() -> Result<(), Box<dyn std::error::Error>
     cmd.assert().success();
 
     // Validar que os dados foram exportados
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
     index_file.assert(predicate::path::exists());
 
     temp.close()?;
@@ -307,6 +411,16 @@ fn test_data_synchronization() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Simular sincronização de dados
     let sync_data = vec![
@@ -357,8 +471,31 @@ fn test_backup_restore_integration() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Criar dados para backup
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "resource",
+        "--name",
+        "Backup Resource",
+        "--email",
+        "test@example.com",
+        "--company",
+        "TECH-CORP",
+    ]);
+    cmd.assert().success();
 
     // Simular backup executando build
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -367,8 +504,8 @@ fn test_backup_restore_integration() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // Validar que o backup foi criado
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
     index_file.assert(predicate::path::exists());
 
     // Simular restauração validando dados
@@ -387,6 +524,16 @@ fn test_monitoring_logging_integration() -> Result<(), Box<dyn std::error::Error
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Simular operações que geram logs
     let operations = vec![
@@ -422,6 +569,10 @@ fn test_monitoring_logging_integration() -> Result<(), Box<dyn std::error::Error
                         name,
                         "--description",
                         description,
+                        "--start-date",
+                        "2024-01-01",
+                        "--end-date",
+                        "2024-12-31",
                         "--company",
                         "TECH-CORP",
                     ]);

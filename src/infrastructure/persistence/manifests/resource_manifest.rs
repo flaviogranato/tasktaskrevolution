@@ -5,7 +5,7 @@ use uuid7::Uuid;
 
 use crate::domain::resource_management::{
     AnyResource,
-    resource::{Period, PeriodType, ProjectAssignment, Resource, TimeOffEntry},
+    resource::{Period, PeriodType, ProjectAssignment, Resource, TimeOffEntry, WipLimits},
     state::{Assigned, Available},
 };
 
@@ -299,6 +299,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     vacations,
                     time_off_balance,
                     time_off_history,
+                    wip_limits: Some(WipLimits::new(5, 3, 100)),
+                    task_assignments: Some(Vec::new()),
                     state: Assigned { project_assignments },
                 }))
             }
@@ -313,6 +315,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                 vacations,
                 time_off_balance,
                 time_off_history,
+                wip_limits: Some(WipLimits::new(5, 3, 100)),
+                task_assignments: Some(Vec::new()),
                 state: crate::domain::resource_management::state::Inactive,
             })),
             _ => {
@@ -328,6 +332,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     vacations,
                     time_off_balance,
                     time_off_history,
+                    wip_limits: Some(WipLimits::new(5, 3, 100)),
+                    task_assignments: Some(Vec::new()),
                     state: Available,
                 }))
             }

@@ -91,10 +91,17 @@ impl ContextManager {
 
     /// Get base path for file operations based on context
     pub fn get_base_path(&self) -> String {
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
         match self.context {
-            ExecutionContext::Root => ".".to_string(),
-            ExecutionContext::Company(_) => "../".to_string(),
-            ExecutionContext::Project(_, _) => ".".to_string(), // In project context, we're already in the project directory
+            ExecutionContext::Root => current_dir.to_string_lossy().to_string(),
+            ExecutionContext::Company(_) => {
+                // Go up one level from company directory to root
+                current_dir.parent()
+                    .unwrap_or(&current_dir)
+                    .to_string_lossy()
+                    .to_string()
+            },
+            ExecutionContext::Project(_, _) => current_dir.to_string_lossy().to_string(), // In project context, we're already in the project directory
         }
     }
 

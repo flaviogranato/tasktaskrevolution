@@ -22,6 +22,16 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     let start_time = Instant::now();
 
@@ -32,9 +42,11 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
         cmd.args([
             "create",
             "resource",
+            "--name",
             &format!("Resource {}", i),
-            "Developer",
-            "--company-code",
+            "--email",
+            "test@example.com",
+            "--company",
             "TECH-CORP",
         ]);
         cmd.assert().success();
@@ -47,9 +59,15 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
         cmd.args([
             "create",
             "project",
+            "--name",
             &format!("Project {}", i),
+            "--description",
             &format!("Description for project {}", i),
-            "--company-code",
+            "--start-date",
+            "2024-01-01",
+            "--end-date",
+            "2024-12-31",
+            "--company",
             "TECH-CORP",
         ]);
         cmd.assert().success();
@@ -93,9 +111,9 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
             "2024-01-01",
             "--due-date",
             "2024-12-31",
-            "--project-code",
+            "--project",
             &project_code,
-            "--company-code",
+            "--company",
             "TECH-CORP",
         ]);
         cmd.assert().success();
@@ -136,6 +154,33 @@ fn test_large_report_generation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial com dados grandes
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
+
+    // Criar alguns dados para o relatório
+    for i in 1..=10 {
+        let mut cmd = Command::cargo_bin("ttr")?;
+        cmd.current_dir(temp.path());
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            &format!("Report Resource {}", i),
+            "--email",
+            "test@example.com",
+            "--company",
+            "TECH-CORP",
+        ]);
+        cmd.assert().success();
+    }
 
     let start_time = Instant::now();
 
@@ -148,8 +193,8 @@ fn test_large_report_generation() -> Result<(), Box<dyn std::error::Error>> {
     let elapsed = start_time.elapsed();
 
     // Validar que o relatório foi gerado
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
     index_file.assert(predicate::path::exists());
 
     // Validar performance (deve completar em menos de 10 segundos)
@@ -262,6 +307,33 @@ fn test_large_listing_performance() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial com dados grandes
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
+
+    // Criar alguns dados para listagem
+    for i in 1..=50 {
+        let mut cmd = Command::cargo_bin("ttr")?;
+        cmd.current_dir(temp.path());
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            &format!("List Resource {}", i),
+            "--email",
+            "test@example.com",
+            "--company",
+            "TECH-CORP",
+        ]);
+        cmd.assert().success();
+    }
 
     let start_time = Instant::now();
 
@@ -350,6 +422,16 @@ fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Criar dados para testar uso de memória
     for i in 1..=1000 {
@@ -358,9 +440,11 @@ fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
         cmd.args([
             "create",
             "resource",
+            "--name",
             &format!("Memory Test Resource {}", i),
-            "Developer",
-            "--company-code",
+            "--email",
+            "test@example.com",
+            "--company",
             "TECH-CORP",
         ]);
         cmd.assert().success();
@@ -383,8 +467,8 @@ fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
 
     // Validar que o relatório foi gerado
-    let public_dir = temp.child("public");
-    let index_file = public_dir.child("index.html");
+    let dist_dir = temp.child("dist");
+    let index_file = dist_dir.child("index.html");
     index_file.assert(predicate::path::exists());
 
     println!("Memory usage validation completed successfully");
@@ -399,6 +483,16 @@ fn test_resource_cleanup_validation() -> Result<(), Box<dyn std::error::Error>> 
     let temp = assert_fs::TempDir::new()?;
 
     // Setup inicial
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["init", "--name", "Test Manager", "--email", "test@example.com"]);
+    cmd.assert().success();
+
+    // Criar empresa
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.assert().success();
 
     // Criar dados temporários
     for i in 1..=100 {
@@ -407,9 +501,11 @@ fn test_resource_cleanup_validation() -> Result<(), Box<dyn std::error::Error>> 
         cmd.args([
             "create",
             "resource",
+            "--name",
             &format!("Temp Resource {}", i),
-            "Developer",
-            "--company-code",
+            "--email",
+            "test@example.com",
+            "--company",
             "TECH-CORP",
         ]);
         cmd.assert().success();
@@ -479,9 +575,11 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "resource",
+        "--name",
         "Benchmark Resource",
-        "Developer",
-        "--company-code",
+        "--email",
+        "test@example.com",
+        "--company",
         "BENCH-CORP",
     ]);
     cmd.assert().success();
@@ -494,9 +592,15 @@ fn test_command_benchmarks() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args([
         "create",
         "project",
+        "--name",
         "Benchmark Project",
+        "--description",
         "Benchmark project description",
-        "--company-code",
+        "--start-date",
+        "2024-01-01",
+        "--end-date",
+        "2024-12-31",
+        "--company",
         "BENCH-CORP",
     ]);
     cmd.assert().success();

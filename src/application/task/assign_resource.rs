@@ -1,8 +1,13 @@
 #![allow(dead_code)]
 
 use crate::application::errors::AppError;
-use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
+use crate::domain::resource_management::{
+    any_resource::AnyResource, 
+    repository::ResourceRepository,
+    resource::{TaskAssignment, TaskAssignmentStatus},
+};
 use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
+use chrono::Local;
 use std::fmt;
 
 #[derive(Debug)]
@@ -11,6 +16,8 @@ pub enum AssignResourceToAppError {
     TaskNotFound(String),
     ResourceNotFound(String),
     ResourceAlreadyAssigned(String, String),
+    WipLimitsExceeded(String),
+    WipLimitsValidationFailed(String),
     AppError(String),
     RepositoryError(AppError),
 }
@@ -24,6 +31,8 @@ impl fmt::Display for AssignResourceToAppError {
             AssignResourceToAppError::ResourceAlreadyAssigned(resource, task) => {
                 write!(f, "Resource '{}' is already assigned to task '{}'.", resource, task)
             }
+            AssignResourceToAppError::WipLimitsExceeded(message) => write!(f, "WIP limits exceeded: {}", message),
+            AssignResourceToAppError::WipLimitsValidationFailed(message) => write!(f, "WIP limits validation failed: {}", message),
             AssignResourceToAppError::AppError(message) => write!(f, "Domain error: {}", message),
             AssignResourceToAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
@@ -64,6 +73,7 @@ where
         task_code: &str,
         resource_code: &str,
         project_code: &str,
+        allocation_percentage: Option<u8>,
     ) -> Result<AnyTask, AssignResourceToAppError> {
         // 1. Find the task
         let task = self
@@ -85,19 +95,32 @@ where
             ));
         }
 
-        // 4. Assign the resource to the task
+        // 4. Validate WIP limits
+        self.validate_wip_limits(&resource, allocation_percentage.unwrap_or(100))?;
+
+        // 5. Create task assignment
+        let task_assignment = TaskAssignment {
+            task_id: task_code.to_string(),
+            project_id: project_code.to_string(),
+            start_date: Local::now(),
+            end_date: Local::now() + chrono::Duration::days(30), // Default 30 days
+            allocation_percentage: allocation_percentage.unwrap_or(100),
+            status: TaskAssignmentStatus::Active,
+        };
+
+        // 6. Assign the resource to the task
         let updated_task = self.assign_resource_to_task(task, resource.clone())?;
 
-        // 5. Update resource with project assignment
-        let updated_resource = self.assign_resource_to_project(resource, project_code)?;
+        // 7. Update resource with project assignment and task assignment
+        let updated_resource = self.assign_resource_to_project_and_task(resource, project_code, task_assignment)?;
 
-        // 6. Save the updated task
+        // 8. Save the updated task
         let saved_task = self
             .task_repository
             .save(updated_task)
             .map_err(AssignResourceToAppError::RepositoryError)?;
 
-        // 7. Save the updated resource using save_in_hierarchy
+        // 9. Save the updated resource using save_in_hierarchy
         self.resource_repository
             .save_in_hierarchy(updated_resource, project_code, None)
             .map_err(AssignResourceToAppError::RepositoryError)?;
@@ -112,6 +135,60 @@ where
         true
     }
 
+    fn validate_wip_limits(&self, resource: &AnyResource, allocation_percentage: u8) -> Result<(), AssignResourceToAppError> {
+        match resource {
+            AnyResource::Available(res) => {
+                if let Some(ref wip_limits) = res.wip_limits
+                    && wip_limits.enabled {
+                        // Check if resource can be assigned to more tasks
+                        let current_active_tasks = res.get_active_task_count();
+                        if current_active_tasks >= wip_limits.max_concurrent_tasks {
+                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                                "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
+                                wip_limits.max_concurrent_tasks, current_active_tasks
+                            )));
+                        }
+
+                        // Check allocation percentage
+                        let current_allocation = res.get_current_allocation_percentage();
+                        if current_allocation + allocation_percentage as u32 > wip_limits.max_allocation_percentage as u32 {
+                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                                "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
+                                wip_limits.max_allocation_percentage, current_allocation, allocation_percentage
+                            )));
+                        }
+                    }
+                Ok(())
+            }
+            AnyResource::Assigned(res) => {
+                if let Some(ref wip_limits) = res.wip_limits
+                    && wip_limits.enabled {
+                        // Check if resource can be assigned to more tasks
+                        let current_active_tasks = res.get_active_task_count();
+                        if current_active_tasks >= wip_limits.max_concurrent_tasks {
+                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                                "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
+                                wip_limits.max_concurrent_tasks, current_active_tasks
+                            )));
+                        }
+
+                        // Check allocation percentage
+                        let current_allocation = res.get_current_allocation_percentage();
+                        if current_allocation + allocation_percentage as u32 > wip_limits.max_allocation_percentage as u32 {
+                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                                "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
+                                wip_limits.max_allocation_percentage, current_allocation, allocation_percentage
+                            )));
+                        }
+                    }
+                Ok(())
+            }
+            AnyResource::Inactive(_) => Err(AssignResourceToAppError::AppError(
+                "Cannot assign inactive resource to task".to_string(),
+            )),
+        }
+    }
+
     fn assign_resource_to_task(
         &self,
         task: AnyTask,
@@ -122,18 +199,18 @@ where
         Ok(task)
     }
 
-    fn assign_resource_to_project(
+    fn assign_resource_to_project_and_task(
         &self,
         resource: AnyResource,
         project_code: &str,
+        task_assignment: TaskAssignment,
     ) -> Result<AnyResource, AssignResourceToAppError> {
         use crate::domain::resource_management::resource::ProjectAssignment;
-        use chrono::Local;
 
         match resource {
             AnyResource::Available(resource) => {
                 // Create project assignment
-                let assignment = ProjectAssignment {
+                let project_assignment = ProjectAssignment {
                     project_id: project_code.to_string(),
                     start_date: Local::now(),
                     end_date: Local::now() + chrono::Duration::days(30), // Default 30 days
@@ -141,19 +218,29 @@ where
                 };
 
                 // Convert to Assigned state
-                let assigned_resource = resource.assign_to_project(assignment);
+                let mut assigned_resource = resource.assign_to_project(project_assignment);
+                
+                // Add task assignment
+                assigned_resource.assign_to_task(task_assignment)
+                    .map_err(AssignResourceToAppError::WipLimitsValidationFailed)?;
+                
                 Ok(AnyResource::Assigned(assigned_resource))
             }
             AnyResource::Assigned(mut resource) => {
                 // Add new project assignment to existing assignments
-                let assignment = ProjectAssignment {
+                let project_assignment = ProjectAssignment {
                     project_id: project_code.to_string(),
                     start_date: Local::now(),
                     end_date: Local::now() + chrono::Duration::days(30), // Default 30 days
                     allocation_percentage: 100,                          // Default 100% allocation
                 };
 
-                resource.state.project_assignments.push(assignment);
+                resource.state.project_assignments.push(project_assignment);
+                
+                // Add task assignment
+                resource.assign_to_task(task_assignment)
+                    .map_err(AssignResourceToAppError::WipLimitsValidationFailed)?;
+                
                 Ok(AnyResource::Assigned(resource))
             }
             AnyResource::Inactive(_) => Err(AssignResourceToAppError::AppError(
@@ -324,7 +411,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("TASK-001", "RES-001", "PROJ-001");
+        let result = use_case.execute("TASK-001", "RES-001", "PROJ-001", None);
 
         // Assert
         assert!(result.is_ok());
@@ -347,7 +434,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("NONEXISTENT-TASK", "RES-001", "PROJ-001");
+        let result = use_case.execute("NONEXISTENT-TASK", "RES-001", "PROJ-001", None);
 
         // Assert
         assert!(matches!(result, Err(AssignResourceToAppError::TaskNotFound(_))));
@@ -368,7 +455,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("TASK-001", "NONEXISTENT-RESOURCE", "PROJ-001");
+        let result = use_case.execute("TASK-001", "NONEXISTENT-RESOURCE", "PROJ-001", None);
 
         // Assert
         assert!(matches!(result, Err(AssignResourceToAppError::ResourceNotFound(_))));
@@ -516,7 +603,7 @@ mod tests {
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
 
         // Act
-        let result = use_case.execute("TASK-001", "RES-001", "PROJ-001");
+        let result = use_case.execute("TASK-001", "RES-001", "PROJ-001", None);
 
         // Assert
         assert!(result.is_err());

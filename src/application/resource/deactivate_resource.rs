@@ -1,7 +1,11 @@
-#![allow(dead_code)]
+#![allow(dead_code, unused_imports)]
 
 use crate::application::errors::AppError;
-use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
+use crate::domain::resource_management::{
+    any_resource::AnyResource, 
+    repository::ResourceRepository,
+    resource::WipLimits,
+};
 use std::fmt;
 
 #[derive(Debug)]
@@ -149,6 +153,8 @@ mod tests {
             vacations: None,
             time_off_balance: 0,
             time_off_history: None,
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         }
         .into()

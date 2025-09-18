@@ -59,6 +59,89 @@ pub struct ProjectAssignment {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct WipLimits {
+    pub max_concurrent_tasks: u32,
+    pub max_concurrent_projects: u32,
+    pub max_allocation_percentage: u8,
+    pub enabled: bool,
+}
+
+impl WipLimits {
+    pub fn new(max_concurrent_tasks: u32, max_concurrent_projects: u32, max_allocation_percentage: u8) -> Self {
+        Self {
+            max_concurrent_tasks,
+            max_concurrent_projects,
+            max_allocation_percentage,
+            enabled: true,
+        }
+    }
+
+    pub fn disabled() -> Self {
+        Self {
+            max_concurrent_tasks: u32::MAX,
+            max_concurrent_projects: u32::MAX,
+            max_allocation_percentage: 100,
+            enabled: false,
+        }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.max_concurrent_tasks > 0
+            && self.max_concurrent_projects > 0
+            && self.max_allocation_percentage > 0
+            && self.max_allocation_percentage <= 100
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TaskAssignment {
+    pub task_id: String,
+    pub project_id: String,
+    pub start_date: DateTime<Local>,
+    pub end_date: DateTime<Local>,
+    pub allocation_percentage: u8,
+    pub status: TaskAssignmentStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum TaskAssignmentStatus {
+    Active,
+    Blocked,
+    Completed,
+    Cancelled,
+}
+
+impl fmt::Display for TaskAssignmentStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TaskAssignmentStatus::Active => write!(f, "Active"),
+            TaskAssignmentStatus::Blocked => write!(f, "Blocked"),
+            TaskAssignmentStatus::Completed => write!(f, "Completed"),
+            TaskAssignmentStatus::Cancelled => write!(f, "Cancelled"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum WipStatus {
+    WithinLimits,
+    NearLimit,
+    Exceeded,
+    Disabled,
+}
+
+impl fmt::Display for WipStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WipStatus::WithinLimits => write!(f, "Within Limits"),
+            WipStatus::NearLimit => write!(f, "Near Limit"),
+            WipStatus::Exceeded => write!(f, "Exceeded"),
+            WipStatus::Disabled => write!(f, "Disabled"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Resource<S: ResourceState> {
     pub id: Uuid,
     pub code: String,
@@ -70,6 +153,8 @@ pub struct Resource<S: ResourceState> {
     pub vacations: Option<Vec<Period>>,
     pub time_off_balance: u32,
     pub time_off_history: Option<Vec<TimeOffEntry>>,
+    pub wip_limits: Option<WipLimits>,
+    pub task_assignments: Option<Vec<TaskAssignment>>,
     pub state: S,
 }
 
@@ -96,6 +181,8 @@ impl Resource<Available> {
             vacations,
             time_off_balance,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)), // Default WIP limits
+            task_assignments: Some(Vec::new()),
             state: Available,
         }
     }
@@ -113,6 +200,8 @@ impl Resource<Available> {
             vacations: self.vacations,
             time_off_balance: self.time_off_balance,
             time_off_history: self.time_off_history,
+            wip_limits: self.wip_limits,
+            task_assignments: self.task_assignments,
             state: Assigned {
                 project_assignments: vec![assignment],
             },
@@ -132,6 +221,8 @@ impl Resource<Available> {
             vacations: self.vacations,
             time_off_balance: self.time_off_balance,
             time_off_history: self.time_off_history,
+            wip_limits: self.wip_limits,
+            task_assignments: self.task_assignments,
             state: Inactive,
         }
     }
@@ -157,6 +248,8 @@ impl Resource<Assigned> {
             vacations: self.vacations,
             time_off_balance: self.time_off_balance,
             time_off_history: self.time_off_history,
+            wip_limits: self.wip_limits,
+            task_assignments: self.task_assignments,
             state: Inactive,
         }
     }
@@ -253,7 +346,134 @@ impl<S: ResourceState> Resource<S> {
             errors.push("Resource email format is invalid".to_string());
         }
 
+        if let Some(ref wip_limits) = self.wip_limits
+            && !wip_limits.is_valid() {
+            errors.push("WIP limits configuration is invalid".to_string());
+        }
+
         Ok(errors)
+    }
+
+    // WIP Limits management
+    pub fn set_wip_limits(&mut self, limits: WipLimits) -> Result<(), String> {
+        if !limits.is_valid() {
+            return Err("Invalid WIP limits configuration".to_string());
+        }
+        self.wip_limits = Some(limits);
+        Ok(())
+    }
+
+    pub fn get_wip_limits(&self) -> Option<&WipLimits> {
+        self.wip_limits.as_ref()
+    }
+
+    pub fn disable_wip_limits(&mut self) {
+        self.wip_limits = Some(WipLimits::disabled());
+    }
+
+    // Task assignment management
+    pub fn assign_to_task(&mut self, task_assignment: TaskAssignment) -> Result<(), String> {
+        if let Some(ref limits) = self.wip_limits
+            && limits.enabled {
+                // Check if resource can be assigned to more tasks
+                let current_active_tasks = self.get_active_task_count();
+                if current_active_tasks >= limits.max_concurrent_tasks {
+                    return Err(format!(
+                        "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
+                        limits.max_concurrent_tasks, current_active_tasks
+                    ));
+                }
+
+                // Check allocation percentage
+                let current_allocation = self.get_current_allocation_percentage();
+                if current_allocation + task_assignment.allocation_percentage as u32 > limits.max_allocation_percentage as u32 {
+                    return Err(format!(
+                        "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
+                        limits.max_allocation_percentage, current_allocation, task_assignment.allocation_percentage
+                    ));
+                }
+            }
+
+        if let Some(ref mut assignments) = self.task_assignments {
+            assignments.push(task_assignment);
+        } else {
+            self.task_assignments = Some(vec![task_assignment]);
+        }
+
+        Ok(())
+    }
+
+    pub fn remove_task_assignment(&mut self, task_id: &str) -> bool {
+        if let Some(ref mut assignments) = self.task_assignments
+            && let Some(pos) = assignments.iter().position(|a| a.task_id == task_id) {
+            assignments.remove(pos);
+            return true;
+        }
+        false
+    }
+
+    pub fn get_active_task_count(&self) -> u32 {
+        if let Some(ref assignments) = self.task_assignments {
+            assignments.iter()
+                .filter(|a| a.status == TaskAssignmentStatus::Active)
+                .count() as u32
+        } else {
+            0
+        }
+    }
+
+    pub fn get_current_allocation_percentage(&self) -> u32 {
+        if let Some(ref assignments) = self.task_assignments {
+            assignments.iter()
+                .filter(|a| a.status == TaskAssignmentStatus::Active)
+                .map(|a| a.allocation_percentage as u32)
+                .sum()
+        } else {
+            0
+        }
+    }
+
+    pub fn get_task_assignments(&self) -> Option<&[TaskAssignment]> {
+        self.task_assignments.as_deref()
+    }
+
+    pub fn is_wip_limits_exceeded(&self) -> bool {
+        if let Some(ref limits) = self.wip_limits {
+            if !limits.enabled {
+                return false;
+            }
+
+            let active_tasks = self.get_active_task_count();
+            let current_allocation = self.get_current_allocation_percentage();
+
+            active_tasks > limits.max_concurrent_tasks || 
+            current_allocation > limits.max_allocation_percentage as u32
+        } else {
+            false
+        }
+    }
+
+    pub fn get_wip_status(&self) -> WipStatus {
+        if let Some(ref limits) = self.wip_limits {
+            if !limits.enabled {
+                return WipStatus::Disabled;
+            }
+
+            let active_tasks = self.get_active_task_count();
+            let current_allocation = self.get_current_allocation_percentage();
+
+            if active_tasks >= limits.max_concurrent_tasks || 
+               current_allocation >= limits.max_allocation_percentage as u32 {
+                WipStatus::Exceeded
+            } else if active_tasks >= limits.max_concurrent_tasks * 3 / 4 || 
+                      current_allocation >= (limits.max_allocation_percentage as u32 * 3 / 4) {
+                WipStatus::NearLimit
+            } else {
+                WipStatus::WithinLimits
+            }
+        } else {
+            WipStatus::Disabled
+        }
     }
 }
 
@@ -278,6 +498,8 @@ impl Transition for Resource<Available> {
             vacations: self.vacations,
             time_off_balance: self.time_off_balance,
             time_off_history: self.time_off_history,
+            wip_limits: self.wip_limits,
+            task_assignments: self.task_assignments,
             state: Inactive,
         }
     }
@@ -298,6 +520,8 @@ impl Transition for Resource<Inactive> {
             vacations: self.vacations,
             time_off_balance: self.time_off_balance,
             time_off_history: self.time_off_history,
+            wip_limits: self.wip_limits,
+            task_assignments: self.task_assignments,
             state: Available,
         }
     }
@@ -400,6 +624,8 @@ mod tests {
             vacations: None,
             time_off_balance: 40,
             time_off_history: None,
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
         let expected = format!(
@@ -457,6 +683,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -482,6 +710,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -499,6 +729,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -519,6 +751,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -536,6 +770,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -556,6 +792,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -573,6 +811,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -590,6 +830,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -609,6 +851,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -627,6 +871,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -652,6 +898,8 @@ mod tests {
             vacations: Some(Vec::new()),
             time_off_balance: 160,
             time_off_history: Some(Vec::new()),
+            wip_limits: Some(WipLimits::new(5, 3, 100)),
+            task_assignments: Some(Vec::new()),
             state: Available,
         };
 
@@ -661,5 +909,167 @@ mod tests {
 
         // Note: We don't have a direct transition from Inactive to Available
         // This would need to be implemented if needed
+    }
+
+    #[test]
+    fn test_wip_limits_creation() {
+        let limits = WipLimits::new(5, 3, 100);
+        assert_eq!(limits.max_concurrent_tasks, 5);
+        assert_eq!(limits.max_concurrent_projects, 3);
+        assert_eq!(limits.max_allocation_percentage, 100);
+        assert!(limits.enabled);
+        assert!(limits.is_valid());
+    }
+
+    #[test]
+    fn test_wip_limits_disabled() {
+        let limits = WipLimits::disabled();
+        assert_eq!(limits.max_concurrent_tasks, u32::MAX);
+        assert_eq!(limits.max_concurrent_projects, u32::MAX);
+        assert_eq!(limits.max_allocation_percentage, 100);
+        assert!(!limits.enabled);
+    }
+
+    #[test]
+    fn test_wip_limits_validation() {
+        let valid_limits = WipLimits::new(5, 3, 100);
+        assert!(valid_limits.is_valid());
+
+        let invalid_limits = WipLimits {
+            max_concurrent_tasks: 0,
+            max_concurrent_projects: 3,
+            max_allocation_percentage: 100,
+            enabled: true,
+        };
+        assert!(!invalid_limits.is_valid());
+    }
+
+    #[test]
+    fn test_task_assignment_status_display() {
+        assert_eq!(TaskAssignmentStatus::Active.to_string(), "Active");
+        assert_eq!(TaskAssignmentStatus::Blocked.to_string(), "Blocked");
+        assert_eq!(TaskAssignmentStatus::Completed.to_string(), "Completed");
+        assert_eq!(TaskAssignmentStatus::Cancelled.to_string(), "Cancelled");
+    }
+
+    #[test]
+    fn test_wip_status_display() {
+        assert_eq!(WipStatus::WithinLimits.to_string(), "Within Limits");
+        assert_eq!(WipStatus::NearLimit.to_string(), "Near Limit");
+        assert_eq!(WipStatus::Exceeded.to_string(), "Exceeded");
+        assert_eq!(WipStatus::Disabled.to_string(), "Disabled");
+    }
+
+    #[test]
+    fn test_resource_wip_limits_management() {
+        let mut resource = Resource::new(
+            "RES-001".to_string(),
+            "John Doe".to_string(),
+            Some("john@example.com".to_string()),
+            "Developer".to_string(),
+            None,
+            None,
+            None,
+            160,
+        );
+
+        // Test setting WIP limits
+        let limits = WipLimits::new(3, 2, 80);
+        assert!(resource.set_wip_limits(limits.clone()).is_ok());
+        assert_eq!(resource.get_wip_limits(), Some(&limits));
+
+        // Test disabling WIP limits
+        resource.disable_wip_limits();
+        assert!(!resource.get_wip_limits().unwrap().enabled);
+    }
+
+    #[test]
+    fn test_resource_task_assignment() {
+        let mut resource = Resource::new(
+            "RES-001".to_string(),
+            "John Doe".to_string(),
+            Some("john@example.com".to_string()),
+            "Developer".to_string(),
+            None,
+            None,
+            None,
+            160,
+        );
+
+        // Set WIP limits
+        let limits = WipLimits::new(2, 1, 100);
+        resource.set_wip_limits(limits).unwrap();
+
+        // Test successful task assignment
+        let task_assignment = TaskAssignment {
+            task_id: "TASK-001".to_string(),
+            project_id: "PROJ-001".to_string(),
+            start_date: dt(2025, 1, 1),
+            end_date: dt(2025, 1, 31),
+            allocation_percentage: 50,
+            status: TaskAssignmentStatus::Active,
+        };
+
+        assert!(resource.assign_to_task(task_assignment).is_ok());
+        assert_eq!(resource.get_active_task_count(), 1);
+        assert_eq!(resource.get_current_allocation_percentage(), 50);
+
+        // Test WIP limit exceeded
+        let task_assignment2 = TaskAssignment {
+            task_id: "TASK-002".to_string(),
+            project_id: "PROJ-001".to_string(),
+            start_date: dt(2025, 1, 1),
+            end_date: dt(2025, 1, 31),
+            allocation_percentage: 60,
+            status: TaskAssignmentStatus::Active,
+        };
+
+        assert!(resource.assign_to_task(task_assignment2).is_err());
+
+        // Test removing task assignment
+        assert!(resource.remove_task_assignment("TASK-001"));
+        assert_eq!(resource.get_active_task_count(), 0);
+        assert_eq!(resource.get_current_allocation_percentage(), 0);
+    }
+
+    #[test]
+    fn test_resource_wip_status() {
+        let mut resource = Resource::new(
+            "RES-001".to_string(),
+            "John Doe".to_string(),
+            Some("john@example.com".to_string()),
+            "Developer".to_string(),
+            None,
+            None,
+            None,
+            160,
+        );
+
+        // Test disabled WIP limits
+        resource.disable_wip_limits();
+        assert_eq!(resource.get_wip_status(), WipStatus::Disabled);
+
+        // Test within limits
+        let limits = WipLimits::new(5, 3, 100);
+        resource.set_wip_limits(limits).unwrap();
+        assert_eq!(resource.get_wip_status(), WipStatus::WithinLimits);
+
+        // Test near limit
+        let limits = WipLimits::new(4, 3, 100);
+        resource.set_wip_limits(limits).unwrap();
+        
+        // Add 3 tasks (75% of limit)
+        for i in 0..3 {
+            let task_assignment = TaskAssignment {
+                task_id: format!("TASK-{:03}", i),
+                project_id: "PROJ-001".to_string(),
+                start_date: dt(2025, 1, 1),
+                end_date: dt(2025, 1, 31),
+                allocation_percentage: 25,
+                status: TaskAssignmentStatus::Active,
+            };
+            resource.assign_to_task(task_assignment).unwrap();
+        }
+        assert_eq!(resource.get_wip_status(), WipStatus::NearLimit);
     }
 }

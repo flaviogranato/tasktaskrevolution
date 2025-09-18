@@ -34,11 +34,58 @@ impl FileResourceRepository {
 
     /// Gets the path to a resource in a specific company's global resources
     fn get_company_resource_path(&self, company_code: &str, resource_name: &str) -> PathBuf {
-        self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("resources")
-            .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
+        // If base_path is relative (like "../"), resolve it to absolute path
+        let base_path = if self.base_path.is_relative() {
+            std::env::current_dir()
+                .unwrap_or_else(|_| self.base_path.clone())
+                .join(&self.base_path)
+                .canonicalize()
+                .unwrap_or_else(|_| self.base_path.clone())
+        } else {
+            self.base_path.clone()
+        };
+        
+        // If we're already in a companies directory, don't add "companies" again
+        if base_path.ends_with("companies") {
+            base_path
+                .join(company_code)
+                .join("resources")
+                .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
+        } else {
+            base_path
+                .join("companies")
+                .join(company_code)
+                .join("resources")
+                .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
+        }
+    }
+
+    /// Gets the path to a resource in a specific company's global resources using resource code
+    fn get_company_resource_path_by_code(&self, company_code: &str, resource_code: &str) -> PathBuf {
+        // If base_path is relative (like "../"), resolve it to absolute path
+        let base_path = if self.base_path.is_relative() {
+            std::env::current_dir()
+                .unwrap_or_else(|_| self.base_path.clone())
+                .join(&self.base_path)
+                .canonicalize()
+                .unwrap_or_else(|_| self.base_path.clone())
+        } else {
+            self.base_path.clone()
+        };
+        
+        // If we're already in a companies directory, don't add "companies" again
+        if base_path.ends_with("companies") {
+            base_path
+                .join(company_code)
+                .join("resources")
+                .join(format!("{}.yaml", resource_code))
+        } else {
+            base_path
+                .join("companies")
+                .join(company_code)
+                .join("resources")
+                .join(format!("{}.yaml", resource_code))
+        }
     }
 
     /// Gets the path to a resource in a specific project
@@ -229,8 +276,14 @@ impl ResourceRepository for FileResourceRepository {
             // Save as project-specific resource
             self.get_project_resource_path(company_code, proj_code, resource.name())
         } else {
-            // Save as company global resource
-            self.get_company_resource_path(company_code, resource.name())
+            // Save as company global resource using name for creation, code for updates
+            // This is a heuristic: if the resource has a code that doesn't match the name,
+            // it's likely an update operation
+            if resource.code() != resource.name().replace(' ', "_").to_lowercase() {
+                self.get_company_resource_path_by_code(company_code, resource.code())
+            } else {
+                self.get_company_resource_path(company_code, resource.name())
+            }
         };
 
         let resource_manifest = ResourceManifest::from(resource.clone());
@@ -331,15 +384,12 @@ impl ResourceRepository for FileResourceRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
-        println!("DEBUG: find_by_code called with code: {}", code);
-        println!("DEBUG: base_path: {:?}", self.base_path);
 
         // If we're in a project or company context, search in company resources first
         if self.base_path.ends_with("projects")
             || self.base_path.ends_with("companies")
             || self.base_path.to_string_lossy() == "../"
         {
-            println!("DEBUG: In project/company context, searching company resources");
             // We're in a project or company context, search in company resources
             let company_pattern = if self.base_path.ends_with("projects") {
                 // We're in projects/*/ directory, go up to companies/*/resources
@@ -360,10 +410,9 @@ impl ResourceRepository for FileResourceRepository {
                 self.base_path.join("*/resources/*.yaml")
             };
 
-            println!("DEBUG: Company pattern: {:?}", company_pattern);
 
             // Check if the resources directory exists
-            let resources_dir = if self.base_path.to_string_lossy() == "../" {
+            let _resources_dir = if self.base_path.to_string_lossy() == "../" {
                 // Get the current working directory and go up two levels to get to company directory
                 let current_dir = std::env::current_dir().unwrap_or_else(|_| self.base_path.clone());
                 let company_dir = current_dir.parent().unwrap().parent().unwrap();
@@ -371,27 +420,20 @@ impl ResourceRepository for FileResourceRepository {
             } else {
                 self.base_path.join("resources")
             };
-            println!("DEBUG: Resources directory: {:?}", resources_dir);
-            println!("DEBUG: Resources directory exists: {}", resources_dir.exists());
-            if resources_dir.exists() {
-                let entries: Result<Vec<_>, _> = std::fs::read_dir(&resources_dir).unwrap().collect();
-                println!("DEBUG: Resources directory contents: {:?}", entries.unwrap());
-            }
 
             let walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
                 field: "glob pattern".to_string(),
                 message: e.to_string(),
             })?;
 
-            let mut found_count = 0;
+            let mut _found_count = 0;
             for entry in walker {
                 let entry = entry.map_err(|e| AppError::ValidationError {
                     field: "glob entry".to_string(),
                     message: e.to_string(),
                 })?;
                 let file_path = entry.as_path();
-                println!("DEBUG: Found resource file: {:?}", file_path);
-                found_count += 1;
+                _found_count += 1;
 
                 let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
                     operation: "file read".to_string(),
@@ -410,27 +452,20 @@ impl ResourceRepository for FileResourceRepository {
                     details: format!("Error converting manifest: {}", e),
                 })?;
 
-                println!("DEBUG: Resource code: {}, looking for: {}", resource.code(), code);
                 if resource.code() == code {
-                    println!("DEBUG: Found matching resource!");
                     return Ok(Some(resource));
                 }
             }
-            println!("DEBUG: Searched {} company resource files, no match found", found_count);
         }
 
         // Since resources are saved by name, we need to search through all resources
         // to find one with the matching code
-        println!("DEBUG: Falling back to find_all()");
         let all_resources = self.find_all()?;
-        println!("DEBUG: Found {} total resources", all_resources.len());
         for resource in all_resources {
             if resource.code() == code {
-                println!("DEBUG: Found matching resource in find_all!");
                 return Ok(Some(resource));
             }
         }
-        println!("DEBUG: No resource found with code: {}", code);
         Ok(None)
     }
 

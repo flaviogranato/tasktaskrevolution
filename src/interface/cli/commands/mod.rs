@@ -11,6 +11,7 @@ pub mod template;
 pub mod unlink;
 pub mod update;
 pub mod validate;
+pub mod wip;
 
 pub use company::CompanyCommand;
 pub use create::CreateCommand;
@@ -25,3 +26,4 @@ pub use template::TemplateCommand;
 pub use unlink::UnlinkCommand;
 pub use update::UpdateCommand;
 pub use validate::ValidateCommand;
+pub use wip::WipCommand;
