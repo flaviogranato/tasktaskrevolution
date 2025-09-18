@@ -383,6 +383,84 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resources)
     }
 
+    fn find_by_company(&self, company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        let mut resources = Vec::new();
+
+        // Search in company resources: companies/{company_code}/resources/*.yaml
+        let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
+        let company_pattern = if absolute_base.ends_with("companies") {
+            absolute_base.join(format!("{}/resources/*.yaml", company_code))
+        } else {
+            absolute_base.join(format!("companies/{}/resources/*.yaml", company_code))
+        };
+        
+        let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+            field: "glob pattern".to_string(),
+            message: e.to_string(),
+        })?;
+
+        for entry in company_walker {
+            let entry = entry.map_err(|e| AppError::ValidationError {
+                field: "glob entry".to_string(),
+                message: e.to_string(),
+            })?;
+            let file_path = entry.as_path();
+            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+                operation: "file read".to_string(),
+                path: file_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
+
+            let resource_manifest: ResourceManifest =
+                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing resource: {}", e),
+                })?;
+
+            resources.push(
+                AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error converting manifest: {}", e),
+                })?,
+            );
+        }
+
+        // Search in project resources: companies/{company_code}/projects/*/resources/*.yaml
+        let project_pattern = self.base_path.join(format!("companies/{}/projects/*/resources/*.yaml", company_code));
+        let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+            field: "glob pattern".to_string(),
+            message: e.to_string(),
+        })?;
+
+        for entry in project_walker {
+            let entry = entry.map_err(|e| AppError::ValidationError {
+                field: "glob entry".to_string(),
+                message: e.to_string(),
+            })?;
+            let file_path = entry.as_path();
+            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+                operation: "file read".to_string(),
+                path: file_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
+
+            let resource_manifest: ResourceManifest =
+                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error deserializing resource: {}", e),
+                })?;
+
+            resources.push(
+                AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
+                    format: "YAML".to_string(),
+                    details: format!("Error converting manifest: {}", e),
+                })?,
+            );
+        }
+
+        Ok(resources)
+    }
+
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
         // If we're in a project or company context, search in company resources first
         if self.base_path.ends_with("projects")

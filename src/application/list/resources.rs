@@ -13,6 +13,10 @@ impl<R: ResourceRepository> ListResourcesUseCase<R> {
     pub fn execute(&self) -> Result<Vec<AnyResource>, AppError> {
         self.repository.find_all()
     }
+
+    pub fn execute_by_company(&self, company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        self.repository.find_by_company(company_code)
+    }
 }
 
 #[cfg(test)]
@@ -26,6 +30,9 @@ mod tests {
 
     impl ResourceRepository for MockResourceRepository {
         fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+            Ok(self.resources.clone())
+        }
+        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
             Ok(self.resources.clone())
         }
         fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {

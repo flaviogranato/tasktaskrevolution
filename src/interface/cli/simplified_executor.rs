@@ -544,7 +544,14 @@ impl SimplifiedExecutor {
                 let resource_repo = context_manager.create_resource_repository();
                 let use_case = ListResourcesUseCase::new(resource_repo);
 
-                match use_case.execute() {
+                // Use execute_by_company to filter resources by company, or execute() for all companies
+                let result = if company_code == "ALL" {
+                    use_case.execute()
+                } else {
+                    use_case.execute_by_company(&company_code)
+                };
+                
+                match result {
                     Ok(resources) => {
                         if resources.is_empty() {
                             println!("No resources found for company '{}'.", company_code);
