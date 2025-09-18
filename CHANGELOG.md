@@ -2,6 +2,150 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.7] - 2025-01-03
+
+### 🚀 Features
+
+- Implement soft delete for tasks (Issue #123) - Tasks are now cancelled instead of physically deleted
+- Add company and project context to global resource listings (Issue #119)
+- Add verbose/debug flag (-v, --verbose) to control debug output (Issue #120)
+- Implement comprehensive test coverage for all new features
+
+### 🐛 Bug Fixes
+
+- Fix delete task command not persisting status changes to file (Issue #123)
+- Fix update resource creating duplicate files instead of updating existing file (Issue #122)
+- Fix delete resource duplicating resource instead of updating status to Inactive (Issue #125)
+- Fix delete task showing success message even when operation fails (Issue #124)
+- Fix delete resource showing success message even when resource not found (Issue #126)
+- Fix all clippy warnings and improve code quality
+- Fix MockResourceRepository implementations to include find_all_with_context method
+- Fix collapsible_if warnings in test files
+
+### 🚜 Refactor
+
+- Refactor resource repository to use consistent file naming for updates
+- Improve error handling and user feedback across all commands
+- Standardize test setup and helper functions
+
+### 📊 Testing
+
+- Add comprehensive integration tests for all fixed issues
+- Implement test coverage for soft delete functionality
+- Add tests for verbose flag functionality
+- Add tests for global resource listing with context
+- All 748 tests now passing (666 unit + 82 integration)
+
+## [unreleased]
+
+### 🚀 Features
+
+- Implement functional tests using assert_cmd and best practices
+- Implement robust YAML validation for all generated files
+- Implement Phase 1 - Advanced Integration Tests
+- Implement Phase 2 - Performance and Stress Tests
+- Implement Phase 3 - Advanced Compatibility and External Integration Tests
+- Implement comprehensive project template system
+- Implementar Sistema de Dependências Avançado
+- Implement advanced dependency system and Gantt chart generation
+- Implement dependency injection infrastructure
+- Implement dependency injection infrastructure
+- Implementar CQRS para separação de responsabilidades
+- Implement thiserror for robust error handling
+- Reorganize CLI commands to use action-first syntax
+- Implement real create handlers for project, resource, and task
+- Implement context detection system for CLI commands
+- Refactor list commands for contextual execution
+- Refactor create commands for contextual execution
+- Refactor update/delete commands for contextual execution
+- Update integration tests for contextual execution
+- Standardize YAML manifest structs following Kubernetes/Backstage conventions
+- Add integration tests for update/delete commands contextual execution
+- Implement CLI architecture simplification (Issue #70)
+
+### 🐛 Bug Fixes
+
+- Correct all integration test assertions to match actual system behavior
+- Corrigir problemas nos testes de integração de templates
+- Corrigir todos os testes de integração para usar códigos dinâmicos
+- Corrigir todos os testes CLI e de compatibilidade para usar códigos dinâmicos
+- Corrigir todos os testes restantes para usar códigos dinâmicos
+- Resolve clippy warnings and improve code quality
+- Corrigir sistema de injeção de dependência e resolver todos os testes
+- Update integration tests for new CLI syntax
+- Update remaining integration tests for new CLI syntax
+- Implement actual InitManagerUseCase in init handler
+- Implement real CreateCompanyUseCase in create handler
+- Correct build command context detection and integration test
+- Corrigir todos os testes de integração
+- Correct CLI test syntax and resource type handling
+- Resolve clippy warnings and compilation errors
+- Resolve remaining clippy warnings
+- Correct CLI test syntax and improve test coverage
+- Complete CLI test corrections and template handler improvements
+- Restore essential test helper functions and fix all failing tests
+- Corrigir Issue #95 - Update de projeto não salva no arquivo
+- Corrigir Issues #95, #97 - Bugs de Persistência
+- Corrigir Issues #112, #111 - Report command e Validation output
+- Corrigir Issue #100 - Resource update not saving changes to file
+- Corrigir Issue #101 - Resource projectAssignments not updated when assigning tasks
+- Corrigir Issue #96 - Context validation error for project update in company context
+- Corrigir Issue #92 - Remove explicit null fields from task YAML files
+- Corrigir Issue #90 - Debug INFO messages always enabled
+- Corrigir Issue #93 - Allow listing tasks by company across all projects
+- Corrigir Issue #104 - Improve delete command messages and output formatting
+- Corrigir Issue #105 - Include project status in project listings
+- Corrigir Issue #106 - Include status in task listings
+- Corrigir Issue #107 - Include status in resource listings
+- Corrigir Issue #108 - Include company name in build output
+
+### 🚜 Refactor
+
+- Modularize CLI into smaller, focused modules
+- Improve code quality and fix remaining issues
+- Remove CQRS pattern
+- Simplify dependency injection container
+- Fix CLI command structure and resolve conflicts
+- Unify error handling system
+- Simplify handler architecture by removing unnecessary abstraction layers
+- Remove all test helper functions and auxiliary code
+
+### Enhance
+
+- Allow global listing of projects across all companies
+- Implement Kubernetes-style listing for all list commands
+- Integrate Gantt templates with build system
+- Optimize Gantt Chart performance for large datasets
+- Add advanced Gantt Chart features and filters
+
+### Fix
+
+- Corrigir assinaturas de métodos e campos faltantes nos testes
+- Remove tasks from project.yaml - keep only project information
+- Project start-date not being saved to file
+- Project timezone should inherit from config.yaml by default
+- Replace N/A with descriptive field names in resource listing
+- Company parameter not respected in list commands - shows global context
+- Resource email not being saved to file
+- Remove null fields from YAML output in company and resource files
+- Start-date and end-date should be optional for resource creation
+- Work-days parameter not saved in config.yaml during init
+- Issue #109 - Gantt chart integration with real project data
+- Resolve all clippy warnings and refactor CreateResourceUseCase
+- Resolve compatibility, data validation, and project update tests
+- Resolve all failing update tests
+- Resolve clippy warnings and format code
+- List resources command now properly filters by company
+
+### Style
+
+- Apply cargo fmt formatting
+
+### Test
+
+- Issue #99 - Comprehensive update command testing across all contexts
+- Add comprehensive unit tests for Gantt Chart functionality
+
 ## [0.5.6] - 2025-09-03
 
 ### 🔧 CI/CD Improvements
