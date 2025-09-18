@@ -1,6 +1,6 @@
+use assert_cmd::Command;
 use assert_fs::TempDir;
 use predicates::prelude::*;
-use assert_cmd::Command;
 
 /// Test that global list resources shows company and project codes
 #[test]
@@ -9,9 +9,31 @@ fn test_global_list_resources_shows_company_and_project_codes() -> Result<(), Bo
     setup_basic_environment(&temp)?;
 
     // Create resources in different companies and projects
-    create_company_resource(&temp, "TECH-001", "dev-001", "João Silva", "joao@techcorp.com", "Developer")?;
-    create_company_resource(&temp, "DESIGN-001", "designer-001", "Maria Santos", "maria@design.com", "Designer")?;
-    create_project_resource(&temp, "TECH-001", "PROJ-001", "qa-001", "Ana Costa", "ana@techcorp.com", "QA")?;
+    create_company_resource(
+        &temp,
+        "TECH-001",
+        "dev-001",
+        "João Silva",
+        "joao@techcorp.com",
+        "Developer",
+    )?;
+    create_company_resource(
+        &temp,
+        "DESIGN-001",
+        "designer-001",
+        "Maria Santos",
+        "maria@design.com",
+        "Designer",
+    )?;
+    create_project_resource(
+        &temp,
+        "TECH-001",
+        "PROJ-001",
+        "qa-001",
+        "Ana Costa",
+        "ana@techcorp.com",
+        "QA",
+    )?;
 
     // Test global listing (from root)
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -37,7 +59,14 @@ fn test_company_list_resources_does_not_show_company_and_project_codes() -> Resu
     setup_basic_environment(&temp)?;
 
     // Create resources in the company
-    create_company_resource(&temp, "TECH-001", "dev-001", "João Silva", "joao@techcorp.com", "Developer")?;
+    create_company_resource(
+        &temp,
+        "TECH-001",
+        "dev-001",
+        "João Silva",
+        "joao@techcorp.com",
+        "Developer",
+    )?;
 
     // Test company-level listing (from company directory)
     let company_dir = temp.path().join("companies").join("TECH-001");
@@ -95,7 +124,7 @@ fn create_company_resource(
     // Create company directory and file
     let company_dir = temp.path().join("companies").join(company_code);
     std::fs::create_dir_all(&company_dir)?;
-    
+
     let company_yaml = format!(
         r#"
 apiVersion: tasktaskrevolution.io/v1alpha1
@@ -120,7 +149,7 @@ spec:
     // Create resources directory and file
     let resources_dir = company_dir.join("resources");
     std::fs::create_dir_all(&resources_dir)?;
-    
+
     let resource_yaml = format!(
         r#"
 apiVersion: tasktaskrevolution.io/v1alpha1
@@ -153,7 +182,8 @@ fn create_project_resource(
     resource_type: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Create project directory structure
-    let project_dir = temp.path()
+    let project_dir = temp
+        .path()
         .join("companies")
         .join(company_code)
         .join("projects")
@@ -185,7 +215,7 @@ spec:
     // Create resources directory and file
     let resources_dir = project_dir.join("resources");
     std::fs::create_dir_all(&resources_dir)?;
-    
+
     let resource_yaml = format!(
         r#"
 apiVersion: tasktaskrevolution.io/v1alpha1

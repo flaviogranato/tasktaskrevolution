@@ -58,7 +58,11 @@ mod tests {
             Ok(self.resources.clone())
         }
         fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
-            Ok(self.resources.iter().map(|r| (r.clone(), "TEST-COMPANY".to_string(), vec![])).collect())
+            Ok(self
+                .resources
+                .iter()
+                .map(|r| (r.clone(), "TEST-COMPANY".to_string(), vec![]))
+                .collect())
         }
         fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)

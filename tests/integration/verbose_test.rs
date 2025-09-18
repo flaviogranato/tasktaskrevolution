@@ -1,6 +1,6 @@
+use assert_cmd::Command;
 use assert_fs::TempDir;
 use predicates::prelude::*;
-use assert_cmd::Command;
 
 /// Test that debug output is hidden by default
 #[test]
