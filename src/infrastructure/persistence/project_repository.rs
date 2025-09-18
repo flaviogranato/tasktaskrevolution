@@ -42,11 +42,20 @@ impl FileProjectRepository {
 
     /// Gets the path to a specific project directory
     fn get_project_path(&self, company_code: &str, project_code: &str) -> PathBuf {
-        self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("projects")
-            .join(project_code)
+        if self.base_path.ends_with("companies") {
+            // If base_path already includes "companies", don't add it again
+            self.base_path
+                .join(company_code)
+                .join("projects")
+                .join(project_code)
+        } else {
+            // If base_path doesn't include "companies", add it
+            self.base_path
+                .join("companies")
+                .join(company_code)
+                .join("projects")
+                .join(project_code)
+        }
     }
 
     /// Gets the path to the projects directory for a specific company
@@ -260,30 +269,17 @@ impl ProjectRepository for FileProjectRepository {
             }
         }
 
-        // Verifica também o diretório atual
-        let current_dir_manifest = self.base_path.join("project.yaml");
-        println!("DEBUG: Checking current directory manifest: {:?}", current_dir_manifest);
-        if current_dir_manifest.exists()
-            && !processed_paths.contains(&current_dir_manifest)
-            && let Ok(manifest) = self.load_manifest(&current_dir_manifest)
-            && let Ok(mut project) = AnyProject::try_from(manifest)
-            && self.load_tasks_for_project(&mut project, &current_dir_manifest).is_ok()
-        {
-            println!("DEBUG: Added project from current directory");
-            projects.push(project);
-        }
+        // Note: Removed current directory check as it was causing issues with project updates
+        // The current directory check was loading old project data and overwriting updated projects
 
         Ok(projects)
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
-        println!("DEBUG: find_by_code called with code: {}", code);
         // This is not the most performant implementation, but it is correct.
         // It avoids duplicating the task loading logic.
         let projects = self.find_all()?;
-        println!("DEBUG: Found {} projects", projects.len());
         for project in projects {
-            println!("DEBUG: Project code: {}", project.code());
             if project.code() == code {
                 return Ok(Some(project));
             }

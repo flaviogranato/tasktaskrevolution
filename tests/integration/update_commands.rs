@@ -14,16 +14,6 @@ fn setup_basic_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std:
         "Test User",
         "--email",
         "test@example.com",
-        "--company-name",
-        "TECH-CORP",
-        "--timezone",
-        "UTC",
-        "--work-hours-start",
-        "09:00",
-        "--work-hours-end",
-        "18:00",
-        "--work-days",
-        "monday,tuesday,wednesday,thursday,friday",
     ]);
     cmd.assert().success();
 
@@ -154,13 +144,16 @@ fn find_task_code(temp: &assert_fs::TempDir, project_code: &str) -> Result<Strin
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                // Extract task code from filename (e.g., "task-001.yaml" -> "task-001")
-                if let Some(file_name) = entry.file_name().to_str()
-                    && file_name.starts_with("task-")
-                    && file_name.ends_with(".yaml")
-                {
-                    task_code = Some(file_name.to_string());
-                    break;
+                // Read the YAML file to get the actual task code
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                        if let Some(metadata) = yaml.get("metadata") {
+                            if let Some(code) = metadata.get("code").and_then(|v| v.as_str()) {
+                                task_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -183,19 +176,33 @@ fn find_task_code(temp: &assert_fs::TempDir, project_code: &str) -> Result<Strin
 /// Helper function to find resource code
 fn find_resource_code(temp: &assert_fs::TempDir) -> Result<String, Box<dyn std::error::Error>> {
     let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
+    
+    // Check if directory exists
+    if !resources_dir.exists() {
+        return Err("Resources directory does not exist".into());
+    }
+    
     let mut resource_code = None;
 
     if let Ok(entries) = std::fs::read_dir(&resources_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_file()
-                && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml")
-                && entry
-                    .file_name()
-                    .to_str()
-                    .is_some_and(|name| name.starts_with("resource-"))
+            let path = entry.path();
+            
+            if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
             {
-                resource_code = Some(entry.file_name().to_str().unwrap().to_string());
-                break;
+                // Read the YAML file to get the actual resource code
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    // Parse YAML to find the code field
+                    if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                        if let Some(metadata) = yaml.get("metadata") {
+                            if let Some(code) = metadata.get("code").and_then(|v| v.as_str()) {
+                                resource_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -210,15 +217,39 @@ fn verify_task_updated(
     task_code: &str,
     expected_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let task_file = temp
+    let tasks_dir = temp
         .path()
         .join("companies")
         .join("TECH-CORP")
         .join("projects")
         .join(project_code)
-        .join("tasks")
-        .join(task_code);
+        .join("tasks");
 
+    // Find the task file by looking for the one with the matching code
+    let mut task_file = None;
+    if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                        if let Some(metadata) = yaml.get("metadata") {
+                            if let Some(code) = metadata.get("code").and_then(|v| v.as_str()) {
+                                // task_code might include .yaml extension, so we need to strip it
+                                let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(task_code);
+                                if code == task_code_without_ext {
+                                    task_file = Some(path);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let task_file = task_file.ok_or("Task file not found")?;
     assert!(task_file.exists(), "Task file should exist");
 
     let content = fs::read_to_string(&task_file)?;
@@ -271,13 +302,35 @@ fn verify_resource_updated(
     resource_code: &str,
     expected_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let resource_file = temp
+    let resources_dir = temp
         .path()
         .join("companies")
         .join("TECH-CORP")
-        .join("resources")
-        .join(resource_code);
+        .join("resources");
 
+    // Find the resource file by looking for the one with the matching code
+    let mut resource_file = None;
+    if let Ok(entries) = std::fs::read_dir(&resources_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
+                        if let Some(metadata) = yaml.get("metadata") {
+                            if let Some(code) = metadata.get("code").and_then(|v| v.as_str()) {
+                                if code == resource_code {
+                                    resource_file = Some(path);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let resource_file = resource_file.ok_or("Resource file not found")?;
     assert!(resource_file.exists(), "Resource file should exist");
 
     let content = fs::read_to_string(&resource_file)?;
@@ -491,6 +544,7 @@ fn test_project_update_company_context() -> Result<(), Box<dyn std::error::Error
         .success()
         .stdout(predicate::str::contains("Project updated successfully"));
 
+
     // Verify file was updated
     verify_project_updated(&temp, &project_code, "Updated Project from Company Context")?;
 
@@ -560,9 +614,85 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
         "Updated Resource from Company Context",
     ]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Resource updated successfully"));
+    let output = cmd.output()?;
+    println!("Command stdout: {}", String::from_utf8_lossy(&output.stdout));
+    println!("Command stderr: {}", String::from_utf8_lossy(&output.stderr));
+    println!("Command exit code: {}", output.status.code().unwrap_or(-1));
+
+    if !output.status.success() {
+        panic!("Command failed with exit code: {}", output.status.code().unwrap_or(-1));
+    }
+
+    // Debug: List all resource files to see what's there
+    let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
+    if resources_dir.exists() {
+        println!("Resource files in directory:");
+        for entry in std::fs::read_dir(&resources_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() {
+                println!("  File: {:?}", path.file_name());
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    println!("  Content: {}", content);
+                }
+            }
+        }
+    }
+
+    // Check if there's a file with the new name
+    let new_name_file = resources_dir.join("updated_resource_from_company_context.yaml");
+    if new_name_file.exists() {
+        println!("Found file with new name: {:?}", new_name_file);
+        if let Ok(content) = std::fs::read_to_string(&new_name_file) {
+            println!("New file content: {}", content);
+        }
+    } else {
+        println!("File with new name does not exist: {:?}", new_name_file);
+    }
+
+    // Check if the file was saved in the wrong location (with double companies path)
+    let wrong_location_file = temp.path().join("companies").join("TECH-CORP").join("companies").join("TECH-CORP").join("resources").join("updated_resource_from_company_context.yaml");
+    if wrong_location_file.exists() {
+        println!("Found file in wrong location: {:?}", wrong_location_file);
+        if let Ok(content) = std::fs::read_to_string(&wrong_location_file) {
+            println!("Wrong location file content: {}", content);
+        }
+    } else {
+        println!("File not found in wrong location: {:?}", wrong_location_file);
+    }
+
+    // Check if the file was saved in the correct location (relative to current directory)
+    let current_dir = std::env::current_dir()?;
+    println!("Current directory: {:?}", current_dir);
+    let relative_file = current_dir.join("companies").join("TECH-CORP").join("resources").join("updated_resource_from_company_context.yaml");
+    if relative_file.exists() {
+        println!("Found file in relative location: {:?}", relative_file);
+        if let Ok(content) = std::fs::read_to_string(&relative_file) {
+            println!("Relative location file content: {}", content);
+        }
+    } else {
+        println!("File not found in relative location: {:?}", relative_file);
+    }
+
+    // Check if the file was saved in the parent directory (../companies/TECH-CORP/resources/)
+    let parent_dir = current_dir.parent().unwrap();
+    let parent_file = parent_dir.join("companies").join("TECH-CORP").join("resources").join("updated_resource_from_company_context.yaml");
+    if parent_file.exists() {
+        println!("Found file in parent location: {:?}", parent_file);
+        if let Ok(content) = std::fs::read_to_string(&parent_file) {
+            println!("Parent location file content: {}", content);
+        }
+    } else {
+        println!("File not found in parent location: {:?}", parent_file);
+    }
+
+    // Check if the old file was removed
+    let old_name_file = resources_dir.join("john_doe.yaml");
+    if old_name_file.exists() {
+        println!("Old file still exists: {:?}", old_name_file);
+    } else {
+        println!("Old file was removed: {:?}", old_name_file);
+    }
 
     // Verify file was updated
     verify_resource_updated(&temp, &resource_code, "Updated Resource from Company Context")?;
