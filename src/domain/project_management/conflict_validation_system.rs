@@ -3,12 +3,12 @@
 //! Este módulo implementa um sistema robusto para validação de conflitos
 //! e detecção de dependências circulares em projetos.
 
-use chrono::{Duration, NaiveDate};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 
-use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType, LagType, TaskNode};
+use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType};
 use super::dependency_calculation_engine::CalculationResult;
 use crate::application::errors::AppError;
 
@@ -139,38 +139,38 @@ impl ConflictValidationSystem {
         let mut conflicts = Vec::new();
 
         // Validação de dependências circulares
-        if self.config.circular_dependency_check {
-            if let Some(circular_conflicts) = self.detect_circular_dependencies(graph) {
-                conflicts.extend(circular_conflicts);
-            }
+        if self.config.circular_dependency_check
+            && let Some(circular_conflicts) = self.detect_circular_dependencies(graph)
+        {
+            conflicts.extend(circular_conflicts);
         }
 
         // Validação de sobreposição de datas
-        if self.config.date_overlap_check {
-            if let Some(date_conflicts) = self.detect_date_overlaps(calculation_results) {
-                conflicts.extend(date_conflicts);
-            }
+        if self.config.date_overlap_check
+            && let Some(date_conflicts) = self.detect_date_overlaps(calculation_results)
+        {
+            conflicts.extend(date_conflicts);
         }
 
         // Validação de conflitos de recursos
-        if self.config.resource_conflict_check {
-            if let Some(resource_conflicts) = self.detect_resource_conflicts(graph, calculation_results) {
-                conflicts.extend(resource_conflicts);
-            }
+        if self.config.resource_conflict_check
+            && let Some(resource_conflicts) = self.detect_resource_conflicts(graph, calculation_results)
+        {
+            conflicts.extend(resource_conflicts);
         }
 
         // Validação de capacidade de recursos
-        if self.config.resource_capacity_check {
-            if let Some(capacity_conflicts) = self.detect_capacity_conflicts(graph, calculation_results) {
-                conflicts.extend(capacity_conflicts);
-            }
+        if self.config.resource_capacity_check
+            && let Some(capacity_conflicts) = self.detect_capacity_conflicts(graph, calculation_results)
+        {
+            conflicts.extend(capacity_conflicts);
         }
 
         // Validação de restrições de tempo
-        if self.config.time_constraint_check {
-            if let Some(time_conflicts) = self.detect_time_constraint_violations(graph, calculation_results) {
-                conflicts.extend(time_conflicts);
-            }
+        if self.config.time_constraint_check
+            && let Some(time_conflicts) = self.detect_time_constraint_violations(graph, calculation_results)
+        {
+            conflicts.extend(time_conflicts);
         }
 
         // Validação de dependências impossíveis
@@ -194,21 +194,21 @@ impl ConflictValidationSystem {
         let mut recursion_stack = HashSet::new();
 
         for task_id in graph.nodes.keys() {
-            if !visited.contains(task_id) {
-                if let Some(cycle) = self.detect_cycle_from_task(task_id, graph, &mut visited, &mut recursion_stack) {
-                    let conflict = ConflictReport {
-                        conflict_type: ConflictType::CircularDependency(cycle.clone()),
-                        severity: ConflictSeverity::Critical,
-                        message: format!("Circular dependency detected: {}", cycle.join(" -> ")),
-                        affected_tasks: cycle.clone(),
-                        suggested_fixes: vec![
-                            "Remove one of the dependencies in the cycle".to_string(),
-                            "Restructure the task dependencies".to_string(),
-                        ],
-                        detected_at: chrono::Utc::now(),
-                    };
-                    conflicts.push(conflict);
-                }
+            if !visited.contains(task_id)
+                && let Some(cycle) = self.detect_cycle_from_task(task_id, graph, &mut visited, &mut recursion_stack)
+            {
+                let conflict = ConflictReport {
+                    conflict_type: ConflictType::CircularDependency(cycle.clone()),
+                    severity: ConflictSeverity::Critical,
+                    message: format!("Circular dependency detected: {}", cycle.join(" -> ")),
+                    affected_tasks: cycle.clone(),
+                    suggested_fixes: vec![
+                        "Remove one of the dependencies in the cycle".to_string(),
+                        "Restructure the task dependencies".to_string(),
+                    ],
+                    detected_at: chrono::Utc::now(),
+                };
+                conflicts.push(conflict);
             }
         }
 
@@ -216,6 +216,7 @@ impl ConflictValidationSystem {
     }
 
     /// Detecta ciclo a partir de uma tarefa específica
+    #[allow(clippy::only_used_in_recursion)]
     fn detect_cycle_from_task(
         &self,
         task_id: &str,
@@ -310,8 +311,8 @@ impl ConflictValidationSystem {
     /// Detecta conflitos de recursos
     fn detect_resource_conflicts(
         &self,
-        graph: &AdvancedDependencyGraph,
-        calculation_results: &HashMap<String, CalculationResult>,
+        _graph: &AdvancedDependencyGraph,
+        _calculation_results: &HashMap<String, CalculationResult>,
     ) -> Option<Vec<ConflictReport>> {
         // Esta implementação seria específica para o sistema de recursos
         // Por enquanto, retorna None pois não temos informações de recursos no grafo
@@ -321,8 +322,8 @@ impl ConflictValidationSystem {
     /// Detecta conflitos de capacidade de recursos
     fn detect_capacity_conflicts(
         &self,
-        graph: &AdvancedDependencyGraph,
-        calculation_results: &HashMap<String, CalculationResult>,
+        _graph: &AdvancedDependencyGraph,
+        _calculation_results: &HashMap<String, CalculationResult>,
     ) -> Option<Vec<ConflictReport>> {
         // Esta implementação seria específica para o sistema de recursos
         // Por enquanto, retorna None pois não temos informações de recursos no grafo
@@ -332,7 +333,7 @@ impl ConflictValidationSystem {
     /// Detecta violações de restrições de tempo
     fn detect_time_constraint_violations(
         &self,
-        graph: &AdvancedDependencyGraph,
+        _graph: &AdvancedDependencyGraph,
         calculation_results: &HashMap<String, CalculationResult>,
     ) -> Option<Vec<ConflictReport>> {
         let mut conflicts = Vec::new();
@@ -370,73 +371,70 @@ impl ConflictValidationSystem {
     ) -> Option<Vec<ConflictReport>> {
         let mut conflicts = Vec::new();
 
-        for (task_id, deps) in &graph.dependencies {
+        for deps in graph.dependencies.values() {
             for dep in deps {
                 if let (Some(pred_result), Some(succ_result)) = (
                     calculation_results.get(&dep.predecessor_id),
                     calculation_results.get(&dep.successor_id),
-                ) {
-                    if let (Some(pred_end), Some(succ_start)) =
-                        (pred_result.calculated_end_date, succ_result.calculated_start_date)
-                    {
-                        match dep.dependency_type {
-                            DependencyType::FinishToStart => {
-                                if pred_end > succ_start {
-                                    let conflict = ConflictReport {
-                                        conflict_type: ConflictType::ImpossibleDependency(
-                                            dep.predecessor_id.clone(),
-                                            dep.successor_id.clone(),
-                                            pred_end,
-                                            succ_start,
-                                        ),
-                                        severity: ConflictSeverity::Critical,
-                                        message: format!(
-                                            "Impossible dependency: {} finishes after {} starts ({} > {})",
-                                            dep.predecessor_id, dep.successor_id, pred_end, succ_start
-                                        ),
-                                        affected_tasks: vec![dep.predecessor_id.clone(), dep.successor_id.clone()],
-                                        suggested_fixes: vec![
-                                            "Adjust task dates".to_string(),
-                                            "Change dependency type".to_string(),
-                                            "Add lag to dependency".to_string(),
-                                        ],
-                                        detected_at: chrono::Utc::now(),
-                                    };
-                                    conflicts.push(conflict);
-                                }
+                ) && let (Some(pred_end), Some(succ_start)) =
+                    (pred_result.calculated_end_date, succ_result.calculated_start_date)
+                {
+                    match dep.dependency_type {
+                        DependencyType::FinishToStart => {
+                            if pred_end > succ_start {
+                                let conflict = ConflictReport {
+                                    conflict_type: ConflictType::ImpossibleDependency(
+                                        dep.predecessor_id.clone(),
+                                        dep.successor_id.clone(),
+                                        pred_end,
+                                        succ_start,
+                                    ),
+                                    severity: ConflictSeverity::Critical,
+                                    message: format!(
+                                        "Impossible dependency: {} finishes after {} starts ({} > {})",
+                                        dep.predecessor_id, dep.successor_id, pred_end, succ_start
+                                    ),
+                                    affected_tasks: vec![dep.predecessor_id.clone(), dep.successor_id.clone()],
+                                    suggested_fixes: vec![
+                                        "Adjust task dates".to_string(),
+                                        "Change dependency type".to_string(),
+                                        "Add lag to dependency".to_string(),
+                                    ],
+                                    detected_at: chrono::Utc::now(),
+                                };
+                                conflicts.push(conflict);
                             }
-                            DependencyType::StartToStart => {
-                                if let (Some(pred_start), Some(succ_start)) =
-                                    (pred_result.calculated_start_date, succ_result.calculated_start_date)
-                                {
-                                    if pred_start > succ_start {
-                                        let conflict = ConflictReport {
-                                            conflict_type: ConflictType::ImpossibleDependency(
-                                                dep.predecessor_id.clone(),
-                                                dep.successor_id.clone(),
-                                                pred_start,
-                                                succ_start,
-                                            ),
-                                            severity: ConflictSeverity::Critical,
-                                            message: format!(
-                                                "Impossible dependency: {} starts after {} starts ({} > {})",
-                                                dep.predecessor_id, dep.successor_id, pred_start, succ_start
-                                            ),
-                                            affected_tasks: vec![dep.predecessor_id.clone(), dep.successor_id.clone()],
-                                            suggested_fixes: vec![
-                                                "Adjust task dates".to_string(),
-                                                "Change dependency type".to_string(),
-                                                "Add lag to dependency".to_string(),
-                                            ],
-                                            detected_at: chrono::Utc::now(),
-                                        };
-                                        conflicts.push(conflict);
-                                    }
-                                }
+                        }
+                        DependencyType::StartToStart => {
+                            if let (Some(pred_start), Some(succ_start)) =
+                                (pred_result.calculated_start_date, succ_result.calculated_start_date)
+                                && pred_start > succ_start
+                            {
+                                let conflict = ConflictReport {
+                                    conflict_type: ConflictType::ImpossibleDependency(
+                                        dep.predecessor_id.clone(),
+                                        dep.successor_id.clone(),
+                                        pred_start,
+                                        succ_start,
+                                    ),
+                                    severity: ConflictSeverity::Critical,
+                                    message: format!(
+                                        "Impossible dependency: {} starts after {} starts ({} > {})",
+                                        dep.predecessor_id, dep.successor_id, pred_start, succ_start
+                                    ),
+                                    affected_tasks: vec![dep.predecessor_id.clone(), dep.successor_id.clone()],
+                                    suggested_fixes: vec![
+                                        "Adjust task dates".to_string(),
+                                        "Change dependency type".to_string(),
+                                        "Add lag to dependency".to_string(),
+                                    ],
+                                    detected_at: chrono::Utc::now(),
+                                };
+                                conflicts.push(conflict);
                             }
-                            _ => {
-                                // Outros tipos de dependência podem ser validados aqui
-                            }
+                        }
+                        _ => {
+                            // Outros tipos de dependência podem ser validados aqui
                         }
                     }
                 }
@@ -577,6 +575,8 @@ impl fmt::Display for ConflictReport {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::project_management::{LagType, TaskNode};
+    use chrono::Duration;
     use chrono::NaiveDate;
 
     fn create_test_graph() -> AdvancedDependencyGraph {
