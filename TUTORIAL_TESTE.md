@@ -18,10 +18,11 @@ mkdir -p ~/ttr_tutorial_test
 cd ~/ttr_tutorial_test
 ```
 
-## 🌟 **Destaque: Gráficos Gantt**
+## 🌟 **Destaques: Funcionalidades Avançadas**
 
-Este tutorial inclui testes específicos para a **geração de gráficos Gantt interativos** - uma das funcionalidades mais importantes do TaskTaskRevolution. Os gráficos Gantt são gerados automaticamente durante o comando `build` e fornecem:
+Este tutorial inclui testes específicos para as **funcionalidades mais avançadas** do TaskTaskRevolution:
 
+### 📊 **Gráficos Gantt Interativos**
 - **Visualização interativa** de projetos e tarefas
 - **Timeline clara** com datas de início e fim
 - **Dependências entre tarefas** (quando configuradas)
@@ -29,7 +30,20 @@ Este tutorial inclui testes específicos para a **geração de gráficos Gantt i
 - **Recursos atribuídos** a cada tarefa
 - **Interface responsiva** para diferentes dispositivos
 
-**Importante**: Os gráficos Gantt são uma peça fundamental do projeto e serão testados na Fase 8.5 do tutorial.
+### 🔗 **Sistema de Dependências Automáticas**
+- **Cálculo automático de datas** baseado em dependências
+- **Propagação de mudanças** através de tarefas dependentes
+- **Validação de conflitos** e detecção de dependências circulares
+- **Sistema de cache** para otimização de performance
+- **Suporte a diferentes tipos de dependência** (Finish-to-Start, Start-to-Start, etc.)
+
+### 🏷️ **Validação de Tipos de Recursos**
+- **Tipos de recursos configuráveis** via `config.yaml`
+- **Validação automática** de tipos de recursos
+- **Flexibilidade** para definir tipos personalizados
+- **Compatibilidade** com configurações existentes
+
+**Importante**: Essas funcionalidades são fundamentais do projeto e serão testadas nas fases específicas do tutorial.
 
 ## 🚀 **Fase 1: Inicialização do Sistema**
 
@@ -96,6 +110,7 @@ cat config.yaml
 ```bash
 /home/flavio/projects/tasktaskrevolution/target/release/ttr create resource \
   --name "João Silva" \
+  --type "Developer" \
   --code "JS-001" \
   --company "TECH-001" \
   --description "Desenvolvedor Senior" \
@@ -107,6 +122,7 @@ cat config.yaml
 ```bash
 /home/flavio/projects/tasktaskrevolution/target/release/ttr create resource \
   --name "Maria Santos" \
+  --type "Product Owner" \
   --code "MS-001" \
   --company "TECH-001" \
   --description "Product Manager" \
@@ -118,13 +134,28 @@ cat config.yaml
 ```bash
 /home/flavio/projects/tasktaskrevolution/target/release/ttr create resource \
   --name "Ana Costa" \
+  --type "Designer" \
   --code "AC-001" \
   --company "DESIGN-001" \
   --description "Designer UX/UI" \
   --email "ana@designstudio.com"
 ```
 
-### 3.4 Listar recursos
+### 3.4 Testar validação de tipos de recursos
+
+```bash
+# Tentar criar recurso com tipo inválido (deve falhar)
+/home/flavio/projects/tasktaskrevolution/target/release/ttr create resource \
+  --name "Teste" \
+  --type "TipoInvalido" \
+  --code "TEST-001" \
+  --company "TECH-001" \
+  --email "teste@teste.com"
+```
+
+**✅ Resultado esperado**: Erro de validação para tipo inválido
+
+### 3.5 Listar recursos
 
 ```bash
 /home/flavio/projects/tasktaskrevolution/target/release/ttr list resources --company "TECH-001"
@@ -230,6 +261,77 @@ cat config.yaml
 
 **✅ Resultado esperado**: Tarefas listadas corretamente por projeto
 
+## 🔗 **Fase 5.5: Sistema de Dependências Automáticas**
+
+### 5.5.1 Criar tarefas com dependências
+
+```bash
+# Criar tarefa predecessora
+/home/flavio/projects/tasktaskrevolution/target/release/ttr create task \
+  --name "Análise de Requisitos" \
+  --code "TASK-ANALISE" \
+  --project "ECOMM-001" \
+  --company "TECH-001" \
+  --start-date "2024-01-15" \
+  --due-date "2024-01-30" \
+  --assigned-resources "JS-001"
+
+# Criar tarefa dependente
+/home/flavio/projects/tasktaskrevolution/target/release/ttr create task \
+  --name "Desenvolvimento Backend" \
+  --code "TASK-BACKEND" \
+  --project "ECOMM-001" \
+  --company "TECH-001" \
+  --start-date "2024-02-01" \
+  --due-date "2024-04-15" \
+  --assigned-resources "JS-001"
+```
+
+### 5.5.2 Linkar tarefas (criar dependência)
+
+```bash
+/home/flavio/projects/tasktaskrevolution/target/release/ttr link task \
+  --from "TASK-ANALISE" \
+  --to "TASK-BACKEND" \
+  --project "ECOMM-001" \
+  --company "TECH-001"
+```
+
+### 5.5.3 Testar cálculo automático de datas
+
+```bash
+# Atualizar data de fim da tarefa predecessora
+/home/flavio/projects/tasktaskrevolution/target/release/ttr update task \
+  --code "TASK-ANALISE" \
+  --project "ECOMM-001" \
+  --company "TECH-001" \
+  --due-date "2024-02-05"
+```
+
+**✅ Resultado esperado**: Sistema deve recalcular automaticamente as datas da tarefa dependente
+
+### 5.5.4 Testar detecção de dependências circulares
+
+```bash
+# Tentar criar dependência circular (deve falhar)
+/home/flavio/projects/tasktaskrevolution/target/release/ttr link task \
+  --from "TASK-BACKEND" \
+  --to "TASK-ANALISE" \
+  --project "ECOMM-001" \
+  --company "TECH-001"
+```
+
+**✅ Resultado esperado**: Erro de validação para dependência circular
+
+### 5.5.5 Verificar propagação de mudanças
+
+```bash
+# Listar tarefas para verificar se as datas foram atualizadas
+/home/flavio/projects/tasktaskrevolution/target/release/ttr list tasks --project "ECOMM-001" --company "TECH-001"
+```
+
+**✅ Resultado esperado**: Datas das tarefas dependentes atualizadas automaticamente
+
 ## 🔄 **Fase 6: Operações de Atualização**
 
 ### 6.1 Atualizar projeto
@@ -260,6 +362,7 @@ cat config.yaml
   --code "JS-001" \
   --company "TECH-001" \
   --name "João Silva Santos" \
+  --type "Tech Lead" \
   --email "joao.silva@techcorp.com" \
   --description "Tech Lead Senior"
 ```
@@ -477,7 +580,7 @@ cd ~/ttr_tutorial_test
 
 - [ ] Inicialização do sistema
 - [ ] Criação de empresas
-- [ ] Criação de recursos
+- [ ] Criação de recursos com validação de tipos
 - [ ] Criação de projetos
 - [ ] Criação de tarefas
 - [ ] Listagem de todas as entidades
@@ -489,6 +592,11 @@ cd ~/ttr_tutorial_test
 
 ### ✅ **Funcionalidades Avançadas**
 
+- [ ] **Sistema de dependências automáticas** 🔗
+- [ ] **Validação de tipos de recursos** 🏷️
+- [ ] **Cálculo automático de datas** 📅
+- [ ] **Detecção de dependências circulares** ⚠️
+- [ ] **Propagação de mudanças** 🔄
 - [ ] Trabalho com contextos (empresa, projeto)
 - [ ] Geração de relatórios
 - [ ] Operações de link/unlink
@@ -510,6 +618,9 @@ cd ~/ttr_tutorial_test
 - ✅ Relacionamentos entre entidades funcionam
 - ✅ Contextos são detectados corretamente
 - ✅ **Gráficos Gantt são gerados e funcionais** ⭐
+- ✅ **Sistema de dependências automáticas funciona** 🔗
+- ✅ **Validação de tipos de recursos funciona** 🏷️
+- ✅ **Cálculo automático de datas funciona** 📅
 
 ### **Usabilidade**
 
@@ -547,15 +658,25 @@ Se encontrar problemas não listados aqui:
 
 ## 🎉 **Conclusão**
 
-Este tutorial cobre **todas as funcionalidades principais** do TaskTaskRevolution, incluindo a **geração de gráficos Gantt interativos** - uma peça fundamental do projeto. Após completar todos os testes, você terá validado completamente a implementação da Issue #70 e confirmado que a simplificação da arquitetura CLI foi bem-sucedida.
+Este tutorial cobre **todas as funcionalidades principais** do TaskTaskRevolution, incluindo as **funcionalidades mais avançadas** implementadas nas issues 135-138. Após completar todos os testes, você terá validado completamente a implementação e confirmado que o sistema está funcionando perfeitamente.
 
 ### 🌟 **Destaques Especiais**
 
 - **Gráficos Gantt**: Visualização interativa e profissional de projetos
+- **Sistema de Dependências Automáticas**: Cálculo inteligente de datas e propagação de mudanças
+- **Validação de Tipos de Recursos**: Sistema configurável e flexível
 - **Arquitetura Simplificada**: CLI mais limpo e eficiente
 - **Funcionalidades Completas**: CRUD completo para todas as entidades
 - **Validação Robusta**: Sistema de validação abrangente
 
-**Tempo estimado**: 30-45 minutos para completar todos os testes
+### 🚀 **Novas Funcionalidades Implementadas**
+
+- **Issue #135**: DependencyCalculationEngine - Engine para cálculo automático de datas
+- **Issue #136**: ChangePropagationSystem - Sistema de propagação de mudanças
+- **Issue #137**: ConflictValidationSystem - Validação de conflitos e dependências circulares
+- **Issue #138**: CalculationCacheSystem - Sistema de cache para otimização de performance
+- **Issue #118**: Validação de tipos de recursos baseada em configuração
+
+**Tempo estimado**: 45-60 minutos para completar todos os testes
 **Cobertura**: 100% das funcionalidades CLI disponíveis
-**Destaque**: Gráficos Gantt como peça fundamental do projeto ⭐
+**Destaque**: Sistema de dependências automáticas como peça fundamental do projeto 🔗
