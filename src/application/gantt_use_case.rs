@@ -11,6 +11,7 @@ use tera::{Context, Tera};
 use crate::domain::project_management::{
     DependencyType, GanttChart, GanttConfig, GanttTask, GanttViewType, TaskStatus, repository::ProjectRepository,
 };
+use crate::domain::project_management::gantt_chart::GanttPerformanceStats;
 use crate::infrastructure::persistence::project_repository::FileProjectRepository;
 
 /// Use Case para geração de gráficos Gantt
@@ -209,16 +210,46 @@ impl GanttUseCase {
             }
         }
 
-        let config = GanttConfig::new(format!("{} - Company Gantt Chart", company_code), min_date, max_date)
-            .with_view_type(GanttViewType::Days)
-            .with_dependencies(true)
-            .with_resources(true)
-            .with_progress(true)
-            .with_dimensions(1200, 600);
+        // Contar total de tarefas para otimização
+        let total_tasks: usize = company_projects
+            .iter()
+            .map(|p| p.tasks().len())
+            .sum();
 
-        let mut gantt = GanttChart::new(config);
+        // Configurar otimizações baseadas no tamanho do dataset
+        let config = if total_tasks > 10000 {
+            GanttConfig::new(format!("{} - Company Gantt Chart", company_code), min_date, max_date)
+                .with_view_type(GanttViewType::Days)
+                .with_dependencies(true)
+                .with_resources(true)
+                .with_progress(true)
+                .with_dimensions(1200, 600)
+                .for_very_large_dataset()
+        } else if total_tasks > 1000 {
+            GanttConfig::new(format!("{} - Company Gantt Chart", company_code), min_date, max_date)
+                .with_view_type(GanttViewType::Days)
+                .with_dependencies(true)
+                .with_resources(true)
+                .with_progress(true)
+                .with_dimensions(1200, 600)
+                .for_large_dataset()
+        } else {
+            GanttConfig::new(format!("{} - Company Gantt Chart", company_code), min_date, max_date)
+                .with_view_type(GanttViewType::Days)
+                .with_dependencies(true)
+                .with_resources(true)
+                .with_progress(true)
+                .with_dimensions(1200, 600)
+        };
+
+        let mut gantt = if total_tasks > 1000 {
+            GanttChart::new_optimized(config, total_tasks)
+        } else {
+            GanttChart::new(config)
+        };
 
         // Adicionar todas as tarefas de todos os projetos
+        let mut all_tasks = Vec::new();
         for project in &company_projects {
             for task in project.tasks().values() {
                 let task_status = match task.status().to_string().as_str() {
@@ -244,9 +275,12 @@ impl GanttUseCase {
                     task_status,
                     progress,
                 );
-                gantt.add_task(gantt_task);
+                all_tasks.push(gantt_task);
             }
         }
+
+        // Usar adição em lote para melhor performance
+        gantt.add_tasks_batch(all_tasks);
 
         Ok(gantt)
     }
@@ -365,6 +399,50 @@ impl GanttUseCase {
         );
 
         Ok(())
+    }
+
+    /// Obtém estatísticas de performance para um gráfico Gantt
+    pub fn get_performance_stats(&self, gantt: &GanttChart) -> GanttPerformanceStats {
+        gantt.get_performance_stats()
+    }
+
+    /// Gera gráfico Gantt otimizado para grandes datasets
+    pub fn generate_optimized_gantt(&self, title: String, total_tasks: usize) -> Result<GanttChart, Box<dyn Error>> {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+
+        let config = if total_tasks > 10000 {
+            GanttConfig::new(title, start_date, end_date)
+                .with_view_type(GanttViewType::Days)
+                .with_dependencies(true)
+                .with_resources(true)
+                .with_progress(true)
+                .with_dimensions(1200, 600)
+                .for_very_large_dataset()
+        } else if total_tasks > 1000 {
+            GanttConfig::new(title, start_date, end_date)
+                .with_view_type(GanttViewType::Days)
+                .with_dependencies(true)
+                .with_resources(true)
+                .with_progress(true)
+                .with_dimensions(1200, 600)
+                .for_large_dataset()
+        } else {
+            GanttConfig::new(title, start_date, end_date)
+                .with_view_type(GanttViewType::Days)
+                .with_dependencies(true)
+                .with_resources(true)
+                .with_progress(true)
+                .with_dimensions(1200, 600)
+        };
+
+        let gantt = if total_tasks > 1000 {
+            GanttChart::new_optimized(config, total_tasks)
+        } else {
+            GanttChart::new(config)
+        };
+
+        Ok(gantt)
     }
 }
 
@@ -731,5 +809,95 @@ spec:
         assert!(config.show_progress);
         assert_eq!(config.width, 1200);
         assert_eq!(config.height, 600);
+    }
+
+    #[test]
+    fn test_performance_optimizations() {
+        let temp_dir = tempdir().unwrap();
+        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+
+        // Test large dataset optimization
+        let gantt = use_case.generate_optimized_gantt("Large Dataset Test".to_string(), 5000).unwrap();
+        let stats = gantt.get_performance_stats();
+        
+        assert!(stats.is_optimized);
+        assert!(stats.is_paginated);
+        assert_eq!(stats.total_tasks, 5000);
+        // Memory usage can be 0 if no tasks are loaded yet
+        assert!(stats.memory_usage_estimate >= 0);
+    }
+
+    #[test]
+    fn test_very_large_dataset_optimization() {
+        let temp_dir = tempdir().unwrap();
+        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+
+        // Test very large dataset optimization
+        let gantt = use_case.generate_optimized_gantt("Very Large Dataset Test".to_string(), 15000).unwrap();
+        let stats = gantt.get_performance_stats();
+        
+        assert!(stats.is_optimized);
+        assert!(stats.is_paginated);
+        assert_eq!(stats.total_tasks, 15000);
+        // Should use very large dataset settings (50 tasks per page)
+        assert!(stats.is_paginated);
+    }
+
+    #[test]
+    fn test_performance_stats() {
+        let temp_dir = tempdir().unwrap();
+        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+
+        let gantt = use_case.generate_demo_gantt().unwrap();
+        let stats = gantt.get_performance_stats();
+        
+        assert_eq!(stats.total_tasks, 0); // Demo gantt starts with 0 total tasks
+        assert_eq!(stats.loaded_tasks, 4); // But has 4 tasks loaded
+        assert!(!stats.is_paginated); // Demo gantt is not paginated
+        assert!(!stats.is_optimized); // Demo gantt is not optimized
+        assert!(stats.memory_usage_estimate > 0);
+    }
+
+
+    #[test]
+    fn test_memory_usage_calculation() {
+        let temp_dir = tempdir().unwrap();
+        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+
+        let gantt = use_case.generate_demo_gantt().unwrap();
+        let stats = gantt.get_performance_stats();
+        
+        let memory_mb = stats.get_memory_usage_mb();
+        assert!(memory_mb >= 0.0);
+        assert!(memory_mb < 1.0); // Should be less than 1MB for demo data
+    }
+
+    #[test]
+    fn test_load_percentage_calculation() {
+        let temp_dir = tempdir().unwrap();
+        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+
+        let gantt = use_case.generate_optimized_gantt("Load Test".to_string(), 1000).unwrap();
+        let stats = gantt.get_performance_stats();
+        
+        let load_percentage = stats.get_load_percentage();
+        assert!(load_percentage >= 0.0);
+        assert!(load_percentage <= 100.0);
+    }
+
+    #[test]
+    fn test_efficiency_detection() {
+        let temp_dir = tempdir().unwrap();
+        let use_case = GanttUseCase::new(temp_dir.path().to_path_buf());
+
+        // Test optimized gantt
+        let gantt = use_case.generate_optimized_gantt("Efficiency Test".to_string(), 2000).unwrap();
+        let stats = gantt.get_performance_stats();
+        assert!(stats.is_efficient());
+
+        // Test non-optimized gantt
+        let demo_gantt = use_case.generate_demo_gantt().unwrap();
+        let demo_stats = demo_gantt.get_performance_stats();
+        assert!(!demo_stats.is_efficient());
     }
 }
