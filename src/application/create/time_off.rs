@@ -105,6 +105,10 @@ mod tests {
             Ok(None)
         }
 
+        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+            Ok(vec![])
+        }
+
         fn save_in_hierarchy(
             &self,
             resource: AnyResource,

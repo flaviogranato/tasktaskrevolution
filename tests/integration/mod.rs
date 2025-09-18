@@ -12,3 +12,4 @@ pub mod performance;
 pub mod compatibility;
 pub mod external_integration;
 pub mod update_commands;
+pub mod delete_task_test;

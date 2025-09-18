@@ -101,6 +101,10 @@ mod test {
             Ok(vec![])
         }
 
+        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+            Ok(vec![])
+        }
+
         fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
             Ok(None)
         }
