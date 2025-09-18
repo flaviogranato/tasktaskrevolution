@@ -175,6 +175,14 @@ mod test {
         fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
+
+        fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+            Ok(self.tasks.borrow().values().cloned().collect())
+        }
+
+        fn get_next_code(&self, _project_code: &str) -> Result<String, AppError> {
+            Ok("TASK-001".to_string())
+        }
     }
 
     impl MockProjectRepository {

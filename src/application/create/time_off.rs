@@ -180,11 +180,13 @@ mod tests {
     }
 
     fn create_test_available_resource() -> AnyResource {
-        Resource::<Available>::new(
+          Resource::<Available>::new(
             "developer-1".to_string(), // dummy code
             "John Doe".to_string(),
             None,
             "Developer".to_string(),
+            None,
+            None,
             None,
             0,
         )

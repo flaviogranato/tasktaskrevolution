@@ -291,11 +291,13 @@ mod tests {
     }
 
     fn create_test_resource(code: &str, name: &str, resource_type: &str) -> AnyResource {
-        Resource::new(
+          Resource::new(
             code.to_string(),
             name.to_string(),
             None,
             resource_type.to_string(),
+            None,
+            None,
             None,
             0,
         )

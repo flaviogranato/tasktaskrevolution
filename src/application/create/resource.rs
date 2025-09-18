@@ -151,7 +151,7 @@ mod test {
         let use_case = CreateResourceUseCase::new(mock_repo);
         let name = "John";
         let resource_type = "Developer";
-        let _ = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None);
+        let _ = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None, None, None);
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());

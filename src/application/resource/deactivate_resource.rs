@@ -142,6 +142,8 @@ mod tests {
             name: "Test Resource".to_string(),
             email: None,
             resource_type: "Test".to_string(),
+            start_date: None,
+            end_date: None,
             vacations: None,
             time_off_balance: 0,
             time_off_history: None,
