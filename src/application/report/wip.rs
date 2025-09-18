@@ -2,9 +2,7 @@
 
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{
-    any_resource::AnyResource,
-    repository::ResourceRepository,
-    resource::WipStatus,
+    any_resource::AnyResource, repository::ResourceRepository, resource::WipStatus,
 };
 use crate::interface::cli::table_formatter::TableFormatter;
 use chrono::{DateTime, Local};
@@ -74,9 +72,7 @@ where
     RR: ResourceRepository,
 {
     pub fn new(resource_repository: RR) -> Self {
-        Self {
-            resource_repository,
-        }
+        Self { resource_repository }
     }
 
     pub fn generate_wip_report(&self) -> Result<WipReport, WipReportError> {
@@ -187,10 +183,19 @@ where
 
         let mut summary = String::new();
         summary.push_str("=== WIP Status Report ===\n");
-        summary.push_str(&format!("Generated at: {}\n", report.generated_at.format("%Y-%m-%d %H:%M:%S")));
+        summary.push_str(&format!(
+            "Generated at: {}\n",
+            report.generated_at.format("%Y-%m-%d %H:%M:%S")
+        ));
         summary.push_str(&format!("Total Resources: {}\n", report.total_resources));
-        summary.push_str(&format!("Resources with WIP Limits: {}\n", report.resources_with_wip_limits));
-        summary.push_str(&format!("Resources within limits: {}\n", report.resources_within_limits));
+        summary.push_str(&format!(
+            "Resources with WIP Limits: {}\n",
+            report.resources_with_wip_limits
+        ));
+        summary.push_str(&format!(
+            "Resources within limits: {}\n",
+            report.resources_within_limits
+        ));
         summary.push_str(&format!("Resources near limit: {}\n", report.resources_near_limit));
         summary.push_str(&format!("Resources exceeded: {}\n", report.resources_exceeded));
         summary.push_str(&format!("Resources with disabled WIP: {}\n", report.resources_disabled));
@@ -255,8 +260,14 @@ where
                 detail.current_allocation,
                 detail.utilization_percentage,
                 if detail.wip_limits_enabled { "Yes" } else { "No" },
-                detail.max_tasks.map(|t| t.to_string()).unwrap_or_else(|| "N/A".to_string()),
-                detail.max_allocation.map(|a| a.to_string()).unwrap_or_else(|| "N/A".to_string()),
+                detail
+                    .max_tasks
+                    .map(|t| t.to_string())
+                    .unwrap_or_else(|| "N/A".to_string()),
+                detail
+                    .max_allocation
+                    .map(|a| a.to_string())
+                    .unwrap_or_else(|| "N/A".to_string()),
             ));
         }
 
@@ -355,7 +366,7 @@ mod tests {
         // Arrange
         let resource1 = create_test_resource("RES-001", "Developer 1", "Developer");
         let resource2 = create_test_resource("RES-002", "Developer 2", "Developer");
-        
+
         let repo = MockResourceRepository {
             resources: RefCell::new(HashMap::from([
                 (resource1.code().to_string(), resource1),

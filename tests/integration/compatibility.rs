@@ -242,7 +242,7 @@ fn test_resource_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     // Vamos procurar dinamicamente pelo arquivo correto
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let mut resource_file_path = None;
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -253,7 +253,7 @@ fn test_resource_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let resource_file_path = resource_file_path.expect("Resource file not found");
 
     let validator = YamlValidator::new(&resource_file_path)?;
@@ -607,7 +607,7 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
     // Vamos procurar dinamicamente pelo arquivo correto
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let mut resource_file_path = None;
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -618,7 +618,7 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let resource_file_path = resource_file_path.expect("Resource file not found");
 
     // Encontrar o arquivo do projeto criado
@@ -706,7 +706,7 @@ fn test_required_vs_optional_fields() -> Result<(), Box<dyn std::error::Error>> 
     // Vamos procurar dinamicamente pelo arquivo correto
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let mut resource_file_path = None;
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -717,7 +717,7 @@ fn test_required_vs_optional_fields() -> Result<(), Box<dyn std::error::Error>> 
             }
         }
     }
-    
+
     let resource_file_path = resource_file_path.expect("Resource file not found");
     let validator = YamlValidator::new(&resource_file_path)?;
 
@@ -830,7 +830,7 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
     // O arquivo está sendo criado com o código, não com o nome
     // Vamos procurar dinamicamente pelo arquivo correto
     let mut resource_file_path = None;
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -841,7 +841,7 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
             }
         }
     }
-    
+
     let resource_file_path = resource_file_path.expect("Resource file not found");
 
     // Encontrar o arquivo do projeto criado

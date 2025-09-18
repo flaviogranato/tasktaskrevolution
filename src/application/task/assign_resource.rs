@@ -2,7 +2,7 @@
 
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{
-    any_resource::AnyResource, 
+    any_resource::AnyResource,
     repository::ResourceRepository,
     resource::{TaskAssignment, TaskAssignmentStatus},
 };
@@ -32,7 +32,9 @@ impl fmt::Display for AssignResourceToAppError {
                 write!(f, "Resource '{}' is already assigned to task '{}'.", resource, task)
             }
             AssignResourceToAppError::WipLimitsExceeded(message) => write!(f, "WIP limits exceeded: {}", message),
-            AssignResourceToAppError::WipLimitsValidationFailed(message) => write!(f, "WIP limits validation failed: {}", message),
+            AssignResourceToAppError::WipLimitsValidationFailed(message) => {
+                write!(f, "WIP limits validation failed: {}", message)
+            }
             AssignResourceToAppError::AppError(message) => write!(f, "Domain error: {}", message),
             AssignResourceToAppError::RepositoryError(err) => write!(f, "Repository error: {}", err),
         }
@@ -135,52 +137,58 @@ where
         true
     }
 
-    fn validate_wip_limits(&self, resource: &AnyResource, allocation_percentage: u8) -> Result<(), AssignResourceToAppError> {
+    fn validate_wip_limits(
+        &self,
+        resource: &AnyResource,
+        allocation_percentage: u8,
+    ) -> Result<(), AssignResourceToAppError> {
         match resource {
             AnyResource::Available(res) => {
                 if let Some(ref wip_limits) = res.wip_limits
-                    && wip_limits.enabled {
-                        // Check if resource can be assigned to more tasks
-                        let current_active_tasks = res.get_active_task_count();
-                        if current_active_tasks >= wip_limits.max_concurrent_tasks {
-                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
-                                "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
-                                wip_limits.max_concurrent_tasks, current_active_tasks
-                            )));
-                        }
-
-                        // Check allocation percentage
-                        let current_allocation = res.get_current_allocation_percentage();
-                        if current_allocation + allocation_percentage as u32 > wip_limits.max_allocation_percentage as u32 {
-                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
-                                "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
-                                wip_limits.max_allocation_percentage, current_allocation, allocation_percentage
-                            )));
-                        }
+                    && wip_limits.enabled
+                {
+                    // Check if resource can be assigned to more tasks
+                    let current_active_tasks = res.get_active_task_count();
+                    if current_active_tasks >= wip_limits.max_concurrent_tasks {
+                        return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                            "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
+                            wip_limits.max_concurrent_tasks, current_active_tasks
+                        )));
                     }
+
+                    // Check allocation percentage
+                    let current_allocation = res.get_current_allocation_percentage();
+                    if current_allocation + allocation_percentage as u32 > wip_limits.max_allocation_percentage as u32 {
+                        return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                            "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
+                            wip_limits.max_allocation_percentage, current_allocation, allocation_percentage
+                        )));
+                    }
+                }
                 Ok(())
             }
             AnyResource::Assigned(res) => {
                 if let Some(ref wip_limits) = res.wip_limits
-                    && wip_limits.enabled {
-                        // Check if resource can be assigned to more tasks
-                        let current_active_tasks = res.get_active_task_count();
-                        if current_active_tasks >= wip_limits.max_concurrent_tasks {
-                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
-                                "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
-                                wip_limits.max_concurrent_tasks, current_active_tasks
-                            )));
-                        }
-
-                        // Check allocation percentage
-                        let current_allocation = res.get_current_allocation_percentage();
-                        if current_allocation + allocation_percentage as u32 > wip_limits.max_allocation_percentage as u32 {
-                            return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
-                                "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
-                                wip_limits.max_allocation_percentage, current_allocation, allocation_percentage
-                            )));
-                        }
+                    && wip_limits.enabled
+                {
+                    // Check if resource can be assigned to more tasks
+                    let current_active_tasks = res.get_active_task_count();
+                    if current_active_tasks >= wip_limits.max_concurrent_tasks {
+                        return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                            "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
+                            wip_limits.max_concurrent_tasks, current_active_tasks
+                        )));
                     }
+
+                    // Check allocation percentage
+                    let current_allocation = res.get_current_allocation_percentage();
+                    if current_allocation + allocation_percentage as u32 > wip_limits.max_allocation_percentage as u32 {
+                        return Err(AssignResourceToAppError::WipLimitsExceeded(format!(
+                            "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
+                            wip_limits.max_allocation_percentage, current_allocation, allocation_percentage
+                        )));
+                    }
+                }
                 Ok(())
             }
             AnyResource::Inactive(_) => Err(AssignResourceToAppError::AppError(
@@ -219,11 +227,12 @@ where
 
                 // Convert to Assigned state
                 let mut assigned_resource = resource.assign_to_project(project_assignment);
-                
+
                 // Add task assignment
-                assigned_resource.assign_to_task(task_assignment)
+                assigned_resource
+                    .assign_to_task(task_assignment)
                     .map_err(AssignResourceToAppError::WipLimitsValidationFailed)?;
-                
+
                 Ok(AnyResource::Assigned(assigned_resource))
             }
             AnyResource::Assigned(mut resource) => {
@@ -236,11 +245,12 @@ where
                 };
 
                 resource.state.project_assignments.push(project_assignment);
-                
+
                 // Add task assignment
-                resource.assign_to_task(task_assignment)
+                resource
+                    .assign_to_task(task_assignment)
                     .map_err(AssignResourceToAppError::WipLimitsValidationFailed)?;
-                
+
                 Ok(AnyResource::Assigned(resource))
             }
             AnyResource::Inactive(_) => Err(AssignResourceToAppError::AppError(
