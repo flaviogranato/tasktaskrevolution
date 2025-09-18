@@ -11,6 +11,7 @@ pub trait ResourceRepository {
         project_code: Option<&str>,
     ) -> Result<AnyResource, AppError>;
     fn find_all(&self) -> Result<Vec<AnyResource>, AppError>;
+    fn find_by_company(&self, company_code: &str) -> Result<Vec<AnyResource>, AppError>;
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError>;
     fn save_time_off(
         &self,
