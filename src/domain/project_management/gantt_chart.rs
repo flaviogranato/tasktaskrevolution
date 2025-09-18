@@ -5,6 +5,7 @@
 
 use chrono::{Datelike, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 
 use super::advanced_dependencies::{AdvancedDependencyGraph, DependencyType};
 use crate::application::errors::AppError;
@@ -14,7 +15,7 @@ use crate::application::errors::AppError;
 // ============================================================================
 
 /// Status de uma tarefa no gráfico Gantt
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum TaskStatus {
     NotStarted,
     InProgress,
@@ -357,6 +358,9 @@ pub struct GanttChart {
     pub pagination: Option<GanttPagination>,
     pub total_tasks: usize,
     pub is_optimized: bool,
+    // Advanced features
+    pub filters: GanttFilters,
+    pub advanced_features: GanttAdvancedFeatures,
 }
 
 impl GanttChart {
@@ -369,6 +373,8 @@ impl GanttChart {
             pagination: None,
             total_tasks: 0,
             is_optimized: false,
+            filters: GanttFilters::new(),
+            advanced_features: GanttAdvancedFeatures::new(),
         }
     }
 
@@ -381,6 +387,8 @@ impl GanttChart {
             pagination: None,
             total_tasks,
             is_optimized: true,
+            filters: GanttFilters::new(),
+            advanced_features: GanttAdvancedFeatures::new(),
         };
 
         // Configurar paginação se habilitada
@@ -505,6 +513,160 @@ impl GanttChart {
         let dependency_size = std::mem::size_of::<GanttDependency>();
         
         (self.tasks.len() * task_size) + (self.dependencies.len() * dependency_size)
+    }
+
+    /// Aplica filtros às tarefas e retorna apenas as que correspondem
+    pub fn get_filtered_tasks(&self) -> Vec<&GanttTask> {
+        self.filters.apply_to_tasks(&self.tasks)
+    }
+
+    /// Aplica filtros às dependências e retorna apenas as que correspondem
+    pub fn get_filtered_dependencies(&self) -> Vec<&GanttDependency> {
+        if !self.filters.show_dependencies {
+            return Vec::new();
+        }
+
+        let filtered_tasks: std::collections::HashSet<String> = self.get_filtered_tasks()
+            .iter()
+            .map(|t| t.id.clone())
+            .collect();
+
+        self.dependencies
+            .iter()
+            .filter(|dep| {
+                filtered_tasks.contains(&dep.from_task) || 
+                filtered_tasks.contains(&dep.to_task)
+            })
+            .collect()
+    }
+
+    /// Atualiza os filtros do gráfico
+    pub fn set_filters(&mut self, filters: GanttFilters) {
+        self.filters = filters;
+    }
+
+    /// Atualiza os recursos avançados do gráfico
+    pub fn set_advanced_features(&mut self, features: GanttAdvancedFeatures) {
+        self.advanced_features = features;
+    }
+
+    /// Obtém estatísticas dos filtros aplicados
+    pub fn get_filter_stats(&self) -> GanttFilterStats {
+        let total_tasks = self.tasks.len();
+        let filtered_tasks = self.get_filtered_tasks().len();
+        let total_dependencies = self.dependencies.len();
+        let filtered_dependencies = self.get_filtered_dependencies().len();
+
+        GanttFilterStats {
+            total_tasks,
+            filtered_tasks,
+            total_dependencies,
+            filtered_dependencies,
+            filter_active: self.is_filter_active(),
+        }
+    }
+
+    /// Verifica se algum filtro está ativo
+    pub fn is_filter_active(&self) -> bool {
+        self.filters.status_filter.is_some() ||
+        self.filters.resource_filter.is_some() ||
+        self.filters.date_range_filter.is_some() ||
+        self.filters.progress_filter.is_some() ||
+        self.filters.search_text.is_some() ||
+        !self.filters.show_dependencies ||
+        !self.filters.show_milestones
+    }
+
+    /// Limpa todos os filtros
+    pub fn clear_filters(&mut self) {
+        self.filters = GanttFilters::new();
+    }
+
+    /// Obtém recursos únicos das tarefas
+    pub fn get_unique_resources(&self) -> Vec<String> {
+        let resources: std::collections::HashSet<String> = self.tasks
+            .iter()
+            .filter_map(|t| t.resource.clone())
+            .collect();
+        
+        resources.into_iter().collect()
+    }
+
+    /// Obtém status únicos das tarefas
+    pub fn get_unique_statuses(&self) -> Vec<TaskStatus> {
+        let mut statuses: std::collections::HashSet<TaskStatus> = self.tasks
+            .iter()
+            .map(|t| t.status.clone())
+            .collect();
+        
+        statuses.into_iter().collect()
+    }
+
+    /// Calcula o caminho crítico do projeto
+    pub fn calculate_critical_path(&self) -> Vec<String> {
+        if !self.advanced_features.enable_critical_path {
+            return Vec::new();
+        }
+
+        // Implementação simples do caminho crítico
+        // Em uma implementação real, isso seria mais complexo
+        let mut critical_path = Vec::new();
+        let mut max_duration = 0;
+        let mut longest_task = None;
+
+        for task in &self.tasks {
+            let duration = task.duration.num_days() as i32;
+            if duration > max_duration {
+                max_duration = duration;
+                longest_task = Some(task.id.clone());
+            }
+        }
+
+        if let Some(task_id) = longest_task {
+            critical_path.push(task_id);
+        }
+
+        critical_path
+    }
+
+    /// Exporta o gráfico para diferentes formatos
+    pub fn export(&self, format: GanttExportFormat) -> Result<String, Box<dyn Error>> {
+        if !self.advanced_features.enable_export {
+            return Err("Export is disabled".into());
+        }
+
+        match format {
+            GanttExportFormat::Json => {
+                serde_json::to_string(self).map_err(|e| e.into())
+            }
+            GanttExportFormat::Csv => {
+                self.export_to_csv()
+            }
+            GanttExportFormat::Html => {
+                Ok(self.generate_html())
+            }
+        }
+    }
+
+    /// Exporta para CSV
+    fn export_to_csv(&self) -> Result<String, Box<dyn Error>> {
+        let mut csv = String::new();
+        csv.push_str("Task ID,Task Name,Start Date,End Date,Status,Progress,Resource\n");
+        
+        for task in &self.tasks {
+            csv.push_str(&format!(
+                "{},{},{},{},{},{},{}\n",
+                task.id,
+                task.name,
+                task.start_date,
+                task.end_date,
+                task.status.description(),
+                task.progress,
+                task.resource.as_deref().unwrap_or("")
+            ));
+        }
+        
+        Ok(csv)
     }
 
     /// Gera o HTML do gráfico Gantt
@@ -880,6 +1042,155 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 
+/// Filtros para o Gantt Chart
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GanttFilters {
+    pub status_filter: Option<Vec<TaskStatus>>,
+    pub resource_filter: Option<Vec<String>>,
+    pub date_range_filter: Option<(NaiveDate, NaiveDate)>,
+    pub progress_filter: Option<(f64, f64)>,
+    pub search_text: Option<String>,
+    pub show_dependencies: bool,
+    pub show_milestones: bool,
+}
+
+impl GanttFilters {
+    pub fn new() -> Self {
+        Self {
+            status_filter: None,
+            resource_filter: None,
+            date_range_filter: None,
+            progress_filter: None,
+            search_text: None,
+            show_dependencies: true,
+            show_milestones: true,
+        }
+    }
+
+    pub fn with_status_filter(mut self, statuses: Vec<TaskStatus>) -> Self {
+        self.status_filter = Some(statuses);
+        self
+    }
+
+    pub fn with_resource_filter(mut self, resources: Vec<String>) -> Self {
+        self.resource_filter = Some(resources);
+        self
+    }
+
+    pub fn with_date_range(mut self, start: NaiveDate, end: NaiveDate) -> Self {
+        self.date_range_filter = Some((start, end));
+        self
+    }
+
+    pub fn with_progress_range(mut self, min: f64, max: f64) -> Self {
+        self.progress_filter = Some((min, max));
+        self
+    }
+
+    pub fn with_search_text(mut self, text: String) -> Self {
+        self.search_text = Some(text);
+        self
+    }
+
+    pub fn apply_to_tasks<'a>(&self, tasks: &'a [GanttTask]) -> Vec<&'a GanttTask> {
+        tasks.iter().filter(|task| self.matches_task(task)).collect()
+    }
+
+    fn matches_task(&self, task: &GanttTask) -> bool {
+        // Status filter
+        if let Some(ref statuses) = self.status_filter {
+            if !statuses.contains(&task.status) {
+                return false;
+            }
+        }
+
+        // Resource filter
+        if let Some(ref resources) = self.resource_filter {
+            if let Some(ref resource) = task.resource {
+                if !resources.contains(resource) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+
+        // Date range filter
+        if let Some((start, end)) = self.date_range_filter {
+            if task.start_date < start || task.end_date > end {
+                return false;
+            }
+        }
+
+        // Progress filter
+        if let Some((min, max)) = self.progress_filter {
+            if task.progress < min || task.progress > max {
+                return false;
+            }
+        }
+
+        // Search text filter
+        if let Some(ref text) = self.search_text {
+            if !task.name.to_lowercase().contains(&text.to_lowercase()) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
+/// Recursos avançados do Gantt Chart
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GanttAdvancedFeatures {
+    pub enable_zoom: bool,
+    pub enable_pan: bool,
+    pub enable_export: bool,
+    pub enable_print: bool,
+    pub enable_fullscreen: bool,
+    pub enable_tooltips: bool,
+    pub enable_drag_drop: bool,
+    pub enable_critical_path: bool,
+    pub enable_baseline: bool,
+    pub enable_actual_vs_planned: bool,
+    pub enable_resource_loading: bool,
+    pub enable_milestone_tracking: bool,
+}
+
+impl GanttAdvancedFeatures {
+    pub fn new() -> Self {
+        Self {
+            enable_zoom: true,
+            enable_pan: true,
+            enable_export: true,
+            enable_print: true,
+            enable_fullscreen: true,
+            enable_tooltips: true,
+            enable_drag_drop: false,
+            enable_critical_path: true,
+            enable_baseline: false,
+            enable_actual_vs_planned: false,
+            enable_resource_loading: true,
+            enable_milestone_tracking: true,
+        }
+    }
+
+    pub fn with_drag_drop(mut self) -> Self {
+        self.enable_drag_drop = true;
+        self
+    }
+
+    pub fn with_baseline(mut self) -> Self {
+        self.enable_baseline = true;
+        self
+    }
+
+    pub fn with_actual_vs_planned(mut self) -> Self {
+        self.enable_actual_vs_planned = true;
+        self
+    }
+}
+
 /// Estatísticas de performance do Gantt Chart
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GanttPerformanceStats {
@@ -907,6 +1218,34 @@ impl GanttPerformanceStats {
     pub fn is_efficient(&self) -> bool {
         self.is_optimized && self.get_load_percentage() < 100.0
     }
+}
+
+/// Estatísticas dos filtros aplicados
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GanttFilterStats {
+    pub total_tasks: usize,
+    pub filtered_tasks: usize,
+    pub total_dependencies: usize,
+    pub filtered_dependencies: usize,
+    pub filter_active: bool,
+}
+
+impl GanttFilterStats {
+    pub fn get_filter_percentage(&self) -> f64 {
+        if self.total_tasks == 0 {
+            0.0
+        } else {
+            (self.filtered_tasks as f64 / self.total_tasks as f64) * 100.0
+        }
+    }
+}
+
+/// Formatos de exportação do Gantt Chart
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum GanttExportFormat {
+    Json,
+    Csv,
+    Html,
 }
 
 /// Dependência no gráfico Gantt
@@ -1124,5 +1463,218 @@ mod tests {
         assert!(html.contains("Test Task"));
         assert!(html.contains("gantt-container"));
         assert!(html.contains("gantt-task"));
+    }
+
+    #[test]
+    fn test_gantt_filters() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+
+        let config = GanttConfig::new("Test Project".to_string(), start_date, end_date);
+        let mut chart = GanttChart::new(config);
+
+        // Adicionar tarefas de teste
+        let task1 = GanttTask::new(
+            "task1".to_string(),
+            "Task 1".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::InProgress,
+            0.5,
+        );
+        chart.add_task(task1);
+
+        let task2 = GanttTask::new(
+            "task2".to_string(),
+            "Task 2".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::Completed,
+            1.0,
+        );
+        chart.add_task(task2);
+
+        // Test status filter
+        let filters = GanttFilters::new()
+            .with_status_filter(vec![TaskStatus::InProgress]);
+        chart.set_filters(filters);
+
+        let filtered_tasks = chart.get_filtered_tasks();
+        assert_eq!(filtered_tasks.len(), 1);
+        assert_eq!(filtered_tasks[0].id, "task1");
+
+        // Test search filter
+        let filters = GanttFilters::new()
+            .with_search_text("Task 2".to_string());
+        chart.set_filters(filters);
+
+        let filtered_tasks = chart.get_filtered_tasks();
+        assert_eq!(filtered_tasks.len(), 1);
+        assert_eq!(filtered_tasks[0].id, "task2");
+    }
+
+    #[test]
+    fn test_gantt_advanced_features() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+
+        let config = GanttConfig::new("Test Project".to_string(), start_date, end_date);
+        let mut chart = GanttChart::new(config);
+
+        // Test advanced features
+        let features = GanttAdvancedFeatures::new()
+            .with_drag_drop()
+            .with_baseline();
+        chart.set_advanced_features(features);
+
+        assert!(chart.advanced_features.enable_drag_drop);
+        assert!(chart.advanced_features.enable_baseline);
+    }
+
+    #[test]
+    fn test_gantt_export() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+
+        let config = GanttConfig::new("Test Project".to_string(), start_date, end_date);
+        let mut chart = GanttChart::new(config);
+
+        // Adicionar tarefa de teste
+        let task = GanttTask::new(
+            "task1".to_string(),
+            "Test Task".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::InProgress,
+            0.5,
+        );
+        chart.add_task(task);
+
+        // Test CSV export
+        let csv = chart.export(GanttExportFormat::Csv).unwrap();
+        assert!(csv.contains("Task ID,Task Name"));
+        assert!(csv.contains("task1,Test Task"));
+
+        // Test HTML export
+        let html = chart.export(GanttExportFormat::Html).unwrap();
+        assert!(html.contains("Test Project"));
+        assert!(html.contains("gantt-container"));
+    }
+
+    #[test]
+    fn test_gantt_filter_stats() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+
+        let config = GanttConfig::new("Test Project".to_string(), start_date, end_date);
+        let mut chart = GanttChart::new(config);
+
+        // Adicionar tarefas de teste
+        let task1 = GanttTask::new(
+            "task1".to_string(),
+            "Task 1".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::InProgress,
+            0.5,
+        );
+        chart.add_task(task1);
+
+        let task2 = GanttTask::new(
+            "task2".to_string(),
+            "Task 2".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::Completed,
+            1.0,
+        );
+        chart.add_task(task2);
+
+        // Test filter stats
+        let stats = chart.get_filter_stats();
+        assert_eq!(stats.total_tasks, 2);
+        assert_eq!(stats.filtered_tasks, 2);
+        assert!(!stats.filter_active);
+
+        // Apply filter
+        let filters = GanttFilters::new()
+            .with_status_filter(vec![TaskStatus::InProgress]);
+        chart.set_filters(filters);
+
+        let stats = chart.get_filter_stats();
+        assert_eq!(stats.total_tasks, 2);
+        assert_eq!(stats.filtered_tasks, 1);
+        assert!(stats.filter_active);
+    }
+
+    #[test]
+    fn test_gantt_unique_resources() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+
+        let config = GanttConfig::new("Test Project".to_string(), start_date, end_date);
+        let mut chart = GanttChart::new(config);
+
+        // Adicionar tarefas com recursos
+        let mut task1 = GanttTask::new(
+            "task1".to_string(),
+            "Task 1".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::InProgress,
+            0.5,
+        );
+        task1.set_resource("Resource 1".to_string());
+        chart.add_task(task1);
+
+        let mut task2 = GanttTask::new(
+            "task2".to_string(),
+            "Task 2".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::Completed,
+            1.0,
+        );
+        task2.set_resource("Resource 2".to_string());
+        chart.add_task(task2);
+
+        let resources = chart.get_unique_resources();
+        assert_eq!(resources.len(), 2);
+        assert!(resources.contains(&"Resource 1".to_string()));
+        assert!(resources.contains(&"Resource 2".to_string()));
+    }
+
+    #[test]
+    fn test_gantt_critical_path() {
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = NaiveDate::from_ymd_opt(2024, 1, 31).unwrap();
+
+        let config = GanttConfig::new("Test Project".to_string(), start_date, end_date);
+        let mut chart = GanttChart::new(config);
+
+        // Adicionar tarefas com diferentes durações
+        let task1 = GanttTask::new(
+            "task1".to_string(),
+            "Short Task".to_string(),
+            start_date,
+            NaiveDate::from_ymd_opt(2024, 1, 5).unwrap(),
+            TaskStatus::InProgress,
+            0.5,
+        );
+        chart.add_task(task1);
+
+        let task2 = GanttTask::new(
+            "task2".to_string(),
+            "Long Task".to_string(),
+            start_date,
+            end_date,
+            TaskStatus::InProgress,
+            0.5,
+        );
+        chart.add_task(task2);
+
+        let critical_path = chart.calculate_critical_path();
+        assert_eq!(critical_path.len(), 1);
+        assert_eq!(critical_path[0], "task2");
     }
 }
