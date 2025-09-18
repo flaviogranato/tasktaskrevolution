@@ -7,6 +7,7 @@ use std::fmt;
 use std::fmt::Display;
 use uuid7::{Uuid, uuid7};
 
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimeOffEntry {
     pub date: DateTime<Local>,
@@ -74,6 +75,7 @@ pub struct Resource<S: ResourceState> {
 }
 
 impl Resource<Available> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         code: String,
         name: String,

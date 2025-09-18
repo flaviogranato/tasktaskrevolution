@@ -2,7 +2,7 @@ use crate::application::{
     company_management::{CreateCompanyArgs, CreateCompanyUseCase},
     create::{
         project::CreateProjectUseCase,
-        resource::CreateResourceUseCase,
+        resource::{CreateResourceUseCase, CreateResourceParams},
         task::{CreateTaskArgs, CreateTaskUseCase},
     },
     execution_context::ExecutionContext,
@@ -206,7 +206,17 @@ impl SimplifiedExecutor {
                     None
                 };
                 
-                match use_case.execute(&name, resource_type, company_code.clone(), None, code, Some(email), start_date_parsed, end_date_parsed) {
+                let params = CreateResourceParams {
+                    name: name.clone(),
+                    resource_type: resource_type.to_string(),
+                    company_code: company_code.clone(),
+                    project_code: None,
+                    code,
+                    email: Some(email),
+                    start_date: start_date_parsed,
+                    end_date: end_date_parsed,
+                };
+                match use_case.execute(params) {
                     Ok(_) => {
                         println!("✅ Resource created successfully!");
                         println!("   Name: {}", name);

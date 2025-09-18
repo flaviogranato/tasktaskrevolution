@@ -1,5 +1,5 @@
 use crate::application::create::project::CreateProjectUseCase;
-use crate::application::create::resource::CreateResourceUseCase;
+use crate::application::create::resource::{CreateResourceUseCase, CreateResourceParams};
 use crate::application::create::task::CreateTaskUseCase;
 use crate::application::errors::AppError;
 use crate::domain::project_management::{ProjectTemplate, repository::ProjectRepository};
@@ -60,16 +60,17 @@ impl<PR: ProjectRepository, RR: ResourceRepository, TR: TaskRepository> CreateFr
 
         // Create resources
         for resource in &rendered.resources {
-            self.create_resource_use_case.execute(
-                &resource.name,
-                &resource.r#type,
-                company_code.clone(),
-                None, // Global to company
-                None, // Auto-generate code
-                None, // No email from template
-                None, // No start date from template
-                None, // No end date from template
-            )?;
+            let params = CreateResourceParams {
+                name: resource.name.clone(),
+                resource_type: resource.r#type.clone(),
+                company_code: company_code.clone(),
+                project_code: None, // Global to company
+                code: None, // Auto-generate code
+                email: None, // No email from template
+                start_date: None, // No start date from template
+                end_date: None, // No end date from template
+            };
+            self.create_resource_use_case.execute(params)?;
 
             created_resources.push(CreatedResource {
                 name: resource.name.clone(),
