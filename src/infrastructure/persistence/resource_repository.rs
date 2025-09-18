@@ -276,14 +276,8 @@ impl ResourceRepository for FileResourceRepository {
             // Save as project-specific resource
             self.get_project_resource_path(company_code, proj_code, resource.name())
         } else {
-            // Save as company global resource using name for creation, code for updates
-            // This is a heuristic: if the resource has a code that doesn't match the name,
-            // it's likely an update operation
-            if resource.code() != resource.name().replace(' ', "_").to_lowercase() {
-                self.get_company_resource_path_by_code(company_code, resource.code())
-            } else {
-                self.get_company_resource_path(company_code, resource.name())
-            }
+            // Save as company global resource - always use code for filename to ensure updates work correctly
+            self.get_company_resource_path_by_code(company_code, resource.code())
         };
 
         let resource_manifest = ResourceManifest::from(resource.clone());

@@ -64,6 +64,10 @@ path = "tests/integration/update_commands.rs"
 name = "delete_task_test"
 path = "tests/integration/delete_task_test.rs"
 
+[[test]]
+name = "update_resource_test"
+path = "tests/integration/update_resource_test.rs"
+
 [profile.release]
 opt-level = 3
 lto = true
