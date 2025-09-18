@@ -451,7 +451,7 @@ ttr update resource \
   --company "TECH-001" \
   --name "João Silva Santos" \
   --email "joao.silva@techcorp.com" \
-  --description "Tech Lead Senior"
+  --description "Desenvolvedor Senior e Tech Lead"
 
 if test $status -eq 0
     echo "✅ Recurso atualizado com sucesso"
