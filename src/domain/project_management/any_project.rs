@@ -149,9 +149,13 @@ impl AnyProject {
         match self {
             AnyProject::Project(p) => {
                 // Insert the task directly using its code
-                println!("DEBUG: Adding task to project: {} - {}", task.code(), task.name());
+                if std::env::var("TTR_VERBOSE").unwrap_or_default() == "1" {
+                    println!("DEBUG: Adding task to project: {} - {}", task.code(), task.name());
+                }
                 p.tasks.insert(task.code().to_string(), task);
-                println!("DEBUG: Project now has {} tasks", p.tasks.len());
+                if std::env::var("TTR_VERBOSE").unwrap_or_default() == "1" {
+                    println!("DEBUG: Project now has {} tasks", p.tasks.len());
+                }
             }
         }
     }

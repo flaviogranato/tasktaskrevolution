@@ -16,3 +16,4 @@ pub mod delete_task_test;
 pub mod update_resource_test;
 pub mod delete_resource_test;
 pub mod list_resources_test;
+pub mod verbose_test;

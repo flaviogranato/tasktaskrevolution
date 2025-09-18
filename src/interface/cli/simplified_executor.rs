@@ -448,8 +448,10 @@ impl SimplifiedExecutor {
                     }
                 } else {
                     // List tasks based on current context
-                    println!("DEBUG: No project parameter provided, using current context");
-                    println!("DEBUG: Current context: {:?}", context_manager.context());
+                    if Cli::is_verbose() {
+                        println!("DEBUG: No project parameter provided, using current context");
+                        println!("DEBUG: Current context: {:?}", context_manager.context());
+                    }
                     match context_manager.context() {
                         ExecutionContext::Project(company_code, project_code) => {
                             // In project context, list tasks for current project
