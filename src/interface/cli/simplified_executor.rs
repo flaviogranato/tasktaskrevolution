@@ -159,7 +159,8 @@ impl SimplifiedExecutor {
                     assigned_resources: assigned_resources_vec,
                 };
 
-                let use_case = CreateTaskUseCase::new(project_repo);
+                let task_repo = context_manager.create_task_repository();
+                let use_case = CreateTaskUseCase::new(project_repo, task_repo);
                 match use_case.execute(args) {
                     Ok(_) => {
                         println!("✅ Task created successfully!");
@@ -545,7 +546,8 @@ impl SimplifiedExecutor {
 
                 let (project_code, _company_code) = context_manager.resolve_project_codes(project, company)?;
                 let project_repo = context_manager.get_project_repository();
-                let use_case = UpdateTaskUseCase::new(project_repo);
+                let task_repo = context_manager.create_task_repository();
+                let use_case = UpdateTaskUseCase::new(project_repo, task_repo);
 
                 let start = start_date
                     .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))

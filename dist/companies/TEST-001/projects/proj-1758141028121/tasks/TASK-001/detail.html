@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>
+            Design System - Task Details - Test Project
+        </title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-slate-50 text-slate-800 font-sans">
+        <header class="bg-white shadow-sm border-b border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-4">
+                        <h1 class="text-2xl font-bold text-slate-900">
+                            <a href="/index.html" class="hover:text-blue-600 transition-colors">
+                                TaskTaskRevolution
+                            </a>
+                        </h1>
+                        
+                    </div>
+                    <nav class="hidden md:flex space-x-6">
+                        <a
+                            href="../../../../index.html"
+                            class="text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                            >Dashboard</a
+                        >
+                        
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            
+<div class="space-y-8">
+    <!-- Breadcrumb Navigation -->
+    <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="../../../../index.html" class="inline-flex items-center text-sm font-medium text-slate-700 hover:text-blue-600">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    Dashboard
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <a href="..&#x2F;..&#x2F;..&#x2F;..&#x2F;companies/TEST-001/index.html" class="ml-1 text-sm font-medium text-slate-700 hover:text-blue-600 md:ml-2">Test Company</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <a href="..&#x2F;..&#x2F;..&#x2F;..&#x2F;companies/TEST-001/projects/proj-1758141028121/index.html" class="ml-1 text-sm font-medium text-slate-700 hover:text-blue-600 md:ml-2">Test Project</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <a href="..&#x2F;..&#x2F;..&#x2F;..&#x2F;companies/TEST-001/projects/proj-1758141028121/tasks.html" class="ml-1 text-sm font-medium text-slate-700 hover:text-blue-600 md:ml-2">Tasks</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-slate-500 md:ml-2">Design System</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Task Header -->
+    <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+        <div class="flex items-start justify-between">
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
+                    Design System
+                </h2>
+                <p class="mt-2 text-lg text-slate-600">
+                    No description provided.
+                </p>
+                <div class="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
+                    <span><strong>Code:</strong> TASK-001</span>
+                    <span><strong>Project:</strong> Test Project (proj-1758141028121)</span>
+                    <span><strong>Company:</strong> Test Company (TEST-001)</span>
+                    <span><strong>Status:</strong> Planned</span>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <a href="..&#x2F;..&#x2F;..&#x2F;..&#x2F;companies/TEST-001/projects/proj-1758141028121/tasks.html" 
+                   class="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Tasks
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Information -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Information -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Basic Information -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Basic Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Status</dt>
+                        <dd class="mt-1">
+                            
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-800">
+                                Planned
+                            </span>
+                            
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Priority</dt>
+                        <dd class="mt-1">
+                            
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                                Medium
+                            </span>
+                            
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Start Date</dt>
+                        <dd class="mt-1 text-sm text-slate-900">2024-01-15</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Due Date</dt>
+                        <dd class="mt-1 text-sm text-slate-900">2024-02-15</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Estimated Hours</dt>
+                        <dd class="mt-1 text-sm text-slate-900">Not specified</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Progress</dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            N/A
+                        </dd>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            
+
+            <!-- Acceptance Criteria -->
+            
+
+            <!-- Comments -->
+            
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Assigned Resources -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Assigned Resources</h3>
+                
+                <p class="text-slate-500 text-sm">No resources assigned</p>
+                
+            </div>
+
+            <!-- Dependencies -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Dependencies</h3>
+                
+                <p class="text-slate-500 text-sm">No dependencies</p>
+                
+            </div>
+
+            <!-- Tags -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">Tags</h3>
+                
+                <p class="text-slate-500 text-sm">No tags</p>
+                
+            </div>
+
+            <!-- Effort Information -->
+            
+        </div>
+    </div>
+</div>
+
+        </main>
+
+        <footer class="text-center py-6 text-sm text-slate-500">
+            <p>
+                Generated by TaskTaskRevolution on 2025-09-18 00:11
+            </p>
+        </footer>
+
+        
+    </body>
+</html>

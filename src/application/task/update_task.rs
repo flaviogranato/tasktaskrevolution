@@ -3,7 +3,7 @@
 
 use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
-use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask, repository::TaskRepository};
 use chrono::NaiveDate;
 use std::fmt;
 
@@ -42,19 +42,25 @@ pub struct UpdateTaskArgs {
     pub due_date: Option<NaiveDate>,
 }
 
-pub struct UpdateTaskUseCase<PR>
+pub struct UpdateTaskUseCase<PR, TR>
 where
     PR: ProjectRepository,
+    TR: TaskRepository,
 {
     project_repository: PR,
+    task_repository: TR,
 }
 
-impl<PR> UpdateTaskUseCase<PR>
+impl<PR, TR> UpdateTaskUseCase<PR, TR>
 where
     PR: ProjectRepository,
+    TR: TaskRepository,
 {
-    pub fn new(project_repository: PR) -> Self {
-        Self { project_repository }
+    pub fn new(project_repository: PR, task_repository: TR) -> Self {
+        Self { 
+            project_repository,
+            task_repository,
+        }
     }
 
     pub fn execute(
@@ -88,7 +94,10 @@ where
         // 4. Save the updated project aggregate.
         self.project_repository.save(project.clone())?;
 
-        // 5. Return the updated task to the caller.
+        // 5. Save the updated task individually in the project's tasks directory
+        self.task_repository.save_in_hierarchy(updated_task.clone(), project.company_code(), project_code)?;
+
+        // 6. Return the updated task to the caller.
         Ok(updated_task)
     }
 }
@@ -98,10 +107,51 @@ mod tests {
     use super::*;
     use crate::domain::{
         project_management::{AnyProject, builder::ProjectBuilder},
-        task_management::{state::Planned, task::Task},
+        task_management::{state::Planned, task::Task, repository::TaskRepository},
     };
     use std::{cell::RefCell, collections::HashMap, rc::Rc};
     use uuid7::uuid7;
+
+    // --- Mocks ---
+    struct MockTaskRepository {
+        tasks: RefCell<HashMap<String, AnyTask>>,
+    }
+
+    impl MockTaskRepository {
+        fn new() -> Self {
+            Self {
+                tasks: RefCell::new(HashMap::new()),
+            }
+        }
+    }
+
+    impl TaskRepository for MockTaskRepository {
+        fn save(&self, task: AnyTask) -> Result<AnyTask, AppError> {
+            self.tasks.borrow_mut().insert(task.code().to_string(), task.clone());
+            Ok(task)
+        }
+
+        fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
+            Ok(self.tasks.borrow().values().cloned().collect())
+        }
+
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
+            Ok(self.tasks.borrow().get(code).cloned())
+        }
+
+        fn save_in_hierarchy(
+            &self,
+            task: AnyTask,
+            _company_code: &str,
+            _project_code: &str,
+        ) -> Result<AnyTask, AppError> {
+            self.save(task)
+        }
+
+        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+            Ok(self.tasks.borrow().values().cloned().collect())
+        }
+    }
 
     // --- Mocks ---
     #[derive(Clone)]
@@ -172,7 +222,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: Rc::new(RefCell::new(HashMap::from([(project.code().to_string(), project)]))),
         };
-        let use_case = UpdateTaskUseCase::new(project_repo);
+        let task_repo = MockTaskRepository::new();
+        let use_case = UpdateTaskUseCase::new(project_repo, task_repo);
 
         let args = UpdateTaskArgs {
             name: Some("New Name".to_string()),
@@ -192,7 +243,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: Rc::new(RefCell::new(HashMap::new())),
         };
-        let use_case = UpdateTaskUseCase::new(project_repo);
+        let task_repo = MockTaskRepository::new();
+        let use_case = UpdateTaskUseCase::new(project_repo, task_repo);
 
         let args = UpdateTaskArgs {
             name: Some("New Name".to_string()),
@@ -237,7 +289,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: Rc::new(RefCell::new(HashMap::from([(project.code().to_string(), project)]))),
         };
-        let use_case = UpdateTaskUseCase::new(project_repo.clone());
+        let task_repo = MockTaskRepository::new();
+        let use_case = UpdateTaskUseCase::new(project_repo.clone(), task_repo);
 
         // We delay task A by 3 days (it now ends on day 8 instead of 5)
         let args = UpdateTaskArgs {

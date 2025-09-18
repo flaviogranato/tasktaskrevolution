@@ -4,20 +4,21 @@ use crate::application::create::task::CreateTaskUseCase;
 use crate::application::errors::AppError;
 use crate::domain::project_management::{ProjectTemplate, repository::ProjectRepository};
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::task_management::repository::TaskRepository;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 
-pub struct CreateFromTemplateUseCase<PR: ProjectRepository, RR: ResourceRepository> {
+pub struct CreateFromTemplateUseCase<PR: ProjectRepository, RR: ResourceRepository, TR: TaskRepository> {
     create_project_use_case: CreateProjectUseCase<PR>,
     create_resource_use_case: CreateResourceUseCase<RR>,
-    create_task_use_case: CreateTaskUseCase<PR>,
+    create_task_use_case: CreateTaskUseCase<PR, TR>,
 }
 
-impl<PR: ProjectRepository, RR: ResourceRepository> CreateFromTemplateUseCase<PR, RR> {
+impl<PR: ProjectRepository, RR: ResourceRepository, TR: TaskRepository> CreateFromTemplateUseCase<PR, RR, TR> {
     pub fn new(
         create_project_use_case: CreateProjectUseCase<PR>,
         create_resource_use_case: CreateResourceUseCase<RR>,
-        create_task_use_case: CreateTaskUseCase<PR>,
+        create_task_use_case: CreateTaskUseCase<PR, TR>,
     ) -> Self {
         Self {
             create_project_use_case,

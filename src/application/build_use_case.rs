@@ -251,9 +251,9 @@ impl BuildUseCase {
             println!("[INFO] Project count: {}", project_count);
             println!("[INFO] Resource count: {}", resource_count);
 
-            // Gerar gráfico Gantt demo da empresa
+            // Gerar gráfico Gantt com dados reais da empresa
             let company_gantt_path = self.output_dir.join("companies").join(company_code).join("gantt.html");
-            if let Err(e) = gantt_use_case.generate_and_save_demo_gantt_html(&company_gantt_path) {
+            if let Err(e) = gantt_use_case.generate_and_save_company_gantt_html(company_code, &company_gantt_path) {
                 println!(
                     "⚠️  Warning: Failed to generate Gantt chart for company {}: {}",
                     company_code, e
@@ -565,9 +565,9 @@ impl BuildUseCase {
                 fs::write(project_detail_path, project_detail_html)?;
                 println!("✅ Project '{project_name}' detail page generated successfully.");
 
-                // Gerar gráfico Gantt demo para o projeto
+                // Gerar gráfico Gantt com dados reais do projeto
                 let project_gantt_path = project_output_dir.join("gantt.html");
-                if let Err(e) = gantt_use_case.generate_and_save_demo_gantt_html(&project_gantt_path) {
+                if let Err(e) = gantt_use_case.generate_and_save_project_gantt_html(project_code, &project_gantt_path) {
                     println!(
                         "⚠️  Warning: Failed to generate Gantt chart for project {}: {}",
                         project_code, e

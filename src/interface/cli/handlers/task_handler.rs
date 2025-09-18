@@ -27,7 +27,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             assigned_resources,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let create_use_case = CreateTaskUseCase::new(project_repository);
+            let task_repository = FileTaskRepository::new(".");
+            let create_use_case = CreateTaskUseCase::new(project_repository, task_repository);
 
             let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
@@ -90,7 +91,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             due_date,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let update_use_case = UpdateTaskUseCase::new(project_repository);
+            let task_repository = FileTaskRepository::new(".");
+            let update_use_case = UpdateTaskUseCase::new(project_repository, task_repository);
 
             let start = start_date
                 .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))

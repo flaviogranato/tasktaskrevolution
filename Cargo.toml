@@ -56,6 +56,10 @@ path = "tests/integration/compatibility.rs"
 name = "external_integration"
 path = "tests/integration/external_integration.rs"
 
+[[test]]
+name = "update_commands"
+path = "tests/integration/update_commands.rs"
+
 [profile.release]
 opt-level = 3
 lto = true

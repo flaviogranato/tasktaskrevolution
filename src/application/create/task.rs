@@ -1,7 +1,7 @@
 // Priority and Category are used in Task initializations
 use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
-use crate::domain::task_management::TaskBuilder;
+use crate::domain::task_management::{TaskBuilder, repository::TaskRepository, AnyTask};
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {
@@ -14,13 +14,25 @@ pub struct CreateTaskArgs {
     pub assigned_resources: Vec<String>,
 }
 
-pub struct CreateTaskUseCase<R: ProjectRepository> {
-    repository: R,
+pub struct CreateTaskUseCase<PR, TR>
+where
+    PR: ProjectRepository,
+    TR: TaskRepository,
+{
+    project_repository: PR,
+    task_repository: TR,
 }
 
-impl<R: ProjectRepository> CreateTaskUseCase<R> {
-    pub fn new(repository: R) -> Self {
-        Self { repository }
+impl<PR, TR> CreateTaskUseCase<PR, TR>
+where
+    PR: ProjectRepository,
+    TR: TaskRepository,
+{
+    pub fn new(project_repository: PR, task_repository: TR) -> Self {
+        Self { 
+            project_repository,
+            task_repository,
+        }
     }
 
     pub fn execute(&self, args: CreateTaskArgs) -> Result<(), AppError> {
@@ -36,7 +48,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
 
         // 1. Load the project aggregate.
         let mut project = self
-            .repository
+            .project_repository
             .find_by_code(&project_code)?
             .ok_or_else(|| AppError::ProjectNotFound {
                 code: project_code.clone(),
@@ -58,6 +70,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         };
 
         let task_code_for_output = next_task_code.clone();
+        let project_code_for_save = project_code.clone();
 
         let builder = TaskBuilder::new()
             .project_code(project_code)
@@ -93,10 +106,14 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
         }?;
 
         // Add the task to the project (this part will be moved into a project method later)
-        project.add_task(task.into());
+        let task_any: AnyTask = task.into();
+        project.add_task(task_any.clone());
 
         // 3. Save the entire project aggregate.
-        self.repository.save(project)?;
+        self.project_repository.save(project.clone())?;
+
+        // 4. Save the task individually in the project's tasks directory
+        self.task_repository.save_in_hierarchy(task_any, project.company_code(), &project_code_for_save)?;
 
         println!(
             "Task '{}' created successfully with code '{}'",
@@ -110,6 +127,7 @@ impl<R: ProjectRepository> CreateTaskUseCase<R> {
 mod test {
     use super::*;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
+    use crate::domain::task_management::{AnyTask, repository::TaskRepository};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
@@ -117,6 +135,46 @@ mod test {
     struct MockProjectRepository {
         should_fail: bool,
         projects: RefCell<HashMap<String, AnyProject>>,
+    }
+
+    struct MockTaskRepository {
+        tasks: RefCell<HashMap<String, AnyTask>>,
+    }
+
+    impl MockTaskRepository {
+        fn new() -> Self {
+            Self {
+                tasks: RefCell::new(HashMap::new()),
+            }
+        }
+    }
+
+    impl TaskRepository for MockTaskRepository {
+        fn save(&self, task: AnyTask) -> Result<AnyTask, AppError> {
+            self.tasks.borrow_mut().insert(task.code().to_string(), task.clone());
+            Ok(task)
+        }
+
+        fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
+            Ok(self.tasks.borrow().values().cloned().collect())
+        }
+
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
+            Ok(self.tasks.borrow().get(code).cloned())
+        }
+
+        fn save_in_hierarchy(
+            &self,
+            task: AnyTask,
+            _company_code: &str,
+            _project_code: &str,
+        ) -> Result<AnyTask, AppError> {
+            self.save(task)
+        }
+
+        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+            Ok(self.tasks.borrow().values().cloned().collect())
+        }
     }
 
     impl MockProjectRepository {
@@ -176,7 +234,8 @@ mod test {
     #[test]
     fn test_create_task_success() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateTaskUseCase::new(mock_repo);
+        let mock_task_repo = MockTaskRepository::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -191,7 +250,7 @@ mod test {
         let result = use_case.execute(args);
 
         assert!(result.is_ok());
-        let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
+        let project = use_case.project_repository.find_by_code("PROJ-1").unwrap().unwrap();
         assert_eq!(project.tasks().len(), 1);
 
         // Find the task by iterating through all tasks since we don't know the exact code
@@ -202,7 +261,8 @@ mod test {
     #[test]
     fn test_create_task_fails_if_project_not_found() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateTaskUseCase::new(mock_repo);
+        let mock_task_repo = MockTaskRepository::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -222,7 +282,8 @@ mod test {
     #[test]
     fn test_create_task_fails_if_start_date_after_due_date() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateTaskUseCase::new(mock_repo);
+        let mock_task_repo = MockTaskRepository::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -250,7 +311,8 @@ mod test {
     #[test]
     fn test_create_task_with_same_start_and_due_date() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateTaskUseCase::new(mock_repo);
+        let mock_task_repo = MockTaskRepository::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -275,7 +337,8 @@ mod test {
     #[test]
     fn test_create_task_without_assigned_resources() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateTaskUseCase::new(mock_repo);
+        let mock_task_repo = MockTaskRepository::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -290,7 +353,7 @@ mod test {
         let result = use_case.execute(args);
 
         assert!(result.is_ok());
-        let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
+        let project = use_case.project_repository.find_by_code("PROJ-1").unwrap().unwrap();
         // Count should be 1 since we're starting with a fresh project
         assert_eq!(project.tasks().len(), 1);
 
@@ -302,7 +365,8 @@ mod test {
     #[test]
     fn test_create_task_with_multiple_assigned_resources() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateTaskUseCase::new(mock_repo);
+        let mock_task_repo = MockTaskRepository::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -317,7 +381,7 @@ mod test {
         let result = use_case.execute(args);
 
         assert!(result.is_ok());
-        let project = use_case.repository.find_by_code("PROJ-1").unwrap().unwrap();
+        let project = use_case.project_repository.find_by_code("PROJ-1").unwrap().unwrap();
         // Count should be 1 since we're starting with a fresh project
         assert_eq!(project.tasks().len(), 1);
 
@@ -329,7 +393,8 @@ mod test {
     #[test]
     fn test_create_task_repository_save_failure() {
         let mock_repo = MockProjectRepository::new(true); // This will make save() fail
-        let use_case = CreateTaskUseCase::new(mock_repo);
+        let mock_task_repo = MockTaskRepository::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
