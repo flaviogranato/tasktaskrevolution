@@ -53,6 +53,8 @@ fn setup_basic_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std:
         "resource",
         "--name",
         "John Doe",
+        "--type",
+        "Developer",
         "--email",
         "john@example.com",
         "--description",

@@ -2,7 +2,7 @@
 
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{
-    any_resource::AnyResource, repository::ResourceRepository, resource::WipLimits,
+    ResourceTypeValidator, any_resource::AnyResource, repository::ResourceRepository, resource::WipLimits,
 };
 use std::fmt;
 
@@ -43,6 +43,7 @@ where
     RR: ResourceRepository,
 {
     resource_repository: RR,
+    type_validator: ResourceTypeValidator,
 }
 
 impl<RR> UpdateResourceUseCase<RR>
@@ -50,7 +51,10 @@ where
     RR: ResourceRepository,
 {
     pub fn new(resource_repository: RR) -> Self {
-        Self { resource_repository }
+        Self {
+            resource_repository,
+            type_validator: ResourceTypeValidator::new(),
+        }
     }
 
     pub fn execute(
@@ -75,6 +79,10 @@ where
             resource.set_email(Some(email));
         }
         if let Some(resource_type) = args.resource_type {
+            // Validate resource type against config
+            self.type_validator
+                .validate_resource_type(&resource_type)
+                .map_err(UpdateAppError::AppError)?;
             resource.set_resource_type(resource_type);
         }
 

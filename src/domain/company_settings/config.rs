@@ -12,6 +12,7 @@ pub struct Config {
     pub work_hours_start: Option<String>,
     pub work_hours_end: Option<String>,
     pub work_days: Vec<WorkDay>,
+    pub resource_types: Vec<String>,
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
@@ -73,6 +74,7 @@ impl Config {
                 WorkDay::Thursday,
                 WorkDay::Friday,
             ],
+            resource_types: vec![],
             created_at: Some(now),
             updated_at: Some(now),
         }
@@ -234,6 +236,7 @@ mod tests {
             work_hours_start: None,
             work_hours_end: None,
             work_days: vec![],
+            resource_types: vec![],
             created_at: None,
             updated_at: None,
         };
