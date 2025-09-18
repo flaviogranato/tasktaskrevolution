@@ -223,10 +223,10 @@ fn find_project_code(temp: &TempDir) -> Result<String, Box<dyn std::error::Error
 
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                if let Some(dir_name) = entry.file_name().to_str() {
-                    return Ok(dir_name.to_string());
-                }
+            if entry.path().is_dir()
+                && let Some(dir_name) = entry.file_name().to_str()
+            {
+                return Ok(dir_name.to_string());
             }
         }
     }
@@ -244,10 +244,11 @@ fn find_task_code(temp: &TempDir, project_code: &str) -> Result<String, Box<dyn 
 
     if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_file() && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml") {
-                if let Some(file_name) = entry.file_name().to_str() {
-                    return Ok(file_name.to_string());
-                }
+            if entry.path().is_file()
+                && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml")
+                && let Some(file_name) = entry.file_name().to_str()
+            {
+                return Ok(file_name.to_string());
             }
         }
     }
