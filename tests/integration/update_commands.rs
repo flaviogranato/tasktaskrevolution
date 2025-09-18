@@ -1,5 +1,5 @@
 use assert_cmd::Command;
-use assert_fs::prelude::*;
+// use assert_fs::prelude::*;
 use predicates::prelude::*;
 use std::fs;
 
@@ -116,19 +116,16 @@ fn find_project_code(temp: &assert_fs::TempDir) -> Result<String, Box<dyn std::e
         for entry in entries.flatten() {
             if entry.path().is_dir() {
                 let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml) {
-                        if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                            if let Some(code) = yaml
-                                .get("metadata")
-                                .and_then(|m| m.get("code"))
-                                .and_then(|c| c.as_str())
-                            {
-                                project_code = Some(code.to_string());
-                                break;
-                            }
-                        }
-                    }
+                if project_yaml.exists()
+                    && let Ok(content) = std::fs::read_to_string(&project_yaml)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    project_code = Some(code.to_string());
+                    break;
                 }
             }
         }
@@ -160,11 +157,11 @@ fn find_task_code(temp: &assert_fs::TempDir, project_code: &str) -> Result<Strin
                 && path.extension().and_then(|s| s.to_str()) == Some("yaml")
             {
                 // Extract task code from filename (e.g., "task-001.yaml" -> "task-001")
-                if let Some(file_name) = entry.file_name().to_str() {
-                    if file_name.starts_with("task-") && file_name.ends_with(".yaml") {
-                        task_code = Some(file_name.to_string());
-                        break;
-                    }
+                if let Some(file_name) = entry.file_name().to_str()
+                    && file_name.starts_with("task-") && file_name.ends_with(".yaml")
+                {
+                    task_code = Some(file_name.to_string());
+                    break;
                 }
             }
         }
@@ -193,7 +190,7 @@ fn find_resource_code(temp: &assert_fs::TempDir) -> Result<String, Box<dyn std::
         for entry in entries.flatten() {
             if entry.path().is_file()
                 && entry.path().extension().and_then(|s| s.to_str()) == Some("yaml")
-                && entry.file_name().to_str().map_or(false, |name| name.starts_with("resource-"))
+                && entry.file_name().to_str().is_some_and(|name| name.starts_with("resource-"))
             {
                 resource_code = Some(entry.file_name().to_str().unwrap().to_string());
                 break;
@@ -609,7 +606,7 @@ fn test_comprehensive_update_matrix() -> Result<(), Box<dyn std::error::Error>> 
         ("root", "resource", vec!["--code", &resource_code, "--company", "TECH-CORP", "--name", "Root Resource Update"]),
     ];
     
-    for (context, command, args) in test_cases {
+    for (_context, command, args) in test_cases {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
         cmd.arg("update").arg(command);
@@ -628,7 +625,7 @@ fn test_comprehensive_update_matrix() -> Result<(), Box<dyn std::error::Error>> 
         ("company", "resource", vec!["--code", &resource_code, "--name", "Company Resource Update"]),
     ];
     
-    for (context, command, args) in company_test_cases {
+    for (_context, command, args) in company_test_cases {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(&company_dir);
         cmd.arg("update").arg(command);
@@ -645,7 +642,7 @@ fn test_comprehensive_update_matrix() -> Result<(), Box<dyn std::error::Error>> 
         ("project", "task", vec!["--code", task_code_without_ext, "--name", "Project Task Update"]),
     ];
     
-    for (context, command, args) in project_test_cases {
+    for (_context, command, args) in project_test_cases {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(&project_dir);
         cmd.arg("update").arg(command);

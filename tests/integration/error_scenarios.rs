@@ -412,17 +412,16 @@ fn test_create_task_without_project() -> Result<(), Box<dyn std::error::Error>> 
         for entry in entries.flatten() {
             if entry.path().is_dir() {
                 let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
-                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                        && let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                    {
-                        project_code = Some(code.to_string());
-                        break;
-                    }
+                if project_yaml.exists()
+                    && let Ok(content) = std::fs::read_to_string(&project_yaml)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    project_code = Some(code.to_string());
+                    break;
                 }
             }
         }

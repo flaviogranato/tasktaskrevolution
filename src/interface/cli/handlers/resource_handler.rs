@@ -1,7 +1,7 @@
 use super::super::commands::ResourceCommand;
 use crate::{
     application::{
-        create::{resource::CreateResourceUseCase, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase},
+        create::{resource::{CreateResourceUseCase, CreateResourceParams}, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase},
         resource::{
             deactivate_resource::DeactivateResourceUseCase,
             describe_resource::DescribeResourceUseCase,
@@ -23,7 +23,17 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let resource_repository = FileResourceRepository::new(".");
             let create_use_case = CreateResourceUseCase::new(resource_repository);
 
-            match create_use_case.execute(&name, "person", "COMPANY001".to_string(), None, None, Some(email), None, None) {
+            let params = CreateResourceParams {
+                name: name.clone(),
+                resource_type: "person".to_string(),
+                company_code: "COMPANY001".to_string(),
+                project_code: None,
+                code: None,
+                email: Some(email),
+                start_date: None,
+                end_date: None,
+            };
+            match create_use_case.execute(params) {
                 Ok(_resource) => {
                     println!("✅ Resource created successfully!");
                     println!("   Resource created successfully!");

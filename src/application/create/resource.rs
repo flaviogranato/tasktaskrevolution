@@ -1,6 +1,18 @@
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{repository::ResourceRepository, resource::Resource};
 
+#[derive(Debug, Clone)]
+pub struct CreateResourceParams {
+    pub name: String,
+    pub resource_type: String,
+    pub company_code: String,
+    pub project_code: Option<String>,
+    pub code: Option<String>,
+    pub email: Option<String>,
+    pub start_date: Option<chrono::NaiveDate>,
+    pub end_date: Option<chrono::NaiveDate>,
+}
+
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
 }
@@ -9,34 +21,25 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R) -> Self {
         Self { repository }
     }
-    pub fn execute(
-        &self,
-        name: &str,
-        resource_type: &str,
-        company_code: String,
-        project_code: Option<String>,
-        code: Option<String>,
-        email: Option<String>,
-        _start_date: Option<chrono::NaiveDate>,
-        _end_date: Option<chrono::NaiveDate>,
-    ) -> Result<(), AppError> {
-        let code = match code {
+    pub fn execute(&self, params: CreateResourceParams) -> Result<(), AppError> {
+        let code = match params.code {
             Some(c) => c,
-            None => self.repository.get_next_code(resource_type)?,
+            None => self.repository.get_next_code(&params.resource_type)?,
         };
-        let r = Resource::new(code, name.to_string(), email, resource_type.to_string(), _start_date, _end_date, None, 0);
+        let name = params.name.clone();
+        let r = Resource::new(code, params.name, params.email, params.resource_type, params.start_date, params.end_date, None, 0);
 
         // Use the new hierarchical save method
         self.repository
-            .save_in_hierarchy(r.into(), &company_code, project_code.as_deref())?;
+            .save_in_hierarchy(r.into(), &params.company_code, params.project_code.as_deref())?;
 
-        let location = if let Some(proj_code) = project_code {
-            format!("company {} and project {}", company_code, proj_code)
+        let location = if let Some(proj_code) = params.project_code {
+            format!("company {} and project {}", params.company_code, proj_code)
         } else {
-            format!("company {}", company_code)
+            format!("company {}", params.company_code)
         };
 
-        println!("Resource {name} created in {location}.");
+        println!("Resource {} created in {}.", name, location);
         Ok(())
     }
 }
@@ -130,7 +133,17 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None, None, None);
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+        };
+        let result = use_case.execute(params);
         assert!(result.is_ok());
     }
 
@@ -141,7 +154,17 @@ mod test {
         let name = "John";
         let resource_type = "Developer";
 
-        let result = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None, None, None);
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+        };
+        let result = use_case.execute(params);
         assert!(result.is_err());
     }
 
@@ -151,7 +174,17 @@ mod test {
         let use_case = CreateResourceUseCase::new(mock_repo);
         let name = "John";
         let resource_type = "Developer";
-        let _ = use_case.execute(name, resource_type, "TEST_COMPANY".to_string(), None, None, None, None, None);
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+        };
+        let _ = use_case.execute(params);
 
         let saved_config = use_case.repository.saved_config.borrow();
         assert!(saved_config.is_some());
