@@ -77,7 +77,7 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
             let create_resource_use_case = CreateResourceUseCase::new(resource_repository);
             let create_task_use_case = CreateTaskUseCase::new(
                 FileProjectRepository::with_base_path(".".into()),
-                FileTaskRepository::new(".")
+                FileTaskRepository::new("."),
             );
 
             let load_use_case = LoadTemplateUseCase::new();

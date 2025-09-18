@@ -162,7 +162,7 @@ mod tests {
             .unwrap()
             .into();
 
-          let mut resource1 = Resource::<Available>::new(
+        let mut resource1 = Resource::<Available>::new(
             "dev-1".to_string(),
             "Alice".to_string(),
             None,
@@ -182,8 +182,16 @@ mod tests {
             is_layoff: false,
         }]);
 
-        let resource2 =
-            Resource::<Available>::new("qa-1".to_string(), "Bob".to_string(), None, "QA".to_string(), None, None, None, 0); // No vacation
+        let resource2 = Resource::<Available>::new(
+            "qa-1".to_string(),
+            "Bob".to_string(),
+            None,
+            "QA".to_string(),
+            None,
+            None,
+            None,
+            0,
+        ); // No vacation
 
         let mock_project_repo = MockProjectRepository { project };
         let mock_resource_repo = MockResourceRepository {

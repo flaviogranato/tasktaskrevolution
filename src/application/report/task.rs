@@ -17,7 +17,12 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
     }
 
     /// Executa a geração do relatório, escrevendo o resultado em um `Writer` fornecido.
-    pub fn execute<W: io::Write>(&self, project_code: &str, _company_code: &str, writer: &mut Writer<W>) -> Result<(), Box<dyn Error>> {
+    pub fn execute<W: io::Write>(
+        &self,
+        project_code: &str,
+        _company_code: &str,
+        writer: &mut Writer<W>,
+    ) -> Result<(), Box<dyn Error>> {
         // Escrever o cabeçalho do CSV
         writer.write_record([
             "Code",
@@ -29,7 +34,9 @@ impl<P: ProjectRepository> TaskReportUseCase<P> {
             "Assignees",
         ])?;
 
-        let project = self.project_repository.find_by_code(project_code)?
+        let project = self
+            .project_repository
+            .find_by_code(project_code)?
             .ok_or_else(|| format!("Project with code '{}' not found", project_code))?;
         let tasks: Vec<&AnyTask> = project.tasks().values().collect();
 
@@ -296,7 +303,9 @@ mod tests {
 
         // Verify all task variants
         assert!(lines_set.contains("TSK-PLAN,Planning Phase,Planned,0,2025-01-01,2025-01-15,"));
-        assert!(lines_set.contains("TSK-BLOCK,Blocked Task,Blocked,No assigned resources,2025-01-05,2025-01-20,Developer"));
+        assert!(
+            lines_set.contains("TSK-BLOCK,Blocked Task,Blocked,No assigned resources,2025-01-05,2025-01-20,Developer")
+        );
         assert!(lines_set.contains("TSK-CANCEL,Cancelled Task,Cancelled,No assigned resources,2025-01-10,2025-01-25,"));
     }
 
@@ -513,9 +522,9 @@ mod tests {
                 unimplemented!()
             }
             fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
-                Err(AppError::RepositoryError { 
-                    operation: "find_by_code".to_string(), 
-                    details: "Repository error".to_string() 
+                Err(AppError::RepositoryError {
+                    operation: "find_by_code".to_string(),
+                    details: "Repository error".to_string(),
                 })
             }
             fn get_next_code(&self) -> Result<String, AppError> {

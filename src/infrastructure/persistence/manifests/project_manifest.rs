@@ -165,7 +165,6 @@ impl TryFrom<ProjectManifest> for AnyProject {
         project.id = id.to_string();
         project.description = description;
 
-
         Ok(AnyProject::Project(project))
     }
 }

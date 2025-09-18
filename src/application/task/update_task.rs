@@ -57,7 +57,7 @@ where
     TR: TaskRepository,
 {
     pub fn new(project_repository: PR, task_repository: TR) -> Self {
-        Self { 
+        Self {
             project_repository,
             task_repository,
         }
@@ -95,7 +95,8 @@ where
         self.project_repository.save(project.clone())?;
 
         // 5. Save the updated task individually in the project's tasks directory
-        self.task_repository.save_in_hierarchy(updated_task.clone(), project.company_code(), project_code)?;
+        self.task_repository
+            .save_in_hierarchy(updated_task.clone(), project.company_code(), project_code)?;
 
         // 6. Return the updated task to the caller.
         Ok(updated_task)
@@ -107,7 +108,7 @@ mod tests {
     use super::*;
     use crate::domain::{
         project_management::{AnyProject, builder::ProjectBuilder},
-        task_management::{state::Planned, task::Task, repository::TaskRepository},
+        task_management::{repository::TaskRepository, state::Planned, task::Task},
     };
     use std::{cell::RefCell, collections::HashMap, rc::Rc};
     use uuid7::uuid7;

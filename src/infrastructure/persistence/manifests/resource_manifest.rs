@@ -281,7 +281,9 @@ impl TryFrom<ResourceManifest> for AnyResource {
 
         match status {
             "Assigned" => {
-                let project_assignments = manifest.spec.project_assignments
+                let project_assignments = manifest
+                    .spec
+                    .project_assignments
                     .unwrap_or_default()
                     .into_iter()
                     .map(|a| a.to())
@@ -300,21 +302,19 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     state: Assigned { project_assignments },
                 }))
             }
-            "Inactive" => {
-                Ok(AnyResource::Inactive(Resource {
-                    id,
-                    code,
-                    name,
-                    email,
-                    resource_type,
-                    start_date,
-                    end_date,
-                    vacations,
-                    time_off_balance,
-                    time_off_history,
-                    state: crate::domain::resource_management::state::Inactive,
-                }))
-            }
+            "Inactive" => Ok(AnyResource::Inactive(Resource {
+                id,
+                code,
+                name,
+                email,
+                resource_type,
+                start_date,
+                end_date,
+                vacations,
+                time_off_balance,
+                time_off_history,
+                state: crate::domain::resource_management::state::Inactive,
+            })),
             _ => {
                 // Default to Available
                 Ok(AnyResource::Available(Resource {
@@ -344,7 +344,7 @@ mod tests {
     #[test]
     fn test_bidirectional_conversion() {
         // Create an Available resource
-          let original_resource = Resource::<Available>::new(
+        let original_resource = Resource::<Available>::new(
             "dev-1".to_string(),
             "John Doe".to_string(),
             Some("john@doe.com".to_string()),
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn test_assigned_conversion() {
-          let resource = Resource::<Available>::new(
+        let resource = Resource::<Available>::new(
             "qa-1".to_string(),
             "Jane Doe".to_string(),
             None,
@@ -443,7 +443,7 @@ mod tests {
 
     #[test]
     fn test_conversion_with_vacations() {
-          let mut resource = Resource::<Available>::new(
+        let mut resource = Resource::<Available>::new(
             "manager-1".to_string(),
             "On Holiday".to_string(),
             None,
@@ -479,7 +479,7 @@ mod tests {
 
     #[test]
     fn test_conversion_no_email() {
-          let original_resource = Resource::<Available>::new(
+        let original_resource = Resource::<Available>::new(
             "contractor-1".to_string(),
             "No Email".to_string(),
             None, // No email

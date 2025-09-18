@@ -120,7 +120,7 @@ impl Cli {
         unsafe {
             std::env::set_var("TTR_VERBOSE", if self.verbose { "1" } else { "0" });
         }
-        
+
         match self.command {
             Commands::Init {
                 name,

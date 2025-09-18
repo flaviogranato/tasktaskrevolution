@@ -12,8 +12,8 @@ pub struct ContextManager {
 impl ContextManager {
     /// Detect current execution context
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
-        let context = ExecutionContext::detect_current()
-            .map_err(|e| format!("Failed to detect execution context: {}", e))?;
+        let context =
+            ExecutionContext::detect_current().map_err(|e| format!("Failed to detect execution context: {}", e))?;
         Ok(Self { context })
     }
 
@@ -29,7 +29,9 @@ impl ContextManager {
 
     /// Validate command in current context
     pub fn validate_command(&self, command: &str, subcommand: &str) -> Result<(), String> {
-        self.context.validate_command(command, subcommand).map_err(|e| e.to_string())
+        self.context
+            .validate_command(command, subcommand)
+            .map_err(|e| e.to_string())
     }
 
     /// Get company code based on context and parameter
@@ -42,7 +44,10 @@ impl ContextManager {
                 if company_param == *company {
                     Ok(company.clone())
                 } else {
-                    Err(format!("Company parameter '{}' does not match current context '{}'", company_param, company))
+                    Err(format!(
+                        "Company parameter '{}' does not match current context '{}'",
+                        company_param, company
+                    ))
                 }
             }
             (ExecutionContext::Project(company, _), None) => Ok(company.clone()),
@@ -68,7 +73,10 @@ impl ContextManager {
                 if company_param == *company {
                     Ok((project, company.clone()))
                 } else {
-                    Err(format!("Company parameter '{}' does not match current context '{}'", company_param, company))
+                    Err(format!(
+                        "Company parameter '{}' does not match current context '{}'",
+                        company_param, company
+                    ))
                 }
             }
             (ExecutionContext::Project(company, project), None, None) => Ok((project.clone(), company.clone())),

@@ -2,7 +2,7 @@ use crate::application::{
     company_management::{CreateCompanyArgs, CreateCompanyUseCase},
     create::{
         project::CreateProjectUseCase,
-        resource::{CreateResourceUseCase, CreateResourceParams},
+        resource::{CreateResourceParams, CreateResourceUseCase},
         task::{CreateTaskArgs, CreateTaskUseCase},
     },
     execution_context::ExecutionContext,
@@ -24,10 +24,10 @@ use crate::application::{
     },
 };
 use crate::interface::cli::{
+    Cli,
     commands::{CreateCommand, DeleteCommand, ListCommand, UpdateCommand},
     context_manager::ContextManager,
     table_formatter::TableFormatter,
-    Cli,
 };
 use chrono::NaiveDate;
 
@@ -102,12 +102,21 @@ impl SimplifiedExecutor {
                 let use_case = CreateProjectUseCase::new(project_repo);
 
                 // Parse dates
-                let start_date_parsed = start_date.parse::<chrono::NaiveDate>()
+                let start_date_parsed = start_date
+                    .parse::<chrono::NaiveDate>()
                     .map_err(|e| format!("Invalid start date format: {}", e))?;
-                let end_date_parsed = end_date.parse::<chrono::NaiveDate>()
+                let end_date_parsed = end_date
+                    .parse::<chrono::NaiveDate>()
                     .map_err(|e| format!("Invalid end date format: {}", e))?;
 
-                match use_case.execute(&name, description.as_deref(), company_code.clone(), code, Some(start_date_parsed), Some(end_date_parsed)) {
+                match use_case.execute(
+                    &name,
+                    description.as_deref(),
+                    company_code.clone(),
+                    code,
+                    Some(start_date_parsed),
+                    Some(end_date_parsed),
+                ) {
                     Ok(project) => {
                         println!("✅ Project created successfully!");
                         println!("   Name: {}", project.name());
@@ -190,22 +199,26 @@ impl SimplifiedExecutor {
                 let use_case = CreateResourceUseCase::new(resource_repo);
 
                 let resource_type = description.as_deref().unwrap_or("employee");
-                
+
                 // Parse dates if provided
                 let start_date_parsed = if let Some(start_date_str) = start_date {
-                    Some(chrono::NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")
-                        .map_err(|e| format!("Invalid start date format: {}", e))?)
+                    Some(
+                        chrono::NaiveDate::parse_from_str(&start_date_str, "%Y-%m-%d")
+                            .map_err(|e| format!("Invalid start date format: {}", e))?,
+                    )
                 } else {
                     None
                 };
-                
+
                 let end_date_parsed = if let Some(end_date_str) = end_date {
-                    Some(chrono::NaiveDate::parse_from_str(&end_date_str, "%Y-%m-%d")
-                        .map_err(|e| format!("Invalid end date format: {}", e))?)
+                    Some(
+                        chrono::NaiveDate::parse_from_str(&end_date_str, "%Y-%m-%d")
+                            .map_err(|e| format!("Invalid end date format: {}", e))?,
+                    )
                 } else {
                     None
                 };
-                
+
                 let params = CreateResourceParams {
                     name: name.clone(),
                     resource_type: resource_type.to_string(),
@@ -235,7 +248,7 @@ impl SimplifiedExecutor {
     /// Execute list commands
     pub fn execute_list(command: ListCommand) -> Result<(), Box<dyn std::error::Error>> {
         let context_manager = ContextManager::new()?;
-        
+
         // Determine context based on command parameters
         let display_context = match &command {
             ListCommand::Resources { company } => {
@@ -267,7 +280,7 @@ impl SimplifiedExecutor {
             }
             _ => context_manager.context().clone(),
         };
-        
+
         if Cli::is_verbose() {
             println!("[INFO] Current context: {}", display_context.display_name());
         }
@@ -292,16 +305,20 @@ impl SimplifiedExecutor {
                                         "DESCRIPTION".to_string(),
                                         "STATUS".to_string(),
                                     ]);
-                                    
+
                                     for company in companies {
-                                    table.add_row(vec![
-                                        company.name().to_string(),
-                                        company.code().to_string(),
-                                        company.description.as_deref().unwrap_or("-").to_string(),
-                                        if company.is_active() { "Active".to_string() } else { "Inactive".to_string() },
-                                    ]);
+                                        table.add_row(vec![
+                                            company.name().to_string(),
+                                            company.code().to_string(),
+                                            company.description.as_deref().unwrap_or("-").to_string(),
+                                            if company.is_active() {
+                                                "Active".to_string()
+                                            } else {
+                                                "Inactive".to_string()
+                                            },
+                                        ]);
                                     }
-                                    
+
                                     println!("{}", table);
                                 }
                                 Ok(())
@@ -335,7 +352,7 @@ impl SimplifiedExecutor {
                                     "COMPANY".to_string(),
                                     "STATUS".to_string(),
                                 ]);
-                                
+
                                 for project in projects {
                                     table.add_row(vec![
                                         project.name().to_string(),
@@ -344,7 +361,7 @@ impl SimplifiedExecutor {
                                         project.status().to_string(),
                                     ]);
                                 }
-                                
+
                                 println!("{}", table);
                             }
                         } else {
@@ -362,7 +379,7 @@ impl SimplifiedExecutor {
                                     "CODE".to_string(),
                                     "STATUS".to_string(),
                                 ]);
-                                
+
                                 for project in filtered_projects {
                                     table.add_row(vec![
                                         project.name().to_string(),
@@ -370,7 +387,7 @@ impl SimplifiedExecutor {
                                         project.status().to_string(),
                                     ]);
                                 }
-                                
+
                                 println!("{}", table);
                             }
                         }
@@ -387,37 +404,38 @@ impl SimplifiedExecutor {
 
                 if let Some(project_code) = project {
                     // List tasks for specific project
-                    let (project_code, company_code) = context_manager.resolve_project_codes(Some(project_code), company)?;
+                    let (project_code, company_code) =
+                        context_manager.resolve_project_codes(Some(project_code), company)?;
                     let project_repo = context_manager.get_project_repository();
                     let use_case = ListTasksUseCase::new(project_repo);
 
-                        match use_case.execute(&project_code, &company_code) {
-                            Ok(tasks) => {
-                                if tasks.is_empty() {
-                                    println!("No tasks found for project '{}'.", project_code);
-                                } else {
-                                    let mut table = TableFormatter::new(vec![
-                                        "NAME".to_string(),
-                                        "CODE".to_string(),
-                                        "STATUS".to_string(),
-                                        "START DATE".to_string(),
-                                        "DUE DATE".to_string(),
+                    match use_case.execute(&project_code, &company_code) {
+                        Ok(tasks) => {
+                            if tasks.is_empty() {
+                                println!("No tasks found for project '{}'.", project_code);
+                            } else {
+                                let mut table = TableFormatter::new(vec![
+                                    "NAME".to_string(),
+                                    "CODE".to_string(),
+                                    "STATUS".to_string(),
+                                    "START DATE".to_string(),
+                                    "DUE DATE".to_string(),
+                                ]);
+
+                                for task in tasks {
+                                    table.add_row(vec![
+                                        task.name().to_string(),
+                                        task.code().to_string(),
+                                        task.status().to_string(),
+                                        task.start_date().format("%Y-%m-%d").to_string(),
+                                        task.due_date().format("%Y-%m-%d").to_string(),
                                     ]);
-                                    
-                                    for task in tasks {
-                                        table.add_row(vec![
-                                            task.name().to_string(),
-                                            task.code().to_string(),
-                                            task.status().to_string(),
-                                            task.start_date().format("%Y-%m-%d").to_string(),
-                                            task.due_date().format("%Y-%m-%d").to_string(),
-                                        ]);
-                                    }
-                                    
-                                    println!("{}", table);
                                 }
-                                Ok(())
+
+                                println!("{}", table);
                             }
+                            Ok(())
+                        }
                         Err(e) => {
                             eprintln!("❌ Failed to list tasks: {}", e);
                             Err(e.into())
@@ -442,7 +460,7 @@ impl SimplifiedExecutor {
                                     "START DATE".to_string(),
                                     "DUE DATE".to_string(),
                                 ]);
-                                
+
                                 for task in tasks {
                                     table.add_row(vec![
                                         task.name().to_string(),
@@ -453,7 +471,7 @@ impl SimplifiedExecutor {
                                         task.due_date().format("%Y-%m-%d").to_string(),
                                     ]);
                                 }
-                                
+
                                 println!("{}", table);
                             }
                             Ok(())
@@ -484,7 +502,7 @@ impl SimplifiedExecutor {
                                 "TYPE".to_string(),
                                 "STATUS".to_string(),
                             ]);
-                            
+
                             for resource in resources {
                                 table.add_row(vec![
                                     resource.name().to_string(),
@@ -494,7 +512,7 @@ impl SimplifiedExecutor {
                                     resource.status().to_string(),
                                 ]);
                             }
-                            
+
                             println!("{}", table);
                         }
                         Ok(())
