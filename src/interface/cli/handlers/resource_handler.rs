@@ -140,7 +140,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let args = UpdateResourceArgs {
                 name,
                 email,
-                resource_type: resource_type.or(description),
+                resource_type,
             };
 
             match update_use_case.execute(&code, "DEFAULT", args) {

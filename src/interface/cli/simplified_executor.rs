@@ -722,7 +722,7 @@ impl SimplifiedExecutor {
                 let args = UpdateResourceArgs {
                     name,
                     email,
-                    resource_type: description,
+                    resource_type: None, // description is not used as resource_type
                 };
 
                 match use_case.execute(&code, &company_code, args) {
