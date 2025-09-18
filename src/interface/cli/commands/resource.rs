@@ -7,6 +7,9 @@ pub enum ResourceCommand {
         /// Resource name
         #[clap(short, long)]
         name: String,
+        /// Resource type (e.g., Developer, Designer, Manager)
+        #[clap(short, long)]
+        r#type: String,
         /// Resource code
         #[clap(short, long)]
         code: String,
@@ -67,6 +70,9 @@ pub enum ResourceCommand {
         /// New resource name
         #[clap(long)]
         name: Option<String>,
+        /// New resource type
+        #[clap(long)]
+        r#type: Option<String>,
         /// New resource email
         #[clap(long)]
         email: Option<String>,

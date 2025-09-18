@@ -124,7 +124,7 @@ fn test_version_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
 
     cmd.arg("--version");
-    cmd.assert().success().stdout(predicate::str::contains("0.5.6"));
+    cmd.assert().success().stdout(predicate::str::contains("0.5.7"));
 
     Ok(())
 }
@@ -409,10 +409,12 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
         "resource",
         "--name",
         "John Doe",
+        "--type",
+        "Developer",
         "--email",
         "john@example.com",
         "--description",
-        "Developer",
+        "Senior Developer",
         "--company",
         "TECH-CORP",
         "--start-date",
@@ -842,10 +844,12 @@ fn test_list_commands() -> Result<(), Box<dyn std::error::Error>> {
         "resource",
         "--name",
         "John Doe",
+        "--type",
+        "Developer",
         "--email",
         "john@example.com",
         "--description",
-        "Developer",
+        "Senior Developer",
         "--company",
         "TECH-CORP",
         "--start-date",
@@ -989,10 +993,12 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
         "resource",
         "--name",
         "John Doe",
+        "--type",
+        "Developer",
         "--email",
         "john@example.com",
         "--description",
-        "Developer",
+        "Senior Developer",
         "--company",
         "TECH-CORP",
         "--start-date",
@@ -1230,6 +1236,8 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         "resource",
         "--name",
         "YAML Developer",
+        "--type",
+        "Developer",
         "--email",
         "yaml@example.com",
         "--description",
@@ -1305,8 +1313,8 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
             "metadata.email deve ser 'yaml@example.com'"
         );
         assert!(
-            validator.field_equals("metadata.resourceType", "Senior Developer"),
-            "metadata.resourceType deve ser 'Senior Developer'"
+            validator.field_equals("metadata.resourceType", "Developer"),
+            "metadata.resourceType deve ser 'Developer'"
         );
         assert!(
             validator.field_equals("spec.startDate", "2024-01-01"),

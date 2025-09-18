@@ -73,6 +73,9 @@ pub enum CreateCommand {
         /// Resource name
         #[clap(short, long)]
         name: String,
+        /// Resource type (e.g., Developer, Designer, Manager)
+        #[clap(short, long)]
+        r#type: String,
         /// Resource code (optional, will be auto-generated if not provided)
         #[clap(long)]
         code: Option<String>,
