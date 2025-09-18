@@ -126,7 +126,16 @@ fn test_external_data_import() -> Result<(), Box<dyn std::error::Error>> {
     for (name, _role) in external_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", "--name", name, "--email", "test@example.com", "--company", "TECH-CORP"]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--email",
+            "test@example.com",
+            "--company",
+            "TECH-CORP",
+        ]);
         cmd.assert().success();
     }
 
@@ -163,7 +172,16 @@ fn test_webhook_simulation() -> Result<(), Box<dyn std::error::Error>> {
     for (name, _role) in webhook_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", "--name", name, "--email", "test@example.com", "--company", "TECH-CORP"]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--email",
+            "test@example.com",
+            "--company",
+            "TECH-CORP",
+        ]);
         cmd.assert().success();
     }
 
@@ -211,7 +229,16 @@ fn test_external_api_integration() -> Result<(), Box<dyn std::error::Error>> {
     for (name, _role) in api_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", "--name", name, "--email", "test@example.com", "--company", "TECH-CORP"]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--email",
+            "test@example.com",
+            "--company",
+            "TECH-CORP",
+        ]);
         cmd.assert().success();
     }
 
@@ -246,7 +273,16 @@ fn test_third_party_tools_integration() -> Result<(), Box<dyn std::error::Error>
     for (name, _role) in third_party_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", "--name", name, "--email", "test@example.com", "--company", "TECH-CORP"]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--email",
+            "test@example.com",
+            "--company",
+            "TECH-CORP",
+        ]);
         cmd.assert().success();
     }
 
@@ -282,7 +318,16 @@ fn test_data_synchronization() -> Result<(), Box<dyn std::error::Error>> {
     for (name, _role) in sync_data {
         let mut cmd = Command::cargo_bin("ttr")?;
         cmd.current_dir(temp.path());
-        cmd.args(["create", "resource", "--name", name, "--email", "test@example.com", "--company", "TECH-CORP"]);
+        cmd.args([
+            "create",
+            "resource",
+            "--name",
+            name,
+            "--email",
+            "test@example.com",
+            "--company",
+            "TECH-CORP",
+        ]);
         cmd.assert().success();
     }
 
@@ -359,9 +404,27 @@ fn test_monitoring_logging_integration() -> Result<(), Box<dyn std::error::Error
         match op {
             "create" => {
                 if entity == "resource" {
-                    cmd.args(["create", "resource", "--name", name, "--email", "test@example.com", "--company", "TECH-CORP"]);
+                    cmd.args([
+                        "create",
+                        "resource",
+                        "--name",
+                        name,
+                        "--email",
+                        "test@example.com",
+                        "--company",
+                        "TECH-CORP",
+                    ]);
                 } else if entity == "project" {
-                    cmd.args(["create", "project", "--name", name, "--description", description, "--company", "TECH-CORP"]);
+                    cmd.args([
+                        "create",
+                        "project",
+                        "--name",
+                        name,
+                        "--description",
+                        description,
+                        "--company",
+                        "TECH-CORP",
+                    ]);
                 }
             }
             "list" => {

@@ -7,7 +7,6 @@ use std::fmt;
 use std::fmt::Display;
 use uuid7::{Uuid, uuid7};
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimeOffEntry {
     pub date: DateTime<Local>,
@@ -411,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_resource_state_transition_to_assigned() {
-          let resource = Resource::new(
+        let resource = Resource::new(
             "qa-1".to_string(),
             "Tester".to_string(),
             None,

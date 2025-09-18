@@ -146,15 +146,24 @@ impl Convertible<Config> for ConfigManifest {
             company_name: self.spec.company_name.clone(),
             work_hours_start: self.spec.work_hours_start.clone(),
             work_hours_end: self.spec.work_hours_end.clone(),
-            work_days: self.spec.work_days_per_week.as_ref()
-                .map(|days| days.iter().filter_map(|d| crate::domain::company_settings::config::WorkDay::parse_day(d)).collect())
-                .unwrap_or_else(|| vec![
-                    crate::domain::company_settings::config::WorkDay::Monday,
-                    crate::domain::company_settings::config::WorkDay::Tuesday,
-                    crate::domain::company_settings::config::WorkDay::Wednesday,
-                    crate::domain::company_settings::config::WorkDay::Thursday,
-                    crate::domain::company_settings::config::WorkDay::Friday,
-                ]),
+            work_days: self
+                .spec
+                .work_days_per_week
+                .as_ref()
+                .map(|days| {
+                    days.iter()
+                        .filter_map(|d| crate::domain::company_settings::config::WorkDay::parse_day(d))
+                        .collect()
+                })
+                .unwrap_or_else(|| {
+                    vec![
+                        crate::domain::company_settings::config::WorkDay::Monday,
+                        crate::domain::company_settings::config::WorkDay::Tuesday,
+                        crate::domain::company_settings::config::WorkDay::Wednesday,
+                        crate::domain::company_settings::config::WorkDay::Thursday,
+                        crate::domain::company_settings::config::WorkDay::Friday,
+                    ]
+                }),
             created_at: Some(self.metadata.created_at),
             updated_at: Some(self.metadata.created_at),
         }

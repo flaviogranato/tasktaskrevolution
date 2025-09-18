@@ -27,7 +27,16 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
             None => self.repository.get_next_code(&params.resource_type)?,
         };
         let name = params.name.clone();
-        let r = Resource::new(code, params.name, params.email, params.resource_type, params.start_date, params.end_date, None, 0);
+        let r = Resource::new(
+            code,
+            params.name,
+            params.email,
+            params.resource_type,
+            params.start_date,
+            params.end_date,
+            None,
+            0,
+        );
 
         // Use the new hierarchical save method
         self.repository

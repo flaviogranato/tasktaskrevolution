@@ -1,7 +1,11 @@
 use super::super::commands::ResourceCommand;
 use crate::{
     application::{
-        create::{resource::{CreateResourceUseCase, CreateResourceParams}, time_off::CreateTimeOffUseCase, vacation::CreateVacationUseCase},
+        create::{
+            resource::{CreateResourceParams, CreateResourceUseCase},
+            time_off::CreateTimeOffUseCase,
+            vacation::CreateVacationUseCase,
+        },
         resource::{
             deactivate_resource::DeactivateResourceUseCase,
             describe_resource::DescribeResourceUseCase,

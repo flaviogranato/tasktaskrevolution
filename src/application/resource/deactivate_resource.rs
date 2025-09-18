@@ -60,7 +60,9 @@ where
         let deactivated_resource = resource.deactivate().map_err(DeactivateAppError::AppError)?;
 
         // 3. Save the now-inactive resource back to the repository using save_in_hierarchy.
-        let saved_resource = self.resource_repository.save_in_hierarchy(deactivated_resource, company_code, None)?;
+        let saved_resource = self
+            .resource_repository
+            .save_in_hierarchy(deactivated_resource, company_code, None)?;
 
         Ok(saved_resource)
     }

@@ -1,6 +1,6 @@
 use crate::application::errors::AppError;
-use crate::domain::project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository};
 use crate::domain::company_settings::repository::ConfigRepository;
+use crate::domain::project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository};
 use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 pub struct CreateProjectUseCase<R: ProjectRepository> {

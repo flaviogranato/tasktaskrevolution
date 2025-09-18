@@ -59,7 +59,12 @@ where
         }
     }
 
-    pub fn execute(&self, task_code: &str, resource_code: &str, project_code: &str) -> Result<AnyTask, AssignResourceToAppError> {
+    pub fn execute(
+        &self,
+        task_code: &str,
+        resource_code: &str,
+        project_code: &str,
+    ) -> Result<AnyTask, AssignResourceToAppError> {
         // 1. Find the task
         let task = self
             .task_repository
@@ -132,7 +137,7 @@ where
                     project_id: project_code.to_string(),
                     start_date: Local::now(),
                     end_date: Local::now() + chrono::Duration::days(30), // Default 30 days
-                    allocation_percentage: 100, // Default 100% allocation
+                    allocation_percentage: 100,                          // Default 100% allocation
                 };
 
                 // Convert to Assigned state
@@ -145,17 +150,15 @@ where
                     project_id: project_code.to_string(),
                     start_date: Local::now(),
                     end_date: Local::now() + chrono::Duration::days(30), // Default 30 days
-                    allocation_percentage: 100, // Default 100% allocation
+                    allocation_percentage: 100,                          // Default 100% allocation
                 };
 
                 resource.state.project_assignments.push(assignment);
                 Ok(AnyResource::Assigned(resource))
             }
-            AnyResource::Inactive(_) => {
-                Err(AssignResourceToAppError::AppError(
-                    "Cannot assign inactive resource to project".to_string(),
-                ))
-            }
+            AnyResource::Inactive(_) => Err(AssignResourceToAppError::AppError(
+                "Cannot assign inactive resource to project".to_string(),
+            )),
         }
     }
 }
@@ -291,7 +294,7 @@ mod tests {
     }
 
     fn create_test_resource(code: &str, name: &str, resource_type: &str) -> AnyResource {
-          Resource::new(
+        Resource::new(
             code.to_string(),
             name.to_string(),
             None,

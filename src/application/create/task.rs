@@ -1,7 +1,7 @@
 // Priority and Category are used in Task initializations
 use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
-use crate::domain::task_management::{TaskBuilder, repository::TaskRepository, AnyTask};
+use crate::domain::task_management::{AnyTask, TaskBuilder, repository::TaskRepository};
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {
@@ -29,7 +29,7 @@ where
     TR: TaskRepository,
 {
     pub fn new(project_repository: PR, task_repository: TR) -> Self {
-        Self { 
+        Self {
             project_repository,
             task_repository,
         }
@@ -47,12 +47,12 @@ where
         } = args;
 
         // 1. Load the project aggregate.
-        let mut project = self
-            .project_repository
-            .find_by_code(&project_code)?
-            .ok_or_else(|| AppError::ProjectNotFound {
-                code: project_code.clone(),
-            })?;
+        let mut project =
+            self.project_repository
+                .find_by_code(&project_code)?
+                .ok_or_else(|| AppError::ProjectNotFound {
+                    code: project_code.clone(),
+                })?;
 
         // 2. Delegate task creation to the project aggregate.
         // This is a placeholder for the future implementation of `project.add_task(...)`
@@ -113,7 +113,8 @@ where
         self.project_repository.save(project.clone())?;
 
         // 4. Save the task individually in the project's tasks directory
-        self.task_repository.save_in_hierarchy(task_any, project.company_code(), &project_code_for_save)?;
+        self.task_repository
+            .save_in_hierarchy(task_any, project.company_code(), &project_code_for_save)?;
 
         println!(
             "Task '{}' created successfully with code '{}'",

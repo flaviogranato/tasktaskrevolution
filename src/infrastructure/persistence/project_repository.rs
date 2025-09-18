@@ -191,7 +191,6 @@ impl ProjectRepository for FileProjectRepository {
             details: e.to_string(),
         })?;
 
-
         Ok(())
     }
 

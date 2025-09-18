@@ -26,7 +26,7 @@ impl GanttUseCase {
             eprintln!("Template parsing error(s): {}", e);
             std::process::exit(1);
         });
-        
+
         Self {
             project_repository: FileProjectRepository::with_base_path(base_path),
             tera,
@@ -116,24 +116,25 @@ impl GanttUseCase {
     /// Gera gráfico Gantt com dados reais de um projeto específico
     pub fn generate_project_gantt(&self, project_code: &str) -> Result<GanttChart, Box<dyn Error>> {
         // Carregar o projeto
-        let project = self.project_repository
+        let project = self
+            .project_repository
             .find_by_code(project_code)?
             .ok_or_else(|| format!("Project '{}' not found", project_code))?;
 
         // Usar datas do projeto ou datas padrão
-        let start_date = project.start_date().unwrap_or_else(|| NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
-        let end_date = project.end_date().unwrap_or_else(|| NaiveDate::from_ymd_opt(2024, 12, 31).unwrap());
+        let start_date = project
+            .start_date()
+            .unwrap_or_else(|| NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+        let end_date = project
+            .end_date()
+            .unwrap_or_else(|| NaiveDate::from_ymd_opt(2024, 12, 31).unwrap());
 
-        let config = GanttConfig::new(
-            format!("{} - Gantt Chart", project.name()),
-            start_date,
-            end_date
-        )
-        .with_view_type(GanttViewType::Days)
-        .with_dependencies(true)
-        .with_resources(true)
-        .with_progress(true)
-        .with_dimensions(1200, 600);
+        let config = GanttConfig::new(format!("{} - Gantt Chart", project.name()), start_date, end_date)
+            .with_view_type(GanttViewType::Days)
+            .with_dependencies(true)
+            .with_resources(true)
+            .with_progress(true)
+            .with_dimensions(1200, 600);
 
         let mut gantt = GanttChart::new(config);
 
@@ -208,16 +209,12 @@ impl GanttUseCase {
             }
         }
 
-        let config = GanttConfig::new(
-            format!("{} - Company Gantt Chart", company_code),
-            min_date,
-            max_date
-        )
-        .with_view_type(GanttViewType::Days)
-        .with_dependencies(true)
-        .with_resources(true)
-        .with_progress(true)
-        .with_dimensions(1200, 600);
+        let config = GanttConfig::new(format!("{} - Company Gantt Chart", company_code), min_date, max_date)
+            .with_view_type(GanttViewType::Days)
+            .with_dependencies(true)
+            .with_resources(true)
+            .with_progress(true)
+            .with_dimensions(1200, 600);
 
         let mut gantt = GanttChart::new(config);
 
@@ -271,9 +268,14 @@ impl GanttUseCase {
     }
 
     /// Gera HTML do gráfico Gantt de projeto e salva em arquivo
-    pub fn generate_and_save_project_gantt_html(&self, project_code: &str, output_path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn generate_and_save_project_gantt_html(
+        &self,
+        project_code: &str,
+        output_path: &PathBuf,
+    ) -> Result<(), Box<dyn Error>> {
         // Carregar o projeto
-        let project = self.project_repository
+        let project = self
+            .project_repository
             .find_by_code(project_code)?
             .ok_or_else(|| format!("Project '{}' not found", project_code))?;
 
@@ -293,13 +295,21 @@ impl GanttUseCase {
         }
 
         std::fs::write(output_path, html)?;
-        println!("✅ Gráfico Gantt do projeto '{}' gerado: {}", project_code, output_path.display());
+        println!(
+            "✅ Gráfico Gantt do projeto '{}' gerado: {}",
+            project_code,
+            output_path.display()
+        );
 
         Ok(())
     }
 
     /// Gera HTML do gráfico Gantt de empresa e salva em arquivo
-    pub fn generate_and_save_company_gantt_html(&self, company_code: &str, output_path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn generate_and_save_company_gantt_html(
+        &self,
+        company_code: &str,
+        output_path: &PathBuf,
+    ) -> Result<(), Box<dyn Error>> {
         // Carregar todos os projetos da empresa
         let projects = self.project_repository.find_all()?;
         let company_projects: Vec<_> = projects
@@ -314,7 +324,7 @@ impl GanttUseCase {
         // Criar um projeto virtual que contém todas as tarefas
         let mut all_tasks = Vec::new();
         let mut project_name = format!("{} - All Projects", company_code);
-        
+
         for project in &company_projects {
             for task in project.tasks().values() {
                 all_tasks.push(task.clone());
@@ -326,12 +336,15 @@ impl GanttUseCase {
 
         // Criar contexto para o template
         let mut context = Context::new();
-        context.insert("project", &serde_json::json!({
-            "name": project_name,
-            "code": company_code,
-            "start_date": "2024-01-01",
-            "end_date": "2024-12-31"
-        }));
+        context.insert(
+            "project",
+            &serde_json::json!({
+                "name": project_name,
+                "code": company_code,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31"
+            }),
+        );
         context.insert("tasks", &all_tasks);
         context.insert("relative_path_prefix", "../../");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
@@ -345,7 +358,11 @@ impl GanttUseCase {
         }
 
         std::fs::write(output_path, html)?;
-        println!("✅ Gráfico Gantt da empresa '{}' gerado: {}", company_code, output_path.display());
+        println!(
+            "✅ Gráfico Gantt da empresa '{}' gerado: {}",
+            company_code,
+            output_path.display()
+        );
 
         Ok(())
     }

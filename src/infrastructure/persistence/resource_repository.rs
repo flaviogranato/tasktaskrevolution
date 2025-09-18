@@ -596,7 +596,7 @@ mod tests {
     use tempfile::tempdir;
 
     fn create_test_resource(name: &str, code: &str, resource_type: &str) -> Resource<Available> {
-          Resource::new(
+        Resource::new(
             code.to_string(),
             name.to_string(),
             None,
