@@ -155,6 +155,8 @@ mod tests {
             name: name.to_string(),
             email: Some(email.to_string()),
             resource_type: r#type.to_string(),
+            start_date: None,
+            end_date: None,
             vacations: None,
             time_off_balance: 0,
             time_off_history: None,

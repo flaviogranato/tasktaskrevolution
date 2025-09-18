@@ -203,11 +203,13 @@ mod tests {
 
     fn setup_test() -> (MockResourceRepository, AnyResource) {
         let mock_repo = MockResourceRepository::new(false);
-        let resource = Resource::new(
+          let resource = Resource::new(
             "res-01".to_string(),
             "John Doe".to_string(),
             None,
             "Developer".to_string(),
+            None,
+            None,
             None,
             10,
         );

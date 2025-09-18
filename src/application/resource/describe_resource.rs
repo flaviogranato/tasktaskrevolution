@@ -122,6 +122,8 @@ mod tests {
             name: "Test Resource".to_string(),
             email: Some("test@resource.com".to_string()),
             resource_type: "Test".to_string(),
+            start_date: None,
+            end_date: None,
             vacations: None,
             time_off_balance: 16,
             time_off_history: None,

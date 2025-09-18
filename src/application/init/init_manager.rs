@@ -263,6 +263,7 @@ mod tests {
             timezone: "America/Sao_Paulo".to_string(),
             work_hours_start: "08:00".to_string(),
             work_hours_end: "18:00".to_string(),
+            work_days: "monday,tuesday,wednesday,thursday,friday".to_string(),
         };
 
         let result = use_case.execute(init_data);

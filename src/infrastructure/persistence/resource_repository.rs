@@ -596,11 +596,13 @@ mod tests {
     use tempfile::tempdir;
 
     fn create_test_resource(name: &str, code: &str, resource_type: &str) -> Resource<Available> {
-        Resource::new(
+          Resource::new(
             code.to_string(),
             name.to_string(),
             None,
             resource_type.to_string(),
+            None,
+            None,
             None,
             0,
         )
@@ -623,6 +625,8 @@ mod tests {
                 created_by: None,
             },
             spec: crate::infrastructure::persistence::manifests::resource_manifest::ResourceSpec {
+                start_date: None,
+                end_date: None,
                 time_off_balance: 0,
                 time_off_history: None,
                 project_assignments: None,
