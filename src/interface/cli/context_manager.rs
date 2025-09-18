@@ -92,7 +92,7 @@ impl ContextManager {
     /// Get base path for file operations based on context
     pub fn get_base_path(&self) -> String {
         let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
-        match self.context {
+        let base_path = match self.context {
             ExecutionContext::Root => current_dir.to_string_lossy().to_string(),
             ExecutionContext::Company(_) => {
                 // Go up one level from company directory to root
@@ -101,8 +101,19 @@ impl ContextManager {
                     .to_string_lossy()
                     .to_string()
             },
-            ExecutionContext::Project(_, _) => current_dir.to_string_lossy().to_string(), // In project context, we're already in the project directory
-        }
+            ExecutionContext::Project(_, _) => {
+                // In project context, go up three levels to reach the root directory
+                // From: /path/companies/COMPANY/projects/PROJECT
+                // To:   /path
+                current_dir.parent()
+                    .and_then(|p| p.parent())
+                    .and_then(|p| p.parent())
+                    .unwrap_or(&current_dir)
+                    .to_string_lossy()
+                    .to_string()
+            },
+        };
+        base_path
     }
 
     /// Create project repository with correct base path

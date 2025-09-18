@@ -639,19 +639,19 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
         }
     }
 
-    // Check if there's a file with the new name
-    let new_name_file = resources_dir.join("updated_resource_from_company_context.yaml");
-    if new_name_file.exists() {
-        println!("Found file with new name: {:?}", new_name_file);
-        if let Ok(content) = std::fs::read_to_string(&new_name_file) {
-            println!("New file content: {}", content);
+    // Check if there's a file with the resource code (not the name)
+    let resource_file = resources_dir.join(format!("{}.yaml", resource_code));
+    if resource_file.exists() {
+        println!("Found file with resource code: {:?}", resource_file);
+        if let Ok(content) = std::fs::read_to_string(&resource_file) {
+            println!("Resource file content: {}", content);
         }
     } else {
-        println!("File with new name does not exist: {:?}", new_name_file);
+        println!("File with resource code does not exist: {:?}", resource_file);
     }
 
     // Check if the file was saved in the wrong location (with double companies path)
-    let wrong_location_file = temp.path().join("companies").join("TECH-CORP").join("companies").join("TECH-CORP").join("resources").join("updated_resource_from_company_context.yaml");
+    let wrong_location_file = temp.path().join("companies").join("TECH-CORP").join("companies").join("TECH-CORP").join("resources").join(format!("{}.yaml", resource_code));
     if wrong_location_file.exists() {
         println!("Found file in wrong location: {:?}", wrong_location_file);
         if let Ok(content) = std::fs::read_to_string(&wrong_location_file) {
@@ -664,7 +664,7 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
     // Check if the file was saved in the correct location (relative to current directory)
     let current_dir = std::env::current_dir()?;
     println!("Current directory: {:?}", current_dir);
-    let relative_file = current_dir.join("companies").join("TECH-CORP").join("resources").join("updated_resource_from_company_context.yaml");
+    let relative_file = current_dir.join("companies").join("TECH-CORP").join("resources").join(format!("{}.yaml", resource_code));
     if relative_file.exists() {
         println!("Found file in relative location: {:?}", relative_file);
         if let Ok(content) = std::fs::read_to_string(&relative_file) {
@@ -676,7 +676,7 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
 
     // Check if the file was saved in the parent directory (../companies/TECH-CORP/resources/)
     let parent_dir = current_dir.parent().unwrap();
-    let parent_file = parent_dir.join("companies").join("TECH-CORP").join("resources").join("updated_resource_from_company_context.yaml");
+    let parent_file = parent_dir.join("companies").join("TECH-CORP").join("resources").join(format!("{}.yaml", resource_code));
     if parent_file.exists() {
         println!("Found file in parent location: {:?}", parent_file);
         if let Ok(content) = std::fs::read_to_string(&parent_file) {
@@ -926,7 +926,28 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
         .join("projects")
         .join(&project_code)
         .join("tasks")
-        .join(&task_code);
+        .join(format!("{}.yaml", task_code));
+
+    // Debug: List all files in tasks directory
+    let tasks_dir = temp
+        .path()
+        .join("companies")
+        .join("TECH-CORP")
+        .join("projects")
+        .join(&project_code)
+        .join("tasks");
+    
+    println!("DEBUG: Looking for task file: {:?}", task_file);
+    println!("DEBUG: Tasks directory: {:?}", tasks_dir);
+    if tasks_dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+            for entry in entries.flatten() {
+                println!("DEBUG: Found file: {:?}", entry.path());
+            }
+        }
+    } else {
+        println!("DEBUG: Tasks directory does not exist");
+    }
 
     assert!(task_file.exists(), "Task file should exist");
 
@@ -942,8 +963,8 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
     );
 
     assert_eq!(
-        yaml.get("spec")
-            .and_then(|s| s.get("description"))
+        yaml.get("metadata")
+            .and_then(|m| m.get("description"))
             .and_then(|d| d.as_str()),
         Some("Testing file integrity")
     );
