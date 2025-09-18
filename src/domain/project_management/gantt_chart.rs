@@ -184,6 +184,12 @@ pub struct GanttConfig {
     pub show_progress: bool,
     pub width: u32,
     pub height: u32,
+    // Performance optimizations
+    pub enable_pagination: bool,
+    pub tasks_per_page: usize,
+    pub enable_virtualization: bool,
+    pub cache_size: usize,
+    pub enable_lazy_loading: bool,
 }
 
 impl GanttConfig {
@@ -199,6 +205,12 @@ impl GanttConfig {
             show_progress: true,
             width: 1200,
             height: 600,
+            // Performance defaults
+            enable_pagination: false,
+            tasks_per_page: 50,
+            enable_virtualization: false,
+            cache_size: 1000,
+            enable_lazy_loading: false,
         }
     }
 
@@ -232,6 +244,107 @@ impl GanttConfig {
         self.height = height;
         self
     }
+
+    /// Habilita paginação para grandes datasets
+    pub fn with_pagination(mut self, tasks_per_page: usize) -> Self {
+        self.enable_pagination = true;
+        self.tasks_per_page = tasks_per_page;
+        self
+    }
+
+    /// Habilita virtualização para melhor performance
+    pub fn with_virtualization(mut self, cache_size: usize) -> Self {
+        self.enable_virtualization = true;
+        self.cache_size = cache_size;
+        self
+    }
+
+    /// Habilita carregamento lazy para datasets muito grandes
+    pub fn with_lazy_loading(mut self) -> Self {
+        self.enable_lazy_loading = true;
+        self
+    }
+
+    /// Configura otimizações para datasets grandes (>1000 tarefas)
+    pub fn for_large_dataset(mut self) -> Self {
+        self.enable_pagination = true;
+        self.tasks_per_page = 100;
+        self.enable_virtualization = true;
+        self.cache_size = 500;
+        self.enable_lazy_loading = true;
+        self
+    }
+
+    /// Configura otimizações para datasets muito grandes (>10000 tarefas)
+    pub fn for_very_large_dataset(mut self) -> Self {
+        self.enable_pagination = true;
+        self.tasks_per_page = 50;
+        self.enable_virtualization = true;
+        self.cache_size = 200;
+        self.enable_lazy_loading = true;
+        self
+    }
+}
+
+/// Informações de paginação para o Gantt Chart
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GanttPagination {
+    pub current_page: usize,
+    pub total_pages: usize,
+    pub tasks_per_page: usize,
+    pub total_tasks: usize,
+    pub has_next_page: bool,
+    pub has_previous_page: bool,
+}
+
+impl GanttPagination {
+    pub fn new(current_page: usize, total_tasks: usize, tasks_per_page: usize) -> Self {
+        let total_pages = (total_tasks + tasks_per_page - 1) / tasks_per_page;
+        Self {
+            current_page,
+            total_pages,
+            tasks_per_page,
+            total_tasks,
+            has_next_page: current_page < total_pages - 1,
+            has_previous_page: current_page > 0,
+        }
+    }
+
+    pub fn get_page_range(&self) -> (usize, usize) {
+        let start = self.current_page * self.tasks_per_page;
+        let end = std::cmp::min(start + self.tasks_per_page, self.total_tasks);
+        (start, end)
+    }
+}
+
+/// Cache de virtualização para performance
+#[derive(Debug, Clone)]
+pub struct GanttCache {
+    pub visible_tasks: Vec<GanttTask>,
+    pub visible_dependencies: Vec<GanttDependency>,
+    pub cache_size: usize,
+    pub last_update: std::time::Instant,
+}
+
+impl GanttCache {
+    pub fn new(cache_size: usize) -> Self {
+        Self {
+            visible_tasks: Vec::new(),
+            visible_dependencies: Vec::new(),
+            cache_size,
+            last_update: std::time::Instant::now(),
+        }
+    }
+
+    pub fn is_stale(&self, max_age: std::time::Duration) -> bool {
+        self.last_update.elapsed() > max_age
+    }
+
+    pub fn update(&mut self, tasks: Vec<GanttTask>, dependencies: Vec<GanttDependency>) {
+        self.visible_tasks = tasks;
+        self.visible_dependencies = dependencies;
+        self.last_update = std::time::Instant::now();
+    }
 }
 
 /// Gráfico Gantt completo
@@ -240,6 +353,10 @@ pub struct GanttChart {
     pub config: GanttConfig,
     pub tasks: Vec<GanttTask>,
     pub dependencies: Vec<GanttDependency>,
+    // Performance optimizations
+    pub pagination: Option<GanttPagination>,
+    pub total_tasks: usize,
+    pub is_optimized: bool,
 }
 
 impl GanttChart {
@@ -249,7 +366,29 @@ impl GanttChart {
             config,
             tasks: Vec::new(),
             dependencies: Vec::new(),
+            pagination: None,
+            total_tasks: 0,
+            is_optimized: false,
         }
+    }
+
+    /// Cria um gráfico Gantt otimizado para grandes datasets
+    pub fn new_optimized(config: GanttConfig, total_tasks: usize) -> Self {
+        let mut chart = Self {
+            config,
+            tasks: Vec::new(),
+            dependencies: Vec::new(),
+            pagination: None,
+            total_tasks,
+            is_optimized: true,
+        };
+
+        // Configurar paginação se habilitada
+        if chart.config.enable_pagination {
+            chart.pagination = Some(GanttPagination::new(0, total_tasks, chart.config.tasks_per_page));
+        }
+
+        chart
     }
 
     /// Adiciona uma tarefa ao gráfico
@@ -260,6 +399,112 @@ impl GanttChart {
     /// Adiciona uma dependência ao gráfico
     pub fn add_dependency(&mut self, dependency: GanttDependency) {
         self.dependencies.push(dependency);
+    }
+
+    /// Adiciona múltiplas tarefas de forma otimizada
+    pub fn add_tasks_batch(&mut self, tasks: Vec<GanttTask>) {
+        if self.is_optimized && self.config.enable_pagination {
+            // Para gráficos otimizados, limitar o número de tarefas carregadas
+            let max_tasks = if let Some(pagination) = &self.pagination {
+                pagination.tasks_per_page
+            } else {
+                self.config.tasks_per_page
+            };
+            
+            self.tasks.extend(tasks.into_iter().take(max_tasks));
+        } else {
+            self.tasks.extend(tasks);
+        }
+    }
+
+    /// Obtém tarefas para a página atual (se paginação estiver habilitada)
+    pub fn get_current_page_tasks(&self) -> &[GanttTask] {
+        if let Some(pagination) = &self.pagination {
+            let (start, end) = pagination.get_page_range();
+            &self.tasks[start..end]
+        } else {
+            &self.tasks
+        }
+    }
+
+    /// Obtém dependências para a página atual
+    pub fn get_current_page_dependencies(&self) -> Vec<&GanttDependency> {
+        if let Some(pagination) = &self.pagination {
+            let (start, end) = pagination.get_page_range();
+            let current_task_ids: std::collections::HashSet<String> = self.tasks[start..end]
+                .iter()
+                .map(|t| t.id.clone())
+                .collect();
+            
+            self.dependencies
+                .iter()
+                .filter(|dep| {
+                    current_task_ids.contains(&dep.from_task) || 
+                    current_task_ids.contains(&dep.to_task)
+                })
+                .collect()
+        } else {
+            self.dependencies.iter().collect()
+        }
+    }
+
+    /// Navega para a próxima página
+    pub fn next_page(&mut self) -> bool {
+        if let Some(pagination) = &mut self.pagination {
+            if pagination.has_next_page {
+                pagination.current_page += 1;
+                pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
+                pagination.has_previous_page = pagination.current_page > 0;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Navega para a página anterior
+    pub fn previous_page(&mut self) -> bool {
+        if let Some(pagination) = &mut self.pagination {
+            if pagination.has_previous_page {
+                pagination.current_page -= 1;
+                pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
+                pagination.has_previous_page = pagination.current_page > 0;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Vai para uma página específica
+    pub fn go_to_page(&mut self, page: usize) -> bool {
+        if let Some(pagination) = &mut self.pagination {
+            if page < pagination.total_pages {
+                pagination.current_page = page;
+                pagination.has_next_page = pagination.current_page < pagination.total_pages - 1;
+                pagination.has_previous_page = pagination.current_page > 0;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Obtém estatísticas de performance
+    pub fn get_performance_stats(&self) -> GanttPerformanceStats {
+        GanttPerformanceStats {
+            total_tasks: self.total_tasks,
+            loaded_tasks: self.tasks.len(),
+            total_dependencies: self.dependencies.len(),
+            is_paginated: self.pagination.is_some(),
+            is_optimized: self.is_optimized,
+            memory_usage_estimate: self.estimate_memory_usage(),
+        }
+    }
+
+    /// Estima o uso de memória em bytes
+    fn estimate_memory_usage(&self) -> usize {
+        let task_size = std::mem::size_of::<GanttTask>();
+        let dependency_size = std::mem::size_of::<GanttDependency>();
+        
+        (self.tasks.len() * task_size) + (self.dependencies.len() * dependency_size)
     }
 
     /// Gera o HTML do gráfico Gantt
@@ -632,6 +877,35 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         Ok(gantt)
+    }
+}
+
+/// Estatísticas de performance do Gantt Chart
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GanttPerformanceStats {
+    pub total_tasks: usize,
+    pub loaded_tasks: usize,
+    pub total_dependencies: usize,
+    pub is_paginated: bool,
+    pub is_optimized: bool,
+    pub memory_usage_estimate: usize,
+}
+
+impl GanttPerformanceStats {
+    pub fn get_memory_usage_mb(&self) -> f64 {
+        self.memory_usage_estimate as f64 / (1024.0 * 1024.0)
+    }
+
+    pub fn get_load_percentage(&self) -> f64 {
+        if self.total_tasks == 0 {
+            0.0
+        } else {
+            (self.loaded_tasks as f64 / self.total_tasks as f64) * 100.0
+        }
+    }
+
+    pub fn is_efficient(&self) -> bool {
+        self.is_optimized && self.get_load_percentage() < 100.0
     }
 }
 
