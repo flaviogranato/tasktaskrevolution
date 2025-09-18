@@ -20,6 +20,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
     match command {
         ResourceCommand::Create {
             name,
+            r#type: resource_type,
             code: _,
             email,
             description: _,
@@ -29,7 +30,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
 
             let params = CreateResourceParams {
                 name: name.clone(),
-                resource_type: "person".to_string(),
+                resource_type: resource_type.clone(),
                 company_code: "COMPANY001".to_string(),
                 project_code: None,
                 code: None,
@@ -39,12 +40,11 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             };
             match create_use_case.execute(params) {
                 Ok(_resource) => {
-                    println!("✅ Resource created successfully!");
-                    println!("   Resource created successfully!");
+                    println!("Resource created successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to create resource: {}", e);
+                    eprintln!("Failed to create resource: {}", e);
                     Err(e.into())
                 }
             }
@@ -71,11 +71,11 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
                 description.as_deref(),
             ) {
                 Ok(_) => {
-                    println!("✅ Time off created successfully!");
+                    println!("Time off created successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to create time off: {}", e);
+                    eprintln!("Failed to create time off: {}", e);
                     Err(e)
                 }
             }
@@ -103,11 +103,11 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
                 None,
             ) {
                 Ok(_) => {
-                    println!("✅ Vacation created successfully!");
+                    println!("Vacation created successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to create vacation: {}", e);
+                    eprintln!("Failed to create vacation: {}", e);
                     Err(e)
                 }
             }
@@ -122,7 +122,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to describe resource: {}", e);
+                    eprintln!("Failed to describe resource: {}", e);
                     Err(e.into())
                 }
             }
@@ -130,6 +130,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
         ResourceCommand::Update {
             code,
             name,
+            r#type: resource_type,
             email,
             description,
         } => {
@@ -139,16 +140,16 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             let args = UpdateResourceArgs {
                 name,
                 email,
-                resource_type: description,
+                resource_type: resource_type.or(description),
             };
 
             match update_use_case.execute(&code, "DEFAULT", args) {
                 Ok(_) => {
-                    println!("✅ Resource updated successfully!");
+                    println!("Resource updated successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to update resource: {}", e);
+                    eprintln!("Failed to update resource: {}", e);
                     Err(e.into())
                 }
             }
@@ -159,11 +160,11 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
 
             match deactivate_use_case.execute(&code, "DEFAULT") {
                 Ok(_) => {
-                    println!("✅ Resource deactivated successfully!");
+                    println!("Resource deactivated successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to deactivate resource: {}", e);
+                    eprintln!("Failed to deactivate resource: {}", e);
                     Err(e.into())
                 }
             }

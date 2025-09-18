@@ -71,13 +71,13 @@ impl SimplifiedExecutor {
 
                         match use_case.execute(args) {
                             Ok(company) => {
-                                println!("✅ Company created successfully!");
+                                println!("Company created successfully!");
                                 println!("   Name: {}", company.name());
                                 println!("   Code: {}", company.code());
                                 Ok(())
                             }
                             Err(e) => {
-                                eprintln!("❌ Failed to create company: {}", e);
+                                eprintln!("Failed to create company: {}", e);
                                 Err(Box::new(e))
                             }
                         }
@@ -118,14 +118,14 @@ impl SimplifiedExecutor {
                     Some(end_date_parsed),
                 ) {
                     Ok(project) => {
-                        println!("✅ Project created successfully!");
+                        println!("Project created successfully!");
                         println!("   Name: {}", project.name());
                         println!("   Code: {}", project.code());
                         println!("   Company: {}", company_code);
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to create project: {}", e);
+                        eprintln!("Failed to create project: {}", e);
                         Err(Box::new(e))
                     }
                 }
@@ -172,23 +172,24 @@ impl SimplifiedExecutor {
                 let use_case = CreateTaskUseCase::new(project_repo, task_repo);
                 match use_case.execute(args) {
                     Ok(_) => {
-                        println!("✅ Task created successfully!");
+                        println!("Task created successfully!");
                         println!("   Name: {}", name);
                         println!("   Project: {}", project_code);
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to create task: {}", e);
+                        eprintln!("Failed to create task: {}", e);
                         Err(Box::new(e))
                     }
                 }
             }
             CreateCommand::Resource {
                 name,
+                r#type: resource_type,
                 code,
                 email,
                 company,
-                description,
+                description: _,
                 start_date,
                 end_date,
             } => {
@@ -197,8 +198,6 @@ impl SimplifiedExecutor {
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
                 let use_case = CreateResourceUseCase::new(resource_repo);
-
-                let resource_type = description.as_deref().unwrap_or("employee");
 
                 // Parse dates if provided
                 let start_date_parsed = if let Some(start_date_str) = start_date {
@@ -221,7 +220,7 @@ impl SimplifiedExecutor {
 
                 let params = CreateResourceParams {
                     name: name.clone(),
-                    resource_type: resource_type.to_string(),
+                    resource_type: resource_type.clone(),
                     company_code: company_code.clone(),
                     project_code: None,
                     code,
@@ -231,13 +230,14 @@ impl SimplifiedExecutor {
                 };
                 match use_case.execute(params) {
                     Ok(_) => {
-                        println!("✅ Resource created successfully!");
+                        println!("Resource created successfully!");
                         println!("   Name: {}", name);
+                        println!("   Type: {}", resource_type);
                         println!("   Company: {}", company_code);
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to create resource: {}", e);
+                        eprintln!("Failed to create resource: {}", e);
                         Err(Box::new(e))
                     }
                 }
