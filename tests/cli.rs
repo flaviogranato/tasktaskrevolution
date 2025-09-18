@@ -392,7 +392,7 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let resource_file = temp
+    let _resource_file = temp
         .child("companies")
         .child("TECH-CORP")
         .child("resources")
@@ -421,7 +421,8 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
         "2024-12-31",
     ]);
 
-    let result = cmd.assert()
+    let _result = cmd
+        .assert()
         .success()
         .stdout(predicate::str::contains("Resource John Doe created"));
 
@@ -432,17 +433,17 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
         .child("TECH-CORP")
         .child("resources")
         .child("developer-1.yaml");
-    
+
     if resource_file_with_code.path().exists() {
         // Usar o arquivo com código para validação
         let validator = YamlValidator::new(resource_file_with_code.path())?;
-        
+
         // Validar estrutura básica
         assert!(
             validator.validate_basic_structure(),
             "Resource YAML deve ter estrutura básica"
         );
-        
+
         // Validar campos obrigatórios do metadata
         assert!(validator.has_field("metadata.id"), "Resource deve ter metadata.id");
         assert!(validator.has_field("metadata.code"), "Resource deve ter metadata.code");
@@ -451,23 +452,50 @@ fn test_create_resource() -> Result<(), Box<dyn std::error::Error>> {
             validator.has_field("metadata.resourceType"),
             "Resource deve ter metadata.resourceType"
         );
-        
+
         // Validar campos obrigatórios do spec
-        assert!(validator.has_field("spec.startDate"), "Resource deve ter spec.startDate");
+        assert!(
+            validator.has_field("spec.startDate"),
+            "Resource deve ter spec.startDate"
+        );
         assert!(validator.has_field("spec.endDate"), "Resource deve ter spec.endDate");
-        assert!(validator.has_field("spec.timeOffBalance"), "Resource deve ter spec.timeOffBalance");
-        assert!(validator.has_field("spec.timeOffHistory"), "Resource deve ter spec.timeOffHistory");
-        
+        assert!(
+            validator.has_field("spec.timeOffBalance"),
+            "Resource deve ter spec.timeOffBalance"
+        );
+        assert!(
+            validator.has_field("spec.timeOffHistory"),
+            "Resource deve ter spec.timeOffHistory"
+        );
+
         // Validar valores específicos
-        assert!(validator.field_equals("metadata.name", "John Doe"), "metadata.name deve ser 'John Doe'");
-        assert!(validator.field_equals("metadata.email", "john@example.com"), "metadata.email deve ser 'john@example.com'");
-        assert!(validator.field_equals("metadata.resourceType", "Developer"), "metadata.resourceType deve ser 'Developer'");
-        assert!(validator.field_equals("spec.startDate", "2024-01-01"), "spec.startDate deve ser '2024-01-01'");
-        assert!(validator.field_equals("spec.endDate", "2024-12-31"), "spec.endDate deve ser '2024-12-31'");
-        
+        assert!(
+            validator.field_equals("metadata.name", "John Doe"),
+            "metadata.name deve ser 'John Doe'"
+        );
+        assert!(
+            validator.field_equals("metadata.email", "john@example.com"),
+            "metadata.email deve ser 'john@example.com'"
+        );
+        assert!(
+            validator.field_equals("metadata.resourceType", "Developer"),
+            "metadata.resourceType deve ser 'Developer'"
+        );
+        assert!(
+            validator.field_equals("spec.startDate", "2024-01-01"),
+            "spec.startDate deve ser '2024-01-01'"
+        );
+        assert!(
+            validator.field_equals("spec.endDate", "2024-12-31"),
+            "spec.endDate deve ser '2024-12-31'"
+        );
+
         println!("✅ Resource YAML validation passed");
     } else {
-        panic!("Resource file with code not found: {:?}", resource_file_with_code.path());
+        panic!(
+            "Resource file with code not found: {:?}",
+            resource_file_with_code.path()
+        );
     }
 
     Ok(())
@@ -1215,13 +1243,13 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     ]);
 
     cmd.assert().success();
-    
+
     // O arquivo está sendo criado com o código, não com o nome
     // Vamos verificar se o arquivo com código existe
     // Como o nome do arquivo depende do tipo do recurso, vamos procurar dinamicamente
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let mut resource_file_with_code = None;
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -1232,17 +1260,17 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     if let Some(resource_file_path) = resource_file_with_code {
         // Usar o arquivo com código para validação
         let validator = YamlValidator::new(&resource_file_path)?;
-        
+
         // Validar estrutura básica
         assert!(
             validator.validate_basic_structure(),
             "Resource YAML deve ter estrutura básica"
         );
-        
+
         // Validar campos obrigatórios do metadata
         assert!(validator.has_field("metadata.id"), "Resource deve ter metadata.id");
         assert!(validator.has_field("metadata.code"), "Resource deve ter metadata.code");
@@ -1251,20 +1279,44 @@ fn test_resource_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
             validator.has_field("metadata.resourceType"),
             "Resource deve ter metadata.resourceType"
         );
-        
+
         // Validar campos obrigatórios do spec
-        assert!(validator.has_field("spec.startDate"), "Resource deve ter spec.startDate");
+        assert!(
+            validator.has_field("spec.startDate"),
+            "Resource deve ter spec.startDate"
+        );
         assert!(validator.has_field("spec.endDate"), "Resource deve ter spec.endDate");
-        assert!(validator.has_field("spec.timeOffBalance"), "Resource deve ter spec.timeOffBalance");
-        assert!(validator.has_field("spec.timeOffHistory"), "Resource deve ter spec.timeOffHistory");
-        
+        assert!(
+            validator.has_field("spec.timeOffBalance"),
+            "Resource deve ter spec.timeOffBalance"
+        );
+        assert!(
+            validator.has_field("spec.timeOffHistory"),
+            "Resource deve ter spec.timeOffHistory"
+        );
+
         // Validar valores específicos
-        assert!(validator.field_equals("metadata.name", "YAML Developer"), "metadata.name deve ser 'YAML Developer'");
-        assert!(validator.field_equals("metadata.email", "yaml@example.com"), "metadata.email deve ser 'yaml@example.com'");
-        assert!(validator.field_equals("metadata.resourceType", "Senior Developer"), "metadata.resourceType deve ser 'Senior Developer'");
-        assert!(validator.field_equals("spec.startDate", "2024-01-01"), "spec.startDate deve ser '2024-01-01'");
-        assert!(validator.field_equals("spec.endDate", "2024-12-31"), "spec.endDate deve ser '2024-12-31'");
-        
+        assert!(
+            validator.field_equals("metadata.name", "YAML Developer"),
+            "metadata.name deve ser 'YAML Developer'"
+        );
+        assert!(
+            validator.field_equals("metadata.email", "yaml@example.com"),
+            "metadata.email deve ser 'yaml@example.com'"
+        );
+        assert!(
+            validator.field_equals("metadata.resourceType", "Senior Developer"),
+            "metadata.resourceType deve ser 'Senior Developer'"
+        );
+        assert!(
+            validator.field_equals("spec.startDate", "2024-01-01"),
+            "spec.startDate deve ser '2024-01-01'"
+        );
+        assert!(
+            validator.field_equals("spec.endDate", "2024-12-31"),
+            "spec.endDate deve ser '2024-12-31'"
+        );
+
         println!("✅ Resource YAML validation passed");
     } else {
         panic!("Resource file with code not found in resources directory");

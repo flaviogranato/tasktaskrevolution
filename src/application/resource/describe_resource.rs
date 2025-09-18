@@ -1,9 +1,7 @@
 #![allow(unused_imports)]
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{
-    any_resource::AnyResource, 
-    repository::ResourceRepository,
-    resource::WipLimits,
+    any_resource::AnyResource, repository::ResourceRepository, resource::WipLimits,
 };
 use std::fmt;
 

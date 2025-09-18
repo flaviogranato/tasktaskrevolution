@@ -26,7 +26,16 @@ fn test_json_export() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar dados de teste
@@ -77,7 +86,16 @@ fn test_csv_export() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar múltiplos recursos para testar exportação CSV
@@ -127,7 +145,16 @@ fn test_xml_export() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar dados de teste
@@ -179,7 +206,16 @@ fn test_external_data_import() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Simular importação de dados externos criando dados via CLI
@@ -237,7 +273,16 @@ fn test_webhook_simulation() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Simular webhook de criação de recurso
@@ -310,7 +355,16 @@ fn test_external_api_integration() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Simular integração com API externa criando dados
@@ -364,7 +418,16 @@ fn test_third_party_tools_integration() -> Result<(), Box<dyn std::error::Error>
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Simular integração com ferramentas de terceiros
@@ -419,7 +482,16 @@ fn test_data_synchronization() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Simular sincronização de dados
@@ -479,7 +551,16 @@ fn test_backup_restore_integration() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar dados para backup
@@ -532,7 +613,16 @@ fn test_monitoring_logging_integration() -> Result<(), Box<dyn std::error::Error
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Simular operações que geram logs

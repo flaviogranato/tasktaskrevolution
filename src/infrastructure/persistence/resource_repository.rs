@@ -44,7 +44,7 @@ impl FileResourceRepository {
         } else {
             self.base_path.clone()
         };
-        
+
         // If we're already in a companies directory, don't add "companies" again
         if base_path.ends_with("companies") {
             base_path
@@ -72,7 +72,7 @@ impl FileResourceRepository {
         } else {
             self.base_path.clone()
         };
-        
+
         // If we're already in a companies directory, don't add "companies" again
         if base_path.ends_with("companies") {
             base_path
@@ -384,7 +384,6 @@ impl ResourceRepository for FileResourceRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
-
         // If we're in a project or company context, search in company resources first
         if self.base_path.ends_with("projects")
             || self.base_path.ends_with("companies")
@@ -410,7 +409,6 @@ impl ResourceRepository for FileResourceRepository {
                 self.base_path.join("*/resources/*.yaml")
             };
 
-
             // Check if the resources directory exists
             let _resources_dir = if self.base_path.to_string_lossy() == "../" {
                 // Get the current working directory and go up two levels to get to company directory
@@ -426,14 +424,12 @@ impl ResourceRepository for FileResourceRepository {
                 message: e.to_string(),
             })?;
 
-            let mut _found_count = 0;
             for entry in walker {
                 let entry = entry.map_err(|e| AppError::ValidationError {
                     field: "glob entry".to_string(),
                     message: e.to_string(),
                 })?;
                 let file_path = entry.as_path();
-                _found_count += 1;
 
                 let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
                     operation: "file read".to_string(),

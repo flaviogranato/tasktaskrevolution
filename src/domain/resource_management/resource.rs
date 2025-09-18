@@ -347,7 +347,8 @@ impl<S: ResourceState> Resource<S> {
         }
 
         if let Some(ref wip_limits) = self.wip_limits
-            && !wip_limits.is_valid() {
+            && !wip_limits.is_valid()
+        {
             errors.push("WIP limits configuration is invalid".to_string());
         }
 
@@ -374,25 +375,28 @@ impl<S: ResourceState> Resource<S> {
     // Task assignment management
     pub fn assign_to_task(&mut self, task_assignment: TaskAssignment) -> Result<(), String> {
         if let Some(ref limits) = self.wip_limits
-            && limits.enabled {
-                // Check if resource can be assigned to more tasks
-                let current_active_tasks = self.get_active_task_count();
-                if current_active_tasks >= limits.max_concurrent_tasks {
-                    return Err(format!(
-                        "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
-                        limits.max_concurrent_tasks, current_active_tasks
-                    ));
-                }
-
-                // Check allocation percentage
-                let current_allocation = self.get_current_allocation_percentage();
-                if current_allocation + task_assignment.allocation_percentage as u32 > limits.max_allocation_percentage as u32 {
-                    return Err(format!(
-                        "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
-                        limits.max_allocation_percentage, current_allocation, task_assignment.allocation_percentage
-                    ));
-                }
+            && limits.enabled
+        {
+            // Check if resource can be assigned to more tasks
+            let current_active_tasks = self.get_active_task_count();
+            if current_active_tasks >= limits.max_concurrent_tasks {
+                return Err(format!(
+                    "Resource has reached maximum concurrent tasks limit ({}). Current active tasks: {}",
+                    limits.max_concurrent_tasks, current_active_tasks
+                ));
             }
+
+            // Check allocation percentage
+            let current_allocation = self.get_current_allocation_percentage();
+            if current_allocation + task_assignment.allocation_percentage as u32
+                > limits.max_allocation_percentage as u32
+            {
+                return Err(format!(
+                    "Assignment would exceed maximum allocation percentage ({}). Current allocation: {}%, New assignment: {}%",
+                    limits.max_allocation_percentage, current_allocation, task_assignment.allocation_percentage
+                ));
+            }
+        }
 
         if let Some(ref mut assignments) = self.task_assignments {
             assignments.push(task_assignment);
@@ -405,7 +409,8 @@ impl<S: ResourceState> Resource<S> {
 
     pub fn remove_task_assignment(&mut self, task_id: &str) -> bool {
         if let Some(ref mut assignments) = self.task_assignments
-            && let Some(pos) = assignments.iter().position(|a| a.task_id == task_id) {
+            && let Some(pos) = assignments.iter().position(|a| a.task_id == task_id)
+        {
             assignments.remove(pos);
             return true;
         }
@@ -414,7 +419,8 @@ impl<S: ResourceState> Resource<S> {
 
     pub fn get_active_task_count(&self) -> u32 {
         if let Some(ref assignments) = self.task_assignments {
-            assignments.iter()
+            assignments
+                .iter()
                 .filter(|a| a.status == TaskAssignmentStatus::Active)
                 .count() as u32
         } else {
@@ -424,7 +430,8 @@ impl<S: ResourceState> Resource<S> {
 
     pub fn get_current_allocation_percentage(&self) -> u32 {
         if let Some(ref assignments) = self.task_assignments {
-            assignments.iter()
+            assignments
+                .iter()
                 .filter(|a| a.status == TaskAssignmentStatus::Active)
                 .map(|a| a.allocation_percentage as u32)
                 .sum()
@@ -446,8 +453,7 @@ impl<S: ResourceState> Resource<S> {
             let active_tasks = self.get_active_task_count();
             let current_allocation = self.get_current_allocation_percentage();
 
-            active_tasks > limits.max_concurrent_tasks || 
-            current_allocation > limits.max_allocation_percentage as u32
+            active_tasks > limits.max_concurrent_tasks || current_allocation > limits.max_allocation_percentage as u32
         } else {
             false
         }
@@ -462,11 +468,13 @@ impl<S: ResourceState> Resource<S> {
             let active_tasks = self.get_active_task_count();
             let current_allocation = self.get_current_allocation_percentage();
 
-            if active_tasks >= limits.max_concurrent_tasks || 
-               current_allocation >= limits.max_allocation_percentage as u32 {
+            if active_tasks >= limits.max_concurrent_tasks
+                || current_allocation >= limits.max_allocation_percentage as u32
+            {
                 WipStatus::Exceeded
-            } else if active_tasks >= limits.max_concurrent_tasks * 3 / 4 || 
-                      current_allocation >= (limits.max_allocation_percentage as u32 * 3 / 4) {
+            } else if active_tasks >= limits.max_concurrent_tasks * 3 / 4
+                || current_allocation >= (limits.max_allocation_percentage as u32 * 3 / 4)
+            {
                 WipStatus::NearLimit
             } else {
                 WipStatus::WithinLimits
@@ -1057,7 +1065,7 @@ mod tests {
         // Test near limit
         let limits = WipLimits::new(4, 3, 100);
         resource.set_wip_limits(limits).unwrap();
-        
+
         // Add 3 tasks (75% of limit)
         for i in 0..3 {
             let task_assignment = TaskAssignment {

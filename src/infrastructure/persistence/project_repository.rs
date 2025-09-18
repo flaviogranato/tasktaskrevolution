@@ -44,10 +44,7 @@ impl FileProjectRepository {
     fn get_project_path(&self, company_code: &str, project_code: &str) -> PathBuf {
         if self.base_path.ends_with("companies") {
             // If base_path already includes "companies", don't add it again
-            self.base_path
-                .join(company_code)
-                .join("projects")
-                .join(project_code)
+            self.base_path.join(company_code).join("projects").join(project_code)
         } else {
             // If base_path doesn't include "companies", add it
             self.base_path

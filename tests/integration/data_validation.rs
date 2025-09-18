@@ -610,7 +610,7 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     // Vamos procurar dinamicamente pelo arquivo correto
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let mut resource_file_path = None;
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -621,7 +621,7 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     let resource_file_path = resource_file_path.expect("Resource file not found");
     assert!(resource_file_path.exists());
 
@@ -719,7 +719,7 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Vamos contar quantos arquivos YAML existem no diretório
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let mut yaml_files = Vec::new();
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -729,10 +729,15 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
     // Deve ter 5 arquivos (um para cada recurso)
-    assert_eq!(yaml_files.len(), 5, "Expected 5 resource files, found {}", yaml_files.len());
-    
+    assert_eq!(
+        yaml_files.len(),
+        5,
+        "Expected 5 resource files, found {}",
+        yaml_files.len()
+    );
+
     // Validar que cada arquivo tem os campos obrigatórios
     for yaml_file in &yaml_files {
         let validator = YamlValidator::new(yaml_file)?;
@@ -814,7 +819,7 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
     // Vamos contar quantos arquivos YAML existem no diretório
     let resources_dir = temp.child("companies").child("TECH-CORP").child("resources");
     let mut yaml_files = Vec::new();
-    
+
     if resources_dir.path().exists() {
         for entry in std::fs::read_dir(resources_dir.path()).unwrap() {
             let entry = entry.unwrap();
@@ -824,10 +829,16 @@ fn test_special_characters_validation() -> Result<(), Box<dyn std::error::Error>
             }
         }
     }
-    
+
     // Deve ter 5 arquivos (um para cada nome especial)
-    assert_eq!(yaml_files.len(), special_names.len(), "Expected {} resource files, found {}", special_names.len(), yaml_files.len());
-    
+    assert_eq!(
+        yaml_files.len(),
+        special_names.len(),
+        "Expected {} resource files, found {}",
+        special_names.len(),
+        yaml_files.len()
+    );
+
     // Validar que pelo menos um arquivo contém cada nome especial
     for name in &special_names {
         let mut found = false;

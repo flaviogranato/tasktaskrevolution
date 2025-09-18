@@ -30,7 +30,16 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     let start_time = Instant::now();
@@ -162,7 +171,16 @@ fn test_large_report_generation() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar alguns dados para o relatório
@@ -315,7 +333,16 @@ fn test_large_listing_performance() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar alguns dados para listagem
@@ -430,7 +457,16 @@ fn test_memory_usage_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar dados para testar uso de memória
@@ -491,7 +527,16 @@ fn test_resource_cleanup_validation() -> Result<(), Box<dyn std::error::Error>> 
     // Criar empresa
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
-    cmd.args(["create", "company", "--name", "Tech Corp", "--code", "TECH-CORP", "--description", "Technology company"]);
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corp",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Technology company",
+    ]);
     cmd.assert().success();
 
     // Criar dados temporários

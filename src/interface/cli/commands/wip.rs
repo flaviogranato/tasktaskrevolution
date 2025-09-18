@@ -99,9 +99,7 @@ where
     RR: ResourceRepository,
 {
     pub fn new(resource_repository: RR) -> Self {
-        Self {
-            resource_repository,
-        }
+        Self { resource_repository }
     }
 
     pub fn set_wip_limits(
@@ -128,18 +126,15 @@ where
         // Update resource with new WIP limits
         let updated_resource = match resource {
             AnyResource::Available(mut res) => {
-                res.set_wip_limits(wip_limits)
-                    .map_err(WipAppError::InvalidWipLimits)?;
+                res.set_wip_limits(wip_limits).map_err(WipAppError::InvalidWipLimits)?;
                 AnyResource::Available(res)
             }
             AnyResource::Assigned(mut res) => {
-                res.set_wip_limits(wip_limits)
-                    .map_err(WipAppError::InvalidWipLimits)?;
+                res.set_wip_limits(wip_limits).map_err(WipAppError::InvalidWipLimits)?;
                 AnyResource::Assigned(res)
             }
             AnyResource::Inactive(mut res) => {
-                res.set_wip_limits(wip_limits)
-                    .map_err(WipAppError::InvalidWipLimits)?;
+                res.set_wip_limits(wip_limits).map_err(WipAppError::InvalidWipLimits)?;
                 AnyResource::Inactive(res)
             }
         };
@@ -229,7 +224,11 @@ where
             }
 
             if let Some(filter_status) = status_filter
-                && !wip_status.to_string().to_lowercase().contains(&filter_status.to_lowercase()) {
+                && !wip_status
+                    .to_string()
+                    .to_lowercase()
+                    .contains(&filter_status.to_lowercase())
+            {
                 continue;
             }
 
