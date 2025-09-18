@@ -334,7 +334,7 @@ else
 end
 
 echo "5.5.2 Linkando tarefas (criando dependência)..."
-ttr link task \
+ttr link tasks \
   --from "TASK-ANALISE" \
   --to "TASK-BACKEND" \
   --project "ECOMM-001" \
@@ -362,7 +362,7 @@ else
 end
 
 echo "5.5.4 Testando detecção de dependências circulares (deve falhar)..."
-ttr link task \
+ttr link tasks \
   --from "TASK-BACKEND" \
   --to "TASK-ANALISE" \
   --project "ECOMM-001" \
@@ -582,10 +582,10 @@ echo "🔗 FASE 12: Testes de Links"
 echo "==========================="
 
 echo "12.1 Linkando tarefas..."
-ttr link task --from "TASK-001" --to "TASK-002" --project "ECOMM-001" --company "TECH-001"
+ttr link tasks --from "TASK-001" --to "TASK-002" --project "ECOMM-001" --company "TECH-001"
 
 echo "12.2 Deslinkando tarefas..."
-ttr unlink task --from "TASK-001" --to "TASK-002" --project "ECOMM-001" --company "TECH-001"
+ttr unlink tasks --from "TASK-001" --to "TASK-002" --project "ECOMM-001" --company "TECH-001"
 echo ""
 
 # ============================================================================
