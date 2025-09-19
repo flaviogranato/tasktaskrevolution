@@ -10,3 +10,7 @@
 /DIR
 fix_mock_repos.py
 fix_mock_repos.sh
+
+# Documentação de testes
+TEST_CASES.md
+TUTORIAL_TESTE.md

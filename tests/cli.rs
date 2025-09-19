@@ -252,8 +252,8 @@ fn test_init_command_with_timezone() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let company_dir = temp.child("companies").child("TECH-CORP");
-    let company_file = company_dir.child("company.yaml");
+    let companies_dir = temp.child("companies");
+    // With ID-based naming, we can't predict the exact filename, so we'll check the directory exists
 
     // Primeiro inicializar
     let mut init_cmd = Command::cargo_bin("ttr")?;
@@ -289,12 +289,22 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("Tech Corp"))
         .stdout(predicate::str::contains("TECH-CORP"));
 
-    // Verificar se os arquivos foram criados
-    company_dir.assert(predicate::path::is_dir());
-    company_file.assert(predicate::path::exists());
-
-    // Validar conteúdo YAML do company.yaml
-    let validator = YamlValidator::new(company_file.path())?;
+    // Verificar se o diretório companies foi criado
+    companies_dir.assert(predicate::path::is_dir());
+    
+    // With ID-based naming, we need to find the actual file
+    // Check if there's at least one .yaml file in the companies directory
+    let companies_path = companies_dir.path();
+    let mut yaml_files = std::fs::read_dir(companies_path)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
+        .collect::<Vec<_>>();
+    
+    assert!(!yaml_files.is_empty(), "No company YAML file found in companies directory");
+    
+    // Use the first YAML file found for validation
+    let company_file_path = yaml_files[0].path();
+    let validator = YamlValidator::new(&company_file_path)?;
 
     // Validar estrutura básica
     assert!(
@@ -1149,7 +1159,7 @@ fn test_config_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
-    let company_file = temp.child("companies").child("YAML-CORP").child("company.yaml");
+    let companies_dir = temp.child("companies");
 
     // Setup basic environment
     setup_basic_environment(&temp)?;
@@ -1169,10 +1179,22 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     ]);
 
     cmd.assert().success();
-    company_file.assert(predicate::path::exists());
+    companies_dir.assert(predicate::path::is_dir());
+
+    // With ID-based naming, find the actual company file
+    let companies_path = companies_dir.path();
+    let mut yaml_files = std::fs::read_dir(companies_path)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
+        .collect::<Vec<_>>();
+    
+    assert!(!yaml_files.is_empty(), "No company YAML file found in companies directory");
+    
+    // Use the first YAML file found for validation
+    let company_file_path = yaml_files[0].path();
 
     // Validar company.yaml com validador robusto
-    let validator = YamlValidator::new(company_file.path())?;
+    let validator = YamlValidator::new(&company_file_path)?;
 
     // Estrutura básica obrigatória
     assert!(

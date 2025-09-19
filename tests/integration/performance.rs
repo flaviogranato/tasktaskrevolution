@@ -427,14 +427,18 @@ fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
 
     let elapsed = start_time.elapsed();
 
-    // Validar que todas as empresas foram criadas
-    for i in 1..=50 {
-        let company_file = temp
-            .child("companies")
-            .child(format!("COMP-{}", i))
-            .child("company.yaml");
-        company_file.assert(predicate::path::exists());
-    }
+    // Validar que todas as empresas foram criadas (ID-based naming)
+    let companies_dir = temp.child("companies");
+    companies_dir.assert(predicate::path::is_dir());
+    
+    // Check if there are 50 .yaml files in the companies directory
+    let companies_path = companies_dir.path();
+    let yaml_files = std::fs::read_dir(companies_path)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
+        .collect::<Vec<_>>();
+    
+    assert_eq!(yaml_files.len(), 50, "Expected 50 companies to be created");
 
     // Validar performance (deve completar em menos de 20 segundos)
     assert!(

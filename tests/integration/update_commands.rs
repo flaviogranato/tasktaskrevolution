@@ -95,13 +95,28 @@ fn setup_basic_environment(temp: &assert_fs::TempDir) -> Result<(), Box<dyn std:
 
 /// Helper function to find project code
 fn find_project_code(temp: &assert_fs::TempDir) -> Result<String, Box<dyn std::error::Error>> {
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    let projects_dir = temp.path().join("projects");
     let mut project_code = None;
 
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
+            let path = entry.path();
+            // Check if it's a YAML file (ID-based format)
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    project_code = Some(code.to_string());
+                    break;
+                }
+            }
+            // Check if it's the old directory format
+            else if path.is_dir() {
+                let project_yaml = path.join("project.yaml");
                 if project_yaml.exists()
                     && let Ok(content) = std::fs::read_to_string(&project_yaml)
                     && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
@@ -122,46 +137,46 @@ fn find_project_code(temp: &assert_fs::TempDir) -> Result<String, Box<dyn std::e
 
 /// Helper function to find task code
 fn find_task_code(temp: &assert_fs::TempDir, project_code: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let tasks_dir = temp
-        .path()
-        .join("companies")
-        .join("TECH-CORP")
-        .join("projects")
-        .join(project_code)
-        .join("tasks");
-
-    // Debug: Check if tasks directory exists
-    if !tasks_dir.exists() {
-        return Err(format!("Tasks directory does not exist: {:?}", tasks_dir).into());
-    }
-
+    let projects_dir = temp.path().join("projects");
     let mut task_code = None;
-    if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+
+    // Search in all project directories
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                // Read the YAML file to get the actual task code
+                // Check if this is the project file we're looking for
                 if let Ok(content) = std::fs::read_to_string(&path)
                     && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
                     && let Some(metadata) = yaml.get("metadata")
                     && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
+                    && code == project_code
                 {
-                    task_code = Some(code.to_string());
-                    break;
+                    // Found the project, now look for tasks in the tasks subdirectory
+                    let tasks_dir = path.parent().unwrap().join("tasks");
+                    if tasks_dir.exists() {
+                        if let Ok(task_entries) = std::fs::read_dir(&tasks_dir) {
+                            for task_entry in task_entries.flatten() {
+                                let task_path = task_entry.path();
+                                if task_path.is_file()
+                                    && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                    && let Ok(task_content) = std::fs::read_to_string(&task_path)
+                                    && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                                    && let Some(task_metadata) = task_yaml.get("metadata")
+                                    && let Some(code) = task_metadata.get("code").and_then(|v| v.as_str())
+                                {
+                                    task_code = Some(code.to_string());
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
-
-    if task_code.is_none() {
-        // Debug: List all files in tasks directory
-        let mut files = Vec::new();
-        if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
-            for entry in entries.flatten() {
-                files.push(entry.file_name().to_string_lossy().to_string());
+            if task_code.is_some() {
+                break;
             }
         }
-        return Err(format!("Task code not found. Files in tasks directory: {:?}", files).into());
     }
 
     task_code.ok_or_else(|| "Task code not found".into())
@@ -169,29 +184,35 @@ fn find_task_code(temp: &assert_fs::TempDir, project_code: &str) -> Result<Strin
 
 /// Helper function to find resource code
 fn find_resource_code(temp: &assert_fs::TempDir) -> Result<String, Box<dyn std::error::Error>> {
-    let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
-
-    // Check if directory exists
-    if !resources_dir.exists() {
-        return Err("Resources directory does not exist".into());
-    }
-
+    let companies_dir = temp.path().join("companies");
     let mut resource_code = None;
 
-    if let Ok(entries) = std::fs::read_dir(&resources_dir) {
+    if let Ok(entries) = std::fs::read_dir(&companies_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                // Read the YAML file to get the actual resource code
-                if let Ok(content) = std::fs::read_to_string(&path)
-                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                    && let Some(metadata) = yaml.get("metadata")
-                    && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
-                {
-                    resource_code = Some(code.to_string());
-                    break;
+            if path.is_dir() {
+                let resources_dir = path.join("resources");
+                if resources_dir.exists() {
+                    if let Ok(resource_entries) = std::fs::read_dir(&resources_dir) {
+                        for resource_entry in resource_entries.flatten() {
+                            let resource_path = resource_entry.path();
+                            if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                                // Read the YAML file to get the actual resource code
+                                if let Ok(content) = std::fs::read_to_string(&resource_path)
+                                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                    && let Some(metadata) = yaml.get("metadata")
+                                    && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
+                                {
+                                    resource_code = Some(code.to_string());
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+            if resource_code.is_some() {
+                break;
             }
         }
     }
@@ -206,32 +227,48 @@ fn verify_task_updated(
     task_code: &str,
     expected_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let tasks_dir = temp
-        .path()
-        .join("companies")
-        .join("TECH-CORP")
-        .join("projects")
-        .join(project_code)
-        .join("tasks");
-
-    // Find the task file by looking for the one with the matching code
+    let projects_dir = temp.path().join("projects");
     let mut task_file = None;
-    if let Ok(entries) = std::fs::read_dir(&tasks_dir) {
+
+    // Search in all project directories
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file()
-                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                && let Ok(content) = std::fs::read_to_string(&path)
-                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                && let Some(metadata) = yaml.get("metadata")
-                && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
-            {
-                // task_code might include .yaml extension, so we need to strip it
-                let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(task_code);
-                if code == task_code_without_ext {
-                    task_file = Some(path);
-                    break;
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                // Check if this is the project file we're looking for
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(metadata) = yaml.get("metadata")
+                    && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
+                    && code == project_code
+                {
+                    // Found the project, now look for tasks in the tasks subdirectory
+                    let tasks_dir = path.parent().unwrap().join("tasks");
+                    if tasks_dir.exists() {
+                        if let Ok(task_entries) = std::fs::read_dir(&tasks_dir) {
+                            for task_entry in task_entries.flatten() {
+                                let task_path = task_entry.path();
+                                if task_path.is_file()
+                                    && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                    && let Ok(task_content) = std::fs::read_to_string(&task_path)
+                                    && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                                    && let Some(task_metadata) = task_yaml.get("metadata")
+                                    && let Some(task_code_from_file) = task_metadata.get("code").and_then(|v| v.as_str())
+                                {
+                                    // task_code might include .yaml extension, so we need to strip it
+                                    let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(task_code);
+                                    if task_code_from_file == task_code_without_ext {
+                                        task_file = Some(task_path);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+            if task_file.is_some() {
+                break;
             }
         }
     }
@@ -262,7 +299,6 @@ fn verify_project_updated(
     let project_file = temp
         .path()
         .join("companies")
-        .join("TECH-CORP")
         .join("projects")
         .join(project_code)
         .join("project.yaml");
@@ -289,22 +325,35 @@ fn verify_resource_updated(
     resource_code: &str,
     expected_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
-
-    // Find the resource file by looking for the one with the matching code
+    let companies_dir = temp.path().join("companies");
     let mut resource_file = None;
-    if let Ok(entries) = std::fs::read_dir(&resources_dir) {
+
+    // Search in all company directories
+    if let Ok(entries) = std::fs::read_dir(&companies_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file()
-                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                && let Ok(content) = std::fs::read_to_string(&path)
-                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                && let Some(metadata) = yaml.get("metadata")
-                && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
-                && code == resource_code
-            {
-                resource_file = Some(path);
+            if path.is_dir() {
+                let resources_dir = path.join("resources");
+                if resources_dir.exists() {
+                    if let Ok(resource_entries) = std::fs::read_dir(&resources_dir) {
+                        for resource_entry in resource_entries.flatten() {
+                            let resource_path = resource_entry.path();
+                            if resource_path.is_file()
+                                && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                && let Ok(content) = std::fs::read_to_string(&resource_path)
+                                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                && let Some(metadata) = yaml.get("metadata")
+                                && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
+                                && code == resource_code
+                            {
+                                resource_file = Some(resource_path);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if resource_file.is_some() {
                 break;
             }
         }
@@ -381,7 +430,7 @@ fn test_task_update_company_context() -> Result<(), Box<dyn std::error::Error>> 
     let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(&task_code);
 
     // Change to company context
-    let company_dir = temp.path().join("companies").join("TECH-CORP");
+    let company_dir = temp.path();
     std::env::set_current_dir(&company_dir)?;
 
     // Update task from company context
@@ -394,6 +443,8 @@ fn test_task_update_company_context() -> Result<(), Box<dyn std::error::Error>> 
         task_code_without_ext,
         "--project",
         &project_code,
+        "--company",
+        "TECH-CORP",
         "--name",
         "Updated Task from Company Context",
     ]);
@@ -428,7 +479,6 @@ fn test_task_update_project_context() -> Result<(), Box<dyn std::error::Error>> 
     let project_dir = temp
         .path()
         .join("companies")
-        .join("TECH-CORP")
         .join("projects")
         .join(&project_code);
     std::env::set_current_dir(&project_dir)?;
@@ -505,7 +555,7 @@ fn test_project_update_company_context() -> Result<(), Box<dyn std::error::Error
     let project_code = find_project_code(&temp)?;
 
     // Change to company context
-    let company_dir = temp.path().join("companies").join("TECH-CORP");
+    let company_dir = temp.path();
     std::env::set_current_dir(&company_dir)?;
 
     // Update project from company context
@@ -577,8 +627,8 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
 
     let resource_code = find_resource_code(&temp)?;
 
-    // Change to company context
-    let company_dir = temp.path().join("companies").join("TECH-CORP");
+    // Change to company context (use the root directory since we're using ID-based naming)
+    let company_dir = temp.path();
     std::env::set_current_dir(&company_dir)?;
 
     // Update resource from company context
@@ -589,6 +639,8 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
         "resource",
         "--code",
         &resource_code,
+        "--company",
+        "TECH-CORP",
         "--name",
         "Updated Resource from Company Context",
     ]);
@@ -603,7 +655,7 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
     }
 
     // Debug: List all resource files to see what's there
-    let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
+    let resources_dir = temp.path().join("resources");
     if resources_dir.exists() {
         println!("Resource files in directory:");
         for entry in std::fs::read_dir(&resources_dir)? {
@@ -651,26 +703,8 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
         println!("Old file was removed: {:?}", old_name_file);
     }
 
-    // Verify file was updated - check if any resource file has the updated name
-    let resources_dir = temp.path().join("companies").join("TECH-CORP").join("resources");
-    let mut found_updated = false;
-    if let Ok(entries) = std::fs::read_dir(&resources_dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file()
-                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                && let Ok(content) = std::fs::read_to_string(&path)
-                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                && let Some(metadata) = yaml.get("metadata")
-                && let Some(name) = metadata.get("name").and_then(|n| n.as_str())
-                && name == "Updated Resource from Company Context"
-            {
-                found_updated = true;
-                break;
-            }
-        }
-    }
-    assert!(found_updated, "Resource should be updated with new name");
+    // Verify file was updated
+    verify_resource_updated(&temp, &resource_code, "Updated Resource from Company Context")?;
 
     // Reset directory
     std::env::set_current_dir(temp.path())?;
@@ -692,7 +726,7 @@ fn test_update_context_validation_errors() -> Result<(), Box<dyn std::error::Err
     let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(&task_code);
 
     // Test wrong company parameter in company context
-    let company_dir = temp.path().join("companies").join("TECH-CORP");
+    let company_dir = temp.path();
     std::env::set_current_dir(&company_dir)?;
 
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -789,7 +823,7 @@ fn test_comprehensive_update_matrix() -> Result<(), Box<dyn std::error::Error>> 
     }
 
     // Test company context
-    let company_dir = temp.path().join("companies").join("TECH-CORP");
+    let company_dir = temp.path();
     std::env::set_current_dir(&company_dir)?;
 
     let company_test_cases = vec![
@@ -832,7 +866,6 @@ fn test_comprehensive_update_matrix() -> Result<(), Box<dyn std::error::Error>> 
     let project_dir = temp
         .path()
         .join("companies")
-        .join("TECH-CORP")
         .join("projects")
         .join(&project_code);
     std::env::set_current_dir(&project_dir)?;
@@ -897,7 +930,6 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
     let task_file = temp
         .path()
         .join("companies")
-        .join("TECH-CORP")
         .join("projects")
         .join(&project_code)
         .join("tasks")
@@ -907,7 +939,6 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
     let tasks_dir = temp
         .path()
         .join("companies")
-        .join("TECH-CORP")
         .join("projects")
         .join(&project_code)
         .join("tasks");
@@ -948,7 +979,6 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
     let project_file = temp
         .path()
         .join("companies")
-        .join("TECH-CORP")
         .join("projects")
         .join(&project_code)
         .join("project.yaml");

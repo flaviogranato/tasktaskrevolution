@@ -3,6 +3,7 @@
 use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::{AnyResource, Period, PeriodType, repository::ResourceRepository};
+use crate::domain::shared::code_mapping_service::CodeMappingService;
 use crate::infrastructure::persistence::{
     manifests::resource_manifest::ResourceManifest, project_repository::FileProjectRepository,
 };
@@ -14,50 +15,37 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Clone)]
 pub struct FileResourceRepository {
     base_path: PathBuf,
+    mapping_service: CodeMappingService,
 }
 
 impl FileResourceRepository {
     pub fn new<P: AsRef<Path>>(base_path: P) -> Self {
+        let base_path = base_path.as_ref().to_path_buf();
+        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
         Self {
-            base_path: base_path.as_ref().to_path_buf(),
+            base_path,
+            mapping_service,
         }
     }
 
-    fn get_resource_file_path(&self, resource_name: &str) -> PathBuf {
+    fn get_resource_file_path_by_id(&self, resource_id: &str) -> PathBuf {
         self.base_path
             .join("resources")
-            .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
+            .join(format!("{}.yaml", resource_id))
     }
 
-    /// Gets the path to a resource in a specific company's global resources
-    fn get_company_resource_path(&self, company_code: &str, resource_name: &str) -> PathBuf {
-        // If base_path is relative (like "../"), resolve it to absolute path
-        let base_path = if self.base_path.is_relative() {
-            std::env::current_dir()
-                .unwrap_or_else(|_| self.base_path.clone())
-                .join(&self.base_path)
-                .canonicalize()
-                .unwrap_or_else(|_| self.base_path.clone())
-        } else {
-            self.base_path.clone()
-        };
+    fn get_resource_file_path_by_code(&self, resource_code: &str) -> PathBuf {
+        // For backward compatibility, try to find the resource by code
+        self.base_path
+            .join("resources")
+            .join(format!("{}.yaml", resource_code.replace(' ', "_").to_lowercase()))
+    }
 
-        // If we're already in a companies directory, don't add "companies" again
-        if base_path.ends_with("companies") {
-            base_path
-                .join(company_code)
-                .join("resources")
-                .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
-        } else {
-            base_path
-                .join("companies")
-                .join(company_code)
-                .join("resources")
-                .join(format!("{}.yaml", resource_name.replace(' ', "_").to_lowercase()))
-        }
+    /// Gets the path to the resources directory
+    fn get_resources_path(&self) -> PathBuf {
+        self.base_path.join("resources")
     }
 
     /// Gets the path to a resource in a specific company's global resources using resource code
@@ -197,11 +185,32 @@ impl FileResourceRepository {
     }
 
     fn find_by_name(&self, resource_name: &str) -> Result<Option<AnyResource>, AppError> {
-        let file_path = self.get_resource_file_path(resource_name);
+        let file_path = self.get_resource_file_path_by_code(resource_name);
         if !file_path.exists() {
             return Ok(None);
         }
         let yaml = fs::read_to_string(&file_path).map_err(|e| AppError::IoErrorWithPath {
+            operation: "file read".to_string(),
+            path: file_path.to_string_lossy().to_string(),
+            details: e.to_string(),
+        })?;
+        let manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
+            format: "YAML".to_string(),
+            details: format!("Error deserializing resource: {}", e),
+        })?;
+        let resource = AnyResource::try_from(manifest).map_err(|e| AppError::SerializationError {
+            format: "YAML".to_string(),
+            details: format!("Error converting manifest: {}", e),
+        })?;
+        Ok(Some(resource))
+    }
+
+    fn read_resource_from_file(&self, file_path: &Path) -> Result<Option<AnyResource>, AppError> {
+        if !file_path.exists() {
+            return Ok(None);
+        }
+
+        let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
             operation: "file read".to_string(),
             path: file_path.to_string_lossy().to_string(),
             details: e.to_string(),
@@ -242,16 +251,26 @@ impl FileResourceRepository {
 
 impl ResourceRepository for FileResourceRepository {
     fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
-        let file_path = self.get_resource_file_path(resource.name());
+        let resource_id = resource.id();
+        let resource_code = resource.code();
+
+        // Add code-to-ID mapping
+        self.mapping_service.add_mapping("resource", resource_code, &resource_id.to_string())
+            .map_err(|e| AppError::validation_error("mapping", &e))?;
+
+        // Create resources directory if it doesn't exist
+        let resources_dir = self.get_resources_path();
+        fs::create_dir_all(&resources_dir).map_err(|e| AppError::IoError {
+            operation: "create directory".to_string(),
+            details: e.to_string(),
+        })?;
+
+        // Save resource file
+        let file_path = self.get_resource_file_path_by_id(&resource_id.to_string());
         let resource_manifest = ResourceManifest::from(resource.clone());
         let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: format!("Error serializing resource: {}", e),
-        })?;
-
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| AppError::IoError {
-            operation: "create directory".to_string(),
-            details: e.to_string(),
         })?;
 
         fs::write(&file_path, yaml).map_err(|e| AppError::IoErrorWithPath {
@@ -302,76 +321,33 @@ impl ResourceRepository for FileResourceRepository {
 
     fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
         let mut resources = Vec::new();
-
-        // Search in company resources: companies/*/resources/*.yaml
-        let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
-        let company_pattern = if absolute_base.ends_with("companies") {
-            absolute_base.join("*/resources/*.yaml")
-        } else {
-            absolute_base.join("companies/*/resources/*.yaml")
-        };
-        let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
-            field: "glob pattern".to_string(),
-            message: e.to_string(),
-        })?;
-
-        for entry in company_walker {
-            let entry = entry.map_err(|e| AppError::ValidationError {
-                field: "glob entry".to_string(),
-                message: e.to_string(),
-            })?;
-            let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
-                operation: "file read".to_string(),
-                path: file_path.to_string_lossy().to_string(),
-                details: e.to_string(),
-            })?;
-
-            let resource_manifest: ResourceManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
-                    details: format!("Error deserializing resource: {}", e),
-                })?;
-
-            resources.push(
-                AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
-                    details: format!("Error converting manifest: {}", e),
-                })?,
-            );
+        let companies_dir = self.base_path.join("companies");
+        
+        if !companies_dir.exists() {
+            return Ok(resources);
         }
 
-        // Search in project resources: companies/*/projects/*/resources/*.yaml
-        let project_pattern = self.base_path.join("companies/*/projects/*/resources/*.yaml");
-        let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
-            field: "glob pattern".to_string(),
-            message: e.to_string(),
-        })?;
-
-        for entry in project_walker {
-            let entry = entry.map_err(|e| AppError::ValidationError {
-                field: "glob entry".to_string(),
-                message: e.to_string(),
-            })?;
-            let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
-                operation: "file read".to_string(),
-                path: file_path.to_string_lossy().to_string(),
-                details: e.to_string(),
-            })?;
-
-            let resource_manifest: ResourceManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
-                    details: format!("Error deserializing resource: {}", e),
-                })?;
-
-            resources.push(
-                AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
-                    details: format!("Error converting manifest: {}", e),
-                })?,
-            );
+        // Look for company directories
+        if let Ok(entries) = std::fs::read_dir(&companies_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    let resources_dir = path.join("resources");
+                    if resources_dir.exists() {
+                        // Look for YAML files in the company's resources directory
+                        if let Ok(resource_entries) = std::fs::read_dir(&resources_dir) {
+                            for resource_entry in resource_entries.flatten() {
+                                let resource_path = resource_entry.path();
+                                if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                                    if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
+                                        resources.push(resource);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Ok(resources)
@@ -565,82 +541,11 @@ impl ResourceRepository for FileResourceRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
-        // If we're in a project or company context, search in company resources first
-        if self.base_path.ends_with("projects")
-            || self.base_path.ends_with("companies")
-            || self.base_path.to_string_lossy() == "../"
-        {
-            // We're in a project or company context, search in company resources
-            let company_pattern = if self.base_path.ends_with("projects") {
-                // We're in projects/*/ directory, go up to companies/*/resources
-                self.base_path
-                    .parent()
-                    .unwrap()
-                    .parent()
-                    .unwrap()
-                    .join("*/resources/*.yaml")
-            } else if self.base_path.to_string_lossy() == "../" {
-                // We're in a project directory, search in ../resources/*.yaml
-                // Get the current working directory and go up two levels to get to company directory
-                let current_dir = std::env::current_dir().unwrap_or_else(|_| self.base_path.clone());
-                let company_dir = current_dir.parent().unwrap().parent().unwrap();
-                company_dir.join("resources/*.yaml")
-            } else {
-                // We're in companies/*/ directory, search in */resources
-                self.base_path.join("*/resources/*.yaml")
-            };
-
-            // Check if the resources directory exists
-            let _resources_dir = if self.base_path.to_string_lossy() == "../" {
-                // Get the current working directory and go up two levels to get to company directory
-                let current_dir = std::env::current_dir().unwrap_or_else(|_| self.base_path.clone());
-                let company_dir = current_dir.parent().unwrap().parent().unwrap();
-                company_dir.join("resources")
-            } else {
-                self.base_path.join("resources")
-            };
-
-            let walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
-                field: "glob pattern".to_string(),
-                message: e.to_string(),
-            })?;
-
-            for entry in walker {
-                let entry = entry.map_err(|e| AppError::ValidationError {
-                    field: "glob entry".to_string(),
-                    message: e.to_string(),
-                })?;
-                let file_path = entry.as_path();
-
-                let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
-                    operation: "file read".to_string(),
-                    path: file_path.to_string_lossy().to_string(),
-                    details: e.to_string(),
-                })?;
-
-                let resource_manifest: ResourceManifest =
-                    serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                        format: "YAML".to_string(),
-                        details: format!("Error deserializing resource: {}", e),
-                    })?;
-
-                let resource = AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
-                    details: format!("Error converting manifest: {}", e),
-                })?;
-
-                if resource.code() == code {
-                    return Ok(Some(resource));
-                }
-            }
-        }
-
-        // Since resources are saved by name, we need to search through all resources
-        // to find one with the matching code
-        let all_resources = self.find_all()?;
-        for resource in all_resources {
-            if resource.code() == code {
-                return Ok(Some(resource));
+        // Get resource ID from code mapping
+        if let Some(resource_id) = self.mapping_service.get_id("resource", code) {
+            let resource_path = self.get_resource_file_path_by_id(&resource_id);
+            if resource_path.exists() {
+                return self.read_resource_from_file(&resource_path);
             }
         }
         Ok(None)
@@ -974,14 +879,14 @@ mod tests {
         let resource2 = create_test_resource("QA Engineer", "QA-001", "qa");
         let resource3 = create_test_resource("Manager", "MGR-001", "manager");
 
-        repo.save(resource1.into()).expect("Failed to save resource 1");
-        repo.save(resource2.into()).expect("Failed to save resource 2");
-        repo.save(resource3.into()).expect("Failed to save resource 3");
+        let saved1 = repo.save(resource1.into()).expect("Failed to save resource 1");
+        let saved2 = repo.save(resource2.into()).expect("Failed to save resource 2");
+        let saved3 = repo.save(resource3.into()).expect("Failed to save resource 3");
 
-        // Verify all resources were saved by checking files exist
-        let dev_file = temp_dir.path().join("resources").join("developer_1.yaml");
-        let qa_file = temp_dir.path().join("resources").join("qa_engineer.yaml");
-        let mgr_file = temp_dir.path().join("resources").join("manager.yaml");
+        // Verify all resources were saved by checking files exist (ID-based naming)
+        let dev_file = temp_dir.path().join("resources").join(format!("{}.yaml", saved1.id()));
+        let qa_file = temp_dir.path().join("resources").join(format!("{}.yaml", saved2.id()));
+        let mgr_file = temp_dir.path().join("resources").join(format!("{}.yaml", saved3.id()));
 
         assert!(dev_file.exists(), "Developer file should exist");
         assert!(qa_file.exists(), "QA file should exist");

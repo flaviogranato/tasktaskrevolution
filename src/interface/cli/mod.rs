@@ -107,6 +107,11 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::TaskCommand,
     },
+    /// Migration tools
+    Migrate {
+        #[clap(subcommand)]
+        command: commands::MigrateCommand,
+    },
 }
 
 impl Cli {
@@ -150,6 +155,7 @@ impl Cli {
             Commands::Build { output, base_url } => command_executor::execute_build(output, base_url),
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),
+            Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),
         }
     }
 }

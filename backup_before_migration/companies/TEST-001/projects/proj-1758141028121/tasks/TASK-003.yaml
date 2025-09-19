@@ -1,0 +1,16 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Task
+metadata:
+  id: 01995a29-0186-7d56-9037-141a254ec620
+  code: TASK-003
+  name: Backend Development
+spec:
+  projectCode: proj-1758141028121
+  assignee: unassigned
+  status: Planned
+  priority: Medium
+  estimatedStartDate: 2024-02-15
+  estimatedEndDate: 2024-04-01
+  actualStartDate: 2024-02-15
+  effort:
+    estimatedHours: 8.0

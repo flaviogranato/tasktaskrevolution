@@ -173,11 +173,22 @@ fn test_company_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // Validar que a empresa foi criada com formato atual
-    let company_file = temp.child("companies").child("MODERN-COMP").child("company.yaml");
-    company_file.assert(predicate::path::exists());
-
-    let validator = YamlValidator::new(company_file.path())?;
+    // Validar que a empresa foi criada com formato atual (ID-based naming)
+    let companies_dir = temp.child("companies");
+    companies_dir.assert(predicate::path::is_dir());
+    
+    // Check if there's at least one .yaml file in the companies directory
+    let companies_path = companies_dir.path();
+    let yaml_files = std::fs::read_dir(companies_path)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
+        .collect::<Vec<_>>();
+    
+    assert!(!yaml_files.is_empty(), "No company YAML file found in companies directory");
+    
+    // Use the first YAML file found for validation
+    let company_file_path = yaml_files[0].path();
+    let validator = YamlValidator::new(&company_file_path)?;
     assert!(validator.has_field("apiVersion"));
     assert!(validator.has_field("kind"));
     assert!(validator.has_field("metadata"));
