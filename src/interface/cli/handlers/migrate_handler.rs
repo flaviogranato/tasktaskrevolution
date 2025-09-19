@@ -4,7 +4,6 @@ use crate::{
         company_management::repository::CompanyRepository,
         project_management::repository::ProjectRepository,
         resource_management::repository::ResourceRepository,
-        shared::code_mapping_service::CodeMappingService,
     },
     infrastructure::persistence::{
         company_repository::FileCompanyRepository,
@@ -327,14 +326,8 @@ fn show_migration_status() -> Result<(), Box<dyn std::error::Error>> {
         println!("Resources: No data found");
     }
     
-    // Check mapping service
-    let mapping_service = CodeMappingService::new(".ttr/mappings.json");
-    let company_codes = mapping_service.get_all_codes("company");
-    let project_codes = mapping_service.get_all_codes("project");
-    let resource_codes = mapping_service.get_all_codes("resource");
-    
-    println!("Mappings: {} companies, {} projects, {} resources", 
-             company_codes.len(), project_codes.len(), resource_codes.len());
+    // Mapping service removed - using simple file-based search
+    println!("Mappings: Using simple file-based search (no mapping service)");
     
     Ok(())
 }

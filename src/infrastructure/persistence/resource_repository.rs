@@ -3,7 +3,6 @@
 use crate::application::errors::AppError;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::{AnyResource, Period, PeriodType, repository::ResourceRepository};
-use crate::domain::shared::code_mapping_service::CodeMappingService;
 use crate::infrastructure::persistence::{
     manifests::resource_manifest::ResourceManifest, project_repository::FileProjectRepository,
 };
@@ -17,16 +16,13 @@ use std::{
 
 pub struct FileResourceRepository {
     base_path: PathBuf,
-    mapping_service: CodeMappingService,
 }
 
 impl FileResourceRepository {
     pub fn new<P: AsRef<Path>>(base_path: P) -> Self {
         let base_path = base_path.as_ref().to_path_buf();
-        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
         Self {
             base_path,
-            mapping_service,
         }
     }
 
@@ -185,24 +181,84 @@ impl FileResourceRepository {
     }
 
     fn find_by_name(&self, resource_name: &str) -> Result<Option<AnyResource>, AppError> {
-        let file_path = self.get_resource_file_path_by_code(resource_name);
-        if !file_path.exists() {
-            return Ok(None);
+        // Search in global resources directory: resources/*.yaml
+        let resources_dir = self.get_resources_path();
+        if resources_dir.exists() {
+            for entry in std::fs::read_dir(&resources_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    if let Ok(Some(resource)) = self.read_resource_from_file(&path) {
+                        if resource.name() == resource_name {
+                            return Ok(Some(resource));
+                        }
+                    }
+                }
+            }
         }
-        let yaml = fs::read_to_string(&file_path).map_err(|e| AppError::IoErrorWithPath {
-            operation: "file read".to_string(),
-            path: file_path.to_string_lossy().to_string(),
-            details: e.to_string(),
-        })?;
-        let manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
-            details: format!("Error deserializing resource: {}", e),
-        })?;
-        let resource = AnyResource::try_from(manifest).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
-            details: format!("Error converting manifest: {}", e),
-        })?;
-        Ok(Some(resource))
+
+        // Search in company resources: companies/*/resources/*.yaml
+        let companies_dir = self.base_path.join("companies");
+        if companies_dir.exists() {
+            for entry in std::fs::read_dir(&companies_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    let company_resources_dir = path.join("resources");
+                    if company_resources_dir.exists() {
+                        for resource_entry in std::fs::read_dir(&company_resources_dir)? {
+                            let resource_entry = resource_entry?;
+                            let resource_path = resource_entry.path();
+                            
+                            if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                                if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
+                                    if resource.name() == resource_name {
+                                        return Ok(Some(resource));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Search in project resources: companies/*/projects/*/resources/*.yaml
+        if companies_dir.exists() {
+            for entry in std::fs::read_dir(&companies_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    let projects_dir = path.join("projects");
+                    if projects_dir.exists() {
+                        for project_entry in std::fs::read_dir(&projects_dir)? {
+                            let project_entry = project_entry?;
+                            let project_path = project_entry.path();
+                            if project_path.is_dir() {
+                                let project_resources_dir = project_path.join("resources");
+                                if project_resources_dir.exists() {
+                                    for resource_entry in std::fs::read_dir(&project_resources_dir)? {
+                                        let resource_entry = resource_entry?;
+                                        let resource_path = resource_entry.path();
+                                        
+                                        if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                                            if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
+                                                if resource.name() == resource_name {
+                                                    return Ok(Some(resource));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(None)
     }
 
     fn read_resource_from_file(&self, file_path: &Path) -> Result<Option<AnyResource>, AppError> {
@@ -254,9 +310,6 @@ impl ResourceRepository for FileResourceRepository {
         let resource_id = resource.id();
         let resource_code = resource.code();
 
-        // Add code-to-ID mapping
-        self.mapping_service.add_mapping("resource", resource_code, &resource_id.to_string())
-            .map_err(|e| AppError::validation_error("mapping", &e))?;
 
         // Create resources directory if it doesn't exist
         let resources_dir = self.get_resources_path();
@@ -541,13 +594,83 @@ impl ResourceRepository for FileResourceRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
-        // Get resource ID from code mapping
-        if let Some(resource_id) = self.mapping_service.get_id("resource", code) {
-            let resource_path = self.get_resource_file_path_by_id(&resource_id);
-            if resource_path.exists() {
-                return self.read_resource_from_file(&resource_path);
+        // Search in global resources directory: resources/*.yaml
+        let resources_dir = self.get_resources_path();
+        if resources_dir.exists() {
+            for entry in std::fs::read_dir(&resources_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    if let Ok(Some(resource)) = self.read_resource_from_file(&path) {
+                        if resource.code() == code {
+                            return Ok(Some(resource));
+                        }
+                    }
+                }
             }
         }
+
+        // Search in company resources: companies/*/resources/*.yaml
+        let companies_dir = self.base_path.join("companies");
+        if companies_dir.exists() {
+            for entry in std::fs::read_dir(&companies_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    let company_resources_dir = path.join("resources");
+                    if company_resources_dir.exists() {
+                        for resource_entry in std::fs::read_dir(&company_resources_dir)? {
+                            let resource_entry = resource_entry?;
+                            let resource_path = resource_entry.path();
+                            
+                            if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                                if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
+                                    if resource.code() == code {
+                                        return Ok(Some(resource));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Search in project resources: companies/*/projects/*/resources/*.yaml
+        if companies_dir.exists() {
+            for entry in std::fs::read_dir(&companies_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    let projects_dir = path.join("projects");
+                    if projects_dir.exists() {
+                        for project_entry in std::fs::read_dir(&projects_dir)? {
+                            let project_entry = project_entry?;
+                            let project_path = project_entry.path();
+                            if project_path.is_dir() {
+                                let project_resources_dir = project_path.join("resources");
+                                if project_resources_dir.exists() {
+                                    for resource_entry in std::fs::read_dir(&project_resources_dir)? {
+                                        let resource_entry = resource_entry?;
+                                        let resource_path = resource_entry.path();
+                                        
+                                        if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                                            if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
+                                                if resource.code() == code {
+                                                    return Ok(Some(resource));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         Ok(None)
     }
 
@@ -860,9 +983,19 @@ mod tests {
         let save_result = repo.save(resource.clone().into());
         assert!(save_result.is_ok(), "Failed to save resource: {:?}", save_result);
 
-        // Verify resource was saved by checking file exists
-        let resource_file = temp_dir.path().join("resources").join("test_resource.yaml");
-        assert!(resource_file.exists(), "Resource file should exist after save");
+        // Verify resource was saved by checking file exists (ID-based format)
+        let resources_dir = temp_dir.path().join("resources");
+        let mut resource_file = None;
+        if let Ok(entries) = std::fs::read_dir(&resources_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    resource_file = Some(path);
+                    break;
+                }
+            }
+        }
+        assert!(resource_file.is_some(), "Resource file should exist after save");
 
         // Verify resource directory structure
         let resources_dir = temp_dir.path().join("resources");
@@ -976,10 +1109,12 @@ mod tests {
             );
         }
 
-        // Verify all resources were saved by checking files exist
+        // Verify all resources were saved by checking they can be found by code
+        let repo = FileResourceRepository::new(temp_dir.path());
         for i in 1..=5 {
-            let resource_file = temp_dir.path().join("resources").join(format!("resource_{}.yaml", i));
-            assert!(resource_file.exists(), "Resource {} file should exist", i);
+            let code = format!("RES-{:03}", i);
+            let found_resource = repo.find_by_code(&code).expect("Failed to find resource by code");
+            assert!(found_resource.is_some(), "Resource {} should be found by code {}", i, code);
         }
     }
 

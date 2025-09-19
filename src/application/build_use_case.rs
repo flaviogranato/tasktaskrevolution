@@ -88,7 +88,7 @@ impl BuildUseCase {
             let project_repo = FileProjectRepository::with_base_path(self.base_path.clone());
             let resource_repo = FileResourceRepository::new(self.base_path.clone());
 
-            let project = project_repo.load_from_path(&project_path)?;
+            let project = project_repo.load_from_path(&manifest_path)?;
 
             // Extract company and project codes from the path
             let path_components: Vec<_> = project_path.components().collect();

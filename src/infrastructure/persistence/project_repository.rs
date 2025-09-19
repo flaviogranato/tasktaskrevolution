@@ -1,7 +1,6 @@
 use crate::application::errors::AppError;
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
 use crate::domain::task_management::any_task::AnyTask;
-use crate::domain::shared::code_mapping_service::CodeMappingService;
 use crate::infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest};
 use globwalk::glob;
 use serde_yaml;
@@ -16,17 +15,14 @@ use std::path::{Path, PathBuf};
 /// /<base_path>/projects/<project_id>.yaml (ID-based format)
 pub struct FileProjectRepository {
     base_path: PathBuf,
-    mapping_service: CodeMappingService,
 }
 
 impl FileProjectRepository {
     /// Cria uma nova instância do repositório que opera a partir do diretório de trabalho atual.
     pub fn new() -> Self {
         let base_path = PathBuf::from(".");
-        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
         Self {
             base_path,
-            mapping_service,
         }
     }
 }
@@ -41,10 +37,8 @@ impl FileProjectRepository {
     /// Cria uma nova instância do repositório que opera a partir de um diretório base específico.
     /// Esta função é primariamente para uso em testes.
     pub fn with_base_path(base_path: PathBuf) -> Self {
-        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
         Self { 
             base_path,
-            mapping_service,
         }
     }
 
@@ -86,18 +80,6 @@ impl FileProjectRepository {
         Ok(project)
     }
 
-    /// Loads a specific project by project code (using ID mapping)
-    #[allow(dead_code)]
-    pub fn load_by_code(&self, project_code: &str) -> Result<AnyProject, AppError> {
-        // Get project ID from code mapping
-        let project_id = self.mapping_service.get_id("project", project_code)
-            .ok_or_else(|| AppError::ProjectNotFound {
-                code: project_code.to_string(),
-            })?;
-        
-        let project_path = self.get_project_path_by_id(&project_id);
-        self.load_from_path(&project_path)
-    }
 
     /// Extracts company_code from a project manifest path
     /// Path format: companies/{company_code}/projects/{project_code}/project.yaml
@@ -224,9 +206,6 @@ impl ProjectRepository for FileProjectRepository {
         let project_id = project.id();
         let project_code = project.code();
 
-        // Add code-to-ID mapping
-        self.mapping_service.add_mapping("project", project_code, project_id)
-            .map_err(|e| AppError::validation_error("mapping", &e))?;
 
         // Create projects directory if it doesn't exist
         let projects_dir = self.get_projects_path();
@@ -307,11 +286,34 @@ impl ProjectRepository for FileProjectRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
-        // Get project ID from code mapping
-        if let Some(project_id) = self.mapping_service.get_id("project", code) {
-            let project_path = self.get_project_path_by_id(&project_id);
-            if project_path.exists() {
-                return Ok(Some(self.load_from_path(&project_path)?));
+        // Simple search: iterate through all projects to find by code
+        let projects_dir = self.get_projects_path();
+        if !projects_dir.exists() {
+            return Ok(None);
+        }
+
+        // Search in both ID-based format (projects/*.yaml) and legacy format (projects/*/project.yaml)
+        for entry in std::fs::read_dir(&projects_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                // ID-based format: projects/{id}.yaml
+                if let Ok(project) = self.load_from_path(&path) {
+                    if project.code() == code {
+                        return Ok(Some(project));
+                    }
+                }
+            } else if path.is_dir() {
+                // Legacy format: projects/{code}/project.yaml
+                let project_file = path.join("project.yaml");
+                if project_file.exists() {
+                    if let Ok(project) = self.load_from_path(&project_file) {
+                        if project.code() == code {
+                            return Ok(Some(project));
+                        }
+                    }
+                }
             }
         }
         Ok(None)
@@ -506,14 +508,19 @@ mod tests {
         // Save project
         repository.save(project.clone().into()).expect("Failed to save project");
 
-        // Verify project exists
-        let project_file = repo_path
-            .join("companies")
-            .join("COMP-001")
-            .join("projects")
-            .join("TEST-001")
-            .join("project.yaml");
-        assert!(project_file.exists(), "Project file should exist after save");
+        // Verify project exists (ID-based format)
+        let projects_dir = repo_path.join("projects");
+        let mut project_file = None;
+        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    project_file = Some(path);
+                    break;
+                }
+            }
+        }
+        assert!(project_file.is_some(), "Project file should exist after save");
 
         // Note: Tasks are no longer saved in the project directory
         // They are saved separately in individual task files
@@ -545,13 +552,20 @@ mod tests {
         // Save project
         repository.save(project.clone().into()).expect("Failed to save project");
 
-        // Corrupt the YAML file
-        let project_file = repo_path
-            .join("companies")
-            .join("COMP-001")
-            .join("projects")
-            .join("TEST-001")
-            .join("project.yaml");
+        // Find the project file dynamically and corrupt it
+        let projects_dir = repo_path.join("projects");
+        let mut project_file = None;
+        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    project_file = Some(path);
+                    break;
+                }
+            }
+        }
+        
+        let project_file = project_file.expect("Project file should exist after save");
         fs::write(&project_file, "invalid: yaml: content: [").expect("Failed to corrupt file");
 
         // Note: We can't test loading corrupted files yet since find_by_code is not fully implemented
@@ -595,15 +609,12 @@ mod tests {
             );
         }
 
-        // Verify all projects were saved by checking files exist
+        // Verify all projects were saved by checking they can be found by code
+        let repo = FileProjectRepository::with_base_path(repo_path);
         for i in 1..=5 {
-            let project_file = repo_path
-                .join("companies")
-                .join("COMP-001")
-                .join("projects")
-                .join(format!("PROJ-{:03}", i))
-                .join("project.yaml");
-            assert!(project_file.exists(), "Project {} file should exist", i);
+            let code = format!("PROJ-{:03}", i);
+            let found_project = repo.find_by_code(&code).expect("Failed to find project by code");
+            assert!(found_project.is_some(), "Project {} should be found by code {}", i, code);
         }
     }
 }
