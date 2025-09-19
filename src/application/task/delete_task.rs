@@ -49,17 +49,31 @@ where
     }
 
     pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DeleteAppError> {
+        println!(
+            "DEBUG: DeleteTaskUseCase::execute called with project_code: {}, task_code: {}",
+            project_code, task_code
+        );
+
         // 1. Load the project aggregate.
-        let mut project = self
-            .project_repository
-            .find_by_code(project_code)?
-            .ok_or_else(|| DeleteAppError::ProjectNotFound(project_code.to_string()))?;
+        let mut project = self.project_repository.find_by_code(project_code)?.ok_or_else(|| {
+            println!("DEBUG: Project not found: {}", project_code);
+            DeleteAppError::ProjectNotFound(project_code.to_string())
+        })?;
+
+        println!("DEBUG: Project found, cancelling task: {}", task_code);
 
         // 2. Cancel the task (soft delete - change status to Cancelled)
-        let cancelled_task = project.cancel_task(task_code).map_err(DeleteAppError::AppError)?;
+        let cancelled_task = project.cancel_task(task_code).map_err(|e| {
+            println!("DEBUG: Failed to cancel task: {}", e);
+            DeleteAppError::AppError(e)
+        })?;
+
+        println!("DEBUG: Task cancelled, saving project");
 
         // 3. Save the updated project aggregate.
         self.project_repository.save(project.clone())?;
+
+        println!("DEBUG: Project saved successfully");
 
         // 4. Return the cancelled task.
         Ok(cancelled_task)

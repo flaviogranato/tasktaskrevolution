@@ -31,7 +31,7 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         let mut project = ProjectBuilder::new()
             .name(name.to_string())
             .code(code)
-            .company_code(company_code)
+            .company_code(company_code.clone())
             .created_by("system".to_string()); // TODO: Get from config
 
         // Add dates if provided

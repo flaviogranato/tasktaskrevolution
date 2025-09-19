@@ -31,6 +31,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             let end = NaiveDate::parse_from_str(&end_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid end date format: {}", e))?;
 
+            println!("DEBUG: Handler calling use case with company = {}", company);
             match create_use_case.execute(
                 &name,
                 description.as_deref(),

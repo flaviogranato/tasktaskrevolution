@@ -1,4 +1,5 @@
 use crate::application::execution_context::ExecutionContext;
+use crate::domain::company_management::repository::CompanyRepository;
 use crate::infrastructure::persistence::{
     company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
     resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
@@ -7,19 +8,41 @@ use crate::infrastructure::persistence::{
 /// Centralized context management for CLI operations
 pub struct ContextManager {
     context: ExecutionContext,
+    base_dir: std::path::PathBuf,
 }
 
 impl ContextManager {
     /// Detect current execution context
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        let current_dir = std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
         let context =
             ExecutionContext::detect_current().map_err(|e| format!("Failed to detect execution context: {}", e))?;
-        Ok(Self { context })
+        Ok(Self {
+            context,
+            base_dir: current_dir,
+        })
+    }
+
+    /// Detect current execution context with specific base directory
+    pub fn new_with_base_dir<P: AsRef<std::path::Path>>(base_dir: P) -> Result<Self, Box<dyn std::error::Error>> {
+        let base_dir = base_dir.as_ref().to_path_buf();
+        let context =
+            ExecutionContext::detect(&base_dir).map_err(|e| format!("Failed to detect execution context: {}", e))?;
+        Ok(Self { context, base_dir })
+    }
+
+    /// Create ContextManager with specific base directory
+    pub fn with_base_dir<P: AsRef<std::path::Path>>(base_dir: P) -> Result<Self, Box<dyn std::error::Error>> {
+        let base_dir = base_dir.as_ref().to_path_buf();
+        let context =
+            ExecutionContext::detect(&base_dir).map_err(|e| format!("Failed to detect execution context: {}", e))?;
+        Ok(Self { context, base_dir })
     }
 
     /// Create ContextManager with specific context
     pub fn with_context(context: ExecutionContext) -> Self {
-        Self { context }
+        let base_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+        Self { context, base_dir }
     }
 
     /// Get current context
@@ -64,7 +87,15 @@ impl ContextManager {
         company_param: Option<String>,
     ) -> Result<(String, String), String> {
         match (&self.context, project_param, company_param) {
-            (ExecutionContext::Root, Some(project), Some(company)) => Ok((project, company)),
+            (ExecutionContext::Root, Some(project), Some(company)) => {
+                // Validate that the company exists
+                let company_repo = FileCompanyRepository::new(self.get_base_path());
+                match company_repo.find_by_code(&company) {
+                    Ok(Some(_)) => Ok((project, company)),
+                    Ok(None) => Err(format!("Company '{}' not found", company)),
+                    Err(e) => Err(format!("Error validating company '{}': {}", company, e)),
+                }
+            }
             (ExecutionContext::Root, None, _) => Err("Project parameter required in root context".to_string()),
             (ExecutionContext::Root, Some(_), None) => Err("Company parameter required in root context".to_string()),
             (ExecutionContext::Company(company), Some(project), None) => Ok((project, company.clone())),
@@ -91,14 +122,15 @@ impl ContextManager {
 
     /// Get base path for file operations based on context
     pub fn get_base_path(&self) -> String {
-        let current_dir = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
         match self.context {
-            ExecutionContext::Root => current_dir.to_string_lossy().to_string(),
+            ExecutionContext::Root => self.base_dir.to_string_lossy().to_string(),
             ExecutionContext::Company(_) => {
-                // Go up one level from company directory to root
-                current_dir
+                // In company context, go up one level to reach the root directory
+                // From: /path/companies/COMPANY
+                // To:   /path
+                self.base_dir
                     .parent()
-                    .unwrap_or(&current_dir)
+                    .unwrap_or(&self.base_dir)
                     .to_string_lossy()
                     .to_string()
             }
@@ -106,11 +138,11 @@ impl ContextManager {
                 // In project context, go up three levels to reach the root directory
                 // From: /path/companies/COMPANY/projects/PROJECT
                 // To:   /path
-                current_dir
+                self.base_dir
                     .parent()
                     .and_then(|p| p.parent())
                     .and_then(|p| p.parent())
-                    .unwrap_or(&current_dir)
+                    .unwrap_or(&self.base_dir)
                     .to_string_lossy()
                     .to_string()
             }

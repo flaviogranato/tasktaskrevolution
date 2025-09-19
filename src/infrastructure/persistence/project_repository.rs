@@ -21,9 +21,7 @@ impl FileProjectRepository {
     /// Cria uma nova instância do repositório que opera a partir do diretório de trabalho atual.
     pub fn new() -> Self {
         let base_path = PathBuf::from(".");
-        Self {
-            base_path,
-        }
+        Self { base_path }
     }
 }
 
@@ -37,21 +35,12 @@ impl FileProjectRepository {
     /// Cria uma nova instância do repositório que opera a partir de um diretório base específico.
     /// Esta função é primariamente para uso em testes.
     pub fn with_base_path(base_path: PathBuf) -> Self {
-        Self { 
-            base_path,
-        }
+        Self { base_path }
     }
 
     /// Gets the path to a specific project file by ID
     fn get_project_path_by_id(&self, project_id: &str) -> PathBuf {
         self.base_path.join("projects").join(format!("{}.yaml", project_id))
-    }
-
-    /// Gets the path to a specific project file by code (legacy support)
-    fn get_project_path_by_code(&self, project_code: &str) -> PathBuf {
-        // For backward compatibility, try to find the project by code
-        // This will be used during migration
-        self.base_path.join("projects").join(project_code).join("project.yaml")
     }
 
     /// Gets the path to the projects directory
@@ -77,42 +66,6 @@ impl FileProjectRepository {
             details: format!("Error converting project file: {e}"),
         })?;
         self.load_tasks_for_project(&mut project, project_file)?;
-        Ok(project)
-    }
-
-
-    /// Extracts company_code from a project manifest path
-    /// Path format: companies/{company_code}/projects/{project_code}/project.yaml
-    fn extract_company_code_from_path(&self, path: &Path) -> Option<String> {
-        let path_str = path.to_string_lossy();
-        if let Some(companies_pos) = path_str.find("companies/") {
-            let after_companies = &path_str[companies_pos + "companies/".len()..];
-            if let Some(slash_pos) = after_companies.find('/') {
-                return Some(after_companies[..slash_pos].to_string());
-            }
-        }
-        None
-    }
-
-    /// Creates a project from manifest with the correct company_code
-    fn create_project_with_company_code(
-        &self,
-        manifest: ProjectManifest,
-        company_code: &str,
-    ) -> Result<AnyProject, AppError> {
-        // Use the TryFrom implementation to load the project with tasks from manifest
-        let mut project = AnyProject::try_from(manifest).map_err(|e| AppError::ValidationError {
-            field: "project manifest".to_string(),
-            message: e,
-        })?;
-
-        // Update the company code to match the path
-        match &mut project {
-            AnyProject::Project(p) => {
-                p.company_code = company_code.to_string();
-            }
-        }
-
         Ok(project)
     }
 
@@ -204,8 +157,7 @@ impl ProjectRepository for FileProjectRepository {
     /// Salva um arquivo `{project_id}.yaml` no diretório projects.
     fn save(&self, project: AnyProject) -> Result<(), AppError> {
         let project_id = project.id();
-        let project_code = project.code();
-
+        let _project_code = project.code();
 
         // Create projects directory if it doesn't exist
         let projects_dir = self.get_projects_path();
@@ -262,7 +214,7 @@ impl ProjectRepository for FileProjectRepository {
     fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
         let mut projects = Vec::new();
         let projects_dir = self.get_projects_path();
-        
+
         if !projects_dir.exists() {
             return Ok(projects);
         }
@@ -271,10 +223,11 @@ impl ProjectRepository for FileProjectRepository {
         if let Ok(entries) = std::fs::read_dir(&projects_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    if let Ok(project) = self.load_from_path(&path) {
-                        projects.push(project);
-                    }
+                if path.is_file()
+                    && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                    && let Ok(project) = self.load_from_path(&path)
+                {
+                    projects.push(project);
                 }
             }
         }
@@ -296,23 +249,22 @@ impl ProjectRepository for FileProjectRepository {
         for entry in std::fs::read_dir(&projects_dir)? {
             let entry = entry?;
             let path = entry.path();
-            
+
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
                 // ID-based format: projects/{id}.yaml
-                if let Ok(project) = self.load_from_path(&path) {
-                    if project.code() == code {
-                        return Ok(Some(project));
-                    }
+                if let Ok(project) = self.load_from_path(&path)
+                    && project.code() == code
+                {
+                    return Ok(Some(project));
                 }
             } else if path.is_dir() {
                 // Legacy format: projects/{code}/project.yaml
                 let project_file = path.join("project.yaml");
-                if project_file.exists() {
-                    if let Ok(project) = self.load_from_path(&project_file) {
-                        if project.code() == code {
-                            return Ok(Some(project));
-                        }
-                    }
+                if project_file.exists()
+                    && let Ok(project) = self.load_from_path(&project_file)
+                    && project.code() == code
+                {
+                    return Ok(Some(project));
                 }
             }
         }
@@ -375,6 +327,7 @@ mod tests {
                 code: Some("TEST-001".to_string()),
                 name: "Test Project".to_string(),
                 description: "A test project for repository testing".to_string(),
+                company_code: Some("TEST-COMPANY".to_string()),
                 created_at: None,
                 updated_at: None,
                 created_by: None,
@@ -463,8 +416,12 @@ mod tests {
             .build()
             .unwrap();
 
-        repository.save(project1.clone().into()).expect("Failed to save project 1");
-        repository.save(project2.clone().into()).expect("Failed to save project 2");
+        repository
+            .save(project1.clone().into())
+            .expect("Failed to save project 1");
+        repository
+            .save(project2.clone().into())
+            .expect("Failed to save project 2");
 
         // Verify both projects were saved by checking files exist (ID-based format)
         let project1_file = repo_path.join("projects").join(format!("{}.yaml", project1.id));
@@ -492,7 +449,9 @@ mod tests {
             .expect("Failed to update project");
 
         // Verify update by checking file exists (ID-based format)
-        let project_file = repo_path.join("projects").join(format!("{}.yaml", in_progress_project.id));
+        let project_file = repo_path
+            .join("projects")
+            .join(format!("{}.yaml", in_progress_project.id));
         assert!(project_file.exists(), "Updated project file should exist");
     }
 
@@ -564,7 +523,7 @@ mod tests {
                 }
             }
         }
-        
+
         let project_file = project_file.expect("Project file should exist after save");
         fs::write(&project_file, "invalid: yaml: content: [").expect("Failed to corrupt file");
 
@@ -614,7 +573,12 @@ mod tests {
         for i in 1..=5 {
             let code = format!("PROJ-{:03}", i);
             let found_project = repo.find_by_code(&code).expect("Failed to find project by code");
-            assert!(found_project.is_some(), "Project {} should be found by code {}", i, code);
+            assert!(
+                found_project.is_some(),
+                "Project {} should be found by code {}",
+                i,
+                code
+            );
         }
     }
 }

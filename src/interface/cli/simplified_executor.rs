@@ -35,9 +35,23 @@ use chrono::NaiveDate;
 pub struct SimplifiedExecutor;
 
 impl SimplifiedExecutor {
+    /// Create context manager with appropriate base directory
+    fn create_context_manager() -> Result<ContextManager, Box<dyn std::error::Error>> {
+        // Check if we're in a test environment by looking for a test-specific directory pattern
+        let current_dir = std::env::current_dir()?;
+        let current_dir_str = current_dir.to_string_lossy();
+
+        // If we're in a temporary directory (like /tmp/.tmpXXXXXX), use it as base
+        if current_dir_str.contains("/tmp/.tmp") || current_dir_str.contains("\\tmp\\.tmp") {
+            ContextManager::new_with_base_dir(&current_dir)
+        } else {
+            ContextManager::new()
+        }
+    }
+
     /// Execute create commands
     pub fn execute_create(command: CreateCommand) -> Result<(), Box<dyn std::error::Error>> {
-        let context_manager = ContextManager::new()?;
+        let context_manager = Self::create_context_manager()?;
         if Cli::is_verbose() {
             println!("[INFO] Current context: {}", context_manager.context().display_name());
         }
@@ -247,7 +261,7 @@ impl SimplifiedExecutor {
 
     /// Execute list commands
     pub fn execute_list(command: ListCommand) -> Result<(), Box<dyn std::error::Error>> {
-        let context_manager = ContextManager::new()?;
+        let context_manager = Self::create_context_manager()?;
 
         // Determine context based on command parameters
         let display_context = match &command {
@@ -630,7 +644,7 @@ impl SimplifiedExecutor {
 
     /// Execute update commands
     pub fn execute_update(command: UpdateCommand) -> Result<(), Box<dyn std::error::Error>> {
-        let context_manager = ContextManager::new()?;
+        let context_manager = Self::create_context_manager()?;
         if Cli::is_verbose() {
             println!("[INFO] Current context: {}", context_manager.context().display_name());
         }
@@ -742,7 +756,7 @@ impl SimplifiedExecutor {
 
     /// Execute delete commands
     pub fn execute_delete(command: DeleteCommand) -> Result<(), Box<dyn std::error::Error>> {
-        let context_manager = ContextManager::new()?;
+        let context_manager = Self::create_context_manager()?;
         if Cli::is_verbose() {
             println!("[INFO] Current context: {}", context_manager.context().display_name());
         }

@@ -84,15 +84,14 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
         cmd.assert().success();
     }
 
-    // Descobrir o primeiro projeto criado dinamicamente
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Descobrir o primeiro projeto criado dinamicamente (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists()
-                    && let Ok(content) = std::fs::read_to_string(&project_yaml)
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                if let Ok(content) = std::fs::read_to_string(&path)
                     && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
                     && let Some(code) = yaml
                         .get("metadata")
@@ -430,14 +429,14 @@ fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
     // Validar que todas as empresas foram criadas (ID-based naming)
     let companies_dir = temp.child("companies");
     companies_dir.assert(predicate::path::is_dir());
-    
+
     // Check if there are 50 .yaml files in the companies directory
     let companies_path = companies_dir.path();
     let yaml_files = std::fs::read_dir(companies_path)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect::<Vec<_>>();
-    
+
     assert_eq!(yaml_files.len(), 50, "Expected 50 companies to be created");
 
     // Validar performance (deve completar em menos de 20 segundos)

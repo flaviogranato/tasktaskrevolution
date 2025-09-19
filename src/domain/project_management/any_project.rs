@@ -53,13 +53,18 @@ impl AnyProject {
     pub fn cancel_task(&mut self, task_code: &str) -> Result<AnyTask, String> {
         match self {
             AnyProject::Project(p) => {
+                println!("DEBUG: Looking for task with code: {}", task_code);
+                println!("DEBUG: Available tasks: {:?}", p.tasks.keys().collect::<Vec<_>>());
                 if let Some(task) = p.tasks.get(task_code) {
+                    println!("DEBUG: Found task, cancelling it");
                     // Create a new cancelled task by cloning and cancelling
                     let cancelled_task = task.clone().cancel();
                     // Replace the old task with the cancelled one
                     p.tasks.insert(task_code.to_string(), cancelled_task.clone());
+                    println!("DEBUG: Task cancelled successfully");
                     Ok(cancelled_task)
                 } else {
+                    println!("DEBUG: Task not found in project");
                     Err(format!("Task '{}' not found in project", task_code))
                 }
             }

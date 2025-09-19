@@ -25,6 +25,8 @@ pub struct ProjectMetadata {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default)]
+    pub company_code: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub created_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -89,20 +91,31 @@ impl From<&crate::domain::project_management::project::ProjectStatus> for Projec
 
 impl From<AnyProject> for ProjectManifest {
     fn from(source: AnyProject) -> Self {
-        let (id, code, name, description, start_date, end_date, vacation_rules, timezone, status_manifest) =
-            match source {
-                AnyProject::Project(p) => (
-                    p.id,
-                    p.code,
-                    p.name,
-                    p.description,
-                    p.start_date,
-                    p.end_date,
-                    p.settings.vacation_rules,
-                    p.settings.timezone,
-                    ProjectStatusManifest::from(&p.status),
-                ),
-            };
+        let (
+            id,
+            code,
+            name,
+            description,
+            company_code,
+            start_date,
+            end_date,
+            vacation_rules,
+            timezone,
+            status_manifest,
+        ) = match source {
+            AnyProject::Project(p) => (
+                p.id,
+                p.code,
+                p.name,
+                p.description,
+                p.company_code,
+                p.start_date,
+                p.end_date,
+                p.settings.vacation_rules,
+                p.settings.timezone,
+                ProjectStatusManifest::from(&p.status),
+            ),
+        };
 
         ProjectManifest {
             api_version: API_VERSION.to_string(),
@@ -112,6 +125,7 @@ impl From<AnyProject> for ProjectManifest {
                 code: Some(code),
                 name,
                 description: description.unwrap_or_default(),
+                company_code: Some(company_code.clone()),
                 created_at: None,
                 updated_at: None,
                 created_by: None,
@@ -146,6 +160,7 @@ impl TryFrom<ProjectManifest> for AnyProject {
         } else {
             Some(manifest.metadata.description)
         };
+        let company_code = manifest.metadata.company_code.unwrap_or_else(|| "COMP-001".to_string());
         let _start_date = manifest.spec.start_date;
         let _end_date = manifest.spec.end_date;
         let _vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
@@ -156,8 +171,8 @@ impl TryFrom<ProjectManifest> for AnyProject {
         let mut project = crate::domain::project_management::project::Project::new(
             code,
             name,
-            "COMP-001".to_string(), // TODO: Get from manifest
-            "system".to_string(),   // TODO: Get from manifest
+            company_code,
+            "system".to_string(), // TODO: Get from manifest
         )
         .map_err(|e| e.to_string())?;
 

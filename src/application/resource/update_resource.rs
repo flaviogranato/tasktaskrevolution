@@ -64,7 +64,9 @@ where
         args: UpdateResourceArgs,
     ) -> Result<AnyResource, UpdateAppError> {
         // 1. Load the resource aggregate by code.
-        let mut resource = self.resource_repository.find_by_code(resource_code)?
+        let mut resource = self
+            .resource_repository
+            .find_by_code(resource_code)?
             .ok_or_else(|| UpdateAppError::ResourceNotFound(resource_code.to_string()))?;
 
         // 2. Update the fields on the aggregate.

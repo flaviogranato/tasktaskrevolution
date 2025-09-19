@@ -21,15 +21,11 @@ pub struct FileResourceRepository {
 impl FileResourceRepository {
     pub fn new<P: AsRef<Path>>(base_path: P) -> Self {
         let base_path = base_path.as_ref().to_path_buf();
-        Self {
-            base_path,
-        }
+        Self { base_path }
     }
 
     fn get_resource_file_path_by_id(&self, resource_id: &str) -> PathBuf {
-        self.base_path
-            .join("resources")
-            .join(format!("{}.yaml", resource_id))
+        self.base_path.join("resources").join(format!("{}.yaml", resource_id))
     }
 
     fn get_resource_file_path_by_code(&self, resource_code: &str) -> PathBuf {
@@ -187,13 +183,13 @@ impl FileResourceRepository {
             for entry in std::fs::read_dir(&resources_dir)? {
                 let entry = entry?;
                 let path = entry.path();
-                
-                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    if let Ok(Some(resource)) = self.read_resource_from_file(&path) {
-                        if resource.name() == resource_name {
-                            return Ok(Some(resource));
-                        }
-                    }
+
+                if path.is_file()
+                    && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                    && let Ok(Some(resource)) = self.read_resource_from_file(&path)
+                    && resource.name() == resource_name
+                {
+                    return Ok(Some(resource));
                 }
             }
         }
@@ -210,13 +206,13 @@ impl FileResourceRepository {
                         for resource_entry in std::fs::read_dir(&company_resources_dir)? {
                             let resource_entry = resource_entry?;
                             let resource_path = resource_entry.path();
-                            
-                            if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                                if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
-                                    if resource.name() == resource_name {
-                                        return Ok(Some(resource));
-                                    }
-                                }
+
+                            if resource_path.is_file()
+                                && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                && resource.name() == resource_name
+                            {
+                                return Ok(Some(resource));
                             }
                         }
                     }
@@ -241,13 +237,13 @@ impl FileResourceRepository {
                                     for resource_entry in std::fs::read_dir(&project_resources_dir)? {
                                         let resource_entry = resource_entry?;
                                         let resource_path = resource_entry.path();
-                                        
-                                        if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                                            if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
-                                                if resource.name() == resource_name {
-                                                    return Ok(Some(resource));
-                                                }
-                                            }
+
+                                        if resource_path.is_file()
+                                            && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                            && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                            && resource.name() == resource_name
+                                        {
+                                            return Ok(Some(resource));
                                         }
                                     }
                                 }
@@ -308,8 +304,7 @@ impl FileResourceRepository {
 impl ResourceRepository for FileResourceRepository {
     fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
         let resource_id = resource.id();
-        let resource_code = resource.code();
-
+        let _resource_code = resource.code();
 
         // Create resources directory if it doesn't exist
         let resources_dir = self.get_resources_path();
@@ -375,7 +370,7 @@ impl ResourceRepository for FileResourceRepository {
     fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
         let mut resources = Vec::new();
         let companies_dir = self.base_path.join("companies");
-        
+
         if !companies_dir.exists() {
             return Ok(resources);
         }
@@ -391,10 +386,11 @@ impl ResourceRepository for FileResourceRepository {
                         if let Ok(resource_entries) = std::fs::read_dir(&resources_dir) {
                             for resource_entry in resource_entries.flatten() {
                                 let resource_path = resource_entry.path();
-                                if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                                    if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
-                                        resources.push(resource);
-                                    }
+                                if resource_path.is_file()
+                                    && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                    && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                {
+                                    resources.push(resource);
                                 }
                             }
                         }
@@ -600,13 +596,13 @@ impl ResourceRepository for FileResourceRepository {
             for entry in std::fs::read_dir(&resources_dir)? {
                 let entry = entry?;
                 let path = entry.path();
-                
-                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    if let Ok(Some(resource)) = self.read_resource_from_file(&path) {
-                        if resource.code() == code {
-                            return Ok(Some(resource));
-                        }
-                    }
+
+                if path.is_file()
+                    && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                    && let Ok(Some(resource)) = self.read_resource_from_file(&path)
+                    && resource.code() == code
+                {
+                    return Ok(Some(resource));
                 }
             }
         }
@@ -623,13 +619,13 @@ impl ResourceRepository for FileResourceRepository {
                         for resource_entry in std::fs::read_dir(&company_resources_dir)? {
                             let resource_entry = resource_entry?;
                             let resource_path = resource_entry.path();
-                            
-                            if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                                if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
-                                    if resource.code() == code {
-                                        return Ok(Some(resource));
-                                    }
-                                }
+
+                            if resource_path.is_file()
+                                && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                && resource.code() == code
+                            {
+                                return Ok(Some(resource));
                             }
                         }
                     }
@@ -654,13 +650,13 @@ impl ResourceRepository for FileResourceRepository {
                                     for resource_entry in std::fs::read_dir(&project_resources_dir)? {
                                         let resource_entry = resource_entry?;
                                         let resource_path = resource_entry.path();
-                                        
-                                        if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                                            if let Ok(Some(resource)) = self.read_resource_from_file(&resource_path) {
-                                                if resource.code() == code {
-                                                    return Ok(Some(resource));
-                                                }
-                                            }
+
+                                        if resource_path.is_file()
+                                            && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                            && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                            && resource.code() == code
+                                        {
+                                            return Ok(Some(resource));
                                         }
                                     }
                                 }
@@ -1114,7 +1110,12 @@ mod tests {
         for i in 1..=5 {
             let code = format!("RES-{:03}", i);
             let found_resource = repo.find_by_code(&code).expect("Failed to find resource by code");
-            assert!(found_resource.is_some(), "Resource {} should be found by code {}", i, code);
+            assert!(
+                found_resource.is_some(),
+                "Resource {} should be found by code {}",
+                i,
+                code
+            );
         }
     }
 

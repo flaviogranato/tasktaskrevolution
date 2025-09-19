@@ -134,8 +134,13 @@ metadata:
   code: {}
   name: {} Company
   description: Test company
+  createdAt: "2024-01-01T00:00:00Z"
+  updatedAt: "2024-01-01T00:00:00Z"
+  createdBy: "test@example.com"
 spec:
   timezone: America/Sao_Paulo
+  size: small
+  status: active
   workDays: [Monday, Tuesday, Wednesday, Thursday, Friday]
   vacationRules:
     maxConcurrentVacations: 10

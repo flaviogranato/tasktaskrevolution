@@ -8,11 +8,11 @@ pub enum MigrateCommand {
         /// Dry run - show what would be migrated without making changes
         #[arg(long)]
         dry_run: bool,
-        
+
         /// Force migration even if ID-based data already exists
         #[arg(long)]
         force: bool,
-        
+
         /// Backup existing data before migration
         #[arg(long)]
         backup: bool,

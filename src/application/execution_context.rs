@@ -77,11 +77,6 @@ impl ExecutionContext {
     pub fn detect(path: &Path) -> Result<Self, ExecutionContextError> {
         let path_str = path.to_string_lossy().to_string();
 
-        // Check for config.yaml (root context)
-        if path.join("config.yaml").exists() {
-            return Ok(ExecutionContext::Root);
-        }
-
         // Check for project.yaml first (project context)
         if let Some(project_code) = Self::find_project_yaml(path)? {
             // Try to find the company by looking at the directory structure
@@ -93,6 +88,11 @@ impl ExecutionContext {
         // Check for company.yaml (company context)
         if let Some(company_code) = Self::find_company_yaml(path)? {
             return Ok(ExecutionContext::Company(company_code));
+        }
+
+        // Check for config.yaml (root context) - this should be last
+        if path.join("config.yaml").exists() {
+            return Ok(ExecutionContext::Root);
         }
 
         Err(ExecutionContextError::NoContextFound { path: path_str })
