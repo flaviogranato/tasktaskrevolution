@@ -15,15 +15,15 @@ spec:
     timezone: "{{timezone}}"
   resources:
     - name: "{{mobile_developer}}"
-      type: "Mobile Developer"
+      type: "Developer"
       skills: ["React Native", "TypeScript", "iOS", "Android", "Mobile UI"]
       capacity: 8
     - name: "{{backend_developer}}"
-      type: "Backend Developer"
+      type: "Developer"
       skills: ["Rust", "PostgreSQL", "API Design", "Docker", "Mobile APIs"]
       capacity: 8
     - name: "{{ui_designer}}"
-      type: "Mobile UI/UX Designer"
+      type: "Designer"
       skills: ["Figma", "Mobile Design", "iOS HIG", "Material Design", "User Research"]
       capacity: 6
     - name: "{{qa_engineer}}"

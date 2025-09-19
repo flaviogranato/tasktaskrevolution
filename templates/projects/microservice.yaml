@@ -15,7 +15,7 @@ spec:
     timezone: "{{timezone}}"
   resources:
     - name: "{{backend_developer}}"
-      type: "Backend Developer"
+      type: "Developer"
       skills: ["Rust", "API Design", "Microservices", "Docker", "PostgreSQL"]
       capacity: 8
     - name: "{{devops_engineer}}"
@@ -23,7 +23,7 @@ spec:
       skills: ["Docker", "Kubernetes", "CI/CD", "Monitoring", "Infrastructure"]
       capacity: 6
     - name: "{{api_designer}}"
-      type: "API Designer"
+      type: "Developer"
       skills: ["OpenAPI", "REST", "GraphQL", "API Documentation", "API Testing"]
       capacity: 6
   tasks:

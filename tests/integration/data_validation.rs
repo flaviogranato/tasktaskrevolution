@@ -120,9 +120,9 @@ fn test_data_consistency_validation() -> Result<(), Box<dyn std::error::Error>> 
 
     // Criar recursos
     let resources = vec![
-        ("Alice Johnson", "Senior Developer", "TECH-CORP"),
-        ("Bob Smith", "Frontend Developer", "TECH-CORP"),
-        ("Carol Davis", "UI/UX Designer", "TECH-CORP"),
+        ("Alice Johnson", "Developer", "TECH-CORP"),
+        ("Bob Smith", "Developer", "TECH-CORP"),
+        ("Carol Davis", "Designer", "TECH-CORP"),
     ];
 
     for (name, role, company_code) in resources {
@@ -693,9 +693,9 @@ fn test_batch_data_validation() -> Result<(), Box<dyn std::error::Error>> {
     let resources = vec![
         ("Resource 1", "Developer"),
         ("Resource 2", "Designer"),
-        ("Resource 3", "Tester"),
+        ("Resource 3", "QA Engineer"),
         ("Resource 4", "Manager"),
-        ("Resource 5", "Analyst"),
+        ("Resource 5", "Business Analyst"),
     ];
 
     for (name, role) in resources {

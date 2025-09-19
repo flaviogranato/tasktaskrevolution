@@ -54,8 +54,8 @@ fn test_update_resource_updates_existing_file() -> Result<(), Box<dyn std::error
         "João Silva Santos",
         "--email",
         "joao.silva@techcorp.com",
-        "--description",
-        "Tech Lead Senior",
+        "--type",
+        "Manager",
     ]);
 
     cmd.assert()
@@ -94,7 +94,7 @@ fn test_update_resource_updates_existing_file() -> Result<(), Box<dyn std::error
         yaml.get("metadata")
             .and_then(|m| m.get("resourceType"))
             .and_then(|t| t.as_str()),
-        Some("Tech Lead Senior")
+        Some("Manager")
     );
 
     temp.close()?;

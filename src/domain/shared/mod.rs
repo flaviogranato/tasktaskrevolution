@@ -1,3 +1,4 @@
+pub mod code_mapping_service;
 pub mod command;
 pub mod convertable;
 pub mod factory;

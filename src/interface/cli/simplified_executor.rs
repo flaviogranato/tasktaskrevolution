@@ -710,8 +710,9 @@ impl SimplifiedExecutor {
                 code,
                 company,
                 name,
+                r#type: resource_type,
                 email,
-                description,
+                description: _,
             } => {
                 context_manager.validate_command("update", "resource")?;
 
@@ -722,7 +723,7 @@ impl SimplifiedExecutor {
                 let args = UpdateResourceArgs {
                     name,
                     email,
-                    resource_type: None, // description is not used as resource_type
+                    resource_type,
                 };
 
                 match use_case.execute(&code, &company_code, args) {
