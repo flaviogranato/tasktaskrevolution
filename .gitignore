@@ -6,3 +6,7 @@
 /public
 /docs
 /companies
+/dist
+/DIR
+fix_mock_repos.py
+fix_mock_repos.sh

@@ -19,7 +19,7 @@ jobs:
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.90
         components: rustfmt, clippy
         override: true
     
@@ -68,7 +68,7 @@ jobs:
     - name: Install Rust
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: stable
+        toolchain: 1.90
         override: true
     
     - name: Build

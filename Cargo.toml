@@ -2,9 +2,8 @@
 name = "task_task_revolution"
 authors = ["Flávio Granato <flavio.granato@protonmail.com>"]
 version = "0.5.7"
-edition = "2021"
+edition = "2024"
 description = "A powerful, flexible, and transparent project management tool that puts you in control. CLI-first design with beautiful HTML outputs."
-license = "MIT"
 repository = "https://github.com/flaviogranato/tasktaskrevolution"
 homepage = "https://github.com/flaviogranato/tasktaskrevolution"
 documentation = "https://github.com/flaviogranato/tasktaskrevolution#readme"
