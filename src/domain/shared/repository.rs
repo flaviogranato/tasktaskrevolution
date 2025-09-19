@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use crate::application::errors::AppError;
-use crate::domain::shared::code_mapping_service::CodeMappingService;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -70,32 +69,6 @@ pub trait Transaction {
     fn rollback(self: Box<Self>) -> Result<(), AppError>;
 }
 
-/// A repository that supports code-to-ID mapping
-pub trait CodeMappedRepository<T, ID>: Repository<T, ID> {
-    /// Get the code mapping service
-    fn get_mapping_service(&self) -> &CodeMappingService;
-
-    /// Find an entity by code (via ID mapping)
-    fn find_by_code(&self, code: &str) -> Result<Option<T>, AppError>;
-
-    /// Add a code-to-ID mapping
-    fn add_code_mapping(&self, code: &str, id: &ID) -> Result<(), AppError>;
-
-    /// Update a code mapping (when code changes)
-    fn update_code_mapping(&self, old_code: &str, new_code: &str) -> Result<(), AppError>;
-
-    /// Remove a code mapping
-    fn remove_code_mapping(&self, code: &str) -> Result<(), AppError>;
-
-    /// Get ID for a given code
-    fn get_id_by_code(&self, code: &str) -> Result<Option<ID>, AppError>;
-
-    /// Get code for a given ID
-    fn get_code_by_id(&self, id: &ID) -> Result<Option<String>, AppError>;
-
-    /// Check if a code exists
-    fn code_exists(&self, code: &str) -> Result<bool, AppError>;
-}
 
 /// Search criteria for repositories
 #[derive(Debug, Clone)]

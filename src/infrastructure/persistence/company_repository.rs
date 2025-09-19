@@ -5,26 +5,22 @@ use std::sync::{Arc, RwLock};
 
 use crate::application::errors::AppError;
 use crate::domain::company_management::{Company, CompanyRepository};
-use crate::domain::shared::code_mapping_service::CodeMappingService;
 use crate::infrastructure::persistence::manifests::company_manifest::CompanyManifest;
 
 /// File-based implementation of CompanyRepository.
 pub struct FileCompanyRepository {
     base_path: PathBuf,
     companies: Arc<RwLock<HashMap<String, Company>>>, // id -> company
-    mapping_service: CodeMappingService,
 }
 
 impl FileCompanyRepository {
     pub fn new<P: AsRef<Path>>(base_path: P) -> Self {
         let base_path = base_path.as_ref().to_path_buf();
         let companies = Arc::new(RwLock::new(HashMap::new()));
-        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
 
         Self { 
             base_path, 
             companies,
-            mapping_service,
         }
     }
 
@@ -175,9 +171,6 @@ impl CompanyRepository for FileCompanyRepository {
         let company_id = company.id.clone();
         let company_code = company.code.clone();
 
-        // Add code-to-ID mapping
-        self.mapping_service.add_mapping("company", &company_code, &company_id)
-            .map_err(|e| AppError::validation_error("mapping", &e))?;
 
         // Save to disk
         self.save_company_to_disk(&company)?;
@@ -201,14 +194,9 @@ impl CompanyRepository for FileCompanyRepository {
     fn find_by_code(&self, code: &str) -> Result<Option<Company>, AppError> {
         self.load_companies_from_disk()?;
 
-        // Get ID from code mapping
-        let company_id = match self.mapping_service.get_id("company", code) {
-            Some(id) => id,
-            None => return Ok(None),
-        };
-
+        // Simple search: iterate through all companies to find by code
         let companies = self.companies.read().unwrap();
-        let company = companies.get(&company_id).cloned();
+        let company = companies.values().find(|c| c.code == code).cloned();
 
         Ok(company)
     }
@@ -251,9 +239,10 @@ impl CompanyRepository for FileCompanyRepository {
         // Load companies from disk first to ensure consistency
         self.load_companies_from_disk()?;
 
-        // Get ID from code mapping
-        let company_id = self.mapping_service.get_id("company", code)
+        // Find company by code
+        let company = self.find_by_code(code)?
             .ok_or_else(|| AppError::validation_error("company", &format!("Company with code '{}' not found", code)))?;
+        let company_id = company.id.clone();
 
         // Remove from disk (ID-based file)
         let file_path = self.get_company_path_by_id(&company_id);
@@ -265,9 +254,6 @@ impl CompanyRepository for FileCompanyRepository {
             })?;
         }
 
-        // Remove from mapping service
-        self.mapping_service.remove_mapping("company", code)
-            .map_err(|e| AppError::validation_error("mapping", &e))?;
 
         // Remove from in-memory cache
         let mut companies = self.companies.write().unwrap();
@@ -279,7 +265,8 @@ impl CompanyRepository for FileCompanyRepository {
     fn get_next_code(&self) -> Result<String, AppError> {
         self.load_companies_from_disk()?;
 
-        let existing_codes = self.mapping_service.get_all_codes("company");
+        let companies = self.companies.read().unwrap();
+        let existing_codes: Vec<String> = companies.values().map(|c| c.code.clone()).collect();
 
         let mut counter = 1;
         loop {
@@ -294,7 +281,8 @@ impl CompanyRepository for FileCompanyRepository {
     fn code_exists(&self, code: &str) -> Result<bool, AppError> {
         self.load_companies_from_disk()?;
 
-        Ok(self.mapping_service.code_exists("company", code))
+        let companies = self.companies.read().unwrap();
+        Ok(companies.values().any(|c| c.code == code))
     }
 
     fn name_exists(&self, name: &str) -> Result<bool, AppError> {
