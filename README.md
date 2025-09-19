@@ -1,105 +1,156 @@
-# TaskTaskRevolution
+# TaskTaskRevolution 🚀
 
-A command-line static site generator for managing your projects, tasks, and resources through simple YAML files.
+**A powerful, flexible, and transparent project management tool that puts you in control.**
 
-## Core Concept
+TaskTaskRevolution is a CLI-first project management system that combines the power of TaskJuggler with the flexibility of Hugo's template system. Built with Rust for performance and reliability, it stores everything in human-readable files while providing beautiful HTML outputs.
 
-TaskTaskRevolution (ttr) transforms a structured directory of YAML files into a clean, modern, and readable static HTML website. Instead of complex commands to manage your project, you manage it by creating and editing simple text files. This approach makes your project data transparent, version-controllable, and easy to manage with your favorite text editor.
+## ✨ Key Features
 
-## How It Works
+- **CLI-First Design**: Complete command-line interface for maximum efficiency
+- **Human-Readable Storage**: All data stored in YAML/Markdown files
+- **Beautiful HTML Output**: Hugo-inspired template system for stunning visualizations
+- **Gantt Charts**: Comprehensive project timeline visualization
+- **Multi-Project Support**: Manage multiple companies, projects, and teams
+- **Resource Management**: Track team members, skills, and availability
+- **Task Management**: Full lifecycle task tracking with dependencies
+- **Transparent & Open**: No vendor lock-in, your data stays yours
 
-1.  **Initialize:** Run `ttr init` in a new directory to create a global `config.yaml`.
-2.  **Define:** Create directories for your projects. Inside each, you define your project (`project.yaml`), your resources (`resources/*.yaml`), and your tasks (`tasks/*.yaml`).
-3.  **Build:** Run `ttr build` from the root directory. `ttr` will discover all your projects and generate a complete HTML static site in the `public` directory, with separate pages for each project.
+## 🎯 Vision
 
-## Installation
+TaskTaskRevolution aims to be the most flexible and transparent project management tool available, combining:
+
+- **TaskJuggler's** robust project management capabilities
+- **Hugo's** beautiful and flexible template system
+- **Modern CLI** efficiency and power
+- **Open Source** transparency and community
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
 # Clone the repository
 git clone https://github.com/flaviogranato/tasktaskrevolution.git
-
-# Enter the directory
 cd tasktaskrevolution
 
-# Compile the project
+# Build the project
 cargo build --release
 
-# Optional: Add the binary to your PATH
-# e.g., sudo cp target/release/ttr /usr/local/bin/
+# Run the binary
+./target/release/ttr --help
 ```
 
-## Usage
-
-### Initialize a Repository
-
-To start, create a root directory for all your projects and run the `init` command. This will create a `config.yaml` file to hold global settings.
+### Basic Usage
 
 ```bash
-mkdir my-projects
-cd my-projects
-ttr init --manager-name "Your Name" --manager-email "your@email.com"
-```
+# Create a new company
+ttr create company "My Company"
 
-### Define Your Project
+# Create a project
+ttr create project "My Project" --company "My Company"
 
-Inside your repository, create a directory for each project. At a minimum, each project needs a `project.yaml` file.
+# Add tasks
+ttr create task "Design UI" --project "My Project" --duration "2d"
 
-**Example Directory Structure:**
-
-```
-my-projects/
-├── config.yaml
-└── my-first-project/
-    ├── project.yaml
-    ├── resources/
-    │   └── john_doe.yaml
-    └── tasks/
-        └── TSK-01.yaml
-```
-
-**`project.yaml` Example:**
-
-```yaml
-apiVersion: tasktaskrevolution.io/v1alpha1
-kind: Project
-metadata:
-  name: "My First Project"
-  description: "A simple project to get started."
-spec:
-  status: InProgress
-```
-
-### Build the Static Site
-
-From the root directory (`my-projects` in this example), run the `build` command.
-
-```bash
+# Generate HTML output
 ttr build
 ```
 
-This will generate the static site in a `public` directory. The output will contain a subdirectory for each project found.
+## 📁 Project Structure
 
-## Development
+```
+tasktaskrevolution/
+├── src/                    # Rust source code
+├── templates/              # HTML templates
+├── dist/                   # Generated HTML output
+├── data/                   # Project data (YAML files)
+└── themes/                 # Custom themes
+```
 
-This project follows the principles of Clean Architecture and Domain-Driven Design (DDD), organizing the code into well-defined layers:
+## 🛠️ Development
 
--   **Domain**: Contains the core business logic and entities.
--   **Application**: Implements the application's use cases.
--   **Infrastructure**: Provides concrete implementations for persistence, etc.
--   **Interface**: Manages user interaction (CLI).
+### Prerequisites
 
-### Setting Up the Environment
+- Rust 1.70+
+- Git
 
-1.  Clone the repository.
-2.  Install dependencies: `cargo build`
-3.  Run the tests: `cargo test`
+### Building
 
-## Contributing
+```bash
+# Development build
+cargo build
 
-This is a personal project under active development. For this reason, external contributions are not being accepted at this time.
+# Release build
+cargo build --release
 
-## License
+# Run tests
+cargo test
 
-This project is licensed under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+# Run with debug output
+RUST_LOG=debug cargo run
+```
 
-See the [LICENSE](LICENSE) file for more details.
+## 📋 Roadmap
+
+### Phase 1: Core Foundation
+- [x] Basic CLI interface
+- [x] Company and project management
+- [x] Task management with dependencies
+- [x] Resource management
+- [x] HTML generation
+- [x] Gantt chart visualization
+
+### Phase 2: Advanced Features
+- [ ] ID-based refactoring for scalability
+- [ ] Advanced query engine
+- [ ] Hybrid YAML+Markdown document system
+- [ ] Custom themes and templates
+- [ ] Advanced reporting and analytics
+
+### Phase 3: Enterprise Features
+- [ ] Integration with Jira, MS Project, Kanbanize
+- [ ] Advanced automation
+- [ ] Team collaboration features
+- [ ] Compliance and audit tools
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 💡 Commercial License
+
+For commercial use and integrations, please contact us for licensing options.
+
+## 🙏 Acknowledgments
+
+- [TaskJuggler](http://www.taskjuggler.org/) for project management inspiration
+- [Hugo](https://gohugo.io/) for template system inspiration
+- [Rust](https://www.rust-lang.org/) for the amazing language and ecosystem
+
+## 📞 Support
+
+- **Issues**: [GitHub Issues](https://github.com/flaviogranato/tasktaskrevolution/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/flaviogranato/tasktaskrevolution/discussions)
+- **Email**: [Your Email]
+
+## 🌟 Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=flaviogranato/tasktaskrevolution&type=Date)](https://star-history.com/#flaviogranato/tasktaskrevolution&Date)
+
+---
+
+**Made with ❤️ by [Your Name]**
+
+*TaskTaskRevolution - Revolutionizing project management, one task at a time.*
