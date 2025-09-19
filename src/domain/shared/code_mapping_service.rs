@@ -72,6 +72,12 @@ impl CodeMappingService {
         let content = serde_json::to_string_pretty(&mapping_data)
             .map_err(|e| format!("Failed to serialize mappings: {}", e))?;
 
+        // Create directory if it doesn't exist
+        if let Some(parent_dir) = Path::new(&self.file_path).parent() {
+            fs::create_dir_all(parent_dir)
+                .map_err(|e| format!("Failed to create mappings directory: {}", e))?;
+        }
+
         fs::write(&self.file_path, content)
             .map_err(|e| format!("Failed to write mappings file: {}", e))?;
 

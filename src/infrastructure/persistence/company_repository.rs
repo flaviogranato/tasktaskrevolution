@@ -5,24 +5,34 @@ use std::sync::{Arc, RwLock};
 
 use crate::application::errors::AppError;
 use crate::domain::company_management::{Company, CompanyRepository};
+use crate::domain::shared::code_mapping_service::CodeMappingService;
 use crate::infrastructure::persistence::manifests::company_manifest::CompanyManifest;
 
 /// File-based implementation of CompanyRepository.
-#[derive(Clone)]
 pub struct FileCompanyRepository {
     base_path: PathBuf,
-    companies: Arc<RwLock<HashMap<String, Company>>>,
+    companies: Arc<RwLock<HashMap<String, Company>>>, // id -> company
+    mapping_service: CodeMappingService,
 }
 
 impl FileCompanyRepository {
     pub fn new<P: AsRef<Path>>(base_path: P) -> Self {
         let base_path = base_path.as_ref().to_path_buf();
         let companies = Arc::new(RwLock::new(HashMap::new()));
+        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
 
-        Self { base_path, companies }
+        Self { 
+            base_path, 
+            companies,
+            mapping_service,
+        }
     }
 
-    fn get_company_path(&self, code: &str) -> PathBuf {
+    fn get_company_path_by_id(&self, id: &str) -> PathBuf {
+        self.base_path.join("companies").join(format!("{}.yaml", id))
+    }
+
+    fn get_company_path_by_code(&self, code: &str) -> PathBuf {
         self.base_path.join("companies").join(code).join("company.yaml")
     }
 
@@ -30,7 +40,7 @@ impl FileCompanyRepository {
         self.base_path.join("companies")
     }
 
-    fn get_company_dir(&self, code: &str) -> PathBuf {
+    fn get_company_dir_by_code(&self, code: &str) -> PathBuf {
         self.base_path.join("companies").join(code)
     }
 
@@ -58,6 +68,33 @@ impl FileCompanyRepository {
             })?;
 
             let path = entry.path();
+            
+            // Check if it's a new ID-based file (e.g., 01901dea-3e4b-7698-b323-95232d306587.yaml)
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                if let Some(file_name) = path.file_stem().and_then(|s| s.to_str()) {
+                    // Check if it looks like a UUID (ID-based format)
+                    if file_name.len() == 36 && file_name.contains('-') {
+                        let content = fs::read_to_string(&path).map_err(|e| AppError::IoErrorWithPath {
+                            operation: "file read".to_string(),
+                            path: path.to_string_lossy().to_string(),
+                            details: e.to_string(),
+                        })?;
+
+                        let manifest: CompanyManifest =
+                            serde_yaml::from_str(&content).map_err(|e| AppError::SerializationError {
+                                format: "YAML".to_string(),
+                                details: format!("Failed to parse company file {}: {}", path.display(), e),
+                            })?;
+
+                        let company = manifest.to();
+                        let company_id = company.id.clone();
+                        companies.insert(company_id, company);
+                        continue;
+                    }
+                }
+            }
+            
+            // Check if it's the old code-based directory format
             if path.is_dir() {
                 let company_yaml_path = path.join("company.yaml");
                 if company_yaml_path.exists() {
@@ -74,7 +111,8 @@ impl FileCompanyRepository {
                         })?;
 
                     let company = manifest.to();
-                    companies.insert(company.code.clone(), company);
+                    let company_id = company.id.clone();
+                    companies.insert(company_id, company);
                 }
             }
         }
@@ -87,21 +125,11 @@ impl FileCompanyRepository {
 
     fn save_company_to_disk(&self, company: &Company) -> Result<(), AppError> {
         let companies_dir = self.get_companies_dir();
-        let company_dir = self.get_company_dir(&company.code);
 
         // Create companies directory if it doesn't exist
         if !companies_dir.exists() {
             fs::create_dir_all(&companies_dir).map_err(|e| AppError::IoError {
                 operation: "create directory".to_string(),
-                details: e.to_string(),
-            })?;
-        }
-
-        // Create company directory if it doesn't exist
-        if !company_dir.exists() {
-            fs::create_dir_all(&company_dir).map_err(|e| AppError::IoErrorWithPath {
-                operation: "create directory".to_string(),
-                path: company_dir.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
         }
@@ -112,7 +140,8 @@ impl FileCompanyRepository {
             details: format!("Failed to serialize company to YAML: {}", e),
         })?;
 
-        let file_path = self.get_company_path(&company.code);
+        // Use ID-based file naming
+        let file_path = self.get_company_path_by_id(&company.id);
         fs::write(&file_path, yaml_content).map_err(|e| AppError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file_path.to_string_lossy().to_string(),
@@ -124,7 +153,7 @@ impl FileCompanyRepository {
 
     #[allow(dead_code)]
     fn delete_company_from_disk(&self, code: &str) -> Result<(), AppError> {
-        let company_dir = self.get_company_dir(code);
+        let company_dir = self.get_company_dir_by_code(code);
 
         if company_dir.exists() {
             fs::remove_dir_all(&company_dir).map_err(|e| AppError::IoErrorWithPath {
@@ -143,14 +172,19 @@ impl CompanyRepository for FileCompanyRepository {
         // Load companies from disk first to ensure consistency
         self.load_companies_from_disk()?;
 
+        let company_id = company.id.clone();
         let company_code = company.code.clone();
+
+        // Add code-to-ID mapping
+        self.mapping_service.add_mapping("company", &company_code, &company_id)
+            .map_err(|e| AppError::validation_error("mapping", &e))?;
 
         // Save to disk
         self.save_company_to_disk(&company)?;
 
         // Update in-memory cache
         let mut companies = self.companies.write().unwrap();
-        companies.insert(company_code.clone(), company);
+        companies.insert(company_id, company);
 
         Ok(())
     }
@@ -167,8 +201,14 @@ impl CompanyRepository for FileCompanyRepository {
     fn find_by_code(&self, code: &str) -> Result<Option<Company>, AppError> {
         self.load_companies_from_disk()?;
 
+        // Get ID from code mapping
+        let company_id = match self.mapping_service.get_id("company", code) {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+
         let companies = self.companies.read().unwrap();
-        let company = companies.get(code).cloned();
+        let company = companies.get(&company_id).cloned();
 
         Ok(company)
     }
@@ -211,12 +251,27 @@ impl CompanyRepository for FileCompanyRepository {
         // Load companies from disk first to ensure consistency
         self.load_companies_from_disk()?;
 
-        // Remove from disk
-        self.delete_company_from_disk(code)?;
+        // Get ID from code mapping
+        let company_id = self.mapping_service.get_id("company", code)
+            .ok_or_else(|| AppError::validation_error("company", &format!("Company with code '{}' not found", code)))?;
+
+        // Remove from disk (ID-based file)
+        let file_path = self.get_company_path_by_id(&company_id);
+        if file_path.exists() {
+            fs::remove_file(&file_path).map_err(|e| AppError::IoErrorWithPath {
+                operation: "delete file".to_string(),
+                path: file_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
+        }
+
+        // Remove from mapping service
+        self.mapping_service.remove_mapping("company", code)
+            .map_err(|e| AppError::validation_error("mapping", &e))?;
 
         // Remove from in-memory cache
         let mut companies = self.companies.write().unwrap();
-        companies.remove(code);
+        companies.remove(&company_id);
 
         Ok(())
     }
@@ -224,13 +279,12 @@ impl CompanyRepository for FileCompanyRepository {
     fn get_next_code(&self) -> Result<String, AppError> {
         self.load_companies_from_disk()?;
 
-        let companies = self.companies.read().unwrap();
-        let existing_codes: Vec<&String> = companies.keys().collect();
+        let existing_codes = self.mapping_service.get_all_codes("company");
 
         let mut counter = 1;
         loop {
             let new_code = format!("company-{}", counter);
-            if !existing_codes.contains(&&new_code) {
+            if !existing_codes.contains(&new_code) {
                 return Ok(new_code);
             }
             counter += 1;
@@ -240,8 +294,7 @@ impl CompanyRepository for FileCompanyRepository {
     fn code_exists(&self, code: &str) -> Result<bool, AppError> {
         self.load_companies_from_disk()?;
 
-        let companies = self.companies.read().unwrap();
-        Ok(companies.contains_key(code))
+        Ok(self.mapping_service.code_exists("company", code))
     }
 
     fn name_exists(&self, name: &str) -> Result<bool, AppError> {

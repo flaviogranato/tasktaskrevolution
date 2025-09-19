@@ -1,0 +1,12 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Resource
+metadata:
+  id: 0199598e-6d10-79f8-9b9e-2d182a90101d
+  name: Test Resource 3
+  email: test3@example.com
+  code: developer-4
+  resourceType: Developer
+  status: Available
+spec:
+  timeOffBalance: 0
+  timeOffHistory: []

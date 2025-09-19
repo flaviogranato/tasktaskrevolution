@@ -249,9 +249,18 @@ fn test_create_company_without_init() -> Result<(), Box<dyn std::error::Error>> 
     ]);
     cmd.assert().success();
 
-    // Validar que a empresa foi criada
-    let company_file = temp.child("companies").child("TEST-COMP").child("company.yaml");
-    company_file.assert(predicate::path::exists());
+    // Validar que a empresa foi criada (ID-based naming)
+    let companies_dir = temp.child("companies");
+    companies_dir.assert(predicate::path::is_dir());
+    
+    // Check if there's at least one .yaml file in the companies directory
+    let companies_path = companies_dir.path();
+    let yaml_files = std::fs::read_dir(companies_path)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
+        .collect::<Vec<_>>();
+    
+    assert!(!yaml_files.is_empty(), "No company YAML file found in companies directory");
 
     temp.close()?;
     Ok(())

@@ -26,6 +26,12 @@ impl AnyProject {
         }
     }
 
+    pub fn id(&self) -> &str {
+        match self {
+            AnyProject::Project(p) => &p.id,
+        }
+    }
+
     pub fn description(&self) -> Option<&String> {
         match self {
             AnyProject::Project(p) => p.description.as_ref(),

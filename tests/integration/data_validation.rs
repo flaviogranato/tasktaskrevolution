@@ -404,14 +404,22 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().failure(); // Deve falhar porque o nome já existe
 
-    // Validar que apenas a primeira empresa foi criada
-    let company1_file = temp.child("companies").child("TECH-CORP").child("company.yaml");
-    let company2_file = temp.child("companies").child("TECH-CORP-2").child("company.yaml");
-
-    company1_file.assert(predicate::path::exists());
-    company2_file.assert(predicate::path::exists().not()); // Segunda empresa não deve existir
-
-    let validator1 = YamlValidator::new(&company1_file)?;
+    // Validar que apenas a primeira empresa foi criada (ID-based naming)
+    let companies_dir = temp.child("companies");
+    companies_dir.assert(predicate::path::is_dir());
+    
+    // Check if there's at least one .yaml file in the companies directory
+    let companies_path = companies_dir.path();
+    let yaml_files = std::fs::read_dir(companies_path)?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
+        .collect::<Vec<_>>();
+    
+    assert_eq!(yaml_files.len(), 1, "Only one company should exist");
+    
+    // Use the first YAML file found for validation
+    let company_file_path = yaml_files[0].path();
+    let validator1 = YamlValidator::new(&company_file_path)?;
     assert!(validator1.field_equals("metadata.code", "TECH-CORP"));
 
     // Testar regra: Códigos de projeto devem ser únicos por empresa

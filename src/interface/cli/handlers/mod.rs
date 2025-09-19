@@ -1,5 +1,6 @@
 pub mod app_handler;
 pub mod link_handler;
+pub mod migrate_handler;
 pub mod project_handler;
 pub mod report_handler;
 pub mod resource_handler;

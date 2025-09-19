@@ -1,0 +1,16 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Task
+metadata:
+  id: 01995a28-f9b2-7fc8-a5f9-beae60cee16e
+  code: TASK-002
+  name: Frontend Development
+spec:
+  projectCode: proj-1758141028121
+  assignee: unassigned
+  status: Planned
+  priority: Medium
+  estimatedStartDate: 2024-02-01
+  estimatedEndDate: 2024-03-15
+  actualStartDate: 2024-02-01
+  effort:
+    estimatedHours: 8.0

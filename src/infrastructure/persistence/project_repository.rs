@@ -1,6 +1,7 @@
 use crate::application::errors::AppError;
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
 use crate::domain::task_management::any_task::AnyTask;
+use crate::domain::shared::code_mapping_service::CodeMappingService;
 use crate::infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest};
 use globwalk::glob;
 use serde_yaml;
@@ -12,17 +13,20 @@ use std::path::{Path, PathBuf};
 /// que persiste os dados do projeto no sistema de arquivos.
 ///
 /// A estrutura de diretórios esperada é:
-/// /<base_path>/companies/<company_code>/projects/<project_code>/project.yaml
-#[derive(Clone)]
+/// /<base_path>/projects/<project_id>.yaml (ID-based format)
 pub struct FileProjectRepository {
     base_path: PathBuf,
+    mapping_service: CodeMappingService,
 }
 
 impl FileProjectRepository {
     /// Cria uma nova instância do repositório que opera a partir do diretório de trabalho atual.
     pub fn new() -> Self {
+        let base_path = PathBuf::from(".");
+        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
         Self {
-            base_path: PathBuf::from("."),
+            base_path,
+            mapping_service,
         }
     }
 }
@@ -37,62 +41,61 @@ impl FileProjectRepository {
     /// Cria uma nova instância do repositório que opera a partir de um diretório base específico.
     /// Esta função é primariamente para uso em testes.
     pub fn with_base_path(base_path: PathBuf) -> Self {
-        Self { base_path }
-    }
-
-    /// Gets the path to a specific project directory
-    fn get_project_path(&self, company_code: &str, project_code: &str) -> PathBuf {
-        if self.base_path.ends_with("companies") {
-            // If base_path already includes "companies", don't add it again
-            self.base_path.join(company_code).join("projects").join(project_code)
-        } else {
-            // If base_path doesn't include "companies", add it
-            self.base_path
-                .join("companies")
-                .join(company_code)
-                .join("projects")
-                .join(project_code)
+        let mapping_service = CodeMappingService::new(&base_path.join(".ttr/mappings.json").to_string_lossy());
+        Self { 
+            base_path,
+            mapping_service,
         }
     }
 
-    /// Gets the path to the projects directory for a specific company
-    #[allow(dead_code)]
-    fn get_company_projects_path(&self, company_code: &str) -> PathBuf {
-        self.base_path.join("companies").join(company_code).join("projects")
+    /// Gets the path to a specific project file by ID
+    fn get_project_path_by_id(&self, project_id: &str) -> PathBuf {
+        self.base_path.join("projects").join(format!("{}.yaml", project_id))
     }
 
-    /// Gets the path to all companies directory
-    #[allow(dead_code)]
-    fn get_companies_path(&self) -> PathBuf {
-        self.base_path.join("companies")
+    /// Gets the path to a specific project file by code (legacy support)
+    fn get_project_path_by_code(&self, project_code: &str) -> PathBuf {
+        // For backward compatibility, try to find the project by code
+        // This will be used during migration
+        self.base_path.join("projects").join(project_code).join("project.yaml")
     }
 
-    /// Loads a single project from a specific project directory path.
-    pub fn load_from_path(&self, project_dir: &Path) -> Result<AnyProject, AppError> {
-        let manifest_path = project_dir.join("project.yaml");
-        if !manifest_path.exists() {
+    /// Gets the path to the projects directory
+    fn get_projects_path(&self) -> PathBuf {
+        self.base_path.join("projects")
+    }
+
+    /// Loads a single project from a specific project file path.
+    pub fn load_from_path(&self, project_file: &Path) -> Result<AnyProject, AppError> {
+        if !project_file.exists() {
             return Err(AppError::ProjectNotFound {
                 code: "unknown".to_string(),
             });
         }
         let manifest = self
-            .load_manifest(&manifest_path)
+            .load_manifest(project_file)
             .map_err(|e| AppError::ValidationError {
                 field: "manifest".to_string(),
-                message: format!("Failed to load project manifest: {e}"),
+                message: format!("Failed to load project file: {e}"),
             })?;
         let mut project = AnyProject::try_from(manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
-            details: format!("Error converting project manifest: {e}"),
+            details: format!("Error converting project file: {e}"),
         })?;
-        self.load_tasks_for_project(&mut project, &manifest_path)?;
+        self.load_tasks_for_project(&mut project, project_file)?;
         Ok(project)
     }
 
-    /// Loads a specific project by company code and project code
+    /// Loads a specific project by project code (using ID mapping)
     #[allow(dead_code)]
-    pub fn load_by_codes(&self, company_code: &str, project_code: &str) -> Result<AnyProject, AppError> {
-        let project_path = self.get_project_path(company_code, project_code);
+    pub fn load_by_code(&self, project_code: &str) -> Result<AnyProject, AppError> {
+        // Get project ID from code mapping
+        let project_id = self.mapping_service.get_id("project", project_code)
+            .ok_or_else(|| AppError::ProjectNotFound {
+                code: project_code.to_string(),
+            })?;
+        
+        let project_path = self.get_project_path_by_id(&project_id);
         self.load_from_path(&project_path)
     }
 
@@ -139,6 +142,7 @@ impl FileProjectRepository {
 
     /// Loads tasks from the `tasks` subdirectory of a project and adds them.
     fn load_tasks_for_project(&self, project: &mut AnyProject, project_path: &Path) -> Result<(), AppError> {
+        // For ID-based format, tasks are stored in the same directory as the project file
         let tasks_dir = project_path.parent().unwrap().join("tasks");
         if !tasks_dir.exists() {
             return Ok(());
@@ -183,8 +187,9 @@ impl FileProjectRepository {
 
     /// Save individual task files for a project
     fn save_tasks_for_project(&self, project: &AnyProject) -> Result<(), AppError> {
-        let project_dir = self.get_project_path(project.company_code(), project.code());
-        let tasks_dir = project_dir.join("tasks");
+        let project_id = project.id();
+        let project_path = self.get_project_path_by_id(project_id);
+        let tasks_dir = project_path.parent().unwrap().join("tasks");
 
         // Create tasks directory if it doesn't exist
         fs::create_dir_all(&tasks_dir).map_err(|e| AppError::IoErrorWithPath {
@@ -214,25 +219,33 @@ impl FileProjectRepository {
 
 impl ProjectRepository for FileProjectRepository {
     /// Salva um projeto.
-    /// Cria um diretório com o nome do projeto e salva um arquivo `project.yaml` dentro dele.
+    /// Salva um arquivo `{project_id}.yaml` no diretório projects.
     fn save(&self, project: AnyProject) -> Result<(), AppError> {
-        let project_dir = self.get_project_path(project.company_code(), project.code());
+        let project_id = project.id();
+        let project_code = project.code();
 
-        // Save project manifest
-        fs::create_dir_all(&project_dir).map_err(|e| AppError::IoErrorWithPath {
+        // Add code-to-ID mapping
+        self.mapping_service.add_mapping("project", project_code, project_id)
+            .map_err(|e| AppError::validation_error("mapping", &e))?;
+
+        // Create projects directory if it doesn't exist
+        let projects_dir = self.get_projects_path();
+        fs::create_dir_all(&projects_dir).map_err(|e| AppError::IoErrorWithPath {
             operation: "create directory".to_string(),
-            path: project_dir.to_string_lossy().to_string(),
+            path: projects_dir.to_string_lossy().to_string(),
             details: e.to_string(),
         })?;
-        let manifest_path = project_dir.join("project.yaml");
+
+        // Save project file
+        let project_path = self.get_project_path_by_id(project_id);
         let project_manifest = ProjectManifest::from(project.clone());
         let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| AppError::SerializationError {
             format: "YAML".to_string(),
             details: format!("Error serializing project: {e}"),
         })?;
-        fs::write(&manifest_path, yaml).map_err(|e| AppError::IoErrorWithPath {
+        fs::write(&project_path, yaml).map_err(|e| AppError::IoErrorWithPath {
             operation: "file write".to_string(),
-            path: manifest_path.to_string_lossy().to_string(),
+            path: project_path.to_string_lossy().to_string(),
             details: e.to_string(),
         })?;
 
@@ -243,61 +256,45 @@ impl ProjectRepository for FileProjectRepository {
     }
 
     /// Carrega um projeto.
-    /// `path` deve ser o caminho para o diretório do projeto.
+    /// Procura por arquivos YAML no diretório projects.
     fn load(&self) -> Result<AnyProject, AppError> {
-        let pattern = self.base_path.join("**/project.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
-            field: "glob pattern".to_string(),
-            message: e.to_string(),
-        })?;
-
-        if let Some(Ok(entry)) = walker.into_iter().next() {
-            let manifest_path = entry.path();
-            let manifest = self
-                .load_manifest(manifest_path)
-                .map_err(|e| AppError::ValidationError {
-                    field: "manifest".to_string(),
-                    message: format!("Failed to load project manifest: {e}"),
-                })?;
-            let mut project = AnyProject::try_from(manifest).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
-                details: format!("Error converting project manifest: {e}"),
-            })?;
-            self.load_tasks_for_project(&mut project, manifest_path)?;
-            Ok(project)
-        } else {
-            Err(AppError::ProjectNotFound {
+        let projects_dir = self.get_projects_path();
+        if !projects_dir.exists() {
+            return Err(AppError::ProjectNotFound {
                 code: "unknown".to_string(),
-            })
+            });
         }
+
+        // Look for YAML files in the projects directory
+        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    return self.load_from_path(&path);
+                }
+            }
+        }
+
+        Err(AppError::ProjectNotFound {
+            code: "unknown".to_string(),
+        })
     }
 
     fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
         let mut projects = Vec::new();
-        let mut processed_paths = std::collections::HashSet::new();
+        let projects_dir = self.get_projects_path();
+        
+        if !projects_dir.exists() {
+            return Ok(projects);
+        }
 
-        // Padrão para buscar projetos na nova estrutura: companies/*/projects/*/project.yaml
-        let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
-        let pattern = if absolute_base.ends_with("companies") {
-            absolute_base.join("*/projects/*/project.yaml")
-        } else {
-            absolute_base.join("companies/*/projects/*/project.yaml")
-        };
-        let pattern_str = pattern.to_str().unwrap();
-        if let Ok(walker) = glob(pattern_str) {
-            for entry in walker.flatten() {
-                let manifest_path = entry.path();
-                if processed_paths.contains(manifest_path) {
-                    continue;
-                }
-                if let Ok(manifest) = self.load_manifest(manifest_path) {
-                    // Extract company_code from path: companies/{company_code}/projects/{project_code}/project.yaml
-                    if let Some(company_code) = self.extract_company_code_from_path(manifest_path)
-                        && let Ok(mut project) = self.create_project_with_company_code(manifest, &company_code)
-                        && self.load_tasks_for_project(&mut project, manifest_path).is_ok()
-                    {
+        // Look for YAML files in the projects directory
+        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                    if let Ok(project) = self.load_from_path(&path) {
                         projects.push(project);
-                        processed_paths.insert(manifest_path.to_path_buf());
                     }
                 }
             }
@@ -310,12 +307,11 @@ impl ProjectRepository for FileProjectRepository {
     }
 
     fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
-        // This is not the most performant implementation, but it is correct.
-        // It avoids duplicating the task loading logic.
-        let projects = self.find_all()?;
-        for project in projects {
-            if project.code() == code {
-                return Ok(Some(project));
+        // Get project ID from code mapping
+        if let Some(project_id) = self.mapping_service.get_id("project", code) {
+            let project_path = self.get_project_path_by_id(&project_id);
+            if project_path.exists() {
+                return Ok(Some(self.load_from_path(&project_path)?));
             }
         }
         Ok(None)
@@ -424,8 +420,7 @@ mod tests {
     #[test]
     fn test_project_repository_save_and_load() {
         let temp_dir = tempdir().expect("Failed to create temp directory");
-        let repo_path = temp_dir.path().join("projects");
-        fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
+        let repo_path = temp_dir.path();
 
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
         let project = create_test_project();
@@ -434,22 +429,16 @@ mod tests {
         let save_result = repository.save(project.clone().into());
         assert!(save_result.is_ok(), "Failed to save project: {:?}", save_result);
 
-        // Load project by code - we need to implement find_by_code or use a different approach
-        // For now, let's test that the project was saved by checking the file exists
-        let project_file = repo_path
-            .join("companies")
-            .join("COMP-001")
-            .join("projects")
-            .join("TEST-001")
-            .join("project.yaml");
+        // Test that the project was saved by checking the file exists (ID-based format)
+        let project_id = &project.id;
+        let project_file = repo_path.join("projects").join(format!("{}.yaml", project_id));
         assert!(project_file.exists(), "Project file should exist after save");
     }
 
     #[test]
     fn test_project_repository_save_multiple_projects() {
         let temp_dir = tempdir().expect("Failed to create temp directory");
-        let repo_path = temp_dir.path().join("projects");
-        fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
+        let repo_path = temp_dir.path();
 
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
 
@@ -472,22 +461,12 @@ mod tests {
             .build()
             .unwrap();
 
-        repository.save(project1.into()).expect("Failed to save project 1");
-        repository.save(project2.into()).expect("Failed to save project 2");
+        repository.save(project1.clone().into()).expect("Failed to save project 1");
+        repository.save(project2.clone().into()).expect("Failed to save project 2");
 
-        // Verify both projects were saved by checking files exist
-        let project1_file = repo_path
-            .join("companies")
-            .join("COMP-001")
-            .join("projects")
-            .join("PROJ-001")
-            .join("project.yaml");
-        let project2_file = repo_path
-            .join("companies")
-            .join("COMP-001")
-            .join("projects")
-            .join("PROJ-002")
-            .join("project.yaml");
+        // Verify both projects were saved by checking files exist (ID-based format)
+        let project1_file = repo_path.join("projects").join(format!("{}.yaml", project1.id));
+        let project2_file = repo_path.join("projects").join(format!("{}.yaml", project2.id));
 
         assert!(project1_file.exists(), "Project 1 file should exist");
         assert!(project2_file.exists(), "Project 2 file should exist");
