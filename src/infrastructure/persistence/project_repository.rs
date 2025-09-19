@@ -475,8 +475,7 @@ mod tests {
     #[test]
     fn test_project_repository_update_project() {
         let temp_dir = tempdir().expect("Failed to create temp directory");
-        let repo_path = temp_dir.path().join("projects");
-        fs::create_dir_all(&repo_path).expect("Failed to create projects directory");
+        let repo_path = temp_dir.path();
 
         let repository = FileProjectRepository::with_base_path(repo_path.to_path_buf());
         let project = create_test_project();
@@ -490,13 +489,8 @@ mod tests {
             .save(in_progress_project.clone().into())
             .expect("Failed to update project");
 
-        // Verify update by checking file exists
-        let project_file = repo_path
-            .join("companies")
-            .join("COMP-001")
-            .join("projects")
-            .join("TEST-001")
-            .join("project.yaml");
+        // Verify update by checking file exists (ID-based format)
+        let project_file = repo_path.join("projects").join(format!("{}.yaml", in_progress_project.id));
         assert!(project_file.exists(), "Updated project file should exist");
     }
 
