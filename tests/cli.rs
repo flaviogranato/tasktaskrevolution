@@ -112,7 +112,7 @@ fn test_help_command() -> Result<(), Box<dyn std::error::Error>> {
     cmd.arg("--help");
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("utilitário de linha de comando"))
+        .stdout(predicate::str::contains("project management tool"))
         .stdout(predicate::str::contains("Usage: ttr"));
 
     Ok(())

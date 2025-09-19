@@ -132,7 +132,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             name,
             r#type: resource_type,
             email,
-            description,
+            description: _,
         } => {
             let resource_repository = FileResourceRepository::new(".");
             let update_use_case = UpdateResourceUseCase::new(resource_repository);

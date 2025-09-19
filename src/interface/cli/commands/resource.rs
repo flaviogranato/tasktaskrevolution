@@ -71,7 +71,7 @@ pub enum ResourceCommand {
         #[clap(long)]
         name: Option<String>,
         /// New resource type
-        #[clap(long)]
+        #[clap(long = "type")]
         r#type: Option<String>,
         /// New resource email
         #[clap(long)]

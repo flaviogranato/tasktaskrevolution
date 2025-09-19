@@ -15,11 +15,11 @@ spec:
     timezone: "{{timezone}}"
   resources:
     - name: "{{frontend_developer}}"
-      type: "Frontend Developer"
+      type: "Developer"
       skills: ["React", "TypeScript", "CSS", "HTML"]
       capacity: 8
     - name: "{{backend_developer}}"
-      type: "Backend Developer"
+      type: "Developer"
       skills: ["Rust", "PostgreSQL", "API Design", "Docker"]
       capacity: 8
     - name: "{{devops_engineer}}"
@@ -27,7 +27,7 @@ spec:
       skills: ["Docker", "Kubernetes", "CI/CD", "AWS"]
       capacity: 4
     - name: "{{ui_designer}}"
-      type: "UI/UX Designer"
+      type: "Designer"
       skills: ["Figma", "Design Systems", "User Research", "Prototyping"]
       capacity: 6
   tasks:

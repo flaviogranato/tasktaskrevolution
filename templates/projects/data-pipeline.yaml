@@ -15,11 +15,11 @@ spec:
     timezone: "{{timezone}}"
   resources:
     - name: "{{data_engineer}}"
-      type: "Data Engineer"
+      type: "Developer"
       skills: ["Python", "SQL", "Apache Airflow", "Docker", "Data Warehousing"]
       capacity: 8
     - name: "{{data_analyst}}"
-      type: "Data Analyst"
+      type: "Business Analyst"
       skills: ["SQL", "Python", "Data Visualization", "Statistics", "Business Intelligence"]
       capacity: 6
     - name: "{{devops_engineer}}"
@@ -27,7 +27,7 @@ spec:
       skills: ["Docker", "Kubernetes", "CI/CD", "Monitoring", "Data Infrastructure"]
       capacity: 6
     - name: "{{data_scientist}}"
-      type: "Data Scientist"
+      type: "Developer"
       skills: ["Python", "Machine Learning", "Statistics", "Data Modeling", "Jupyter"]
       capacity: 6
   tasks:
