@@ -208,6 +208,21 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
+    // Criar empresa primeiro
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corporation",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Test company for referential integrity",
+    ]);
+    cmd.assert().success();
+
     // Criar recursos
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
@@ -250,15 +265,14 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // Descobrir o código do projeto dinamicamente
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Descobrir o código do projeto dinamicamente (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists()
-                    && let Ok(content) = std::fs::read_to_string(&project_yaml)
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                if let Ok(content) = std::fs::read_to_string(&path)
                     && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
                     && let Some(code) = yaml
                         .get("metadata")
@@ -332,13 +346,20 @@ fn test_referential_integrity() -> Result<(), Box<dyn std::error::Error>> {
     assert!(validator.field_equals("metadata.name", "Test Task"));
 
     // Validar que o projeto existe
-    let project_file = temp
-        .child("companies")
-        .child("TECH-CORP")
-        .child("projects")
-        .child(&project_code)
-        .child("project.yaml");
-    project_file.assert(predicate::path::exists());
+    // Verificar se o projeto foi criado corretamente (ID-based format)
+    let projects_dir = temp.path().join("projects");
+    let mut project_file = None;
+    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                project_file = Some(path);
+                break;
+            }
+        }
+    }
+    let project_file = project_file.expect("Project file not found");
+    assert!(project_file.exists());
 
     let validator = YamlValidator::new(&project_file)?;
     assert!(validator.field_equals("metadata.name", "Test Project"));
@@ -407,16 +428,16 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     // Validar que apenas a primeira empresa foi criada (ID-based naming)
     let companies_dir = temp.child("companies");
     companies_dir.assert(predicate::path::is_dir());
-    
+
     // Check if there's at least one .yaml file in the companies directory
     let companies_path = companies_dir.path();
     let yaml_files = std::fs::read_dir(companies_path)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect::<Vec<_>>();
-    
+
     assert_eq!(yaml_files.len(), 1, "Only one company should exist");
-    
+
     // Use the first YAML file found for validation
     let company_file_path = yaml_files[0].path();
     let validator1 = YamlValidator::new(&company_file_path)?;
@@ -459,16 +480,14 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // Validar que os projetos foram criados dinamicamente
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Validar que os projetos foram criados dinamicamente (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_count = 0;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    project_count += 1;
-                }
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                project_count += 1;
             }
         }
     }
@@ -639,17 +658,15 @@ fn test_data_migration_scenarios() -> Result<(), Box<dyn std::error::Error>> {
     let resource_file_path = resource_file_path.expect("Resource file not found");
     assert!(resource_file_path.exists());
 
-    // Descobrir o projeto criado dinamicamente
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Descobrir o projeto criado dinamicamente (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_file = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    project_file = Some(project_yaml);
-                    break;
-                }
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                project_file = Some(path);
+                break;
             }
         }
     }

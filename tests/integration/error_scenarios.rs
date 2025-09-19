@@ -252,15 +252,18 @@ fn test_create_company_without_init() -> Result<(), Box<dyn std::error::Error>> 
     // Validar que a empresa foi criada (ID-based naming)
     let companies_dir = temp.child("companies");
     companies_dir.assert(predicate::path::is_dir());
-    
+
     // Check if there's at least one .yaml file in the companies directory
     let companies_path = companies_dir.path();
     let yaml_files = std::fs::read_dir(companies_path)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect::<Vec<_>>();
-    
-    assert!(!yaml_files.is_empty(), "No company YAML file found in companies directory");
+
+    assert!(
+        !yaml_files.is_empty(),
+        "No company YAML file found in companies directory"
+    );
 
     temp.close()?;
     Ok(())
@@ -397,7 +400,22 @@ fn test_create_task_without_project() -> Result<(), Box<dyn std::error::Error>> 
     ]);
     cmd.assert().success();
 
-    // Criar projeto primeiro
+    // Criar empresa primeiro
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "create",
+        "company",
+        "--name",
+        "Tech Corporation",
+        "--code",
+        "TECH-CORP",
+        "--description",
+        "Test company for error scenarios",
+    ]);
+    cmd.assert().success();
+
+    // Criar projeto
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp.path());
     cmd.args([
@@ -416,15 +434,14 @@ fn test_create_task_without_project() -> Result<(), Box<dyn std::error::Error>> 
     ]);
     cmd.assert().success();
 
-    // Descobrir o código do projeto dinamicamente
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Descobrir o código do projeto dinamicamente (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists()
-                    && let Ok(content) = std::fs::read_to_string(&project_yaml)
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                if let Ok(content) = std::fs::read_to_string(&path)
                     && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
                     && let Some(code) = yaml
                         .get("metadata")

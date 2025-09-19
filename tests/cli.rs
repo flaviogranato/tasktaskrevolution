@@ -124,7 +124,7 @@ fn test_version_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
 
     cmd.arg("--version");
-    cmd.assert().success().stdout(predicate::str::contains("0.5.7"));
+    cmd.assert().success().stdout(predicate::str::contains("0.6.0"));
 
     Ok(())
 }
@@ -291,7 +291,7 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
 
     // Verificar se o diretório companies foi criado
     companies_dir.assert(predicate::path::is_dir());
-    
+
     // With ID-based naming, we need to find the actual file
     // Check if there's at least one .yaml file in the companies directory
     let companies_path = companies_dir.path();
@@ -299,9 +299,12 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect::<Vec<_>>();
-    
-    assert!(!yaml_files.is_empty(), "No company YAML file found in companies directory");
-    
+
+    assert!(
+        !yaml_files.is_empty(),
+        "No company YAML file found in companies directory"
+    );
+
     // Use the first YAML file found for validation
     let company_file_path = yaml_files[0].path();
     let validator = YamlValidator::new(&company_file_path)?;
@@ -543,16 +546,19 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
         .success()
         .stdout(predicate::str::contains("Project Web App created"));
 
-    // Encontrar o arquivo do projeto criado
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Encontrar o arquivo do projeto criado (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_file = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    project_file = Some(project_yaml);
-                    break;
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                // Read the file to check if it contains the project code
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if content.contains("name: Web App") {
+                        project_file = Some(path);
+                        break;
+                    }
                 }
             }
         }
@@ -659,25 +665,23 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // Find the created project code
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Find the created project code (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
-                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                        && let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                    {
-                        project_code = Some(code.to_string());
-                        break;
-                    }
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                // Ler o código do projeto do YAML
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    project_code = Some(code.to_string());
+                    break;
                 }
             }
         }
@@ -1037,25 +1041,23 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // 5. Encontrar o código do projeto criado
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // 5. Encontrar o código do projeto criado (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
-                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                        && let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                    {
-                        project_code = Some(code.to_string());
-                        break;
-                    }
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                // Ler o código do projeto do YAML
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    project_code = Some(code.to_string());
+                    break;
                 }
             }
         }
@@ -1187,9 +1189,12 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect::<Vec<_>>();
-    
-    assert!(!yaml_files.is_empty(), "No company YAML file found in companies directory");
-    
+
+    assert!(
+        !yaml_files.is_empty(),
+        "No company YAML file found in companies directory"
+    );
+
     // Use the first YAML file found for validation
     let company_file_path = yaml_files[0].path();
 
@@ -1370,7 +1375,7 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         "create",
         "project",
         "--name",
-        "YAML Project",
+        "Web App",
         "--description",
         "YAML validation test project",
         "--company",
@@ -1383,16 +1388,19 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert().success();
 
-    // Encontrar o arquivo do projeto criado
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Encontrar o arquivo do projeto criado (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_file = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    project_file = Some(project_yaml);
-                    break;
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                // Read the file to check if it contains the project code
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    if content.contains("name: Web App") {
+                        project_file = Some(path);
+                        break;
+                    }
                 }
             }
         }
@@ -1435,7 +1443,7 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Valores específicos
-    assert!(validator.field_equals("metadata.name", "YAML Project"));
+    assert!(validator.field_equals("metadata.name", "Web App"));
     assert!(validator.field_equals("metadata.description", "YAML validation test project"));
 
     temp.close()?;
@@ -1469,25 +1477,23 @@ fn test_task_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // Find the created project code
-    let projects_dir = temp.path().join("companies").join("TECH-CORP").join("projects");
+    // Find the created project code (ID-based format)
+    let projects_dir = temp.path().join("projects");
     let mut project_code = None;
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let project_yaml = entry.path().join("project.yaml");
-                if project_yaml.exists() {
-                    // Ler o código do projeto do YAML
-                    if let Ok(content) = std::fs::read_to_string(&project_yaml)
-                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                        && let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                    {
-                        project_code = Some(code.to_string());
-                        break;
-                    }
+            let path = entry.path();
+            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+                // Ler o código do projeto do YAML
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    project_code = Some(code.to_string());
+                    break;
                 }
             }
         }

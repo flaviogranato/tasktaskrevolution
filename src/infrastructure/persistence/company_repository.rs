@@ -18,18 +18,11 @@ impl FileCompanyRepository {
         let base_path = base_path.as_ref().to_path_buf();
         let companies = Arc::new(RwLock::new(HashMap::new()));
 
-        Self { 
-            base_path, 
-            companies,
-        }
+        Self { base_path, companies }
     }
 
     fn get_company_path_by_id(&self, id: &str) -> PathBuf {
         self.base_path.join("companies").join(format!("{}.yaml", id))
-    }
-
-    fn get_company_path_by_code(&self, code: &str) -> PathBuf {
-        self.base_path.join("companies").join(code).join("company.yaml")
     }
 
     fn get_companies_dir(&self) -> PathBuf {
@@ -64,32 +57,33 @@ impl FileCompanyRepository {
             })?;
 
             let path = entry.path();
-            
+
             // Check if it's a new ID-based file (e.g., 01901dea-3e4b-7698-b323-95232d306587.yaml)
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                if let Some(file_name) = path.file_stem().and_then(|s| s.to_str()) {
-                    // Check if it looks like a UUID (ID-based format)
-                    if file_name.len() == 36 && file_name.contains('-') {
-                        let content = fs::read_to_string(&path).map_err(|e| AppError::IoErrorWithPath {
-                            operation: "file read".to_string(),
-                            path: path.to_string_lossy().to_string(),
-                            details: e.to_string(),
+            if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                && let Some(file_name) = path.file_stem().and_then(|s| s.to_str())
+            {
+                // Check if it looks like a UUID (ID-based format)
+                if file_name.len() == 36 && file_name.contains('-') {
+                    let content = fs::read_to_string(&path).map_err(|e| AppError::IoErrorWithPath {
+                        operation: "file read".to_string(),
+                        path: path.to_string_lossy().to_string(),
+                        details: e.to_string(),
+                    })?;
+
+                    let manifest: CompanyManifest =
+                        serde_yaml::from_str(&content).map_err(|e| AppError::SerializationError {
+                            format: "YAML".to_string(),
+                            details: format!("Failed to parse company file {}: {}", path.display(), e),
                         })?;
 
-                        let manifest: CompanyManifest =
-                            serde_yaml::from_str(&content).map_err(|e| AppError::SerializationError {
-                                format: "YAML".to_string(),
-                                details: format!("Failed to parse company file {}: {}", path.display(), e),
-                            })?;
-
-                        let company = manifest.to();
-                        let company_id = company.id.clone();
-                        companies.insert(company_id, company);
-                        continue;
-                    }
+                    let company = manifest.to();
+                    let company_id = company.id.clone();
+                    companies.insert(company_id, company);
+                    continue;
                 }
             }
-            
+
             // Check if it's the old code-based directory format
             if path.is_dir() {
                 let company_yaml_path = path.join("company.yaml");
@@ -169,8 +163,7 @@ impl CompanyRepository for FileCompanyRepository {
         self.load_companies_from_disk()?;
 
         let company_id = company.id.clone();
-        let company_code = company.code.clone();
-
+        let _company_code = company.code.clone();
 
         // Save to disk
         self.save_company_to_disk(&company)?;
@@ -240,8 +233,9 @@ impl CompanyRepository for FileCompanyRepository {
         self.load_companies_from_disk()?;
 
         // Find company by code
-        let company = self.find_by_code(code)?
-            .ok_or_else(|| AppError::validation_error("company", &format!("Company with code '{}' not found", code)))?;
+        let company = self
+            .find_by_code(code)?
+            .ok_or_else(|| AppError::validation_error("company", format!("Company with code '{}' not found", code)))?;
         let company_id = company.id.clone();
 
         // Remove from disk (ID-based file)
@@ -253,7 +247,6 @@ impl CompanyRepository for FileCompanyRepository {
                 details: e.to_string(),
             })?;
         }
-
 
         // Remove from in-memory cache
         let mut companies = self.companies.write().unwrap();

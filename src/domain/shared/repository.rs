@@ -69,7 +69,6 @@ pub trait Transaction {
     fn rollback(self: Box<Self>) -> Result<(), AppError>;
 }
 
-
 /// Search criteria for repositories
 #[derive(Debug, Clone)]
 pub struct SearchCriteria {
