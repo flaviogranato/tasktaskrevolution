@@ -2,8 +2,14 @@
 name = "task_task_revolution"
 authors = ["Flávio Granato <flavio.granato@protonmail.com>"]
 version = "0.5.7"
-edition = "2024"
-description = "Um utilitário de linha de comando para organizar suas tarefas e projetos."
+edition = "2021"
+description = "A powerful, flexible, and transparent project management tool that puts you in control. CLI-first design with beautiful HTML outputs."
+license = "MIT"
+repository = "https://github.com/flaviogranato/tasktaskrevolution"
+homepage = "https://github.com/flaviogranato/tasktaskrevolution"
+documentation = "https://github.com/flaviogranato/tasktaskrevolution#readme"
+keywords = ["project-management", "cli", "gantt", "task-management", "productivity"]
+categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
 name = "ttr"
