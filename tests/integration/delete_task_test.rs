@@ -39,7 +39,7 @@ fn test_delete_task_removes_task_from_file() -> Result<(), Box<dyn std::error::E
         }
     }
 
-    let task_file = task_file.expect("Task file should exist before deletion");
+    let _task_file = task_file.expect("Task file should exist before deletion");
 
     // Delete the task
     let mut cmd = Command::cargo_bin("ttr")?;

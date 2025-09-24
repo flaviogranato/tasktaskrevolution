@@ -49,7 +49,7 @@ where
     CR: CodeResolverTrait,
 {
     pub fn new(project_repository: PR, code_resolver: CR) -> Self {
-        Self { 
+        Self {
             project_repository,
             code_resolver,
         }
@@ -57,9 +57,10 @@ where
 
     pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DeleteAppError> {
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
+        let project_id = self
+            .code_resolver
             .resolve_project_code(project_code)
-            .map_err(|e| DeleteAppError::RepositoryError(e))?;
+            .map_err(DeleteAppError::RepositoryError)?;
 
         // 2. Load the project aggregate using ID
         let mut project = self
@@ -233,10 +234,10 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project_id.clone(), project)])),
         };
-        
+
         let code_resolver = MockCodeResolver::new();
         code_resolver.add_project("PROJ-1", &project_id);
-        
+
         let use_case = DeleteTaskUseCase::new(project_repo.clone(), code_resolver);
 
         let result = use_case.execute("PROJ-1", "TSK-1");

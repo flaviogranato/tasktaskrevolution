@@ -3,7 +3,10 @@
 
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::project_management::{any_project::AnyProject, repository::{ProjectRepository, ProjectRepositoryWithId}};
+use crate::domain::project_management::{
+    any_project::AnyProject,
+    repository::{ProjectRepository, ProjectRepositoryWithId},
+};
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::task_management::{Category, Priority};
 use std::fmt;
@@ -73,14 +76,16 @@ where
         resource_code: &str,
     ) -> Result<AnyProject, AssignResourceToAppError> {
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
+        let project_id = self
+            .code_resolver
             .resolve_project_code(project_code)
-            .map_err(|e| AssignResourceToAppError::RepositoryError(e))?;
+            .map_err(AssignResourceToAppError::RepositoryError)?;
 
         // 2. Resolve resource code to ID
-        let resource_id = self.code_resolver
+        let resource_id = self
+            .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(|e| AssignResourceToAppError::RepositoryError(e))?;
+            .map_err(AssignResourceToAppError::RepositoryError)?;
 
         // 3. Load the project aggregate using ID
         let mut project = self
@@ -153,7 +158,12 @@ mod tests {
 
     impl ProjectRepositoryWithId for MockProjectRepository {
         fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
-            Ok(self.projects.borrow().values().find(|p| p.id().to_string() == id).cloned())
+            Ok(self
+                .projects
+                .borrow()
+                .values()
+                .find(|p| p.id().to_string() == id)
+                .cloned())
         }
     }
 
@@ -227,7 +237,7 @@ mod tests {
     }
 
     struct MockCodeResolver {
-        project_codes: RefCell<HashMap<String, String>>, // code -> id
+        project_codes: RefCell<HashMap<String, String>>,  // code -> id
         resource_codes: RefCell<HashMap<String, String>>, // code -> id
     }
 
@@ -244,7 +254,9 @@ mod tests {
         }
 
         fn add_resource(&self, code: &str, id: &str) {
-            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+            self.resource_codes
+                .borrow_mut()
+                .insert(code.to_string(), id.to_string());
         }
     }
 

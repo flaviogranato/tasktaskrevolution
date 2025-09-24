@@ -75,9 +75,10 @@ where
         args: UpdateTaskArgs,
     ) -> Result<AnyTask, UpdateAppError> {
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
+        let project_id = self
+            .code_resolver
             .resolve_project_code(project_code)
-            .map_err(|e| UpdateAppError::RepositoryError(e))?;
+            .map_err(UpdateAppError::RepositoryError)?;
 
         // 2. Load the project aggregate using ID
         let mut project = self

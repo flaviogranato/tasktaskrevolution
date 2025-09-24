@@ -1,8 +1,8 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::{
-    any_project::AnyProject, 
-    repository::{ProjectRepository, ProjectRepositoryWithId}
+    any_project::AnyProject,
+    repository::{ProjectRepository, ProjectRepositoryWithId},
 };
 use std::fmt;
 
@@ -44,7 +44,7 @@ where
     CR: CodeResolverTrait,
 {
     pub fn new(project_repository: PR, code_resolver: CR) -> Self {
-        Self { 
+        Self {
             project_repository,
             code_resolver,
         }
@@ -52,10 +52,11 @@ where
 
     pub fn execute(&self, project_code: &str) -> Result<AnyProject, DescribeAppError> {
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
+        let project_id = self
+            .code_resolver
             .resolve_project_code(project_code)
-            .map_err(|e| DescribeAppError::RepositoryError(e))?;
-        
+            .map_err(DescribeAppError::RepositoryError)?;
+
         // 2. Use ID for internal operation
         self.project_repository
             .find_by_id(&project_id)?
@@ -172,14 +173,14 @@ mod tests {
         let project_code = "PROJ-1";
         let project = create_test_project(project_code);
         let project_id = project.id().to_string();
-        
+
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project_id.clone(), project)])),
         };
-        
+
         let code_resolver = MockCodeResolver::new();
         code_resolver.add_project(project_code, &project_id);
-        
+
         let use_case = DescribeProjectUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute(project_code);

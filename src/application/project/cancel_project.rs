@@ -2,7 +2,10 @@
 
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::project_management::{any_project::AnyProject, repository::{ProjectRepository, ProjectRepositoryWithId}};
+use crate::domain::project_management::{
+    any_project::AnyProject,
+    repository::{ProjectRepository, ProjectRepositoryWithId},
+};
 use std::fmt;
 
 #[derive(Debug)]
@@ -47,7 +50,7 @@ where
     CR: CodeResolverTrait,
 {
     pub fn new(project_repository: PR, code_resolver: CR) -> Self {
-        Self { 
+        Self {
             project_repository,
             code_resolver,
         }
@@ -55,9 +58,10 @@ where
 
     pub fn execute(&self, project_code: &str) -> Result<AnyProject, CancelAppError> {
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
+        let project_id = self
+            .code_resolver
             .resolve_project_code(project_code)
-            .map_err(|e| CancelAppError::RepositoryError(e))?;
+            .map_err(CancelAppError::RepositoryError)?;
 
         // 2. Load the project aggregate using ID
         let project = self
