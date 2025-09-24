@@ -136,7 +136,8 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             description: _,
         } => {
             let resource_repository = FileResourceRepository::new(".");
-            let update_use_case = UpdateResourceUseCase::new(resource_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let update_use_case = UpdateResourceUseCase::new(resource_repository, code_resolver);
 
             let args = UpdateResourceArgs {
                 name,
