@@ -24,6 +24,16 @@ pub enum AnyTask {
 // Implement helper methods on AnyTask to access common Task fields.
 // This avoids repetitive match statements in other parts of the code.
 impl AnyTask {
+    pub fn id(&self) -> &Uuid {
+        match self {
+            AnyTask::Planned(task) => &task.id,
+            AnyTask::InProgress(task) => &task.id,
+            AnyTask::Blocked(task) => &task.id,
+            AnyTask::Completed(task) => &task.id,
+            AnyTask::Cancelled(task) => &task.id,
+        }
+    }
+
     pub fn code(&self) -> &str {
         match self {
             AnyTask::Planned(task) => &task.code,

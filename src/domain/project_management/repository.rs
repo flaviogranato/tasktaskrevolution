@@ -8,3 +8,8 @@ pub trait ProjectRepository {
     fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError>;
     fn get_next_code(&self) -> Result<String, AppError>;
 }
+
+/// Extension trait for repositories that support ID-based operations
+pub trait ProjectRepositoryWithId: ProjectRepository {
+    fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError>;
+}

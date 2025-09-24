@@ -1,7 +1,10 @@
 #![allow(unused_imports)]
 use crate::application::errors::AppError;
+use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::resource_management::{
-    any_resource::AnyResource, repository::ResourceRepository, resource::WipLimits,
+    any_resource::AnyResource, 
+    repository::{ResourceRepository, ResourceRepositoryWithId}, 
+    resource::WipLimits,
 };
 use std::fmt;
 
@@ -28,24 +31,36 @@ impl From<AppError> for DescribeAppError {
     }
 }
 
-pub struct DescribeResourceUseCase<RR>
+pub struct DescribeResourceUseCase<RR, CR>
 where
-    RR: ResourceRepository,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     resource_repository: RR,
+    code_resolver: CR,
 }
 
-impl<RR> DescribeResourceUseCase<RR>
+impl<RR, CR> DescribeResourceUseCase<RR, CR>
 where
-    RR: ResourceRepository,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(resource_repository: RR) -> Self {
-        Self { resource_repository }
+    pub fn new(resource_repository: RR, code_resolver: CR) -> Self {
+        Self { 
+            resource_repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(&self, resource_code: &str) -> Result<AnyResource, DescribeAppError> {
+        // 1. Resolve resource code to ID
+        let resource_id = self.code_resolver
+            .resolve_resource_code(resource_code)
+            .map_err(|e| DescribeAppError::RepositoryError(e))?;
+        
+        // 2. Use ID for internal operation
         self.resource_repository
-            .find_by_code(resource_code)?
+            .find_by_id(&resource_id)?
             .ok_or_else(|| DescribeAppError::ResourceNotFound(resource_code.to_string()))
     }
 }
@@ -61,6 +76,61 @@ mod tests {
     // --- Mocks ---
     struct MockResourceRepository {
         resources: RefCell<HashMap<String, AnyResource>>,
+    }
+
+    struct MockCodeResolver {
+        resource_codes: RefCell<HashMap<String, String>>, // code -> id
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {
+                resource_codes: RefCell::new(HashMap::new()),
+            }
+        }
+
+        fn add_resource(&self, code: &str, id: &str) {
+            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn resolve_resource_code(&self, code: &str) -> Result<String, AppError> {
+            self.resource_codes
+                .borrow()
+                .get(code)
+                .cloned()
+                .ok_or_else(|| AppError::validation_error("resource", format!("Resource '{}' not found", code)))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn validate_resource_code(&self, code: &str) -> Result<(), AppError> {
+            self.resolve_resource_code(code)?;
+            Ok(())
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
     }
 
     impl ResourceRepository for MockResourceRepository {
@@ -124,6 +194,12 @@ mod tests {
         }
     }
 
+    impl ResourceRepositoryWithId for MockResourceRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError> {
+            Ok(self.resources.borrow().get(id).cloned())
+        }
+    }
+
     // --- Helpers ---
     fn create_test_resource(code: &str) -> AnyResource {
         Resource::<Available> {
@@ -148,10 +224,16 @@ mod tests {
     fn test_describe_resource_success() {
         let resource_code = "RES-1";
         let resource = create_test_resource(resource_code);
+        let resource_id = resource.id().to_string();
+        
         let resource_repo = MockResourceRepository {
-            resources: RefCell::new(HashMap::from([(resource.code().to_string(), resource)])),
+            resources: RefCell::new(HashMap::from([(resource_id.clone(), resource)])),
         };
-        let use_case = DescribeResourceUseCase::new(resource_repo);
+        
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_resource(resource_code, &resource_id);
+        
+        let use_case = DescribeResourceUseCase::new(resource_repo, code_resolver);
 
         let result = use_case.execute(resource_code);
 
@@ -166,10 +248,11 @@ mod tests {
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::new()),
         };
-        let use_case = DescribeResourceUseCase::new(resource_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = DescribeResourceUseCase::new(resource_repo, code_resolver);
 
         let result = use_case.execute("RES-NONEXISTENT");
 
-        assert!(matches!(result, Err(DescribeAppError::ResourceNotFound(_))));
+        assert!(matches!(result, Err(DescribeAppError::RepositoryError(_))));
     }
 }

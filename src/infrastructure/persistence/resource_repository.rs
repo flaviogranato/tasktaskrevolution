@@ -816,6 +816,96 @@ impl ResourceRepository for FileResourceRepository {
     }
 }
 
+impl crate::domain::resource_management::repository::ResourceRepositoryWithId for FileResourceRepository {
+    fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError> {
+        // Search for resource by ID in ID-based format: resources/{id}.yaml
+        let resource_file = self.get_resource_file_path_by_id(id);
+        if resource_file.exists() {
+            return Ok(self.read_resource_from_file(&resource_file)?);
+        }
+
+        // If not found in ID-based format, search in hierarchical format
+        // Search in global resources directory: resources/*.yaml
+        let resources_dir = self.get_resources_path();
+        if resources_dir.exists() {
+            for entry in std::fs::read_dir(&resources_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+
+                if path.is_file()
+                    && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                    && let Ok(Some(resource)) = self.read_resource_from_file(&path)
+                    && resource.id().to_string() == id
+                {
+                    return Ok(Some(resource));
+                }
+            }
+        }
+
+        // Search in company resources: companies/*/resources/*.yaml
+        let companies_dir = self.base_path.join("companies");
+        if companies_dir.exists() {
+            for entry in std::fs::read_dir(&companies_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    let company_resources_dir = path.join("resources");
+                    if company_resources_dir.exists() {
+                        for resource_entry in std::fs::read_dir(&company_resources_dir)? {
+                            let resource_entry = resource_entry?;
+                            let resource_path = resource_entry.path();
+
+                            if resource_path.is_file()
+                                && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                && resource.id().to_string() == id
+                            {
+                                return Ok(Some(resource));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Search in project resources: companies/*/projects/*/resources/*.yaml
+        if companies_dir.exists() {
+            for entry in std::fs::read_dir(&companies_dir)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    let projects_dir = path.join("projects");
+                    if projects_dir.exists() {
+                        for project_entry in std::fs::read_dir(&projects_dir)? {
+                            let project_entry = project_entry?;
+                            let project_path = project_entry.path();
+                            if project_path.is_dir() {
+                                let project_resources_dir = project_path.join("resources");
+                                if project_resources_dir.exists() {
+                                    for resource_entry in std::fs::read_dir(&project_resources_dir)? {
+                                        let resource_entry = resource_entry?;
+                                        let resource_path = resource_entry.path();
+
+                                        if resource_path.is_file()
+                                            && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                            && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                            && resource.id().to_string() == id
+                                        {
+                                            return Ok(Some(resource));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(None)
+    }
+}
+
 impl Default for FileResourceRepository {
     fn default() -> Self {
         Self::new(".")

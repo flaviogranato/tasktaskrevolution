@@ -271,6 +271,7 @@ impl ProjectRepository for FileProjectRepository {
         Ok(None)
     }
 
+
     fn get_next_code(&self) -> Result<String, AppError> {
         // Use timestamp-based approach for better uniqueness in concurrent scenarios
         let timestamp = std::time::SystemTime::now()
@@ -286,6 +287,41 @@ impl ProjectRepository for FileProjectRepository {
             % 1000;
 
         Ok(format!("proj-{}{:03}", timestamp, micros))
+    }
+}
+
+impl crate::domain::project_management::repository::ProjectRepositoryWithId for FileProjectRepository {
+    fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+        // Search for project by ID in ID-based format: projects/{id}.yaml
+        let project_file = self.get_project_path_by_id(id);
+        if project_file.exists() {
+            return Ok(Some(self.load_from_path(&project_file)?));
+        }
+
+        // If not found in ID-based format, search in legacy format
+        let projects_dir = self.get_projects_path();
+        if !projects_dir.exists() {
+            return Ok(None);
+        }
+
+        for entry in std::fs::read_dir(&projects_dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                // Legacy format: projects/{code}/project.yaml
+                let project_file = path.join("project.yaml");
+                if project_file.exists() {
+                    if let Ok(project) = self.load_from_path(&project_file) {
+                        if project.id() == id {
+                            return Ok(Some(project));
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(None)
     }
 }
 

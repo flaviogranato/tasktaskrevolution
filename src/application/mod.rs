@@ -5,6 +5,7 @@ pub mod errors;
 pub mod execution_context;
 pub mod gantt_use_case;
 pub mod initialize_repository_use_case;
+pub mod shared;
 
 pub mod company_management;
 pub mod company_settings;

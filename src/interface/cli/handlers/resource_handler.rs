@@ -114,7 +114,8 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
         }
         ResourceCommand::Describe { code } => {
             let resource_repository = FileResourceRepository::new(".");
-            let describe_use_case = DescribeResourceUseCase::new(resource_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let describe_use_case = DescribeResourceUseCase::new(resource_repository, code_resolver);
 
             match describe_use_case.execute(&code) {
                 Ok(description) => {
