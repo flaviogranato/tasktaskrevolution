@@ -127,7 +127,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             company: _,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let delete_use_case = DeleteTaskUseCase::new(project_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let delete_use_case = DeleteTaskUseCase::new(project_repository, code_resolver);
 
             match delete_use_case.execute(&code, &project) {
                 Ok(_) => {
