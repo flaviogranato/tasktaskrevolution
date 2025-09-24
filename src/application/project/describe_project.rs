@@ -1,5 +1,9 @@
 use crate::application::errors::AppError;
-use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::{
+    any_project::AnyProject, 
+    repository::{ProjectRepository, ProjectRepositoryWithId}
+};
 use std::fmt;
 
 #[derive(Debug)]
@@ -25,24 +29,36 @@ impl From<AppError> for DescribeAppError {
     }
 }
 
-pub struct DescribeProjectUseCase<PR>
+pub struct DescribeProjectUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
+    code_resolver: CR,
 }
 
-impl<PR> DescribeProjectUseCase<PR>
+impl<PR, CR> DescribeProjectUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR) -> Self {
-        Self { project_repository }
+    pub fn new(project_repository: PR, code_resolver: CR) -> Self {
+        Self { 
+            project_repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(&self, project_code: &str) -> Result<AnyProject, DescribeAppError> {
+        // 1. Resolve project code to ID
+        let project_id = self.code_resolver
+            .resolve_project_code(project_code)
+            .map_err(|e| DescribeAppError::RepositoryError(e))?;
+        
+        // 2. Use ID for internal operation
         self.project_repository
-            .find_by_code(project_code)?
+            .find_by_id(&project_id)?
             .ok_or_else(|| DescribeAppError::ProjectNotFound(project_code.to_string()))
     }
 }
@@ -58,13 +74,68 @@ mod tests {
         projects: RefCell<HashMap<String, AnyProject>>,
     }
 
+    struct MockCodeResolver {
+        project_codes: RefCell<HashMap<String, String>>, // code -> id
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {
+                project_codes: RefCell::new(HashMap::new()),
+            }
+        }
+
+        fn add_project(&self, code: &str, id: &str) {
+            self.project_codes.borrow_mut().insert(code.to_string(), id.to_string());
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, code: &str) -> Result<String, AppError> {
+            self.project_codes
+                .borrow()
+                .get(code)
+                .cloned()
+                .ok_or_else(|| AppError::validation_error("project", format!("Project '{}' not found", code)))
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, code: &str) -> Result<(), AppError> {
+            self.resolve_project_code(code)?;
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+    }
+
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, project: AnyProject) -> Result<(), AppError> {
-            self.projects.borrow_mut().insert(project.code().to_string(), project);
+            self.projects.borrow_mut().insert(project.id().to_string(), project);
             Ok(())
         }
         fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
-            Ok(self.projects.borrow().get(code).cloned())
+            Ok(self.projects.borrow().values().find(|p| p.code() == code).cloned())
         }
         fn load(&self) -> Result<AnyProject, AppError> {
             unimplemented!()
@@ -74,6 +145,12 @@ mod tests {
         }
         fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
+        }
+    }
+
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+            Ok(self.projects.borrow().get(id).cloned())
         }
     }
 
@@ -94,10 +171,16 @@ mod tests {
     fn test_describe_project_success() {
         let project_code = "PROJ-1";
         let project = create_test_project(project_code);
+        let project_id = project.id().to_string();
+        
         let project_repo = MockProjectRepository {
-            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            projects: RefCell::new(HashMap::from([(project_id.clone(), project)])),
         };
-        let use_case = DescribeProjectUseCase::new(project_repo);
+        
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project(project_code, &project_id);
+        
+        let use_case = DescribeProjectUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute(project_code);
 
@@ -112,10 +195,11 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::new()),
         };
-        let use_case = DescribeProjectUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = DescribeProjectUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-NONEXISTENT");
 
-        assert!(matches!(result, Err(DescribeAppError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(DescribeAppError::RepositoryError(_))));
     }
 }

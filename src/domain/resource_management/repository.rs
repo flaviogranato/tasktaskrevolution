@@ -34,3 +34,8 @@ pub trait ResourceRepository {
     fn check_if_layoff_period(&self, start_date: &DateTime<Local>, end_date: &DateTime<Local>) -> bool;
     fn get_next_code(&self, resource_type: &str) -> Result<String, AppError>;
 }
+
+/// Extension trait for repositories that support ID-based operations
+pub trait ResourceRepositoryWithId: ResourceRepository {
+    fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError>;
+}
