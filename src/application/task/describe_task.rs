@@ -1,6 +1,7 @@
 #![allow(unused_imports)]
 use crate::application::errors::AppError;
-use crate::domain::project_management::repository::ProjectRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 use std::fmt;
 
@@ -29,25 +30,37 @@ impl From<AppError> for DescribeAppError {
     }
 }
 
-pub struct DescribeTaskUseCase<PR>
+pub struct DescribeTaskUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
+    code_resolver: CR,
 }
 
-impl<PR> DescribeTaskUseCase<PR>
+impl<PR, CR> DescribeTaskUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR) -> Self {
-        Self { project_repository }
+    pub fn new(project_repository: PR, code_resolver: CR) -> Self {
+        Self { 
+            project_repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DescribeAppError> {
+        // 1. Resolve project code to ID
+        let project_id = self.code_resolver
+            .resolve_project_code(project_code)
+            .map_err(|e| DescribeAppError::RepositoryError(e))?;
+
+        // 2. Load the project aggregate using ID
         let project = self
             .project_repository
-            .find_by_code(project_code)?
+            .find_by_id(&project_id)?
             .ok_or_else(|| DescribeAppError::ProjectNotFound(project_code.to_string()))?;
 
         let task = project
@@ -77,6 +90,50 @@ mod tests {
         projects: RefCell<HashMap<String, AnyProject>>,
     }
 
+    struct MockCodeResolver {
+        // Mock doesn't need to resolve anything for DescribeTaskUseCase
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("mock-project-id".to_string())
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+    }
+
     impl ProjectRepository for MockProjectRepository {
         fn save(&self, _project: AnyProject) -> Result<(), AppError> {
             unimplemented!()
@@ -92,6 +149,13 @@ mod tests {
         }
         fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
+        }
+    }
+
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, _id: &str) -> Result<Option<AnyProject>, AppError> {
+            // For tests, we'll return the first project in the map
+            Ok(self.projects.borrow().values().next().cloned())
         }
     }
 
@@ -138,7 +202,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project_code.to_string(), project)])),
         };
-        let use_case = DescribeTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = DescribeTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute(project_code, task_code);
 
@@ -155,7 +220,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project_code.to_string(), project)])),
         };
-        let use_case = DescribeTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = DescribeTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute(project_code, "TSK-NONEXISTENT");
 
@@ -167,7 +233,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::new()),
         };
-        let use_case = DescribeTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = DescribeTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1");
 
