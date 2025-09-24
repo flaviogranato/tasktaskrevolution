@@ -2,7 +2,8 @@
 #![allow(unused_imports)]
 
 use crate::application::errors::AppError;
-use crate::domain::project_management::repository::ProjectRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask, repository::TaskRepository};
 use chrono::NaiveDate;
 use std::fmt;
@@ -42,24 +43,28 @@ pub struct UpdateTaskArgs {
     pub due_date: Option<NaiveDate>,
 }
 
-pub struct UpdateTaskUseCase<PR, TR>
+pub struct UpdateTaskUseCase<PR, TR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
     TR: TaskRepository,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
     task_repository: TR,
+    code_resolver: CR,
 }
 
-impl<PR, TR> UpdateTaskUseCase<PR, TR>
+impl<PR, TR, CR> UpdateTaskUseCase<PR, TR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
     TR: TaskRepository,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR, task_repository: TR) -> Self {
+    pub fn new(project_repository: PR, task_repository: TR, code_resolver: CR) -> Self {
         Self {
             project_repository,
             task_repository,
+            code_resolver,
         }
     }
 
@@ -69,36 +74,41 @@ where
         task_code: &str,
         args: UpdateTaskArgs,
     ) -> Result<AnyTask, UpdateAppError> {
-        // 1. Load the project aggregate.
+        // 1. Resolve project code to ID
+        let project_id = self.code_resolver
+            .resolve_project_code(project_code)
+            .map_err(|e| UpdateAppError::RepositoryError(e))?;
+
+        // 2. Load the project aggregate using ID
         let mut project = self
             .project_repository
-            .find_by_code(project_code)?
+            .find_by_id(&project_id)?
             .ok_or_else(|| UpdateAppError::ProjectNotFound(project_code.to_string()))?;
 
         // Check if a reschedule is needed before args is moved.
         let needs_reschedule = args.due_date.is_some();
 
-        // 2. Delegate the update to the project aggregate.
+        // 3. Delegate the update to the project aggregate.
         // This method ensures all domain invariants are respected.
         let updated_task = project
             .update_task(task_code, args.name, args.description, args.start_date, args.due_date)
             .map_err(UpdateAppError::AppError)?;
 
-        // 3. If the due date was changed, reschedule all dependent tasks.
+        // 4. If the due date was changed, reschedule all dependent tasks.
         if needs_reschedule {
             project
                 .reschedule_dependents_of(task_code)
                 .map_err(UpdateAppError::AppError)?;
         }
 
-        // 4. Save the updated project aggregate.
+        // 5. Save the updated project aggregate.
         self.project_repository.save(project.clone())?;
 
-        // 5. Save the updated task individually in the project's tasks directory
+        // 6. Save the updated task individually in the project's tasks directory
         self.task_repository
             .save_in_hierarchy(updated_task.clone(), project.company_code(), project_code)?;
 
-        // 6. Return the updated task to the caller.
+        // 7. Return the updated task to the caller.
         Ok(updated_task)
     }
 }
@@ -116,6 +126,50 @@ mod tests {
     // --- Mocks ---
     struct MockTaskRepository {
         tasks: RefCell<HashMap<String, AnyTask>>,
+    }
+
+    struct MockCodeResolver {
+        // Mock doesn't need to resolve anything for UpdateTaskUseCase
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("mock-project-id".to_string())
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
     }
 
     impl MockTaskRepository {
@@ -187,6 +241,13 @@ mod tests {
         }
     }
 
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, _id: &str) -> Result<Option<AnyProject>, AppError> {
+            // For tests, we'll return the first project in the map
+            Ok(self.projects.borrow().values().next().cloned())
+        }
+    }
+
     // --- Helpers ---
     fn create_test_task(code: &str, name: &str) -> AnyTask {
         Task::<Planned> {
@@ -232,7 +293,8 @@ mod tests {
             projects: Rc::new(RefCell::new(HashMap::from([(project.code().to_string(), project)]))),
         };
         let task_repo = MockTaskRepository::new();
-        let use_case = UpdateTaskUseCase::new(project_repo, task_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = UpdateTaskUseCase::new(project_repo, task_repo, code_resolver);
 
         let args = UpdateTaskArgs {
             name: Some("New Name".to_string()),
@@ -253,7 +315,8 @@ mod tests {
             projects: Rc::new(RefCell::new(HashMap::new())),
         };
         let task_repo = MockTaskRepository::new();
-        let use_case = UpdateTaskUseCase::new(project_repo, task_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = UpdateTaskUseCase::new(project_repo, task_repo, code_resolver);
 
         let args = UpdateTaskArgs {
             name: Some("New Name".to_string()),
@@ -299,7 +362,8 @@ mod tests {
             projects: Rc::new(RefCell::new(HashMap::from([(project.code().to_string(), project)]))),
         };
         let task_repo = MockTaskRepository::new();
-        let use_case = UpdateTaskUseCase::new(project_repo.clone(), task_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = UpdateTaskUseCase::new(project_repo.clone(), task_repo, code_resolver);
 
         // We delay task A by 3 days (it now ends on day 8 instead of 5)
         let args = UpdateTaskArgs {

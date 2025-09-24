@@ -1,5 +1,6 @@
 use crate::application::errors::AppError;
-use crate::domain::resource_management::{ResourceTypeValidator, repository::ResourceRepository, resource::Resource};
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::resource_management::{ResourceTypeValidator, repository::{ResourceRepository, ResourceRepositoryWithId}, resource::Resource};
 
 #[derive(Debug, Clone)]
 pub struct CreateResourceParams {
@@ -13,15 +14,17 @@ pub struct CreateResourceParams {
     pub end_date: Option<chrono::NaiveDate>,
 }
 
-pub struct CreateResourceUseCase<R: ResourceRepository> {
+pub struct CreateResourceUseCase<R: ResourceRepository + ResourceRepositoryWithId, CR: CodeResolverTrait> {
     repository: R,
+    code_resolver: CR,
     type_validator: ResourceTypeValidator,
 }
 
-impl<R: ResourceRepository> CreateResourceUseCase<R> {
-    pub fn new(repository: R) -> Self {
+impl<R: ResourceRepository + ResourceRepositoryWithId, CR: CodeResolverTrait> CreateResourceUseCase<R, CR> {
+    pub fn new(repository: R, code_resolver: CR) -> Self {
         Self {
             repository,
+            code_resolver,
             type_validator: ResourceTypeValidator::new(),
         }
     }
@@ -73,6 +76,50 @@ mod test {
     struct MockResourceRepository {
         should_fail: bool,
         saved_config: RefCell<Option<AnyResource>>,
+    }
+
+    struct MockCodeResolver {
+        // Mock doesn't need to resolve anything for CreateResourceUseCase
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
     }
 
     impl MockResourceRepository {
@@ -151,10 +198,17 @@ mod test {
         }
     }
 
+    impl ResourceRepositoryWithId for MockResourceRepository {
+        fn find_by_id(&self, _id: &str) -> Result<Option<AnyResource>, AppError> {
+            Ok(self.saved_config.borrow().clone())
+        }
+    }
+
     #[test]
     fn test_create_project_success() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, code_resolver);
         let name = "John";
         let resource_type = "Developer";
 
@@ -175,7 +229,8 @@ mod test {
     #[test]
     fn test_create_project_failure() {
         let mock_repo = MockResourceRepository::new(true);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, code_resolver);
         let name = "John";
         let resource_type = "Developer";
 
@@ -196,7 +251,8 @@ mod test {
     #[test]
     fn test_verify_config_saved() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, code_resolver);
         let name = "John";
         let resource_type = "Developer";
         let params = CreateResourceParams {

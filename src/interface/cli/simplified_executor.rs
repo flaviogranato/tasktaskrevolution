@@ -218,7 +218,8 @@ impl SimplifiedExecutor {
 
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
-                let use_case = CreateResourceUseCase::new(resource_repo);
+                let code_resolver = Self::create_code_resolver(&context_manager)?;
+                let use_case = CreateResourceUseCase::new(resource_repo, code_resolver);
 
                 // Parse dates if provided
                 let start_date_parsed = if let Some(start_date_str) = start_date {
@@ -699,7 +700,8 @@ impl SimplifiedExecutor {
                 let (project_code, _company_code) = context_manager.resolve_project_codes(project, company)?;
                 let project_repo = context_manager.get_project_repository();
                 let task_repo = context_manager.create_task_repository();
-                let use_case = UpdateTaskUseCase::new(project_repo, task_repo);
+                let code_resolver = Self::create_code_resolver(&context_manager)?;
+                let use_case = UpdateTaskUseCase::new(project_repo, task_repo, code_resolver);
 
                 let start = start_date
                     .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))
