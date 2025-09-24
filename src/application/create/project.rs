@@ -1,15 +1,20 @@
 use crate::application::errors::AppError;
+use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::company_settings::repository::ConfigRepository;
-use crate::domain::project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository};
+use crate::domain::project_management::{AnyProject, builder::ProjectBuilder, repository::{ProjectRepository, ProjectRepositoryWithId}};
 use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
-pub struct CreateProjectUseCase<R: ProjectRepository> {
+pub struct CreateProjectUseCase<R: ProjectRepository + ProjectRepositoryWithId, CR: CodeResolverTrait> {
     repository: R,
+    code_resolver: CR,
 }
 
-impl<R: ProjectRepository> CreateProjectUseCase<R> {
-    pub fn new(repository: R) -> Self {
-        Self { repository }
+impl<R: ProjectRepository + ProjectRepositoryWithId, CR: CodeResolverTrait> CreateProjectUseCase<R, CR> {
+    pub fn new(repository: R, code_resolver: CR) -> Self {
+        Self { 
+            repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(
@@ -82,6 +87,50 @@ mod test {
         project: AnyProject,
     }
 
+    struct MockCodeResolver {
+        // Mock doesn't need to resolve anything for CreateProjectUseCase
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+    }
+
     impl MockProjectRepository {
         fn new(should_fail: bool) -> Self {
             Self {
@@ -133,10 +182,17 @@ mod test {
         }
     }
 
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, _id: &str) -> Result<Option<AnyProject>, AppError> {
+            Ok(Some(self.project.clone()))
+        }
+    }
+
     #[test]
     fn test_create_project_success() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateProjectUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CreateProjectUseCase::new(mock_repo, code_resolver);
         let name = "John";
         let description = Some("a simple test project");
 
@@ -147,7 +203,8 @@ mod test {
     #[test]
     fn test_create_project_failure() {
         let mock_repo = MockProjectRepository::new(true);
-        let use_case = CreateProjectUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CreateProjectUseCase::new(mock_repo, code_resolver);
         let name = "John";
         let description = Some("a simple test project");
 
@@ -158,7 +215,8 @@ mod test {
     #[test]
     fn test_verify_config_saved() {
         let mock_repo = MockProjectRepository::new(false);
-        let use_case = CreateProjectUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CreateProjectUseCase::new(mock_repo, code_resolver);
         let name = "John";
         let description = Some("a simple test project");
         let _ = use_case.execute(name, description, "TEST_COMPANY".to_string(), None, None, None);

@@ -118,7 +118,8 @@ impl SimplifiedExecutor {
 
                 let company_code = context_manager.resolve_company_code(company)?;
                 let project_repo = context_manager.get_project_repository();
-                let use_case = CreateProjectUseCase::new(project_repo);
+                let code_resolver = Self::create_code_resolver(&context_manager)?;
+                let use_case = CreateProjectUseCase::new(project_repo, code_resolver);
 
                 // Parse dates
                 let start_date_parsed = start_date

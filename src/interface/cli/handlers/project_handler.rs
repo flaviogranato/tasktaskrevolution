@@ -24,7 +24,8 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             end_date,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let create_use_case = CreateProjectUseCase::new(project_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let create_use_case = CreateProjectUseCase::new(project_repository, code_resolver);
 
             let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;
