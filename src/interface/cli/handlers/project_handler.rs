@@ -88,7 +88,8 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
             end_date,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let update_use_case = UpdateProjectUseCase::new(project_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let update_use_case = UpdateProjectUseCase::new(project_repository, code_resolver);
 
             let _start = start_date
                 .map(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d"))

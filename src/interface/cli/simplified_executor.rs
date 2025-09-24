@@ -40,13 +40,18 @@ impl SimplifiedExecutor {
         // Check if we're in a test environment by looking for a test-specific directory pattern
         let current_dir = std::env::current_dir()?;
         let current_dir_str = current_dir.to_string_lossy();
-
+        
         // If we're in a temporary directory (like /tmp/.tmpXXXXXX), use it as base
         if current_dir_str.contains("/tmp/.tmp") || current_dir_str.contains("\\tmp\\.tmp") {
             ContextManager::new_with_base_dir(&current_dir)
         } else {
             ContextManager::new()
         }
+    }
+
+    fn create_code_resolver(context_manager: &ContextManager) -> Result<crate::application::shared::code_resolver::CodeResolver, Box<dyn std::error::Error>> {
+        let base_path = context_manager.get_base_path();
+        Ok(crate::application::shared::code_resolver::CodeResolver::new(base_path))
     }
 
     /// Execute create commands
@@ -662,7 +667,8 @@ impl SimplifiedExecutor {
 
                 let _company_code = context_manager.resolve_company_code(company)?;
                 let project_repo = context_manager.get_project_repository();
-                let use_case = UpdateProjectUseCase::new(project_repo);
+                let code_resolver = Self::create_code_resolver(&context_manager)?;
+                let use_case = UpdateProjectUseCase::new(project_repo, code_resolver);
 
                 let args = UpdateProjectArgs { name, description };
 
