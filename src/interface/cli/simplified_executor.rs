@@ -738,7 +738,8 @@ impl SimplifiedExecutor {
 
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
-                let use_case = UpdateResourceUseCase::new(resource_repo);
+                let code_resolver = Self::create_code_resolver(&context_manager)?;
+                let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver);
 
                 let args = UpdateResourceArgs {
                     name,
