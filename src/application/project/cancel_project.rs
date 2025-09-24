@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
 use crate::application::errors::AppError;
-use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::{any_project::AnyProject, repository::{ProjectRepository, ProjectRepositoryWithId}};
 use std::fmt;
 
 #[derive(Debug)]
@@ -31,32 +32,43 @@ impl From<AppError> for CancelAppError {
     }
 }
 
-pub struct CancelProjectUseCase<PR>
+pub struct CancelProjectUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
+    code_resolver: CR,
 }
 
-impl<PR> CancelProjectUseCase<PR>
+impl<PR, CR> CancelProjectUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR) -> Self {
-        Self { project_repository }
+    pub fn new(project_repository: PR, code_resolver: CR) -> Self {
+        Self { 
+            project_repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(&self, project_code: &str) -> Result<AnyProject, CancelAppError> {
-        // 1. Load the project aggregate.
+        // 1. Resolve project code to ID
+        let project_id = self.code_resolver
+            .resolve_project_code(project_code)
+            .map_err(|e| CancelAppError::RepositoryError(e))?;
+
+        // 2. Load the project aggregate using ID
         let project = self
             .project_repository
-            .find_by_code(project_code)?
+            .find_by_id(&project_id)?
             .ok_or_else(|| CancelAppError::ProjectNotFound(project_code.to_string()))?;
 
-        // 2. Delegate the cancellation to the project aggregate.
+        // 3. Delegate the cancellation to the project aggregate.
         let cancelled_project = project.cancel().map_err(CancelAppError::AppError)?;
 
-        // 3. Save the updated project aggregate.
+        // 4. Save the updated project aggregate.
         self.project_repository.save(cancelled_project.clone())?;
 
         Ok(cancelled_project)
@@ -74,6 +86,50 @@ mod tests {
     #[derive(Clone)]
     struct MockProjectRepository {
         projects: RefCell<HashMap<String, AnyProject>>,
+    }
+
+    struct MockCodeResolver {
+        // Mock doesn't need to resolve anything for CancelProjectUseCase
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("mock-project-id".to_string())
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
     }
 
     impl ProjectRepository for MockProjectRepository {
@@ -95,6 +151,13 @@ mod tests {
         }
     }
 
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, _id: &str) -> Result<Option<AnyProject>, AppError> {
+            // For tests, we'll return the first project in the map
+            Ok(self.projects.borrow().values().next().cloned())
+        }
+    }
+
     // --- Helpers ---
     fn create_test_project(code: &str) -> AnyProject {
         ProjectBuilder::new()
@@ -113,7 +176,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::new()),
         };
-        let use_case = CancelProjectUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CancelProjectUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-NONEXISTENT");
         assert!(matches!(result, Err(CancelAppError::ProjectNotFound(_))));
@@ -127,7 +191,8 @@ mod tests {
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(initial_project.code().to_string(), initial_project)])),
         };
-        let use_case = CancelProjectUseCase::new(project_repo.clone());
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CancelProjectUseCase::new(project_repo.clone(), code_resolver);
 
         let result = use_case.execute("PROJ-1");
 

@@ -1,8 +1,9 @@
 #![allow(dead_code, unused_imports)]
 
 use crate::application::errors::AppError;
+use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::resource_management::{
-    any_resource::AnyResource, repository::ResourceRepository, resource::WipLimits,
+    any_resource::AnyResource, repository::{ResourceRepository, ResourceRepositoryWithId}, resource::WipLimits,
 };
 use std::fmt;
 
@@ -35,33 +36,44 @@ impl From<AppError> for DeactivateAppError {
     }
 }
 
-pub struct DeactivateResourceUseCase<RR>
+pub struct DeactivateResourceUseCase<RR, CR>
 where
-    RR: ResourceRepository,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     resource_repository: RR,
+    code_resolver: CR,
 }
 
-impl<RR> DeactivateResourceUseCase<RR>
+impl<RR, CR> DeactivateResourceUseCase<RR, CR>
 where
-    RR: ResourceRepository,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(resource_repository: RR) -> Self {
-        Self { resource_repository }
+    pub fn new(resource_repository: RR, code_resolver: CR) -> Self {
+        Self { 
+            resource_repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(&self, resource_code: &str, company_code: &str) -> Result<AnyResource, DeactivateAppError> {
-        // 1. Find the resource from the repository.
+        // 1. Resolve resource code to ID
+        let resource_id = self.code_resolver
+            .resolve_resource_code(resource_code)
+            .map_err(|e| DeactivateAppError::RepositoryError(e))?;
+
+        // 2. Find the resource from the repository using ID
         let resource = self
             .resource_repository
-            .find_by_code(resource_code)?
+            .find_by_id(&resource_id)?
             .ok_or_else(|| DeactivateAppError::ResourceNotFound(resource_code.to_string()))?;
 
-        // 2. Call the domain logic to deactivate the resource.
+        // 3. Call the domain logic to deactivate the resource.
         // This consumes the resource and returns a new one in the `Inactive` state.
         let deactivated_resource = resource.deactivate().map_err(DeactivateAppError::AppError)?;
 
-        // 3. Save the now-inactive resource back to the repository using save_in_hierarchy.
+        // 4. Save the now-inactive resource back to the repository using save_in_hierarchy.
         let saved_resource = self
             .resource_repository
             .save_in_hierarchy(deactivated_resource, company_code, None)?;
@@ -81,6 +93,50 @@ mod tests {
     #[derive(Clone)]
     struct MockResourceRepository {
         resources: RefCell<HashMap<String, AnyResource>>,
+    }
+
+    struct MockCodeResolver {
+        // Mock doesn't need to resolve anything for DeactivateResourceUseCase
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("mock-resource-id".to_string())
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
     }
 
     impl ResourceRepository for MockResourceRepository {
@@ -145,6 +201,13 @@ mod tests {
         }
     }
 
+    impl ResourceRepositoryWithId for MockResourceRepository {
+        fn find_by_id(&self, _id: &str) -> Result<Option<AnyResource>, AppError> {
+            // For tests, we'll return the first resource in the map
+            Ok(self.resources.borrow().values().next().cloned())
+        }
+    }
+
     // --- Helpers ---
     fn create_test_resource(code: &str) -> AnyResource {
         Resource::<Available> {
@@ -174,7 +237,8 @@ mod tests {
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::from([(initial_resource.code().to_string(), initial_resource)])),
         };
-        let use_case = DeactivateResourceUseCase::new(resource_repo.clone());
+        let code_resolver = MockCodeResolver::new();
+        let use_case = DeactivateResourceUseCase::new(resource_repo.clone(), code_resolver);
 
         let result = use_case.execute("RES-1", "TEST-001");
 
@@ -189,7 +253,8 @@ mod tests {
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::new()),
         };
-        let use_case = DeactivateResourceUseCase::new(resource_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = DeactivateResourceUseCase::new(resource_repo, code_resolver);
 
         let result = use_case.execute("RES-NONEXISTENT", "TEST-001");
 
