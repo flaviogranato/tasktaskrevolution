@@ -1,6 +1,7 @@
 // Priority and Category are used in Task initializations
 use crate::application::errors::AppError;
-use crate::domain::project_management::repository::ProjectRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{AnyTask, TaskBuilder, repository::TaskRepository};
 use chrono::NaiveDate;
 
@@ -14,24 +15,28 @@ pub struct CreateTaskArgs {
     pub assigned_resources: Vec<String>,
 }
 
-pub struct CreateTaskUseCase<PR, TR>
+pub struct CreateTaskUseCase<PR, TR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
     TR: TaskRepository,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
     task_repository: TR,
+    code_resolver: CR,
 }
 
-impl<PR, TR> CreateTaskUseCase<PR, TR>
+impl<PR, TR, CR> CreateTaskUseCase<PR, TR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
     TR: TaskRepository,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR, task_repository: TR) -> Self {
+    pub fn new(project_repository: PR, task_repository: TR, code_resolver: CR) -> Self {
         Self {
             project_repository,
             task_repository,
+            code_resolver,
         }
     }
 
@@ -46,15 +51,22 @@ where
             assigned_resources,
         } = args;
 
-        // 1. Load the project aggregate.
+        // 1. Resolve project code to ID
+        let project_id = self.code_resolver
+            .resolve_project_code(&project_code)
+            .map_err(|e| AppError::ProjectNotFound {
+                code: project_code.clone(),
+            })?;
+
+        // 2. Load the project aggregate using ID
         let mut project =
             self.project_repository
-                .find_by_code(&project_code)?
+                .find_by_id(&project_id)?
                 .ok_or_else(|| AppError::ProjectNotFound {
                     code: project_code.clone(),
                 })?;
 
-        // 2. Delegate task creation to the project aggregate.
+        // 3. Delegate task creation to the project aggregate.
         // This is a placeholder for the future implementation of `project.add_task(...)`
         // For now, we'll keep the builder logic here.
         if start_date > due_date {
@@ -109,10 +121,10 @@ where
         let task_any: AnyTask = task.into();
         project.add_task(task_any.clone());
 
-        // 3. Save the entire project aggregate.
+        // 4. Save the entire project aggregate.
         self.project_repository.save(project.clone())?;
 
-        // 4. Save the task individually in the project's tasks directory
+        // 5. Save the task individually in the project's tasks directory
         self.task_repository
             .save_in_hierarchy(task_any, project.company_code(), &project_code_for_save)?;
 
@@ -136,6 +148,61 @@ mod test {
     struct MockProjectRepository {
         should_fail: bool,
         projects: RefCell<HashMap<String, AnyProject>>,
+    }
+
+    struct MockCodeResolver {
+        project_codes: RefCell<HashMap<String, String>>, // code -> id
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {
+                project_codes: RefCell::new(HashMap::new()),
+            }
+        }
+
+        fn add_project(&self, code: &str, id: &str) {
+            self.project_codes.borrow_mut().insert(code.to_string(), id.to_string());
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, code: &str) -> Result<String, AppError> {
+            self.project_codes
+                .borrow()
+                .get(code)
+                .cloned()
+                .ok_or_else(|| AppError::validation_error("project", format!("Project '{}' not found", code)))
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, code: &str) -> Result<(), AppError> {
+            self.resolve_project_code(code)?;
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
     }
 
     struct MockTaskRepository {
@@ -189,7 +256,7 @@ mod test {
     impl MockProjectRepository {
         fn new(should_fail: bool) -> Self {
             let mut projects = HashMap::new();
-            let project = ProjectBuilder::new()
+            let project: AnyProject = ProjectBuilder::new()
                 .code("PROJ-1".to_string())
                 .name("Test Project".to_string())
                 .company_code("COMP-001".to_string())
@@ -197,7 +264,8 @@ mod test {
                 .build()
                 .unwrap()
                 .into();
-            projects.insert("PROJ-1".to_string(), project);
+            let project_id = project.id().to_string();
+            projects.insert(project_id, project);
 
             Self {
                 should_fail,
@@ -214,12 +282,12 @@ mod test {
                     message: "Erro mockado ao salvar".to_string(),
                 });
             }
-            self.projects.borrow_mut().insert(project.code().to_string(), project);
+            self.projects.borrow_mut().insert(project.id().to_string(), project);
             Ok(())
         }
 
         fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
-            Ok(self.projects.borrow().get(code).cloned())
+            Ok(self.projects.borrow().values().find(|p| p.code() == code).cloned())
         }
 
         // Unimplemented methods
@@ -234,6 +302,12 @@ mod test {
         }
     }
 
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+            Ok(self.projects.borrow().get(id).cloned())
+        }
+    }
+
     fn create_test_dates() -> (NaiveDate, NaiveDate) {
         let start_date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
         let due_date = NaiveDate::from_ymd_opt(2024, 1, 30).unwrap();
@@ -244,7 +318,9 @@ mod test {
     fn test_create_task_success() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -271,7 +347,8 @@ mod test {
     fn test_create_task_fails_if_project_not_found() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -292,7 +369,9 @@ mod test {
     fn test_create_task_fails_if_start_date_after_due_date() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -321,7 +400,9 @@ mod test {
     fn test_create_task_with_same_start_and_due_date() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -347,7 +428,9 @@ mod test {
     fn test_create_task_without_assigned_resources() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -375,7 +458,9 @@ mod test {
     fn test_create_task_with_multiple_assigned_resources() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -403,7 +488,9 @@ mod test {
     fn test_create_task_repository_save_failure() {
         let mock_repo = MockProjectRepository::new(true); // This will make save() fail
         let mock_task_repo = MockTaskRepository::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
+        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {

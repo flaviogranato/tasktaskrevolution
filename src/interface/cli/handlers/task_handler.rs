@@ -28,7 +28,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
             let task_repository = FileTaskRepository::new(".");
-            let create_use_case = CreateTaskUseCase::new(project_repository, task_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let create_use_case = CreateTaskUseCase::new(project_repository, task_repository, code_resolver);
 
             let start = NaiveDate::parse_from_str(&start_date, "%Y-%m-%d")
                 .map_err(|e| format!("Invalid start date format: {}", e))?;

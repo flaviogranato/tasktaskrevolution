@@ -75,9 +75,11 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
 
             let create_project_use_case = CreateProjectUseCase::new(project_repository);
             let create_resource_use_case = CreateResourceUseCase::new(resource_repository);
-            let create_task_use_case = CreateTaskUseCase::new(
+              let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+              let create_task_use_case = CreateTaskUseCase::new(
                 FileProjectRepository::with_base_path(".".into()),
                 FileTaskRepository::new("."),
+                code_resolver,
             );
 
             let load_use_case = LoadTemplateUseCase::new();
