@@ -159,7 +159,8 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
         }
         ResourceCommand::Deactivate { code } => {
             let resource_repository = FileResourceRepository::new(".");
-            let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let deactivate_use_case = DeactivateResourceUseCase::new(resource_repository, code_resolver);
 
             match deactivate_use_case.execute(&code, "DEFAULT") {
                 Ok(_) => {

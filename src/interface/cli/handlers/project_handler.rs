@@ -116,7 +116,8 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
         }
         ProjectCommand::Cancel { code, company: _ } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let cancel_use_case = CancelProjectUseCase::new(project_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let cancel_use_case = CancelProjectUseCase::new(project_repository, code_resolver);
 
             match cancel_use_case.execute(&code) {
                 Ok(_) => {
