@@ -54,7 +54,7 @@ where
         // 1. Resolve project code to ID
         let project_id = self.code_resolver
             .resolve_project_code(&project_code)
-            .map_err(|e| AppError::ProjectNotFound {
+            .map_err(|_e| AppError::ProjectNotFound {
                 code: project_code.clone(),
             })?;
 
@@ -144,10 +144,12 @@ mod test {
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
+    use std::rc::Rc;
 
+    #[derive(Clone)]
     struct MockProjectRepository {
         should_fail: bool,
-        projects: RefCell<HashMap<String, AnyProject>>,
+        projects: Rc<RefCell<HashMap<String, AnyProject>>>,
     }
 
     struct MockCodeResolver {
@@ -269,7 +271,7 @@ mod test {
 
             Self {
                 should_fail,
-                projects: RefCell::new(projects),
+                projects: Rc::new(RefCell::new(projects)),
             }
         }
     }
@@ -319,8 +321,10 @@ mod test {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
+        // Get the actual project ID from the mock repository
+        let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
+        code_resolver.add_project("PROJ-1", &project_id);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -335,7 +339,10 @@ mod test {
         let result = use_case.execute(args);
 
         assert!(result.is_ok());
-        let project = use_case.project_repository.find_by_code("PROJ-1").unwrap().unwrap();
+        // Get the actual project ID from the mock repository
+        let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
+        let project = use_case.project_repository.find_by_id(&project_id).unwrap().unwrap();
+        println!("Project tasks count: {}", project.tasks().len());
         assert_eq!(project.tasks().len(), 1);
 
         // Find the task by iterating through all tasks since we don't know the exact code
@@ -348,7 +355,7 @@ mod test {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
         let code_resolver = MockCodeResolver::new();
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -370,8 +377,10 @@ mod test {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
+        // Get the actual project ID from the mock repository
+        let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
+        code_resolver.add_project("PROJ-1", &project_id);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -401,8 +410,10 @@ mod test {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
+        // Get the actual project ID from the mock repository
+        let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
+        code_resolver.add_project("PROJ-1", &project_id);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -429,8 +440,10 @@ mod test {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
+        // Get the actual project ID from the mock repository
+        let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
+        code_resolver.add_project("PROJ-1", &project_id);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -445,7 +458,7 @@ mod test {
         let result = use_case.execute(args);
 
         assert!(result.is_ok());
-        let project = use_case.project_repository.find_by_code("PROJ-1").unwrap().unwrap();
+        let project = mock_repo.find_by_id(&project_id).unwrap().unwrap();
         // Count should be 1 since we're starting with a fresh project
         assert_eq!(project.tasks().len(), 1);
 
@@ -459,8 +472,10 @@ mod test {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
+        // Get the actual project ID from the mock repository
+        let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
+        code_resolver.add_project("PROJ-1", &project_id);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -475,7 +490,7 @@ mod test {
         let result = use_case.execute(args);
 
         assert!(result.is_ok());
-        let project = use_case.project_repository.find_by_code("PROJ-1").unwrap().unwrap();
+        let project = mock_repo.find_by_id(&project_id).unwrap().unwrap();
         // Count should be 1 since we're starting with a fresh project
         assert_eq!(project.tasks().len(), 1);
 
@@ -489,8 +504,10 @@ mod test {
         let mock_repo = MockProjectRepository::new(true); // This will make save() fail
         let mock_task_repo = MockTaskRepository::new();
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", "01901dea-3e4b-7698-b323-95232d306587");
-        let use_case = CreateTaskUseCase::new(mock_repo, mock_task_repo, code_resolver);
+        // Get the actual project ID from the mock repository
+        let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
+        code_resolver.add_project("PROJ-1", &project_id);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {

@@ -126,7 +126,7 @@ mod tests {
     #[test]
     fn test_code_resolver_creation() {
         let temp_dir = TempDir::new().unwrap();
-        let resolver = CodeResolver::new(temp_dir.path());
+        let _resolver = CodeResolver::new(temp_dir.path());
         // Should not panic
         assert!(true);
     }
