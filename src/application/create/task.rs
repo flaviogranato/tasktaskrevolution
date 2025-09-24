@@ -52,11 +52,12 @@ where
         } = args;
 
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
-            .resolve_project_code(&project_code)
-            .map_err(|_e| AppError::ProjectNotFound {
-                code: project_code.clone(),
-            })?;
+        let project_id =
+            self.code_resolver
+                .resolve_project_code(&project_code)
+                .map_err(|_e| AppError::ProjectNotFound {
+                    code: project_code.clone(),
+                })?;
 
         // 2. Load the project aggregate using ID
         let mut project =

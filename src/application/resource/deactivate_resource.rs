@@ -3,7 +3,9 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::resource_management::{
-    any_resource::AnyResource, repository::{ResourceRepository, ResourceRepositoryWithId}, resource::WipLimits,
+    any_resource::AnyResource,
+    repository::{ResourceRepository, ResourceRepositoryWithId},
+    resource::WipLimits,
 };
 use std::fmt;
 
@@ -51,7 +53,7 @@ where
     CR: CodeResolverTrait,
 {
     pub fn new(resource_repository: RR, code_resolver: CR) -> Self {
-        Self { 
+        Self {
             resource_repository,
             code_resolver,
         }
@@ -59,9 +61,10 @@ where
 
     pub fn execute(&self, resource_code: &str, company_code: &str) -> Result<AnyResource, DeactivateAppError> {
         // 1. Resolve resource code to ID
-        let resource_id = self.code_resolver
+        let resource_id = self
+            .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(|e| DeactivateAppError::RepositoryError(e))?;
+            .map_err(DeactivateAppError::RepositoryError)?;
 
         // 2. Find the resource from the repository using ID
         let resource = self

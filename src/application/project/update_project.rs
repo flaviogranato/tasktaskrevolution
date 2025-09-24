@@ -3,8 +3,8 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::{
-    any_project::AnyProject, 
-    repository::{ProjectRepository, ProjectRepositoryWithId}
+    any_project::AnyProject,
+    repository::{ProjectRepository, ProjectRepositoryWithId},
 };
 use std::fmt;
 
@@ -54,7 +54,7 @@ where
     CR: CodeResolverTrait,
 {
     pub fn new(project_repository: PR, code_resolver: CR) -> Self {
-        Self { 
+        Self {
             project_repository,
             code_resolver,
         }
@@ -62,9 +62,10 @@ where
 
     pub fn execute(&self, project_code: &str, args: UpdateProjectArgs) -> Result<AnyProject, UpdateAppError> {
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
+        let project_id = self
+            .code_resolver
             .resolve_project_code(project_code)
-            .map_err(|e| UpdateAppError::RepositoryError(e))?;
+            .map_err(UpdateAppError::RepositoryError)?;
 
         // 2. Load the project aggregate using ID
         let mut project = self
@@ -197,14 +198,14 @@ mod tests {
     fn test_update_project_name_and_description_success() {
         let initial_project = create_test_project("PROJ-1", "Old Name", Some("Old Description"));
         let project_id = initial_project.id().to_string();
-        
+
         let project_repo = MockProjectRepository {
             projects: RefCell::new(HashMap::from([(project_id.clone(), initial_project)])),
         };
-        
+
         let code_resolver = MockCodeResolver::new();
         code_resolver.add_project("PROJ-1", &project_id);
-        
+
         let use_case = UpdateProjectUseCase::new(project_repo, code_resolver);
 
         let args = UpdateProjectArgs {

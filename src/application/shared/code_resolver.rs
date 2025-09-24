@@ -4,10 +4,8 @@ use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
 use crate::domain::task_management::repository::TaskRepository;
 use crate::infrastructure::persistence::{
-    company_repository::FileCompanyRepository,
-    project_repository::FileProjectRepository,
-    resource_repository::FileResourceRepository,
-    task_repository::FileTaskRepository,
+    company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
+    resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
 };
 
 /// Trait for resolving entity codes to IDs
@@ -35,12 +33,7 @@ impl CodeResolverTrait for CodeResolver {
         let company = self
             .company_repository
             .find_by_code(code)?
-            .ok_or_else(|| {
-                AppError::validation_error(
-                    "company",
-                    format!("Company '{}' not found", code),
-                )
-            })?;
+            .ok_or_else(|| AppError::validation_error("company", format!("Company '{}' not found", code)))?;
         Ok(company.id)
     }
 
@@ -48,12 +41,7 @@ impl CodeResolverTrait for CodeResolver {
         let project = self
             .project_repository
             .find_by_code(code)?
-            .ok_or_else(|| {
-                AppError::validation_error(
-                    "project",
-                    format!("Project '{}' not found", code),
-                )
-            })?;
+            .ok_or_else(|| AppError::validation_error("project", format!("Project '{}' not found", code)))?;
         Ok(project.id().to_string())
     }
 
@@ -61,12 +49,7 @@ impl CodeResolverTrait for CodeResolver {
         let resource = self
             .resource_repository
             .find_by_code(code)?
-            .ok_or_else(|| {
-                AppError::validation_error(
-                    "resource",
-                    format!("Resource '{}' not found", code),
-                )
-            })?;
+            .ok_or_else(|| AppError::validation_error("resource", format!("Resource '{}' not found", code)))?;
         Ok(resource.id().to_string())
     }
 
@@ -74,12 +57,7 @@ impl CodeResolverTrait for CodeResolver {
         let task = self
             .task_repository
             .find_by_code(code)?
-            .ok_or_else(|| {
-                AppError::validation_error(
-                    "task",
-                    format!("Task '{}' not found", code),
-                )
-            })?;
+            .ok_or_else(|| AppError::validation_error("task", format!("Task '{}' not found", code)))?;
         Ok(task.id().to_string())
     }
 
@@ -115,7 +93,6 @@ impl CodeResolver {
             task_repository: FileTaskRepository::new(&base_path),
         }
     }
-
 }
 
 #[cfg(test)]
@@ -135,37 +112,52 @@ mod tests {
     fn test_resolve_nonexistent_company_code() {
         let temp_dir = TempDir::new().unwrap();
         let resolver = CodeResolver::new(temp_dir.path());
-        
+
         let result = resolver.resolve_company_code("NONEXISTENT");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Company 'NONEXISTENT' not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Company 'NONEXISTENT' not found")
+        );
     }
 
     #[test]
     fn test_resolve_nonexistent_project_code() {
         let temp_dir = TempDir::new().unwrap();
         let resolver = CodeResolver::new(temp_dir.path());
-        
+
         let result = resolver.resolve_project_code("NONEXISTENT");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Project 'NONEXISTENT' not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Project 'NONEXISTENT' not found")
+        );
     }
 
     #[test]
     fn test_resolve_nonexistent_resource_code() {
         let temp_dir = TempDir::new().unwrap();
         let resolver = CodeResolver::new(temp_dir.path());
-        
+
         let result = resolver.resolve_resource_code("NONEXISTENT");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Resource 'NONEXISTENT' not found"));
+        assert!(
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Resource 'NONEXISTENT' not found")
+        );
     }
 
     #[test]
     fn test_resolve_nonexistent_task_code() {
         let temp_dir = TempDir::new().unwrap();
         let resolver = CodeResolver::new(temp_dir.path());
-        
+
         let result = resolver.resolve_task_code("NONEXISTENT");
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("Task 'NONEXISTENT' not found"));

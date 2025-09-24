@@ -26,8 +26,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             description: _,
         } => {
             let resource_repository = FileResourceRepository::new(".");
-            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
-            let create_use_case = CreateResourceUseCase::new(resource_repository, code_resolver);
+            let create_use_case = CreateResourceUseCase::new(resource_repository);
 
             let params = CreateResourceParams {
                 name: name.clone(),

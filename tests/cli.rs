@@ -295,7 +295,7 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     // With ID-based naming, we need to find the actual file
     // Check if there's at least one .yaml file in the companies directory
     let companies_path = companies_dir.path();
-    let mut yaml_files = std::fs::read_dir(companies_path)?
+    let yaml_files = std::fs::read_dir(companies_path)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect::<Vec<_>>();
@@ -1185,7 +1185,7 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
 
     // With ID-based naming, find the actual company file
     let companies_path = companies_dir.path();
-    let mut yaml_files = std::fs::read_dir(companies_path)?
+    let yaml_files = std::fs::read_dir(companies_path)?
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
         .collect::<Vec<_>>();

@@ -40,7 +40,7 @@ impl SimplifiedExecutor {
         // Check if we're in a test environment by looking for a test-specific directory pattern
         let current_dir = std::env::current_dir()?;
         let current_dir_str = current_dir.to_string_lossy();
-        
+
         // If we're in a temporary directory (like /tmp/.tmpXXXXXX), use it as base
         if current_dir_str.contains("/tmp/.tmp") || current_dir_str.contains("\\tmp\\.tmp") {
             ContextManager::new_with_base_dir(&current_dir)
@@ -49,7 +49,9 @@ impl SimplifiedExecutor {
         }
     }
 
-    fn create_code_resolver(context_manager: &ContextManager) -> Result<crate::application::shared::code_resolver::CodeResolver, Box<dyn std::error::Error>> {
+    fn create_code_resolver(
+        context_manager: &ContextManager,
+    ) -> Result<crate::application::shared::code_resolver::CodeResolver, Box<dyn std::error::Error>> {
         let base_path = context_manager.get_base_path();
         Ok(crate::application::shared::code_resolver::CodeResolver::new(base_path))
     }
@@ -118,8 +120,7 @@ impl SimplifiedExecutor {
 
                 let company_code = context_manager.resolve_company_code(company)?;
                 let project_repo = context_manager.get_project_repository();
-                let code_resolver = Self::create_code_resolver(&context_manager)?;
-                let use_case = CreateProjectUseCase::new(project_repo, code_resolver);
+                let use_case = CreateProjectUseCase::new(project_repo);
 
                 // Parse dates
                 let start_date_parsed = start_date
@@ -218,8 +219,7 @@ impl SimplifiedExecutor {
 
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
-                let code_resolver = Self::create_code_resolver(&context_manager)?;
-                let use_case = CreateResourceUseCase::new(resource_repo, code_resolver);
+                let use_case = CreateResourceUseCase::new(resource_repo);
 
                 // Parse dates if provided
                 let start_date_parsed = if let Some(start_date_str) = start_date {

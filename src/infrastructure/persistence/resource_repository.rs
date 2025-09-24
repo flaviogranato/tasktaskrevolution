@@ -821,7 +821,7 @@ impl crate::domain::resource_management::repository::ResourceRepositoryWithId fo
         // Search for resource by ID in ID-based format: resources/{id}.yaml
         let resource_file = self.get_resource_file_path_by_id(id);
         if resource_file.exists() {
-            return Ok(self.read_resource_from_file(&resource_file)?);
+            return self.read_resource_from_file(&resource_file);
         }
 
         // If not found in ID-based format, search in hierarchical format

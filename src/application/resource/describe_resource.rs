@@ -2,8 +2,8 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::resource_management::{
-    any_resource::AnyResource, 
-    repository::{ResourceRepository, ResourceRepositoryWithId}, 
+    any_resource::AnyResource,
+    repository::{ResourceRepository, ResourceRepositoryWithId},
     resource::WipLimits,
 };
 use std::fmt;
@@ -46,7 +46,7 @@ where
     CR: CodeResolverTrait,
 {
     pub fn new(resource_repository: RR, code_resolver: CR) -> Self {
-        Self { 
+        Self {
             resource_repository,
             code_resolver,
         }
@@ -54,10 +54,11 @@ where
 
     pub fn execute(&self, resource_code: &str) -> Result<AnyResource, DescribeAppError> {
         // 1. Resolve resource code to ID
-        let resource_id = self.code_resolver
+        let resource_id = self
+            .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(|e| DescribeAppError::RepositoryError(e))?;
-        
+            .map_err(DescribeAppError::RepositoryError)?;
+
         // 2. Use ID for internal operation
         self.resource_repository
             .find_by_id(&resource_id)?
@@ -90,7 +91,9 @@ mod tests {
         }
 
         fn add_resource(&self, code: &str, id: &str) {
-            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+            self.resource_codes
+                .borrow_mut()
+                .insert(code.to_string(), id.to_string());
         }
     }
 
@@ -225,14 +228,14 @@ mod tests {
         let resource_code = "RES-1";
         let resource = create_test_resource(resource_code);
         let resource_id = resource.id().to_string();
-        
+
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::from([(resource_id.clone(), resource)])),
         };
-        
+
         let code_resolver = MockCodeResolver::new();
         code_resolver.add_resource(resource_code, &resource_id);
-        
+
         let use_case = DescribeResourceUseCase::new(resource_repo, code_resolver);
 
         let result = use_case.execute(resource_code);

@@ -45,7 +45,7 @@ where
     CR: CodeResolverTrait,
 {
     pub fn new(project_repository: PR, code_resolver: CR) -> Self {
-        Self { 
+        Self {
             project_repository,
             code_resolver,
         }
@@ -53,9 +53,10 @@ where
 
     pub fn execute(&self, project_code: &str, task_code: &str) -> Result<AnyTask, DescribeAppError> {
         // 1. Resolve project code to ID
-        let project_id = self.code_resolver
+        let project_id = self
+            .code_resolver
             .resolve_project_code(project_code)
-            .map_err(|e| DescribeAppError::RepositoryError(e))?;
+            .map_err(DescribeAppError::RepositoryError)?;
 
         // 2. Load the project aggregate using ID
         let project = self

@@ -3,9 +3,9 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::resource_management::{
-    ResourceTypeValidator, 
-    any_resource::AnyResource, 
-    repository::{ResourceRepository, ResourceRepositoryWithId}, 
+    ResourceTypeValidator,
+    any_resource::AnyResource,
+    repository::{ResourceRepository, ResourceRepositoryWithId},
     resource::WipLimits,
 };
 use std::fmt;
@@ -72,9 +72,10 @@ where
         args: UpdateResourceArgs,
     ) -> Result<AnyResource, UpdateAppError> {
         // 1. Resolve resource code to ID
-        let resource_id = self.code_resolver
+        let resource_id = self
+            .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(|e| UpdateAppError::RepositoryError(e))?;
+            .map_err(UpdateAppError::RepositoryError)?;
 
         // 2. Load the resource aggregate using ID
         let mut resource = self
@@ -133,7 +134,9 @@ mod tests {
         }
 
         fn add_resource(&self, code: &str, id: &str) {
-            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+            self.resource_codes
+                .borrow_mut()
+                .insert(code.to_string(), id.to_string());
         }
     }
 
@@ -268,14 +271,14 @@ mod tests {
     fn test_update_resource_name_and_email_success() {
         let initial_resource = create_test_resource("DEV-1", "Old Name", "old@test.com", "Developer");
         let resource_id = initial_resource.id().to_string();
-        
+
         let resource_repo = MockResourceRepository {
             resources: RefCell::new(HashMap::from([(resource_id.clone(), initial_resource)])),
         };
-        
+
         let code_resolver = MockCodeResolver::new();
         code_resolver.add_resource("DEV-1", &resource_id);
-        
+
         let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver);
 
         let args = UpdateResourceArgs {

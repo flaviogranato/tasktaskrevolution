@@ -3,22 +3,36 @@ use crate::application::create::resource::{CreateResourceParams, CreateResourceU
 use crate::application::create::task::CreateTaskUseCase;
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::project_management::{ProjectTemplate, repository::{ProjectRepository, ProjectRepositoryWithId}};
+use crate::domain::project_management::{
+    ProjectTemplate,
+    repository::{ProjectRepository, ProjectRepositoryWithId},
+};
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::task_management::repository::TaskRepository;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 
-pub struct CreateFromTemplateUseCase<PR: ProjectRepository + ProjectRepositoryWithId, RR: ResourceRepository + ResourceRepositoryWithId, TR: TaskRepository, CR: CodeResolverTrait> {
-    create_project_use_case: CreateProjectUseCase<PR, CR>,
-    create_resource_use_case: CreateResourceUseCase<RR, CR>,
+pub struct CreateFromTemplateUseCase<
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    TR: TaskRepository,
+    CR: CodeResolverTrait,
+> {
+    create_project_use_case: CreateProjectUseCase<PR>,
+    create_resource_use_case: CreateResourceUseCase<RR>,
     create_task_use_case: CreateTaskUseCase<PR, TR, CR>,
 }
 
-impl<PR: ProjectRepository + ProjectRepositoryWithId, RR: ResourceRepository + ResourceRepositoryWithId, TR: TaskRepository, CR: CodeResolverTrait> CreateFromTemplateUseCase<PR, RR, TR, CR> {
+impl<
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    TR: TaskRepository,
+    CR: CodeResolverTrait,
+> CreateFromTemplateUseCase<PR, RR, TR, CR>
+{
     pub fn new(
-        create_project_use_case: CreateProjectUseCase<PR, CR>,
-        create_resource_use_case: CreateResourceUseCase<RR, CR>,
+        create_project_use_case: CreateProjectUseCase<PR>,
+        create_resource_use_case: CreateResourceUseCase<RR>,
         create_task_use_case: CreateTaskUseCase<PR, TR, CR>,
     ) -> Self {
         Self {
