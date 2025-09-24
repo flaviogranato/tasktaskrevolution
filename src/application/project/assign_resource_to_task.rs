@@ -2,8 +2,9 @@
 #![allow(unused_imports)]
 
 use crate::application::errors::AppError;
-use crate::domain::project_management::{any_project::AnyProject, repository::ProjectRepository};
-use crate::domain::resource_management::repository::ResourceRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::{any_project::AnyProject, repository::{ProjectRepository, ProjectRepositoryWithId}};
+use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::task_management::{Category, Priority};
 use std::fmt;
 
@@ -40,24 +41,28 @@ impl From<AppError> for AssignResourceToAppError {
     }
 }
 
-pub struct AssignResourceToTaskUseCase<PR, RR>
+pub struct AssignResourceToTaskUseCase<PR, RR, CR>
 where
-    PR: ProjectRepository,
-    RR: ResourceRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
     resource_repository: RR,
+    code_resolver: CR,
 }
 
-impl<PR, RR> AssignResourceToTaskUseCase<PR, RR>
+impl<PR, RR, CR> AssignResourceToTaskUseCase<PR, RR, CR>
 where
-    PR: ProjectRepository,
-    RR: ResourceRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    RR: ResourceRepository + ResourceRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR, resource_repository: RR) -> Self {
+    pub fn new(project_repository: PR, resource_repository: RR, code_resolver: CR) -> Self {
         Self {
             project_repository,
             resource_repository,
+            code_resolver,
         }
     }
 
@@ -67,29 +72,39 @@ where
         task_code: &str,
         resource_code: &str,
     ) -> Result<AnyProject, AssignResourceToAppError> {
-        // 1. Find the project
+        // 1. Resolve project code to ID
+        let project_id = self.code_resolver
+            .resolve_project_code(project_code)
+            .map_err(|e| AssignResourceToAppError::RepositoryError(e))?;
+
+        // 2. Resolve resource code to ID
+        let resource_id = self.code_resolver
+            .resolve_resource_code(resource_code)
+            .map_err(|e| AssignResourceToAppError::RepositoryError(e))?;
+
+        // 3. Load the project aggregate using ID
         let mut project = self
             .project_repository
-            .find_by_code(project_code)?
+            .find_by_id(&project_id)?
             .ok_or_else(|| AssignResourceToAppError::ProjectNotFound(project_code.to_string()))?;
 
-        // 2. Find the resource
+        // 4. Validate that the resource exists
         let _resource = self
             .resource_repository
-            .find_by_code(resource_code)?
+            .find_by_id(&resource_id)?
             .ok_or_else(|| AssignResourceToAppError::ResourceNotFound(resource_code.to_string()))?;
 
-        // 3. Validate that the task exists in the project
+        // 5. Validate that the task exists in the project
         if !project.tasks().contains_key(task_code) {
             return Err(AssignResourceToAppError::TaskNotFound(task_code.to_string()));
         }
 
-        // 4. Assign the resource to the task
+        // 6. Assign the resource to the task
         project
             .assign_resource_to_task(task_code, &[resource_code])
             .map_err(AssignResourceToAppError::AppError)?;
 
-        // 5. Save the updated project
+        // 7. Save the updated project
         self.project_repository.save(project.clone())?;
 
         Ok(project)
@@ -133,6 +148,12 @@ mod tests {
 
         fn get_next_code(&self) -> Result<String, AppError> {
             unimplemented!()
+        }
+    }
+
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+            Ok(self.projects.borrow().values().find(|p| p.id().to_string() == id).cloned())
         }
     }
 
@@ -199,6 +220,78 @@ mod tests {
         }
     }
 
+    impl ResourceRepositoryWithId for MockResourceRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError> {
+            Ok(self.resources.iter().find(|r| r.id().to_string() == id).cloned())
+        }
+    }
+
+    struct MockCodeResolver {
+        project_codes: RefCell<HashMap<String, String>>, // code -> id
+        resource_codes: RefCell<HashMap<String, String>>, // code -> id
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self {
+                project_codes: RefCell::new(HashMap::new()),
+                resource_codes: RefCell::new(HashMap::new()),
+            }
+        }
+
+        fn add_project(&self, code: &str, id: &str) {
+            self.project_codes.borrow_mut().insert(code.to_string(), id.to_string());
+        }
+
+        fn add_resource(&self, code: &str, id: &str) {
+            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn resolve_project_code(&self, code: &str) -> Result<String, AppError> {
+            self.project_codes
+                .borrow()
+                .get(code)
+                .cloned()
+                .ok_or_else(|| AppError::validation_error("project", format!("Project '{}' not found", code)))
+        }
+
+        fn resolve_resource_code(&self, code: &str) -> Result<String, AppError> {
+            self.resource_codes
+                .borrow()
+                .get(code)
+                .cloned()
+                .ok_or_else(|| AppError::validation_error("resource", format!("Resource '{}' not found", code)))
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("company", "Not implemented in mock"))
+        }
+
+        fn validate_project_code(&self, code: &str) -> Result<(), AppError> {
+            self.resolve_project_code(code)?;
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, code: &str) -> Result<(), AppError> {
+            self.resolve_resource_code(code)?;
+            Ok(())
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Err(AppError::validation_error("task", "Not implemented in mock"))
+        }
+    }
+
     // --- Helpers ---
     fn create_test_task(code: &str, assignees: &[&str]) -> Task<Planned> {
         Task::<Planned> {
@@ -251,12 +344,17 @@ mod tests {
     fn test_assign_new_resources_success() {
         let project = setup_test_project(vec![create_test_task("TSK-1", &["dev-res-1"]).into()]);
         let project_repo = MockProjectRepository {
-            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
         };
+        let resource1 = create_test_resource("res-1");
+        let resource2 = create_test_resource("res-2");
         let resource_repo = MockResourceRepository {
-            resources: vec![create_test_resource("res-1"), create_test_resource("res-2")],
+            resources: vec![resource1.clone(), resource2.clone()],
         };
-        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", &project.id().to_string());
+        code_resolver.add_resource("dev-res-2", &resource2.id().to_string());
+        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "TSK-1", "dev-res-2");
 
@@ -280,26 +378,29 @@ mod tests {
         let resource_repo = MockResourceRepository {
             resources: vec![create_test_resource("res-1")],
         };
-        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo, code_resolver);
 
         let result = use_case.execute("PROJ-NONEXISTENT", "TSK-1", "dev-res-1");
 
-        assert!(matches!(result, Err(AssignResourceToAppError::ProjectNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToAppError::RepositoryError(_))));
     }
 
     #[test]
     fn test_assign_fails_if_resource_not_found() {
         let project = setup_test_project(vec![create_test_task("TSK-1", &[]).into()]);
         let project_repo = MockProjectRepository {
-            projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
+            projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
         };
         let resource_repo = MockResourceRepository {
             resources: vec![create_test_resource("res-1")],
         };
-        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo);
+        let code_resolver = MockCodeResolver::new();
+        code_resolver.add_project("PROJ-1", &project.id().to_string());
+        let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "TSK-1", "res-NONEXISTENT");
 
-        assert!(matches!(result, Err(AssignResourceToAppError::ResourceNotFound(_))));
+        assert!(matches!(result, Err(AssignResourceToAppError::RepositoryError(_))));
     }
 }
