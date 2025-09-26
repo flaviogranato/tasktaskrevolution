@@ -4,6 +4,8 @@ use super::{
     resource::{Period, Resource, TimeOffEntry},
     state::{Assigned, Available, Inactive},
 };
+use super::super::shared::query_parser::QueryValue;
+use super::super::shared::query_engine::Queryable;
 use serde::Serialize;
 use uuid7::Uuid;
 
@@ -153,5 +155,42 @@ impl From<Resource<Assigned>> for AnyResource {
 impl From<Resource<Inactive>> for AnyResource {
     fn from(resource: Resource<Inactive>) -> Self {
         AnyResource::Inactive(resource)
+    }
+}
+
+impl Queryable for AnyResource {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match self {
+            AnyResource::Available(resource) => get_resource_field_value(resource, field, self.status()),
+            AnyResource::Assigned(resource) => get_resource_field_value(resource, field, self.status()),
+            AnyResource::Inactive(resource) => get_resource_field_value(resource, field, self.status()),
+        }
+    }
+    
+    fn entity_type() -> &'static str {
+        "resource"
+    }
+}
+
+fn get_resource_field_value(resource: &Resource<impl crate::domain::resource_management::state::ResourceState>, field: &str, status: &str) -> Option<QueryValue> {
+    match field {
+        "id" => Some(QueryValue::String(resource.id.to_string())),
+        "code" => Some(QueryValue::String(resource.code.clone())),
+        "name" => Some(QueryValue::String(resource.name.clone())),
+        "email" => resource.email.as_ref().map(|e| QueryValue::String(e.clone())),
+        "resource_type" => Some(QueryValue::String(resource.resource_type.clone())),
+        "status" => Some(QueryValue::String(status.to_string())),
+        "start_date" => resource.start_date.map(|d| QueryValue::Date(d)),
+        "end_date" => resource.end_date.map(|d| QueryValue::Date(d)),
+        "time_off_balance" => Some(QueryValue::Number(resource.time_off_balance as f64)),
+        "is_active" => Some(QueryValue::Boolean(status == "Available" || status == "Assigned")),
+        "has_email" => Some(QueryValue::Boolean(resource.email.is_some())),
+        "vacation_count" => Some(QueryValue::Number(
+            resource.vacations.as_ref().map(|v| v.len()).unwrap_or(0) as f64
+        )),
+        "time_off_count" => Some(QueryValue::Number(
+            resource.time_off_history.as_ref().map(|h| h.len()).unwrap_or(0) as f64
+        )),
+        _ => None,
     }
 }
