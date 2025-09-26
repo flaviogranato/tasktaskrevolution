@@ -11,19 +11,24 @@ pub struct ListTasksUseCase<R: ProjectRepository + ProjectRepositoryWithId, CR: 
 
 impl<R: ProjectRepository + ProjectRepositoryWithId, CR: CodeResolverTrait> ListTasksUseCase<R, CR> {
     pub fn new(repository: R, code_resolver: CR) -> Self {
-        Self { repository, code_resolver }
+        Self {
+            repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(&self, project_code: &str, company_code: &str) -> Result<Vec<AnyTask>, AppError> {
         // 1. Resolve project code to ID
         let project_id = self.code_resolver.resolve_project_code(project_code)?;
-        
+
         // 2. Use ID for internal operation
-        let project = self.repository.find_by_id(&project_id)?
+        let project = self
+            .repository
+            .find_by_id(&project_id)?
             .ok_or_else(|| AppError::ProjectNotFound {
                 code: project_code.to_string(),
             })?;
-        
+
         // 3. Verify the project belongs to the correct company
         if project.company_code() == company_code {
             let tasks = project.tasks().values().cloned().collect::<Vec<_>>();
@@ -184,7 +189,7 @@ mod tests {
                 code: "not-found".to_string(),
             })
         }
-        
+
         fn save(&self, _project: AnyProject) -> Result<(), AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -194,7 +199,7 @@ mod tests {
             }
             Ok(())
         }
-        
+
         fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -204,7 +209,7 @@ mod tests {
             }
             Ok(self.projects.clone())
         }
-        
+
         fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -212,22 +217,22 @@ mod tests {
                     details: "Mock failure".to_string(),
                 });
             }
-            
-            if let Some(ref project) = self.project {
-                if project.code() == code {
-                    return Ok(Some(project.clone()));
-                }
+
+            if let Some(ref project) = self.project
+                && project.code() == code
+            {
+                return Ok(Some(project.clone()));
             }
-            
+
             for project in &self.projects {
                 if project.code() == code {
                     return Ok(Some(project.clone()));
                 }
             }
-            
+
             Ok(None)
         }
-        
+
         fn get_next_code(&self) -> Result<String, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -385,7 +390,7 @@ mod tests {
         let tasks2 = vec![create_test_task("TSK-2", "Task 2")];
         let project1 = create_project_with_tasks(tasks1);
         let project2 = create_project_with_tasks(tasks2);
-        
+
         let projects = vec![project1, project2];
         let mock_repo = MockProjectRepository::new_with_projects(projects);
         let code_resolver = MockCodeResolver::new();
@@ -443,8 +448,8 @@ mod tests {
         let mock_repo = MockProjectRepository::new_with_project(project);
         let code_resolver = MockCodeResolver::new();
         let _use_case = ListTasksUseCase::new(mock_repo, code_resolver);
-        
+
         // Test that the use case was created successfully
-        assert!(true); // If we get here, creation succeeded
+        // If we get here, creation succeeded
     }
 }

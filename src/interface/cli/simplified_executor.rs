@@ -10,7 +10,6 @@ use crate::application::{
         companies::ListCompaniesUseCase, projects::ListProjectsUseCase, resources::ListResourcesUseCase,
         tasks::ListTasksUseCase,
     },
-    shared::code_resolver::CodeResolver,
     project::{
         cancel_project::CancelProjectUseCase,
         update_project::{UpdateProjectArgs, UpdateProjectUseCase},
@@ -19,6 +18,7 @@ use crate::application::{
         deactivate_resource::DeactivateResourceUseCase,
         update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
     },
+    shared::code_resolver::CodeResolver,
     task::{
         delete_task::DeleteTaskUseCase,
         update_task::{UpdateTaskArgs, UpdateTaskUseCase},
@@ -426,9 +426,7 @@ impl SimplifiedExecutor {
             }
             ListCommand::Tasks { project, company } => {
                 context_manager.validate_command("list", "tasks")?;
-                Logger::debug_fmt(|| {
-                    format!("ListCommand::Tasks - project: {:?}, company: {:?}", project, company)
-                });
+                Logger::debug_fmt(|| format!("ListCommand::Tasks - project: {:?}, company: {:?}", project, company));
 
                 if let Some(project_code) = project {
                     // List tasks for specific project
@@ -473,14 +471,15 @@ impl SimplifiedExecutor {
                 } else {
                     // List tasks based on current context
                     Logger::debug("No project parameter provided, using current context");
-                    Logger::debug_fmt(|| {
-                        format!("Current context: {:?}", context_manager.context())
-                    });
+                    Logger::debug_fmt(|| format!("Current context: {:?}", context_manager.context()));
                     match context_manager.context() {
                         ExecutionContext::Project(company_code, project_code) => {
                             // In project context, list tasks for current project
                             Logger::debug_fmt(|| {
-                                format!("Project context detected - company: {}, project: {}", company_code, project_code)
+                                format!(
+                                    "Project context detected - company: {}, project: {}",
+                                    company_code, project_code
+                                )
                             });
                             let project_repo = context_manager.get_project_repository();
                             let code_resolver = CodeResolver::new(context_manager.get_base_path());

@@ -352,9 +352,9 @@ mod test {
     fn test_create_resource_use_case_creation() {
         let mock_repo = MockResourceRepository::new(false);
         let _use_case = CreateResourceUseCase::new(mock_repo);
-        
+
         // Test that the use case was created successfully
-        assert!(true); // If we get here, creation succeeded
+        // If we get here, creation succeeded
     }
 
     #[test]
@@ -376,7 +376,7 @@ mod test {
         };
         let result = use_case.execute(params);
         assert!(result.is_err());
-        
+
         match result.unwrap_err() {
             AppError::ValidationError { field, message } => {
                 assert_eq!(field, "repository");

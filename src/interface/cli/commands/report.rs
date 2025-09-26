@@ -1,11 +1,13 @@
-use clap::{Args, Subcommand};
-use crate::application::report::types::{ReportType, ExportFormat, ReportConfig, ReportFilter, FilterOperator, GroupBy, SortOrder};
+use crate::application::errors::AppError;
 use crate::application::report::engine::ReportEngine;
+use crate::application::report::types::{
+    ExportFormat, FilterOperator, GroupBy, ReportConfig, ReportFilter, ReportType, SortOrder,
+};
 use crate::application::shared::code_resolver::CodeResolver;
+use crate::infrastructure::persistence::company_repository::FileCompanyRepository;
 use crate::infrastructure::persistence::project_repository::FileProjectRepository;
 use crate::infrastructure::persistence::resource_repository::FileResourceRepository;
-use crate::infrastructure::persistence::company_repository::FileCompanyRepository;
-use crate::application::errors::AppError;
+use clap::{Args, Subcommand};
 use std::path::Path;
 
 #[derive(Subcommand)]
@@ -158,7 +160,10 @@ fn parse_filters(filter_strings: &[String]) -> Result<Vec<ReportFilter>, AppErro
     for filter_str in filter_strings {
         let parts: Vec<&str> = filter_str.splitn(2, ':').collect();
         if parts.len() != 2 {
-            return Err(AppError::validation_error("filter", format!("Invalid filter format: {}. Expected field:value", filter_str)));
+            return Err(AppError::validation_error(
+                "filter",
+                format!("Invalid filter format: {}. Expected field:value", filter_str),
+            ));
         }
 
         let field = parts[0].to_string();

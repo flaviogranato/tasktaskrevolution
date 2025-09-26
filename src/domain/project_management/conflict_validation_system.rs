@@ -790,12 +790,7 @@ mod tests {
         let _start2 = NaiveDate::from_ymd_opt(2024, 1, 5).unwrap();
         let _end2 = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
 
-        let conflict = ConflictType::DateOverlap(
-            "task1".to_string(),
-            "task2".to_string(),
-            start1,
-            end1,
-        );
+        let conflict = ConflictType::DateOverlap("task1".to_string(), "task2".to_string(), start1, end1);
 
         match conflict {
             ConflictType::DateOverlap(task1, task2, start, end) => {
@@ -838,12 +833,7 @@ mod tests {
         let start = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
         let end = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
 
-        let conflict = ConflictType::ImpossibleDependency(
-            "task1".to_string(),
-            "task2".to_string(),
-            start,
-            end,
-        );
+        let conflict = ConflictType::ImpossibleDependency("task1".to_string(), "task2".to_string(), start, end);
 
         match conflict {
             ConflictType::ImpossibleDependency(task1, task2, start_date, end_date) => {
@@ -881,13 +871,7 @@ mod tests {
         let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
         let end = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
 
-        let conflict = ConflictType::ResourceCapacityExceeded(
-            "resource1".to_string(),
-            start,
-            end,
-            150,
-            100,
-        );
+        let conflict = ConflictType::ResourceCapacityExceeded("resource1".to_string(), start, end, 150, 100);
 
         match conflict {
             ConflictType::ResourceCapacityExceeded(resource, start_date, end_date, required, available) => {
@@ -959,12 +943,14 @@ mod tests {
 
     #[test]
     fn test_validate_graph_with_disabled_checks() {
-        let mut config = ValidationConfig::default();
-        config.circular_dependency_check = false;
-        config.date_overlap_check = false;
-        config.resource_conflict_check = false;
-        config.resource_capacity_check = false;
-        config.time_constraint_check = false;
+        let config = ValidationConfig {
+            circular_dependency_check: false,
+            date_overlap_check: false,
+            resource_conflict_check: false,
+            resource_capacity_check: false,
+            time_constraint_check: false,
+            ..Default::default()
+        };
 
         let mut system = ConflictValidationSystem::new(config);
         let graph = AdvancedDependencyGraph::new();
@@ -1053,9 +1039,11 @@ mod tests {
     #[test]
     fn test_update_config() {
         let mut system = ConflictValidationSystem::with_default_config();
-        let mut new_config = ValidationConfig::default();
-        new_config.circular_dependency_check = false;
-        new_config.date_tolerance_days = 5;
+        let new_config = ValidationConfig {
+            circular_dependency_check: false,
+            date_tolerance_days: 5,
+            ..Default::default()
+        };
 
         system.update_config(new_config.clone());
         // Config is updated internally, we can't directly access it

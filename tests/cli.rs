@@ -554,11 +554,11 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
             let path = entry.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
                 // Read the file to check if it contains the project code
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    if content.contains("name: Web App") {
-                        project_file = Some(path);
-                        break;
-                    }
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && content.contains("name: Web App")
+                {
+                    project_file = Some(path);
+                    break;
                 }
             }
         }
@@ -1396,11 +1396,11 @@ fn test_project_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
             let path = entry.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
                 // Read the file to check if it contains the project code
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    if content.contains("name: Web App") {
-                        project_file = Some(path);
-                        break;
-                    }
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && content.contains("name: Web App")
+                {
+                    project_file = Some(path);
+                    break;
                 }
             }
         }

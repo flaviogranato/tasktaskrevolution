@@ -21,19 +21,16 @@ fn test_delete_task_removes_task_from_file() -> Result<(), Box<dyn std::error::E
             let path = entry.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
                 // Read the YAML file to check if it's the task we're looking for
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                        if let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                        {
-                            if code == task_code_without_ext {
-                                task_file = Some(path);
-                                break;
-                            }
-                        }
-                    }
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                    && code == task_code_without_ext
+                {
+                    task_file = Some(path);
+                    break;
                 }
             }
         }
@@ -234,16 +231,14 @@ fn find_project_code(temp: &TempDir) -> Result<String, Box<dyn std::error::Error
             let path = entry.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
                 // Read the YAML file to get the project code
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                        if let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                        {
-                            return Ok(code.to_string());
-                        }
-                    }
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    return Ok(code.to_string());
                 }
             }
         }
@@ -259,16 +254,14 @@ fn find_task_code(temp: &TempDir, _project_code: &str) -> Result<String, Box<dyn
             let path = entry.path();
             if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
                 // Read the YAML file to get the task code
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    if let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content) {
-                        if let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                        {
-                            return Ok(format!("{}.yaml", code));
-                        }
-                    }
+                if let Ok(content) = std::fs::read_to_string(&path)
+                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                    && let Some(code) = yaml
+                        .get("metadata")
+                        .and_then(|m| m.get("code"))
+                        .and_then(|c| c.as_str())
+                {
+                    return Ok(format!("{}.yaml", code));
                 }
             }
         }

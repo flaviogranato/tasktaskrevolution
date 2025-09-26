@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use chrono::{DateTime, Local};
 use clap::ValueEnum;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Tipos de relatório suportados
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ValueEnum)]

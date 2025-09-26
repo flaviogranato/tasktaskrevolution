@@ -1,4 +1,4 @@
-use log::{debug, info, warn, error};
+use log::{debug, error, info, warn};
 
 /// Logging utilities for the CLI
 pub struct Logger;
@@ -10,9 +10,9 @@ impl Logger {
     }
 
     /// Log debug information with format if verbose mode is enabled
-    pub fn debug_fmt<F>(f: F) 
-    where 
-        F: FnOnce() -> String 
+    pub fn debug_fmt<F>(f: F)
+    where
+        F: FnOnce() -> String,
     {
         debug!("{}", f());
     }
@@ -92,11 +92,11 @@ impl Logger {
 #[macro_export]
 macro_rules! debug_command {
     ($command:expr, $($param:ident: $value:expr),*) => {
-        if crate::interface::cli::logging::Logger::is_verbose() {
+        if $crate::interface::cli::logging::Logger::is_verbose() {
             let params = vec![
                 $(stringify!($param), format!("{:?}", $value).as_str()),*
             ];
-            crate::interface::cli::logging::Logger::debug_command_context($command, &params);
+            $crate::interface::cli::logging::Logger::debug_command_context($command, &params);
         }
     };
 }
@@ -104,34 +104,34 @@ macro_rules! debug_command {
 #[macro_export]
 macro_rules! debug_file {
     ($operation:expr, $path:expr) => {
-        crate::interface::cli::logging::Logger::debug_file_operation($operation, $path);
+        $crate::interface::cli::logging::Logger::debug_file_operation($operation, $path);
     };
 }
 
 #[macro_export]
 macro_rules! debug_loaded {
     ($entity_type:expr, $identifier:expr, $name:expr) => {
-        crate::interface::cli::logging::Logger::debug_data_loaded($entity_type, $identifier, $name);
+        $crate::interface::cli::logging::Logger::debug_data_loaded($entity_type, $identifier, $name);
     };
 }
 
 #[macro_export]
 macro_rules! debug_context {
     ($context:expr) => {
-        crate::interface::cli::logging::Logger::debug_context($context);
+        $crate::interface::cli::logging::Logger::debug_context($context);
     };
 }
 
 #[macro_export]
 macro_rules! debug_project {
     ($operation:expr, $project_code:expr, $details:expr) => {
-        crate::interface::cli::logging::Logger::debug_project_operation($operation, $project_code, $details);
+        $crate::interface::cli::logging::Logger::debug_project_operation($operation, $project_code, $details);
     };
 }
 
 #[macro_export]
 macro_rules! debug_task {
     ($operation:expr, $task_code:expr, $details:expr) => {
-        crate::interface::cli::logging::Logger::debug_task_operation($operation, $task_code, $details);
+        $crate::interface::cli::logging::Logger::debug_task_operation($operation, $task_code, $details);
     };
 }

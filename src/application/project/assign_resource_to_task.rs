@@ -158,12 +158,7 @@ mod tests {
 
     impl ProjectRepositoryWithId for MockProjectRepository {
         fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
-            Ok(self
-                .projects
-                .borrow()
-                .values()
-                .find(|p| p.id().to_string() == id)
-                .cloned())
+            Ok(self.projects.borrow().values().find(|p| p.id() == id).cloned())
         }
     }
 
@@ -364,7 +359,7 @@ mod tests {
             resources: vec![resource1.clone(), resource2.clone()],
         };
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", &project.id().to_string());
+        code_resolver.add_project("PROJ-1", project.id());
         code_resolver.add_resource("dev-res-2", &resource2.id().to_string());
         let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo, code_resolver);
 
@@ -408,7 +403,7 @@ mod tests {
             resources: vec![create_test_resource("res-1")],
         };
         let code_resolver = MockCodeResolver::new();
-        code_resolver.add_project("PROJ-1", &project.id().to_string());
+        code_resolver.add_project("PROJ-1", project.id());
         let use_case = AssignResourceToTaskUseCase::new(project_repo, resource_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "TSK-1", "res-NONEXISTENT");

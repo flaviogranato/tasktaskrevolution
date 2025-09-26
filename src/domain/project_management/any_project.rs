@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
+use super::super::shared::query_engine::Queryable;
+use super::super::shared::query_parser::QueryValue;
 use super::super::task_management::any_task::AnyTask;
 use super::project::{Project, ProjectStatus};
-use super::super::shared::query_parser::QueryValue;
-use super::super::shared::query_engine::Queryable;
 use chrono::NaiveDate;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -500,6 +500,33 @@ impl AsMut<Project> for AnyProject {
     }
 }
 
+impl Queryable for AnyProject {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match self {
+            AnyProject::Project(p) => match field {
+                "id" => Some(QueryValue::String(p.id.clone())),
+                "code" => Some(QueryValue::String(p.code.clone())),
+                "name" => Some(QueryValue::String(p.name.clone())),
+                "description" => p.description.as_ref().map(|d| QueryValue::String(d.clone())),
+                "company_code" => Some(QueryValue::String(p.company_code.clone())),
+                "status" => Some(QueryValue::String(p.status().to_string())),
+                "created_by" => Some(QueryValue::String(p.created_by.clone())),
+                "created_at" => Some(QueryValue::DateTime(p.created_at.naive_utc())),
+                "updated_at" => Some(QueryValue::DateTime(p.updated_at.naive_utc())),
+                "start_date" => p.start_date.map(QueryValue::Date),
+                "end_date" => p.end_date.map(QueryValue::Date),
+                "task_count" => Some(QueryValue::Number(p.tasks().len() as f64)),
+                "is_active" => Some(QueryValue::Boolean(p.status().is_active())),
+                _ => None,
+            },
+        }
+    }
+
+    fn entity_type() -> &'static str {
+        "project"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -605,32 +632,5 @@ mod tests {
 
         assert_eq!(converted_project.code(), "PROJ-001");
         assert_eq!(converted_project.name(), "Test Project");
-    }
-}
-
-impl Queryable for AnyProject {
-    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
-        match self {
-            AnyProject::Project(p) => match field {
-                "id" => Some(QueryValue::String(p.id.clone())),
-                "code" => Some(QueryValue::String(p.code.clone())),
-                "name" => Some(QueryValue::String(p.name.clone())),
-                "description" => p.description.as_ref().map(|d| QueryValue::String(d.clone())),
-                "company_code" => Some(QueryValue::String(p.company_code.clone())),
-                "status" => Some(QueryValue::String(p.status().to_string())),
-                "created_by" => Some(QueryValue::String(p.created_by.clone())),
-                "created_at" => Some(QueryValue::DateTime(p.created_at.naive_utc())),
-                "updated_at" => Some(QueryValue::DateTime(p.updated_at.naive_utc())),
-                "start_date" => p.start_date.map(|d| QueryValue::Date(d)),
-                "end_date" => p.end_date.map(|d| QueryValue::Date(d)),
-                "task_count" => Some(QueryValue::Number(p.tasks().len() as f64)),
-                "is_active" => Some(QueryValue::Boolean(p.status().is_active())),
-                _ => None,
-            }
-        }
-    }
-    
-    fn entity_type() -> &'static str {
-        "project"
     }
 }

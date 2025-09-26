@@ -201,14 +201,19 @@ mod tests {
         }
 
         fn load(&self) -> Result<crate::domain::project_management::any_project::AnyProject, AppError> {
-            Err(AppError::ProjectNotFound { code: "test".to_string() })
+            Err(AppError::ProjectNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn find_all(&self) -> Result<Vec<crate::domain::project_management::any_project::AnyProject>, AppError> {
             Ok(vec![])
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<crate::domain::project_management::any_project::AnyProject>, AppError> {
+        fn find_by_code(
+            &self,
+            _code: &str,
+        ) -> Result<Option<crate::domain::project_management::any_project::AnyProject>, AppError> {
             Ok(None)
         }
 
@@ -218,8 +223,13 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, _resource: crate::domain::resource_management::any_resource::AnyResource) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+        fn save(
+            &self,
+            _resource: crate::domain::resource_management::any_resource::AnyResource,
+        ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn save_in_hierarchy(
@@ -228,22 +238,39 @@ mod tests {
             _company_code: &str,
             _project_code: Option<&str>,
         ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn find_all(&self) -> Result<Vec<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
             Ok(vec![])
         }
 
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
+        fn find_by_company(
+            &self,
+            _company_code: &str,
+        ) -> Result<Vec<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
             Ok(vec![])
         }
 
-        fn find_all_with_context(&self) -> Result<Vec<(crate::domain::resource_management::any_resource::AnyResource, String, Vec<String>)>, AppError> {
+        fn find_all_with_context(
+            &self,
+        ) -> Result<
+            Vec<(
+                crate::domain::resource_management::any_resource::AnyResource,
+                String,
+                Vec<String>,
+            )>,
+            AppError,
+        > {
             Ok(vec![])
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
+        fn find_by_code(
+            &self,
+            _code: &str,
+        ) -> Result<Option<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
             Ok(None)
         }
 
@@ -254,7 +281,9 @@ mod tests {
             _date: &str,
             _description: Option<String>,
         ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn save_vacation(
@@ -265,7 +294,9 @@ mod tests {
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
         ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
@@ -286,15 +317,24 @@ mod tests {
             Ok(vec![])
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
+        fn find_by_code(
+            &self,
+            _code: &str,
+        ) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
             Ok(None)
         }
 
-        fn find_by_id(&self, _id: &str) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
+        fn find_by_id(
+            &self,
+            _id: &str,
+        ) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
             Ok(None)
         }
 
-        fn find_by_name(&self, _name: &str) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
+        fn find_by_name(
+            &self,
+            _name: &str,
+        ) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
             Ok(None)
         }
 
@@ -321,43 +361,31 @@ mod tests {
 
     #[test]
     fn test_validate_system_use_case_creation() {
-        let _use_case = ValidateSystemUseCase::new(
-            MockProjectRepository,
-            MockResourceRepository,
-            MockCompanyRepository,
-        );
+        let _use_case =
+            ValidateSystemUseCase::new(MockProjectRepository, MockResourceRepository, MockCompanyRepository);
         // Should not panic
-        assert!(true);
     }
 
     #[test]
     fn test_validate_system_execute_with_empty_repositories() {
-        let use_case = ValidateSystemUseCase::new(
-            MockProjectRepository,
-            MockResourceRepository,
-            MockCompanyRepository,
-        );
+        let use_case = ValidateSystemUseCase::new(MockProjectRepository, MockResourceRepository, MockCompanyRepository);
 
         let result = use_case.execute();
         assert!(result.is_ok());
-        let results = result.unwrap();
+        let _results = result.unwrap();
         // With empty repositories, we should get some validation results
         // (even if they're just "no data found" warnings)
-        assert!(results.len() >= 0);
+        // results.len() is always >= 0
     }
 
     #[test]
     fn test_validate_system_execute_returns_validation_results() {
-        let use_case = ValidateSystemUseCase::new(
-            MockProjectRepository,
-            MockResourceRepository,
-            MockCompanyRepository,
-        );
+        let use_case = ValidateSystemUseCase::new(MockProjectRepository, MockResourceRepository, MockCompanyRepository);
 
         let result = use_case.execute();
         assert!(result.is_ok());
         let results = result.unwrap();
-        
+
         // Verify that all results are ValidationResult instances
         for validation_result in results {
             assert!(matches!(validation_result, ValidationResult { .. }));
@@ -366,20 +394,25 @@ mod tests {
 
     #[test]
     fn test_validate_system_categorizes_results_correctly() {
-        let use_case = ValidateSystemUseCase::new(
-            MockProjectRepository,
-            MockResourceRepository,
-            MockCompanyRepository,
-        );
+        let use_case = ValidateSystemUseCase::new(MockProjectRepository, MockResourceRepository, MockCompanyRepository);
 
         let result = use_case.execute();
         assert!(result.is_ok());
         let results = result.unwrap();
 
         // Categorize results
-        let errors: Vec<_> = results.iter().filter(|r| r.severity == ValidationSeverity::Error).collect();
-        let warnings: Vec<_> = results.iter().filter(|r| r.severity == ValidationSeverity::Warning).collect();
-        let info: Vec<_> = results.iter().filter(|r| r.severity == ValidationSeverity::Info).collect();
+        let errors: Vec<_> = results
+            .iter()
+            .filter(|r| r.severity == ValidationSeverity::Error)
+            .collect();
+        let warnings: Vec<_> = results
+            .iter()
+            .filter(|r| r.severity == ValidationSeverity::Warning)
+            .collect();
+        let info: Vec<_> = results
+            .iter()
+            .filter(|r| r.severity == ValidationSeverity::Info)
+            .collect();
 
         // Verify categorization
         assert_eq!(errors.len() + warnings.len() + info.len(), results.len());
@@ -387,11 +420,7 @@ mod tests {
 
     #[test]
     fn test_validate_system_handles_validation_errors() {
-        let use_case = ValidateSystemUseCase::new(
-            MockProjectRepository,
-            MockResourceRepository,
-            MockCompanyRepository,
-        );
+        let use_case = ValidateSystemUseCase::new(MockProjectRepository, MockResourceRepository, MockCompanyRepository);
 
         // This should not panic even if individual validations fail
         let result = use_case.execute();
@@ -414,7 +443,10 @@ mod tests {
         assert_eq!(validation_result.field, Some("name".to_string()));
         assert_eq!(validation_result.severity, ValidationSeverity::Error);
         assert_eq!(validation_result.message, "Test validation error");
-        assert_eq!(validation_result.details, Some("Detailed error information".to_string()));
+        assert_eq!(
+            validation_result.details,
+            Some("Detailed error information".to_string())
+        );
     }
 
     #[test]

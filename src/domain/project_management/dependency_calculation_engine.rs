@@ -791,13 +791,7 @@ mod tests {
         let engine = DependencyCalculationEngine::with_default_config();
         let mut graph = AdvancedDependencyGraph::new();
 
-        let task = TaskNode::new(
-            "single_task".to_string(),
-            "Single Task".to_string(),
-            None,
-            None,
-            None,
-        );
+        let task = TaskNode::new("single_task".to_string(), "Single Task".to_string(), None, None, None);
         graph.add_task(task);
 
         let sorted = engine.topological_sort(&graph).unwrap();
@@ -860,15 +854,9 @@ mod tests {
         );
         graph.add_dependency(dep).unwrap();
 
-        let mut calculation_results = HashMap::new();
+        let calculation_results = HashMap::new();
         let mut task_status = HashMap::new();
-        let result = engine.calculate_task_dates(
-            "task2",
-            &graph,
-            &mut calculation_results,
-            &mut task_status,
-            0,
-        );
+        let result = engine.calculate_task_dates("task2", &graph, &calculation_results, &mut task_status, 0);
 
         assert!(result.is_ok());
     }
@@ -877,16 +865,10 @@ mod tests {
     fn test_calculate_task_dates_with_nonexistent_task() {
         let engine = DependencyCalculationEngine::with_default_config();
         let graph = AdvancedDependencyGraph::new();
-        let mut calculation_results = HashMap::new();
+        let calculation_results = HashMap::new();
         let mut task_status = HashMap::new();
 
-        let result = engine.calculate_task_dates(
-            "nonexistent",
-            &graph,
-            &mut calculation_results,
-            &mut task_status,
-            0,
-        );
+        let result = engine.calculate_task_dates("nonexistent", &graph, &calculation_results, &mut task_status, 0);
 
         assert!(result.is_err());
     }
@@ -957,9 +939,11 @@ mod tests {
     #[test]
     fn test_update_calculation_config() {
         let mut engine = DependencyCalculationEngine::with_default_config();
-        let mut new_config = CalculationConfig::default();
-        new_config.working_hours_per_day = 6;
-        new_config.cache_enabled = false;
+        let new_config = CalculationConfig {
+            working_hours_per_day: 6,
+            cache_enabled: false,
+            ..Default::default()
+        };
 
         engine.update_config(new_config.clone());
         let retrieved_config = engine.config();

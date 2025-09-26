@@ -53,7 +53,7 @@ mod tests {
             self.projects.borrow_mut().push(project);
             Ok(())
         }
-        
+
         fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -63,7 +63,7 @@ mod tests {
             }
             Ok(self.projects.borrow().clone())
         }
-        
+
         fn load(&self) -> Result<AnyProject, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -71,11 +71,15 @@ mod tests {
                     details: "Mock failure".to_string(),
                 });
             }
-            self.projects.borrow().first().cloned().ok_or(AppError::ProjectNotFound {
-                code: "not-found".to_string(),
-            })
+            self.projects
+                .borrow()
+                .first()
+                .cloned()
+                .ok_or(AppError::ProjectNotFound {
+                    code: "not-found".to_string(),
+                })
         }
-        
+
         fn get_next_code(&self) -> Result<String, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -85,7 +89,7 @@ mod tests {
             }
             Ok("PROJ-NEXT".to_string())
         }
-        
+
         fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -155,9 +159,9 @@ mod tests {
     fn test_list_projects_use_case_creation() {
         let mock_repo = MockProjectRepository::new(vec![]);
         let _use_case = ListProjectsUseCase::new(mock_repo);
-        
+
         // Test that the use case was created successfully
-        assert!(true); // If we get here, creation succeeded
+        // If we get here, creation succeeded
     }
 
     #[test]

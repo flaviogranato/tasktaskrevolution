@@ -193,10 +193,7 @@ mod tests {
 
     #[test]
     fn test_assigned_state() {
-        let assignments = vec![
-            create_test_project_assignment(),
-            create_test_project_assignment(),
-        ];
+        let assignments = vec![create_test_project_assignment(), create_test_project_assignment()];
         let state = Assigned {
             project_assignments: assignments,
         };
@@ -250,13 +247,22 @@ mod tests {
         };
         let result = state.transition_to();
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Cannot deactivate resource with active project assignments"));
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Cannot deactivate resource with active project assignments")
+        );
         // Check transition_blocked_reason before calling transition_to
         let state2 = Assigned {
             project_assignments: vec![create_test_project_assignment()],
         };
         assert!(state2.transition_blocked_reason().is_some());
-        assert!(state2.transition_blocked_reason().unwrap().contains("Resource has active project assignments"));
+        assert!(
+            state2
+                .transition_blocked_reason()
+                .unwrap()
+                .contains("Resource has active project assignments")
+        );
     }
 
     #[test]
@@ -296,10 +302,7 @@ mod tests {
     #[test]
     fn test_resource_state_ext_utilization_percentage() {
         let state = Assigned {
-            project_assignments: vec![
-                create_test_project_assignment(),
-                create_test_project_assignment(),
-            ],
+            project_assignments: vec![create_test_project_assignment(), create_test_project_assignment()],
         };
         assert_eq!(state.utilization_percentage(4), 50.0);
         assert_eq!(state.utilization_percentage(2), 100.0);

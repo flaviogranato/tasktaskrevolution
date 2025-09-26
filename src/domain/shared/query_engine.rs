@@ -1,4 +1,4 @@
-use crate::domain::shared::query_parser::{Query, QueryExpression, FilterCondition, QueryValue, ComparisonOperator};
+use crate::domain::shared::query_parser::{ComparisonOperator, FilterCondition, Query, QueryExpression, QueryValue};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -6,7 +6,7 @@ use std::fmt;
 pub trait Queryable {
     /// Obtém o valor de um campo da entidade
     fn get_field_value(&self, field: &str) -> Option<QueryValue>;
-    
+
     /// Retorna o tipo da entidade (para validação de campos)
     fn entity_type() -> &'static str;
 }
@@ -28,7 +28,7 @@ impl<T> QueryResult<T> {
             items,
         }
     }
-    
+
     pub fn empty() -> Self {
         Self {
             items: Vec::new(),
@@ -72,29 +72,29 @@ impl QueryEngine {
     pub fn execute<T: Queryable + Clone>(query: &Query, items: Vec<T>) -> Result<QueryResult<T>, QueryExecutionError> {
         let total_count = items.len();
         let mut filtered_items = Vec::new();
-        
+
         for item in items {
             match Self::evaluate_expression(&query.expression, &item) {
                 Ok(true) => filtered_items.push(item),
-                Ok(false) => {}, // Item doesn't match, skip it
+                Ok(false) => {}          // Item doesn't match, skip it
                 Err(e) => return Err(e), // Propagate error
             }
         }
-        
+
         Ok(QueryResult {
             total_count,
             filtered_count: filtered_items.len(),
             items: filtered_items,
         })
     }
-    
+
     /// Avalia uma expressão de consulta contra uma entidade
     fn evaluate_expression<T: Queryable>(expression: &QueryExpression, item: &T) -> Result<bool, QueryExecutionError> {
         match expression {
             QueryExpression::Condition(condition) => Self::evaluate_condition(condition, item),
             QueryExpression::Logical { operator, left, right } => {
                 let left_result = Self::evaluate_expression(left, item)?;
-                
+
                 match operator {
                     crate::domain::shared::query_parser::LogicalOperator::And => {
                         if !left_result {
@@ -116,25 +116,22 @@ impl QueryEngine {
                             Ok(left_result)
                         }
                     }
-                    crate::domain::shared::query_parser::LogicalOperator::Not => {
-                        Ok(!left_result)
-                    }
+                    crate::domain::shared::query_parser::LogicalOperator::Not => Ok(!left_result),
                 }
             }
-            QueryExpression::Not(expr) => {
-                Ok(!Self::evaluate_expression(expr, item)?)
-            }
+            QueryExpression::Not(expr) => Ok(!Self::evaluate_expression(expr, item)?),
         }
     }
-    
+
     /// Avalia uma condição de filtro contra uma entidade
     fn evaluate_condition<T: Queryable>(condition: &FilterCondition, item: &T) -> Result<bool, QueryExecutionError> {
-        let field_value = item.get_field_value(&condition.field)
+        let field_value = item
+            .get_field_value(&condition.field)
             .ok_or_else(|| QueryExecutionError::InvalidField(condition.field.clone()))?;
-        
+
         Self::compare_values(&field_value, &condition.operator, &condition.value)
     }
-    
+
     /// Compara dois valores usando um operador
     fn compare_values(
         left: &QueryValue,
@@ -152,7 +149,7 @@ impl QueryEngine {
             ComparisonOperator::NotContains => Self::compare_string(left, right, |a, b| !a.contains(b)),
         }
     }
-    
+
     /// Verifica se dois valores são iguais
     fn values_equal(left: &QueryValue, right: &QueryValue) -> bool {
         match (left, right) {
@@ -164,13 +161,9 @@ impl QueryEngine {
             _ => false,
         }
     }
-    
+
     /// Compara valores numéricos
-    fn compare_numeric<F>(
-        left: &QueryValue,
-        right: &QueryValue,
-        compare_fn: F,
-    ) -> Result<bool, QueryExecutionError>
+    fn compare_numeric<F>(left: &QueryValue, right: &QueryValue, compare_fn: F) -> Result<bool, QueryExecutionError>
     where
         F: Fn(f64, f64) -> bool,
     {
@@ -178,13 +171,9 @@ impl QueryEngine {
         let right_num = Self::extract_number(right)?;
         Ok(compare_fn(left_num, right_num))
     }
-    
+
     /// Compara valores de string
-    fn compare_string<F>(
-        left: &QueryValue,
-        right: &QueryValue,
-        compare_fn: F,
-    ) -> Result<bool, QueryExecutionError>
+    fn compare_string<F>(left: &QueryValue, right: &QueryValue, compare_fn: F) -> Result<bool, QueryExecutionError>
     where
         F: Fn(&str, &str) -> bool,
     {
@@ -192,17 +181,21 @@ impl QueryEngine {
         let right_str = Self::extract_string(right)?;
         Ok(compare_fn(&left_str, &right_str))
     }
-    
+
     /// Extrai um número de um QueryValue
     fn extract_number(value: &QueryValue) -> Result<f64, QueryExecutionError> {
         match value {
             QueryValue::Number(n) => Ok(*n),
-            QueryValue::String(s) => s.parse::<f64>()
+            QueryValue::String(s) => s
+                .parse::<f64>()
                 .map_err(|_| QueryExecutionError::TypeMismatch("number".to_string(), "string".to_string())),
-            _ => Err(QueryExecutionError::TypeMismatch("number".to_string(), format!("{:?}", value))),
+            _ => Err(QueryExecutionError::TypeMismatch(
+                "number".to_string(),
+                format!("{:?}", value),
+            )),
         }
     }
-    
+
     /// Extrai uma string de um QueryValue
     fn extract_string(value: &QueryValue) -> Result<String, QueryExecutionError> {
         match value {
@@ -218,7 +211,9 @@ impl QueryEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::query_parser::{Query, QueryExpression, FilterCondition, ComparisonOperator, LogicalOperator};
+    use crate::domain::shared::query_parser::{
+        ComparisonOperator, FilterCondition, LogicalOperator, Query, QueryExpression,
+    };
 
     #[derive(Debug, Clone, PartialEq)]
     struct TestEntity {
@@ -238,7 +233,7 @@ mod tests {
                 _ => None,
             }
         }
-        
+
         fn entity_type() -> &'static str {
             "test_entity"
         }
@@ -247,9 +242,24 @@ mod tests {
     #[test]
     fn test_simple_filter() {
         let entities = vec![
-            TestEntity { name: "Alice".to_string(), age: 25, active: true, score: 85.5 },
-            TestEntity { name: "Bob".to_string(), age: 30, active: false, score: 92.0 },
-            TestEntity { name: "Charlie".to_string(), age: 35, active: true, score: 78.0 },
+            TestEntity {
+                name: "Alice".to_string(),
+                age: 25,
+                active: true,
+                score: 85.5,
+            },
+            TestEntity {
+                name: "Bob".to_string(),
+                age: 30,
+                active: false,
+                score: 92.0,
+            },
+            TestEntity {
+                name: "Charlie".to_string(),
+                age: 35,
+                active: true,
+                score: 78.0,
+            },
         ];
 
         let query = Query {
@@ -269,9 +279,24 @@ mod tests {
     #[test]
     fn test_numeric_comparison() {
         let entities = vec![
-            TestEntity { name: "Alice".to_string(), age: 25, active: true, score: 85.5 },
-            TestEntity { name: "Bob".to_string(), age: 30, active: false, score: 92.0 },
-            TestEntity { name: "Charlie".to_string(), age: 35, active: true, score: 78.0 },
+            TestEntity {
+                name: "Alice".to_string(),
+                age: 25,
+                active: true,
+                score: 85.5,
+            },
+            TestEntity {
+                name: "Bob".to_string(),
+                age: 30,
+                active: false,
+                score: 92.0,
+            },
+            TestEntity {
+                name: "Charlie".to_string(),
+                age: 35,
+                active: true,
+                score: 78.0,
+            },
         ];
 
         let query = Query {
@@ -290,9 +315,24 @@ mod tests {
     #[test]
     fn test_string_contains() {
         let entities = vec![
-            TestEntity { name: "Alice".to_string(), age: 25, active: true, score: 85.5 },
-            TestEntity { name: "Bob".to_string(), age: 30, active: false, score: 92.0 },
-            TestEntity { name: "Charlie".to_string(), age: 35, active: true, score: 78.0 },
+            TestEntity {
+                name: "Alice".to_string(),
+                age: 25,
+                active: true,
+                score: 85.5,
+            },
+            TestEntity {
+                name: "Bob".to_string(),
+                age: 30,
+                active: false,
+                score: 92.0,
+            },
+            TestEntity {
+                name: "Charlie".to_string(),
+                age: 35,
+                active: true,
+                score: 78.0,
+            },
         ];
 
         let query = Query {
@@ -311,9 +351,24 @@ mod tests {
     #[test]
     fn test_logical_and() {
         let entities = vec![
-            TestEntity { name: "Alice".to_string(), age: 25, active: true, score: 85.5 },
-            TestEntity { name: "Bob".to_string(), age: 30, active: false, score: 92.0 },
-            TestEntity { name: "Charlie".to_string(), age: 35, active: true, score: 78.0 },
+            TestEntity {
+                name: "Alice".to_string(),
+                age: 25,
+                active: true,
+                score: 85.5,
+            },
+            TestEntity {
+                name: "Bob".to_string(),
+                age: 30,
+                active: false,
+                score: 92.0,
+            },
+            TestEntity {
+                name: "Charlie".to_string(),
+                age: 35,
+                active: true,
+                score: 78.0,
+            },
         ];
 
         let query = Query {
@@ -339,9 +394,12 @@ mod tests {
 
     #[test]
     fn test_invalid_field() {
-        let entities = vec![
-            TestEntity { name: "Alice".to_string(), age: 25, active: true, score: 85.5 },
-        ];
+        let entities = vec![TestEntity {
+            name: "Alice".to_string(),
+            age: 25,
+            active: true,
+            score: 85.5,
+        }];
 
         let query = Query {
             expression: QueryExpression::Condition(FilterCondition {

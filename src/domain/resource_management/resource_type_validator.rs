@@ -53,17 +53,19 @@ impl Default for ResourceTypeValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::company_settings::config::Config;
     use crate::application::errors::AppError;
+    use crate::domain::company_settings::config::Config;
     use std::path::PathBuf;
 
     // Mock config repository for testing
+    #[allow(dead_code)]
     struct MockConfigRepository {
         should_fail: bool,
         config: Option<Config>,
     }
 
     impl MockConfigRepository {
+        #[allow(dead_code)]
         fn new() -> Self {
             Self {
                 should_fail: false,
@@ -71,6 +73,7 @@ mod tests {
             }
         }
 
+        #[allow(dead_code)]
         fn with_failure() -> Self {
             Self {
                 should_fail: true,
@@ -78,6 +81,7 @@ mod tests {
             }
         }
 
+        #[allow(dead_code)]
         fn with_config(config: Config) -> Self {
             Self {
                 should_fail: false,
@@ -89,15 +93,23 @@ mod tests {
     impl ConfigRepository for MockConfigRepository {
         fn load(&self) -> Result<(Config, PathBuf), AppError> {
             if self.should_fail {
-                Err(AppError::ConfigurationNotFound { path: "mock_error".to_string() })
+                Err(AppError::ConfigurationNotFound {
+                    path: "mock_error".to_string(),
+                })
             } else if let Some(config) = &self.config {
                 Ok((config.clone(), PathBuf::from("test_path")))
             } else {
-                Err(AppError::ConfigurationNotFound { path: "no_config".to_string() })
+                Err(AppError::ConfigurationNotFound {
+                    path: "no_config".to_string(),
+                })
             }
         }
 
-        fn save(&self, _config: crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest, _path: PathBuf) -> Result<(), AppError> {
+        fn save(
+            &self,
+            _config: crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest,
+            _path: PathBuf,
+        ) -> Result<(), AppError> {
             Ok(())
         }
 
@@ -106,6 +118,7 @@ mod tests {
         }
     }
 
+    #[allow(dead_code)]
     fn create_test_config() -> Config {
         Config::new(
             "Test Manager".to_string(),

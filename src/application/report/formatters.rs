@@ -1,5 +1,5 @@
-use crate::application::report::types::{ExportFormat, ReportData};
 use crate::application::errors::AppError;
+use crate::application::report::types::{ExportFormat, ReportData};
 use serde_json;
 use serde_yaml;
 
@@ -47,7 +47,7 @@ impl ReportFormatter for CsvFormatter {
         fields.sort();
 
         let mut csv = String::new();
-        
+
         // Cabeçalho
         csv.push_str(&fields.join(","));
         csv.push('\n');
@@ -56,9 +56,7 @@ impl ReportFormatter for CsvFormatter {
         for record in &data.data {
             let mut row = Vec::new();
             for field in &fields {
-                let value = record.get(field)
-                    .map(format_value_for_csv)
-                    .unwrap_or_else(String::new);
+                let value = record.get(field).map(format_value_for_csv).unwrap_or_else(String::new);
                 row.push(value);
             }
             csv.push_str(&row.join(","));
@@ -101,14 +99,20 @@ impl ReportFormatter for PdfFormatter {
         // Implementação básica - retorna texto formatado
         let mut pdf_content = String::new();
         pdf_content.push_str(&format!("# {}\n\n", data.title));
-        pdf_content.push_str(&format!("Generated at: {}\n", data.generated_at.format("%Y-%m-%d %H:%M:%S")));
+        pdf_content.push_str(&format!(
+            "Generated at: {}\n",
+            data.generated_at.format("%Y-%m-%d %H:%M:%S")
+        ));
         pdf_content.push_str(&format!("Total records: {}\n\n", data.total_records));
 
         if let Some(summary) = &data.summary {
             pdf_content.push_str("## Summary\n\n");
             pdf_content.push_str(&format!("Total count: {}\n", summary.total_count));
             for (field, stats) in &summary.field_stats {
-                pdf_content.push_str(&format!("- {}: {} records, {} unique\n", field, stats.count, stats.unique_count));
+                pdf_content.push_str(&format!(
+                    "- {}: {} records, {} unique\n",
+                    field, stats.count, stats.unique_count
+                ));
             }
             pdf_content.push('\n');
         }
@@ -178,7 +182,8 @@ fn format_value_for_display(value: &serde_json::Value) -> String {
             format!("[{}]", items.join(", "))
         }
         serde_json::Value::Object(obj) => {
-            let pairs: Vec<String> = obj.iter()
+            let pairs: Vec<String> = obj
+                .iter()
                 .map(|(k, v)| format!("{}: {}", k, format_value_for_display(v)))
                 .collect();
             format!("{{{}}}", pairs.join(", "))

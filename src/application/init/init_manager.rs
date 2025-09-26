@@ -284,7 +284,7 @@ mod tests {
         let use_case = InitManagerUseCase::new(Box::new(mock_repo));
 
         let init_data = InitManagerData {
-            name: "".to_string(), // Invalid empty name
+            name: "".to_string(),               // Invalid empty name
             email: "invalid-email".to_string(), // Invalid email
             company_name: "TechConsulting Ltda".to_string(),
             timezone: "America/Sao_Paulo".to_string(),
@@ -315,7 +315,6 @@ mod tests {
         let result = use_case.execute(init_data);
         assert!(result.is_err());
     }
-
 
     #[test]
     fn test_validate_work_hours_invalid_format() {
@@ -356,7 +355,6 @@ mod tests {
         assert!(result.is_ok());
     }
 
-
     #[test]
     fn test_init_manager_data_creation() {
         let data = InitManagerData {
@@ -382,10 +380,10 @@ mod tests {
     fn test_init_manager_use_case_creation() {
         let mock_repo = MockConfigRepository::new();
         let _use_case = InitManagerUseCase::new(Box::new(mock_repo));
-        
+
         // Test that the use case was created successfully
         // We can't directly access the repository, but we can test that
         // the use case can be created without panicking
-        assert!(true); // This test passes if the constructor doesn't panic
+        // This test passes if the constructor doesn't panic
     }
 }
