@@ -568,4 +568,183 @@ mod tests {
         let result: AppResult<String> = Ok("Success".to_string());
         assert!(result.is_ok());
     }
+
+    // Test all error variants creation
+    #[test]
+    fn test_all_error_variants_creation() {
+        // Entity Not Found Errors
+        let project_not_found = AppError::project_not_found("PROJ-001");
+        assert!(matches!(project_not_found, AppError::ProjectNotFound { code } if code == "PROJ-001"));
+
+        let resource_not_found = AppError::resource_not_found("RES-001");
+        assert!(matches!(resource_not_found, AppError::ResourceNotFound { code } if code == "RES-001"));
+
+        let task_not_found = AppError::task_not_found("TASK-001");
+        assert!(matches!(task_not_found, AppError::TaskNotFound { code } if code == "TASK-001"));
+
+        let company_not_found = AppError::company_not_found("COMP-001");
+        assert!(matches!(company_not_found, AppError::CompanyNotFound { code } if code == "COMP-001"));
+
+        // Validation Errors
+        let validation_error = AppError::validation_error("name", "Name cannot be empty");
+        assert!(matches!(validation_error, AppError::ValidationError { field, message } 
+            if field == "name" && message == "Name cannot be empty"));
+
+        let project_validation = AppError::project_validation_failed("Invalid project data");
+        assert!(matches!(project_validation, AppError::ProjectValidationFailed { details } 
+            if details == "Invalid project data"));
+
+        let resource_validation = AppError::resource_validation_failed("Invalid resource data");
+        assert!(matches!(resource_validation, AppError::ResourceValidationFailed { details } 
+            if details == "Invalid resource data"));
+
+        let task_validation = AppError::task_validation_failed("Invalid task data");
+        assert!(matches!(task_validation, AppError::TaskValidationFailed { details } 
+            if details == "Invalid task data"));
+
+        // Repository and Persistence Errors
+        let repository_error = AppError::repository_error("find", "Database connection failed");
+        assert!(matches!(repository_error, AppError::RepositoryError { operation, details } 
+            if operation == "find" && details == "Database connection failed"));
+
+        let persistence_error = AppError::persistence_error("save", "File write failed");
+        assert!(matches!(persistence_error, AppError::PersistenceError { operation, details } 
+            if operation == "save" && details == "File write failed"));
+
+        // I/O Errors
+        let io_error = AppError::io_error("read", "File not found");
+        assert!(matches!(io_error, AppError::IoError { operation, details } 
+            if operation == "read" && details == "File not found"));
+
+        let io_error_with_path = AppError::io_error_with_path("write", "/path/to/file", "Permission denied");
+        assert!(matches!(io_error_with_path, AppError::IoErrorWithPath { operation, path, details } 
+            if operation == "write" && path == "/path/to/file" && details == "Permission denied"));
+
+        // Serialization Errors
+        let serialization_error = AppError::serialization_error("JSON", "Invalid UTF-8");
+        assert!(matches!(serialization_error, AppError::SerializationError { format, details } 
+            if format == "JSON" && details == "Invalid UTF-8"));
+
+        let deserialization_error = AppError::deserialization_error("YAML", "Invalid format");
+        assert!(matches!(deserialization_error, AppError::DeserializationError { format, details } 
+            if format == "YAML" && details == "Invalid format"));
+    }
+
+    #[test]
+    fn test_all_error_display_formatting() {
+        // Test display formatting for all error variants
+        let errors = vec![
+            (AppError::project_not_found("PROJ-001"), "Project with code 'PROJ-001' not found"),
+            (AppError::resource_not_found("RES-001"), "Resource with code 'RES-001' not found"),
+            (AppError::task_not_found("TASK-001"), "Task with code 'TASK-001' not found"),
+            (AppError::company_not_found("COMP-001"), "Company with code 'COMP-001' not found"),
+            (AppError::validation_error("name", "Cannot be empty"), "Validation error for field 'name': Cannot be empty"),
+            (AppError::project_validation_failed("Invalid data"), "Project validation failed: Invalid data"),
+            (AppError::resource_validation_failed("Invalid data"), "Resource validation failed: Invalid data"),
+            (AppError::task_validation_failed("Invalid data"), "Task validation failed: Invalid data"),
+            (AppError::repository_error("find", "Database connection failed"), "Repository error during find: Database connection failed"),
+            (AppError::persistence_error("save", "File write failed"), "Persistence error during save: File write failed"),
+            (AppError::io_error("read", "File not found"), "I/O error during read: File not found"),
+            (AppError::io_error_with_path("write", "/path", "Permission denied"), "I/O error during write on path '/path': Permission denied"),
+            (AppError::serialization_error("JSON", "Invalid UTF-8"), "Serialization error for format 'JSON': Invalid UTF-8"),
+            (AppError::deserialization_error("YAML", "Invalid format"), "Deserialization error for format 'YAML': Invalid format"),
+        ];
+
+        for (error, expected) in errors {
+            let display = format!("{}", error);
+            assert!(display.contains(expected), "Expected '{}' to contain '{}', got '{}'", display, expected, display);
+        }
+    }
+
+    #[test]
+    fn test_error_type_checking_methods() {
+        let project_error = AppError::project_not_found("PROJ-001");
+        assert!(project_error.is_project_not_found());
+        assert!(!project_error.is_resource_not_found());
+        assert!(!project_error.is_task_not_found());
+        assert!(!project_error.is_validation_error());
+
+        let resource_error = AppError::resource_not_found("RES-001");
+        assert!(!resource_error.is_project_not_found());
+        assert!(resource_error.is_resource_not_found());
+        assert!(!resource_error.is_task_not_found());
+        assert!(!resource_error.is_validation_error());
+
+        let task_error = AppError::task_not_found("TASK-001");
+        assert!(!task_error.is_project_not_found());
+        assert!(!task_error.is_resource_not_found());
+        assert!(task_error.is_task_not_found());
+        assert!(!task_error.is_validation_error());
+
+        let company_error = AppError::company_not_found("COMP-001");
+        assert!(!company_error.is_project_not_found());
+        assert!(!company_error.is_resource_not_found());
+        assert!(!company_error.is_task_not_found());
+        assert!(!company_error.is_validation_error());
+
+        let validation_error = AppError::validation_error("field", "message");
+        assert!(!validation_error.is_project_not_found());
+        assert!(!validation_error.is_resource_not_found());
+        assert!(!validation_error.is_task_not_found());
+        assert!(validation_error.is_validation_error());
+    }
+
+    #[test]
+    fn test_error_from_traits() {
+        // Test From<String>
+        let string_error: AppError = "Custom error".to_string().into();
+        assert!(matches!(string_error, AppError::Generic { message } if message == "Custom error"));
+
+        // Test From<&str>
+        let str_error: AppError = "Custom error".into();
+        assert!(matches!(str_error, AppError::Generic { message } if message == "Custom error"));
+
+        // Test From<io::Error>
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "File not found");
+        let app_error: AppError = io_error.into();
+        assert!(matches!(app_error, AppError::IoError { operation, .. } if operation == "file operation"));
+
+        // Test From<serde_yaml::Error>
+        let yaml_content = "invalid: yaml: content: [";
+        let yaml_error = serde_yaml::from_str::<serde_yaml::Value>(yaml_content).unwrap_err();
+        let app_error: AppError = yaml_error.into();
+        assert!(matches!(app_error, AppError::SerializationError { format, .. } if format == "YAML"));
+    }
+
+    #[test]
+    fn test_error_debug_formatting() {
+        let error = AppError::project_not_found("PROJ-001");
+        let debug = format!("{:?}", error);
+        assert!(debug.contains("ProjectNotFound"));
+        assert!(debug.contains("PROJ-001"));
+    }
+
+    #[test]
+    fn test_error_partial_eq() {
+        let error1 = AppError::project_not_found("PROJ-001");
+        let error2 = AppError::project_not_found("PROJ-001");
+        let error3 = AppError::project_not_found("PROJ-002");
+        let error4 = AppError::resource_not_found("PROJ-001");
+
+        assert_eq!(error1, error2);
+        assert_ne!(error1, error3);
+        assert_ne!(error1, error4);
+    }
+
+    #[test]
+    fn test_app_result_error_handling() {
+        let success: AppResult<String> = Ok("Success".to_string());
+        let failure: AppResult<String> = Err(AppError::project_not_found("PROJ-001"));
+
+        assert!(success.is_ok());
+        assert!(failure.is_err());
+
+        if let Ok(value) = success {
+            assert_eq!(value, "Success");
+        }
+
+        if let Err(error) = failure {
+            assert!(error.is_project_not_found());
+        }
+    }
 }

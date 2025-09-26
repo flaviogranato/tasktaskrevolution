@@ -736,4 +736,333 @@ mod tests {
         assert!(display.contains("Circular dependency detected"));
         assert!(display.contains("task1, task2"));
     }
+
+    #[test]
+    fn test_validation_config_default() {
+        let config = ValidationConfig::default();
+        assert!(config.circular_dependency_check);
+        assert!(config.date_overlap_check);
+        assert!(config.resource_conflict_check);
+        assert!(config.resource_capacity_check);
+        assert!(config.time_constraint_check);
+        assert_eq!(config.date_tolerance_days, 0);
+        assert_eq!(config.max_resource_capacity, 100);
+    }
+
+    #[test]
+    fn test_validation_config_custom() {
+        let config = ValidationConfig {
+            circular_dependency_check: false,
+            date_overlap_check: true,
+            resource_conflict_check: false,
+            resource_capacity_check: true,
+            time_constraint_check: false,
+            date_tolerance_days: 5,
+            max_resource_capacity: 50,
+        };
+
+        assert!(!config.circular_dependency_check);
+        assert!(config.date_overlap_check);
+        assert!(!config.resource_conflict_check);
+        assert!(config.resource_capacity_check);
+        assert!(!config.time_constraint_check);
+        assert_eq!(config.date_tolerance_days, 5);
+        assert_eq!(config.max_resource_capacity, 50);
+    }
+
+    #[test]
+    fn test_conflict_validation_system_new() {
+        let config = ValidationConfig::default();
+        let system = ConflictValidationSystem::new(config);
+        assert_eq!(system.get_conflict_history().len(), 0);
+    }
+
+    #[test]
+    fn test_conflict_validation_system_with_default_config() {
+        let system = ConflictValidationSystem::with_default_config();
+        assert_eq!(system.get_conflict_history().len(), 0);
+    }
+
+    #[test]
+    fn test_conflict_type_date_overlap() {
+        let start1 = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end1 = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
+        let _start2 = NaiveDate::from_ymd_opt(2024, 1, 5).unwrap();
+        let _end2 = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        let conflict = ConflictType::DateOverlap(
+            "task1".to_string(),
+            "task2".to_string(),
+            start1,
+            end1,
+        );
+
+        match conflict {
+            ConflictType::DateOverlap(task1, task2, start, end) => {
+                assert_eq!(task1, "task1");
+                assert_eq!(task2, "task2");
+                assert_eq!(start, start1);
+                assert_eq!(end, end1);
+            }
+            _ => panic!("Expected DateOverlap conflict type"),
+        }
+    }
+
+    #[test]
+    fn test_conflict_type_resource_conflict() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
+
+        let conflict = ConflictType::ResourceConflict(
+            "task1".to_string(),
+            "task2".to_string(),
+            "resource1".to_string(),
+            start,
+            end,
+        );
+
+        match conflict {
+            ConflictType::ResourceConflict(task1, task2, resource, start_date, end_date) => {
+                assert_eq!(task1, "task1");
+                assert_eq!(task2, "task2");
+                assert_eq!(resource, "resource1");
+                assert_eq!(start_date, start);
+                assert_eq!(end_date, end);
+            }
+            _ => panic!("Expected ResourceConflict conflict type"),
+        }
+    }
+
+    #[test]
+    fn test_conflict_type_impossible_dependency() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+
+        let conflict = ConflictType::ImpossibleDependency(
+            "task1".to_string(),
+            "task2".to_string(),
+            start,
+            end,
+        );
+
+        match conflict {
+            ConflictType::ImpossibleDependency(task1, task2, start_date, end_date) => {
+                assert_eq!(task1, "task1");
+                assert_eq!(task2, "task2");
+                assert_eq!(start_date, start);
+                assert_eq!(end_date, end);
+            }
+            _ => panic!("Expected ImpossibleDependency conflict type"),
+        }
+    }
+
+    #[test]
+    fn test_conflict_type_priority_conflict() {
+        let conflict = ConflictType::PriorityConflict(
+            "task1".to_string(),
+            "task2".to_string(),
+            "High".to_string(),
+            "Low".to_string(),
+        );
+
+        match conflict {
+            ConflictType::PriorityConflict(task1, task2, priority1, priority2) => {
+                assert_eq!(task1, "task1");
+                assert_eq!(task2, "task2");
+                assert_eq!(priority1, "High");
+                assert_eq!(priority2, "Low");
+            }
+            _ => panic!("Expected PriorityConflict conflict type"),
+        }
+    }
+
+    #[test]
+    fn test_conflict_type_resource_capacity_exceeded() {
+        let start = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end = NaiveDate::from_ymd_opt(2024, 1, 10).unwrap();
+
+        let conflict = ConflictType::ResourceCapacityExceeded(
+            "resource1".to_string(),
+            start,
+            end,
+            150,
+            100,
+        );
+
+        match conflict {
+            ConflictType::ResourceCapacityExceeded(resource, start_date, end_date, required, available) => {
+                assert_eq!(resource, "resource1");
+                assert_eq!(start_date, start);
+                assert_eq!(end_date, end);
+                assert_eq!(required, 150);
+                assert_eq!(available, 100);
+            }
+            _ => panic!("Expected ResourceCapacityExceeded conflict type"),
+        }
+    }
+
+    #[test]
+    fn test_conflict_type_time_constraint_violation() {
+        let conflict = ConflictType::TimeConstraintViolation(
+            "task1".to_string(),
+            "constraint1".to_string(),
+            "Must finish by deadline".to_string(),
+        );
+
+        match conflict {
+            ConflictType::TimeConstraintViolation(task, constraint, message) => {
+                assert_eq!(task, "task1");
+                assert_eq!(constraint, "constraint1");
+                assert_eq!(message, "Must finish by deadline");
+            }
+            _ => panic!("Expected TimeConstraintViolation conflict type"),
+        }
+    }
+
+    #[test]
+    fn test_conflict_severity_variants() {
+        assert_eq!(ConflictSeverity::Critical, ConflictSeverity::Critical);
+        assert_eq!(ConflictSeverity::Warning, ConflictSeverity::Warning);
+        assert_eq!(ConflictSeverity::Info, ConflictSeverity::Info);
+    }
+
+    #[test]
+    fn test_validation_status_variants() {
+        let valid_status = ValidationStatus::Valid;
+        let invalid_status = ValidationStatus::Invalid(vec![]);
+        let in_progress_status = ValidationStatus::InProgress;
+        let error_status = ValidationStatus::Error("Test error".to_string());
+
+        assert_eq!(valid_status, ValidationStatus::Valid);
+        assert!(matches!(invalid_status, ValidationStatus::Invalid(_)));
+        assert_eq!(in_progress_status, ValidationStatus::InProgress);
+        assert!(matches!(error_status, ValidationStatus::Error(_)));
+    }
+
+    #[test]
+    fn test_conflict_report_creation() {
+        let report = ConflictReport {
+            conflict_type: ConflictType::CircularDependency(vec!["task1".to_string()]),
+            severity: ConflictSeverity::Warning,
+            message: "Test message".to_string(),
+            affected_tasks: vec!["task1".to_string()],
+            suggested_fixes: vec!["Fix 1".to_string()],
+            detected_at: chrono::Utc::now(),
+        };
+
+        assert!(matches!(report.conflict_type, ConflictType::CircularDependency(_)));
+        assert_eq!(report.severity, ConflictSeverity::Warning);
+        assert_eq!(report.message, "Test message");
+        assert_eq!(report.affected_tasks.len(), 1);
+        assert_eq!(report.suggested_fixes.len(), 1);
+    }
+
+    #[test]
+    fn test_validate_graph_with_disabled_checks() {
+        let mut config = ValidationConfig::default();
+        config.circular_dependency_check = false;
+        config.date_overlap_check = false;
+        config.resource_conflict_check = false;
+        config.resource_capacity_check = false;
+        config.time_constraint_check = false;
+
+        let mut system = ConflictValidationSystem::new(config);
+        let graph = AdvancedDependencyGraph::new();
+        let calculation_results = HashMap::new();
+
+        let status = system.validate_graph(&graph, &calculation_results);
+        assert!(matches!(status, ValidationStatus::Valid));
+    }
+
+    #[test]
+    fn test_validate_graph_with_empty_calculation_results() {
+        let mut system = ConflictValidationSystem::with_default_config();
+        let graph = AdvancedDependencyGraph::new();
+        let calculation_results = HashMap::new();
+
+        let status = system.validate_graph(&graph, &calculation_results);
+        assert!(matches!(status, ValidationStatus::Valid));
+    }
+
+    #[test]
+    fn test_validate_dependency_with_valid_dependency() {
+        let system = ConflictValidationSystem::with_default_config();
+        let mut graph = AdvancedDependencyGraph::new();
+
+        let task1 = TaskNode::new("task1".to_string(), "Task 1".to_string(), None, None, None);
+        let task2 = TaskNode::new("task2".to_string(), "Task 2".to_string(), None, None, None);
+
+        graph.add_task(task1);
+        graph.add_task(task2);
+
+        let dep = AdvancedDependency::new(
+            "task1".to_string(),
+            "task2".to_string(),
+            DependencyType::FinishToStart,
+            LagType::zero(),
+            "user1".to_string(),
+            None,
+        );
+
+        let result = system.validate_dependency(&dep, &graph);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_dependency_with_nonexistent_task() {
+        let system = ConflictValidationSystem::with_default_config();
+        let graph = AdvancedDependencyGraph::new();
+
+        let dep = AdvancedDependency::new(
+            "nonexistent".to_string(),
+            "task2".to_string(),
+            DependencyType::FinishToStart,
+            LagType::zero(),
+            "user1".to_string(),
+            None,
+        );
+
+        let result = system.validate_dependency(&dep, &graph);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_conflict_history() {
+        let system = ConflictValidationSystem::with_default_config();
+        let history = system.get_conflict_history();
+        assert_eq!(history.len(), 0);
+    }
+
+    #[test]
+    fn test_clear_history() {
+        let mut system = ConflictValidationSystem::with_default_config();
+        system.clear_history();
+        // Should not panic and should work without issues
+    }
+
+    #[test]
+    fn test_get_validation_stats() {
+        let config = ValidationConfig::default();
+        let system = ConflictValidationSystem::new(config);
+        let (total_conflicts, critical_conflicts, warnings) = system.get_validation_stats();
+        assert_eq!(total_conflicts, 0);
+        assert_eq!(critical_conflicts, 0);
+        assert_eq!(warnings, 0);
+    }
+
+    #[test]
+    fn test_update_config() {
+        let mut system = ConflictValidationSystem::with_default_config();
+        let mut new_config = ValidationConfig::default();
+        new_config.circular_dependency_check = false;
+        new_config.date_tolerance_days = 5;
+
+        system.update_config(new_config.clone());
+        // Config is updated internally, we can't directly access it
+        // but we can verify the system still works
+        let graph = AdvancedDependencyGraph::new();
+        let calculation_results = HashMap::new();
+        let status = system.validate_graph(&graph, &calculation_results);
+        assert!(matches!(status, ValidationStatus::Valid));
+    }
 }

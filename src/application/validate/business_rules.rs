@@ -237,3 +237,508 @@ where
             .count()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::application::validate::types::{ValidationResult, ValidationSeverity};
+    use crate::domain::company_management::company::Company;
+    use crate::domain::company_management::repository::CompanyRepository;
+    use crate::domain::project_management::any_project::AnyProject;
+    use crate::domain::project_management::repository::ProjectRepository;
+    use crate::domain::resource_management::any_resource::AnyResource;
+    use crate::domain::resource_management::repository::ResourceRepository;
+    use crate::domain::resource_management::resource::Period;
+    use chrono::{DateTime, Local};
+
+    // Mock repositories for testing
+    struct MockProjectRepository {
+        projects: Vec<AnyProject>,
+    }
+
+    struct MockResourceRepository {
+        resources: Vec<AnyResource>,
+    }
+
+    struct MockCompanyRepository {
+        companies: Vec<Company>,
+    }
+
+    impl ProjectRepository for MockProjectRepository {
+        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn load(&self) -> Result<AnyProject, AppError> {
+            Err(AppError::ProjectNotFound { code: "test".to_string() })
+        }
+
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+            Ok(self.projects.clone())
+        }
+
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
+            Ok(None)
+        }
+
+        fn get_next_code(&self) -> Result<String, AppError> {
+            Ok("PROJ-001".to_string())
+        }
+    }
+
+    impl ResourceRepository for MockResourceRepository {
+        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
+            Err(AppError::ResourceNotFound { code: "test".to_string() })
+        }
+
+        fn save_in_hierarchy(
+            &self,
+            _resource: AnyResource,
+            _company_code: &str,
+            _project_code: Option<&str>,
+        ) -> Result<AnyResource, AppError> {
+            Err(AppError::ResourceNotFound { code: "test".to_string() })
+        }
+
+        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+            Ok(self.resources.clone())
+        }
+
+        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+            Ok(vec![])
+        }
+
+        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+            Ok(vec![])
+        }
+
+        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
+            Ok(None)
+        }
+
+        fn save_time_off(
+            &self,
+            _resource_name: &str,
+            _hours: u32,
+            _date: &str,
+            _description: Option<String>,
+        ) -> Result<AnyResource, AppError> {
+            Err(AppError::ResourceNotFound { code: "test".to_string() })
+        }
+
+        fn save_vacation(
+            &self,
+            _resource_name: &str,
+            _start_date: &str,
+            _end_date: &str,
+            _is_time_off_compensation: bool,
+            _compensated_hours: Option<u32>,
+        ) -> Result<AnyResource, AppError> {
+            Err(AppError::ResourceNotFound { code: "test".to_string() })
+        }
+
+        fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
+            false
+        }
+
+        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
+            Ok("RES-001".to_string())
+        }
+    }
+
+    impl CompanyRepository for MockCompanyRepository {
+        fn save(&self, _company: Company) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn find_all(&self) -> Result<Vec<Company>, AppError> {
+            Ok(self.companies.clone())
+        }
+
+        fn find_by_code(&self, _code: &str) -> Result<Option<Company>, AppError> {
+            Ok(None)
+        }
+
+        fn find_by_id(&self, _id: &str) -> Result<Option<Company>, AppError> {
+            Ok(None)
+        }
+
+        fn find_by_name(&self, _name: &str) -> Result<Option<Company>, AppError> {
+            Ok(None)
+        }
+
+        fn update(&self, _company: Company) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn delete(&self, _id: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn get_next_code(&self) -> Result<String, AppError> {
+            Ok("COMP-001".to_string())
+        }
+
+        fn code_exists(&self, _code: &str) -> Result<bool, AppError> {
+            Ok(false)
+        }
+
+        fn name_exists(&self, _name: &str) -> Result<bool, AppError> {
+            Ok(false)
+        }
+    }
+
+    #[test]
+    fn test_validate_business_rules_use_case_creation() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let _use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+        // Should not panic
+        assert!(true);
+    }
+
+    #[test]
+    fn test_validate_business_rules_execute_with_empty_repositories() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+        let result = use_case.execute();
+        assert!(result.is_ok());
+        let results = result.unwrap();
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_validate_business_rules_execute_returns_validation_results() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+        let result = use_case.execute();
+        assert!(result.is_ok());
+        let results = result.unwrap();
+        
+        // Verify that all results are ValidationResult instances
+        for validation_result in results {
+            assert!(matches!(validation_result, ValidationResult { .. }));
+        }
+    }
+
+    #[test]
+    fn test_check_vacation_overlap_no_overlap() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        let period1 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-10T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        let period2 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-15T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-20T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        assert!(!use_case.check_vacation_overlap(&period1, &period2));
+    }
+
+    #[test]
+    fn test_check_vacation_overlap_with_overlap() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        let period1 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-15T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        let period2 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-10T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-20T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        assert!(use_case.check_vacation_overlap(&period1, &period2));
+    }
+
+    #[test]
+    fn test_check_vacation_overlap_exact_same_period() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        let period1 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-10T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        let period2 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-10T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        assert!(use_case.check_vacation_overlap(&period1, &period2));
+    }
+
+    #[test]
+    fn test_check_vacation_overlap_touching_periods() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        let period1 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-10T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        let period2 = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-10T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-20T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        assert!(use_case.check_vacation_overlap(&period1, &period2));
+    }
+
+    #[test]
+    fn test_check_layoff_overlap_with_overlap() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        let vacation_period = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-15T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        let layoff_period = ("2024-01-10".to_string(), "2024-01-20".to_string());
+
+        assert!(use_case.check_layoff_overlap(&vacation_period, &layoff_period));
+    }
+
+    #[test]
+    fn test_check_layoff_overlap_no_overlap() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        let vacation_period = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-05T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        let layoff_period = ("2024-01-10".to_string(), "2024-01-20".to_string());
+
+        assert!(!use_case.check_layoff_overlap(&vacation_period, &layoff_period));
+    }
+
+    #[test]
+    fn test_check_layoff_overlap_invalid_date_format() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        let vacation_period = Period {
+            start_date: DateTime::parse_from_rfc3339("2024-01-01T00:00:00Z").unwrap().into(),
+            end_date: DateTime::parse_from_rfc3339("2024-01-15T00:00:00Z").unwrap().into(),
+            approved: true,
+            period_type: crate::domain::resource_management::resource::PeriodType::Vacation,
+            is_time_off_compensation: false,
+            compensated_hours: None,
+            is_layoff: false,
+        };
+
+        let layoff_period = ("invalid-date".to_string(), "2024-01-20".to_string());
+
+        // Should not panic even with invalid date format
+        let _result = use_case.check_layoff_overlap(&vacation_period, &layoff_period);
+        assert!(true);
+    }
+
+    #[test]
+    fn test_count_available_resources_during_project_no_vacations() {
+        let project_repo = MockProjectRepository { projects: vec![] };
+        let resource_repo = MockResourceRepository { resources: vec![] };
+        let company_repo = MockCompanyRepository { companies: vec![] };
+
+        let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
+
+        // Create a mock project with start and end dates
+        let project = AnyProject::Project(crate::domain::project_management::project::Project::new(
+            "PROJ-001".to_string(),
+            "Test Project".to_string(),
+            "COMP-001".to_string(),
+            "user1".to_string(),
+        ).unwrap());
+
+        let resources = vec![]; // Empty resources
+        let vacation_rules = crate::domain::project_management::project::VacationRules::default();
+
+        let count = use_case.count_available_resources_during_project(&resources, &project, &vacation_rules);
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_validation_result_builder_methods() {
+        let result = ValidationResult::error("Test error".to_string())
+            .with_entity("Project".to_string(), "PROJ-001".to_string())
+            .with_field("name".to_string())
+            .with_details("Detailed error information".to_string());
+
+        assert_eq!(result.severity, ValidationSeverity::Error);
+        assert_eq!(result.message, "Test error");
+        assert_eq!(result.entity_type, Some("Project".to_string()));
+        assert_eq!(result.entity_code, Some("PROJ-001".to_string()));
+        assert_eq!(result.field, Some("name".to_string()));
+        assert_eq!(result.details, Some("Detailed error information".to_string()));
+    }
+
+    #[test]
+    fn test_validation_result_warning_builder() {
+        let result = ValidationResult::warning("Test warning".to_string())
+            .with_entity("Resource".to_string(), "RES-001".to_string())
+            .with_details("Warning details".to_string());
+
+        assert_eq!(result.severity, ValidationSeverity::Warning);
+        assert_eq!(result.message, "Test warning");
+        assert_eq!(result.entity_type, Some("Resource".to_string()));
+        assert_eq!(result.entity_code, Some("RES-001".to_string()));
+        assert_eq!(result.details, Some("Warning details".to_string()));
+    }
+
+    #[test]
+    fn test_validation_result_info_builder() {
+        let result = ValidationResult::info("Test info".to_string())
+            .with_entity("Task".to_string(), "TASK-001".to_string());
+
+        assert_eq!(result.severity, ValidationSeverity::Info);
+        assert_eq!(result.message, "Test info");
+        assert_eq!(result.entity_type, Some("Task".to_string()));
+        assert_eq!(result.entity_code, Some("TASK-001".to_string()));
+        assert_eq!(result.field, None);
+        assert_eq!(result.details, None);
+    }
+
+    #[test]
+    fn test_validation_result_minimal_creation() {
+        let result = ValidationResult::error("Simple error".to_string());
+
+        assert_eq!(result.severity, ValidationSeverity::Error);
+        assert_eq!(result.message, "Simple error");
+        assert_eq!(result.entity_type, None);
+        assert_eq!(result.entity_code, None);
+        assert_eq!(result.field, None);
+        assert_eq!(result.details, None);
+    }
+
+    #[test]
+    fn test_validation_result_display_formatting() {
+        let result = ValidationResult::error("Test error".to_string())
+            .with_entity("Project".to_string(), "PROJ-001".to_string())
+            .with_field("name".to_string())
+            .with_details("Detailed info".to_string());
+
+        let display = format!("{}", result);
+        assert!(display.contains("ERROR"));
+        assert!(display.contains("Test error"));
+        assert!(display.contains("Project: PROJ-001"));
+        assert!(display.contains("Field: name"));
+        assert!(display.contains("Detailed info"));
+    }
+
+    #[test]
+    fn test_validation_result_with_different_entity_types() {
+        let project_result = ValidationResult::error("Project error".to_string())
+            .with_entity("Project".to_string(), "PROJ-001".to_string());
+
+        let resource_result = ValidationResult::warning("Resource warning".to_string())
+            .with_entity("Resource".to_string(), "RES-001".to_string());
+
+        let task_result = ValidationResult::info("Task info".to_string())
+            .with_entity("Task".to_string(), "TASK-001".to_string());
+
+        assert_eq!(project_result.entity_type, Some("Project".to_string()));
+        assert_eq!(resource_result.entity_type, Some("Resource".to_string()));
+        assert_eq!(task_result.entity_type, Some("Task".to_string()));
+    }
+
+    #[test]
+    fn test_validation_result_severity_levels() {
+        let error_result = ValidationResult::error("Error message".to_string());
+        let warning_result = ValidationResult::warning("Warning message".to_string());
+        let info_result = ValidationResult::info("Info message".to_string());
+
+        assert_eq!(error_result.severity, ValidationSeverity::Error);
+        assert_eq!(warning_result.severity, ValidationSeverity::Warning);
+        assert_eq!(info_result.severity, ValidationSeverity::Info);
+    }
+}

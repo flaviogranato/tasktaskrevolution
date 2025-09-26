@@ -408,3 +408,202 @@ impl From<Task<Cancelled>> for AnyTask {
         AnyTask::Cancelled(task)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::category::Category;
+    use super::super::priority::Priority;
+    use chrono::NaiveDate;
+    use uuid7::uuid7;
+
+    fn create_test_task_planned() -> Task<Planned> {
+        Task {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-001".to_string(),
+            name: "Test Task".to_string(),
+            description: Some("Test Description".to_string()),
+            state: Planned,
+            start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+            actual_end_date: None,
+            dependencies: vec!["TASK-000".to_string()],
+            assigned_resources: vec!["RES-001".to_string()],
+            priority: Priority::High,
+            category: Category::Development,
+        }
+    }
+
+    fn create_test_task_in_progress() -> Task<InProgress> {
+        Task {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-002".to_string(),
+            name: "In Progress Task".to_string(),
+            description: Some("In Progress Description".to_string()),
+            state: InProgress { progress: 50 },
+            start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+            actual_end_date: None,
+            dependencies: vec![],
+            assigned_resources: vec!["RES-002".to_string()],
+            priority: Priority::Medium,
+            category: Category::Testing,
+        }
+    }
+
+    fn create_test_task_completed() -> Task<Completed> {
+        Task {
+            id: uuid7(),
+            project_code: "PROJ-001".to_string(),
+            code: "TASK-003".to_string(),
+            name: "Completed Task".to_string(),
+            description: Some("Completed Description".to_string()),
+            state: Completed,
+            start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            due_date: NaiveDate::from_ymd_opt(2024, 1, 31).unwrap(),
+            actual_end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 25).unwrap()),
+            dependencies: vec![],
+            assigned_resources: vec!["RES-003".to_string()],
+            priority: Priority::Low,
+            category: Category::Documentation,
+        }
+    }
+
+    #[test]
+    fn test_any_task_id() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task.clone());
+        assert_eq!(any_task.id(), &planned_task.id);
+    }
+
+    #[test]
+    fn test_any_task_code() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(any_task.code(), "TASK-001");
+    }
+
+    #[test]
+    fn test_any_task_name() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(any_task.name(), "Test Task");
+    }
+
+    #[test]
+    fn test_any_task_description() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(any_task.description(), Some("Test Description"));
+    }
+
+    #[test]
+    fn test_any_task_project_code() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(any_task.project_code(), "PROJ-001");
+    }
+
+    #[test]
+    fn test_any_task_start_date() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(*any_task.start_date(), NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+    }
+
+    #[test]
+    fn test_any_task_due_date() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(*any_task.due_date(), NaiveDate::from_ymd_opt(2024, 1, 31).unwrap());
+    }
+
+    #[test]
+    fn test_any_task_dependencies() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(any_task.dependencies(), &vec!["TASK-000".to_string()]);
+    }
+
+    #[test]
+    fn test_any_task_assigned_resources() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(any_task.assigned_resources(), &vec!["RES-001".to_string()]);
+    }
+
+    #[test]
+    fn test_any_task_status() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        assert_eq!(any_task.status(), "Planned");
+
+        let in_progress_task = create_test_task_in_progress();
+        let any_task = AnyTask::InProgress(in_progress_task);
+        assert_eq!(any_task.status(), "InProgress");
+
+        let completed_task = create_test_task_completed();
+        let any_task = AnyTask::Completed(completed_task);
+        assert_eq!(any_task.status(), "Completed");
+    }
+
+
+    #[test]
+    fn test_any_task_complete() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        let completed_task = any_task.complete();
+        assert_eq!(completed_task.status(), "Completed");
+    }
+
+    #[test]
+    fn test_any_task_from_planned() {
+        let planned_task = create_test_task_planned();
+        let any_task: AnyTask = planned_task.clone().into();
+        assert!(matches!(any_task, AnyTask::Planned(_)));
+        assert_eq!(any_task.code(), "TASK-001");
+    }
+
+    #[test]
+    fn test_any_task_from_in_progress() {
+        let in_progress_task = create_test_task_in_progress();
+        let any_task: AnyTask = in_progress_task.clone().into();
+        assert!(matches!(any_task, AnyTask::InProgress(_)));
+        assert_eq!(any_task.code(), "TASK-002");
+    }
+
+    #[test]
+    fn test_any_task_from_completed() {
+        let completed_task = create_test_task_completed();
+        let any_task: AnyTask = completed_task.clone().into();
+        assert!(matches!(any_task, AnyTask::Completed(_)));
+        assert_eq!(any_task.code(), "TASK-003");
+    }
+
+    #[test]
+    fn test_any_task_equality() {
+        let planned_task = create_test_task_planned();
+        let any_task1 = AnyTask::Planned(planned_task.clone());
+        let any_task2 = AnyTask::Planned(planned_task);
+        assert_eq!(any_task1, any_task2);
+    }
+
+    #[test]
+    fn test_any_task_serialization() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        let serialized = serde_yaml::to_string(&any_task).unwrap();
+        assert!(serialized.contains("status: Planned"));
+        assert!(serialized.contains("TASK-001"));
+    }
+
+    #[test]
+    fn test_any_task_clone() {
+        let planned_task = create_test_task_planned();
+        let any_task = AnyTask::Planned(planned_task);
+        let cloned = any_task.clone();
+        assert_eq!(any_task, cloned);
+    }
+}

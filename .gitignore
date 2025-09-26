@@ -14,3 +14,4 @@ fix_mock_repos.sh
 # Documentação de testes
 TEST_CASES.md
 TUTORIAL_TESTE.md
+TEST_COVERAGE_ANALYSIS.md

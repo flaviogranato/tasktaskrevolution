@@ -173,4 +173,122 @@ mod test {
         let actual_desc = any_project.description().map(|s| s.to_string());
         assert_eq!(actual_desc, expected_desc);
     }
+
+    #[test]
+    fn test_create_project_with_custom_code() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateProjectUseCase::new(mock_repo);
+        let name = "Custom Project";
+        let custom_code = "CUSTOM-001".to_string();
+
+        let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), Some(custom_code.clone()), None, None);
+        assert!(result.is_ok());
+        
+        let project = result.unwrap();
+        assert_eq!(project.code(), custom_code);
+        assert_eq!(project.name(), name);
+    }
+
+    #[test]
+    fn test_create_project_with_dates() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateProjectUseCase::new(mock_repo);
+        let name = "Project with Dates";
+        let start_date = chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+
+        let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), None, Some(start_date), Some(end_date));
+        assert!(result.is_ok());
+        
+        let project = result.unwrap();
+        assert_eq!(project.name(), name);
+        assert_eq!(project.start_date(), Some(start_date));
+        assert_eq!(project.end_date(), Some(end_date));
+    }
+
+    #[test]
+    fn test_create_project_with_description() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateProjectUseCase::new(mock_repo);
+        let name = "Project with Description";
+        let description = "This is a detailed project description";
+
+        let result = use_case.execute(name, Some(description), "TEST_COMPANY".to_string(), None, None, None);
+        assert!(result.is_ok());
+        
+        let project = result.unwrap();
+        assert_eq!(project.name(), name);
+        assert_eq!(project.description(), Some(&description.to_string()));
+    }
+
+    #[test]
+    fn test_create_project_use_case_creation() {
+        let mock_repo = MockProjectRepository::new(false);
+        let _use_case = CreateProjectUseCase::new(mock_repo);
+        
+        // Test that the use case was created successfully
+        assert!(true); // If we get here, creation succeeded
+    }
+
+    #[test]
+    fn test_create_project_repository_error() {
+        let mock_repo = MockProjectRepository::new(true);
+        let use_case = CreateProjectUseCase::new(mock_repo);
+        let name = "Test Project";
+
+        let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), None, None, None);
+        assert!(result.is_err());
+        
+        match result.unwrap_err() {
+            AppError::ValidationError { field, message } => {
+                assert_eq!(field, "repository");
+                assert_eq!(message, "Erro mockado ao salvar");
+            }
+            _ => panic!("Expected ValidationError"),
+        }
+    }
+
+    #[test]
+    fn test_create_project_minimal_parameters() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateProjectUseCase::new(mock_repo);
+        let name = "Minimal Project";
+
+        let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), None, None, None);
+        assert!(result.is_ok());
+        
+        let project = result.unwrap();
+        assert_eq!(project.name(), name);
+        assert_eq!(project.company_code(), "TEST_COMPANY");
+        assert_eq!(project.created_by(), "system");
+    }
+
+    #[test]
+    fn test_create_project_with_all_parameters() {
+        let mock_repo = MockProjectRepository::new(false);
+        let use_case = CreateProjectUseCase::new(mock_repo);
+        let name = "Complete Project";
+        let description = "A complete project with all parameters";
+        let custom_code = "COMPLETE-001".to_string();
+        let start_date = chrono::NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+        let end_date = chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+
+        let result = use_case.execute(
+            name, 
+            Some(description), 
+            "TEST_COMPANY".to_string(), 
+            Some(custom_code.clone()), 
+            Some(start_date), 
+            Some(end_date)
+        );
+        assert!(result.is_ok());
+        
+        let project = result.unwrap();
+        assert_eq!(project.name(), name);
+        assert_eq!(project.description(), Some(&description.to_string()));
+        assert_eq!(project.code(), custom_code);
+        assert_eq!(project.start_date(), Some(start_date));
+        assert_eq!(project.end_date(), Some(end_date));
+        assert_eq!(project.company_code(), "TEST_COMPANY");
+    }
 }
