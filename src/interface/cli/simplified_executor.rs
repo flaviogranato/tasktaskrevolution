@@ -10,6 +10,7 @@ use crate::application::{
         companies::ListCompaniesUseCase, projects::ListProjectsUseCase, resources::ListResourcesUseCase,
         tasks::ListTasksUseCase,
     },
+    shared::code_resolver::CodeResolver,
     project::{
         cancel_project::CancelProjectUseCase,
         update_project::{UpdateProjectArgs, UpdateProjectUseCase},
@@ -434,7 +435,8 @@ impl SimplifiedExecutor {
                     let (project_code, company_code) =
                         context_manager.resolve_project_codes(Some(project_code), company)?;
                     let project_repo = context_manager.get_project_repository();
-                    let use_case = ListTasksUseCase::new(project_repo);
+                    let code_resolver = CodeResolver::new(context_manager.get_base_path());
+                    let use_case = ListTasksUseCase::new(project_repo, code_resolver);
 
                     match use_case.execute(&project_code, &company_code) {
                         Ok(tasks) => {
@@ -481,7 +483,8 @@ impl SimplifiedExecutor {
                                 format!("Project context detected - company: {}, project: {}", company_code, project_code)
                             });
                             let project_repo = context_manager.get_project_repository();
-                            let use_case = ListTasksUseCase::new(project_repo);
+                            let code_resolver = CodeResolver::new(context_manager.get_base_path());
+                            let use_case = ListTasksUseCase::new(project_repo, code_resolver);
 
                             match use_case.execute(project_code, company_code) {
                                 Ok(tasks) => {
@@ -520,7 +523,8 @@ impl SimplifiedExecutor {
                             // In other contexts, list tasks for all projects in company
                             let company_code = context_manager.resolve_company_code(company)?;
                             let project_repo = context_manager.get_project_repository();
-                            let use_case = ListTasksUseCase::new(project_repo);
+                            let code_resolver = CodeResolver::new(context_manager.get_base_path());
+                            let use_case = ListTasksUseCase::new(project_repo, code_resolver);
 
                             match use_case.execute_all_by_company(&company_code) {
                                 Ok(tasks) => {

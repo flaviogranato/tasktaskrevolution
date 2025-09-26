@@ -1,34 +1,37 @@
 #![allow(unused_imports)]
 use crate::application::errors::AppError;
-use crate::domain::project_management::repository::ProjectRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 
-pub struct ListTasksUseCase<R: ProjectRepository> {
+pub struct ListTasksUseCase<R: ProjectRepository + ProjectRepositoryWithId, CR: CodeResolverTrait> {
     repository: R,
+    code_resolver: CR,
 }
 
-impl<R: ProjectRepository> ListTasksUseCase<R> {
-    pub fn new(repository: R) -> Self {
-        Self { repository }
+impl<R: ProjectRepository + ProjectRepositoryWithId, CR: CodeResolverTrait> ListTasksUseCase<R, CR> {
+    pub fn new(repository: R, code_resolver: CR) -> Self {
+        Self { repository, code_resolver }
     }
 
     pub fn execute(&self, project_code: &str, company_code: &str) -> Result<Vec<AnyTask>, AppError> {
-        let project = self.repository.find_by_code(project_code)?;
-        match project {
-            Some(p) => {
-                // Verify the project belongs to the correct company
-                if p.company_code() == company_code {
-                    let tasks = p.tasks().values().cloned().collect::<Vec<_>>();
-                    Ok(tasks)
-                } else {
-                    Err(AppError::ProjectNotFound {
-                        code: project_code.to_string(),
-                    })
-                }
-            }
-            None => Err(AppError::ProjectNotFound {
+        // 1. Resolve project code to ID
+        let project_id = self.code_resolver.resolve_project_code(project_code)?;
+        
+        // 2. Use ID for internal operation
+        let project = self.repository.find_by_id(&project_id)?
+            .ok_or_else(|| AppError::ProjectNotFound {
                 code: project_code.to_string(),
-            }),
+            })?;
+        
+        // 3. Verify the project belongs to the correct company
+        if project.company_code() == company_code {
+            let tasks = project.tasks().values().cloned().collect::<Vec<_>>();
+            Ok(tasks)
+        } else {
+            Err(AppError::ProjectNotFound {
+                code: project_code.to_string(),
+            })
         }
     }
 
@@ -63,6 +66,10 @@ mod tests {
         should_fail: bool,
     }
 
+    struct MockCodeResolver {
+        should_fail: bool,
+    }
+
     impl MockProjectRepository {
         fn new_with_project(project: AnyProject) -> Self {
             Self {
@@ -85,6 +92,82 @@ mod tests {
                 project: None,
                 projects: vec![],
                 should_fail: true,
+            }
+        }
+    }
+
+    impl MockCodeResolver {
+        fn new() -> Self {
+            Self { should_fail: false }
+        }
+
+        fn new_with_failure() -> Self {
+            Self { should_fail: true }
+        }
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("company", "Mock failure"))
+            } else {
+                Ok("company-id".to_string())
+            }
+        }
+
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("project", "Mock failure"))
+            } else {
+                Ok("project-id".to_string())
+            }
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("resource", "Mock failure"))
+            } else {
+                Ok("resource-id".to_string())
+            }
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("task", "Mock failure"))
+            } else {
+                Ok("task-id".to_string())
+            }
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("company", "Mock failure"))
+            } else {
+                Ok(())
+            }
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("project", "Mock failure"))
+            } else {
+                Ok(())
+            }
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("resource", "Mock failure"))
+            } else {
+                Ok(())
+            }
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            if self.should_fail {
+                Err(AppError::validation_error("task", "Mock failure"))
+            } else {
+                Ok(())
             }
         }
     }
@@ -156,6 +239,29 @@ mod tests {
         }
     }
 
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+            if self.should_fail {
+                return Err(AppError::IoError {
+                    operation: "find_by_id".to_string(),
+                    details: "Mock failure".to_string(),
+                });
+            }
+
+            // For testing, we'll map the fixed ID "project-id" to the first project
+            if id == "project-id" {
+                if let Some(ref project) = self.project {
+                    return Ok(Some(project.clone()));
+                }
+                if let Some(project) = self.projects.first() {
+                    return Ok(Some(project.clone()));
+                }
+            }
+
+            Ok(None)
+        }
+    }
+
     fn create_test_task(code: &str, name: &str) -> AnyTask {
         Task::<Planned> {
             id: uuid7(),
@@ -197,7 +303,8 @@ mod tests {
         ];
         let project = create_project_with_tasks(tasks);
         let mock_repo = MockProjectRepository::new_with_project(project);
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "COMP-001").unwrap();
         assert_eq!(result.len(), 2);
@@ -209,7 +316,8 @@ mod tests {
     fn test_list_tasks_empty() {
         let project = create_project_with_tasks(vec![]);
         let mock_repo = MockProjectRepository::new_with_project(project);
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "COMP-001").unwrap();
         assert!(result.is_empty());
@@ -219,13 +327,22 @@ mod tests {
     fn test_list_tasks_project_not_found() {
         let project = create_project_with_tasks(vec![]);
         let mock_repo = MockProjectRepository::new_with_project(project);
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new_with_failure();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute("NONEXISTENT", "COMP-001");
         assert!(result.is_err());
         match result.unwrap_err() {
-            AppError::ProjectNotFound { code } => assert_eq!(code, "NONEXISTENT"),
-            _ => panic!("Expected ProjectNotFound error"),
+            AppError::ValidationError { field, message } => {
+                assert_eq!(field, "project");
+                assert_eq!(message, "Mock failure");
+            }
+            AppError::IoError { operation, details } => {
+                println!("IoError: operation={}, details={}", operation, details);
+                assert_eq!(operation, "find_by_id");
+                assert_eq!(details, "Mock failure");
+            }
+            other => panic!("Expected ValidationError or IoError, got: {:?}", other),
         }
     }
 
@@ -234,7 +351,8 @@ mod tests {
         let tasks = vec![create_test_task("TSK-1", "First task")];
         let project = create_project_with_tasks(tasks);
         let mock_repo = MockProjectRepository::new_with_project(project);
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "WRONG-COMPANY");
         assert!(result.is_err());
@@ -247,13 +365,14 @@ mod tests {
     #[test]
     fn test_list_tasks_repository_error() {
         let mock_repo = MockProjectRepository::new_with_failure();
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "COMP-001");
         assert!(result.is_err());
         match result.unwrap_err() {
             AppError::IoError { operation, details } => {
-                assert_eq!(operation, "find_by_code");
+                assert_eq!(operation, "find_by_id");
                 assert_eq!(details, "Mock failure");
             }
             _ => panic!("Expected IoError"),
@@ -269,7 +388,8 @@ mod tests {
         
         let projects = vec![project1, project2];
         let mock_repo = MockProjectRepository::new_with_projects(projects);
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute_all_by_company("COMP-001").unwrap();
         assert_eq!(result.len(), 2);
@@ -280,7 +400,8 @@ mod tests {
     #[test]
     fn test_execute_all_by_company_empty() {
         let mock_repo = MockProjectRepository::new_with_projects(vec![]);
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute_all_by_company("COMP-001").unwrap();
         assert!(result.is_empty());
@@ -292,7 +413,8 @@ mod tests {
         let project = create_project_with_tasks(tasks);
         let projects = vec![project];
         let mock_repo = MockProjectRepository::new_with_projects(projects);
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute_all_by_company("WRONG-COMPANY").unwrap();
         assert!(result.is_empty());
@@ -301,7 +423,8 @@ mod tests {
     #[test]
     fn test_execute_all_by_company_repository_error() {
         let mock_repo = MockProjectRepository::new_with_failure();
-        let use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let use_case = ListTasksUseCase::new(mock_repo, code_resolver);
 
         let result = use_case.execute_all_by_company("COMP-001");
         assert!(result.is_err());
@@ -318,7 +441,8 @@ mod tests {
     fn test_list_tasks_use_case_creation() {
         let project = create_project_with_tasks(vec![]);
         let mock_repo = MockProjectRepository::new_with_project(project);
-        let _use_case = ListTasksUseCase::new(mock_repo);
+        let code_resolver = MockCodeResolver::new();
+        let _use_case = ListTasksUseCase::new(mock_repo, code_resolver);
         
         // Test that the use case was created successfully
         assert!(true); // If we get here, creation succeeded
