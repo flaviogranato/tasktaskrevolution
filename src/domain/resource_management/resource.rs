@@ -727,6 +727,8 @@ mod tests {
             name: "John Doe".to_string(),
             email: Some("john.doe@example.com".to_string()),
             resource_type: "Developer".to_string(),
+            scope: ResourceScope::Company,
+            project_id: None,
             start_date: None,
             end_date: None,
             vacations: Some(Vec::new()),
