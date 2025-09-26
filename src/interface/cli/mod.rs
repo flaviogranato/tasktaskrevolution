@@ -131,7 +131,9 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::MigrateCommand,
     },
-    /// Test data validation
+    /// E2E testing framework
+    #[clap(subcommand)]
+    TestE2E(commands::TestE2ECommand),
     /// Serve HTML files locally
     Serve {
         /// Port to serve on
@@ -242,6 +244,7 @@ impl Cli {
                 })
             }
             Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),
+            Commands::TestE2E(command) => Self::execute_test_e2e(command),
             Commands::Serve {
                 port,
                 host,
@@ -260,5 +263,19 @@ impl Cli {
                     debug,
                 )),
         }
+    }
+
+    /// Execute E2E test command
+    fn execute_test_e2e(command: commands::TestE2ECommand) -> Result<(), Box<dyn std::error::Error>> {
+        let context_manager = context_manager::ContextManager::new()?;
+        let base_path = context_manager.get_base_path().to_string();
+        
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async {
+                command.execute(&base_path).await
+            })?;
+        
+        Ok(())
     }
 }
