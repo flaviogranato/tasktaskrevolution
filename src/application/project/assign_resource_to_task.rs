@@ -8,6 +8,7 @@ use crate::domain::project_management::{
     repository::{ProjectRepository, ProjectRepositoryWithId},
 };
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
+use crate::domain::resource_management::resource::ResourceScope;
 use crate::domain::task_management::{Category, Priority};
 use std::fmt;
 
@@ -324,6 +325,8 @@ mod tests {
             name.to_string(),
             None,
             "Developer".to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,

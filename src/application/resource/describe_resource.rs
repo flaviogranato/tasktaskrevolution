@@ -4,7 +4,7 @@ use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::resource_management::{
     any_resource::AnyResource,
     repository::{ResourceRepository, ResourceRepositoryWithId},
-    resource::WipLimits,
+    resource::{WipLimits, ResourceScope},
 };
 use std::fmt;
 
