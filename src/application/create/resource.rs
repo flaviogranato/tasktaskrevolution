@@ -1,5 +1,9 @@
 use crate::application::errors::AppError;
-use crate::domain::resource_management::{ResourceTypeValidator, repository::ResourceRepository, resource::{Resource, ResourceScope}};
+use crate::domain::resource_management::{
+    ResourceTypeValidator,
+    repository::ResourceRepository,
+    resource::{Resource, ResourceScope},
+};
 
 #[derive(Debug, Clone)]
 pub struct CreateResourceParams {
@@ -41,7 +45,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
             ResourceScope::Company => None,
             ResourceScope::Project => params.project_code.clone(),
         };
-        
+
         let r = Resource::new(
             code,
             params.name,

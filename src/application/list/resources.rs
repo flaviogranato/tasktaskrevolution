@@ -1,5 +1,5 @@
 use crate::application::errors::AppError;
-use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository, resource::ResourceScope};
+use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
 
 #[derive(Debug, Clone)]
 pub struct ResourceWithContext {
@@ -44,7 +44,10 @@ impl<R: ResourceRepository> ListResourcesUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource_management::{any_resource::AnyResource, resource::Resource};
+    use crate::domain::resource_management::{
+        any_resource::AnyResource,
+        resource::{Resource, ResourceScope},
+    };
 
     struct MockResourceRepository {
         resources: Vec<AnyResource>,

@@ -4,7 +4,7 @@ use crate::application::errors::AppError;
 use crate::domain::resource_management::{
     any_resource::AnyResource,
     repository::ResourceRepository,
-    resource::{WipLimits, WipStatus, ResourceScope},
+    resource::{WipLimits, WipStatus},
 };
 use crate::interface::cli::table_formatter::TableFormatter;
 use clap::{Args, Subcommand};
@@ -408,6 +408,7 @@ mod tests {
     }
 
     fn create_test_resource(code: &str, name: &str) -> AnyResource {
+        use crate::domain::resource_management::resource::ResourceScope;
         Resource::new(
             code.to_string(),
             name.to_string(),
