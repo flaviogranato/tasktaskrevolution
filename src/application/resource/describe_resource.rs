@@ -206,6 +206,8 @@ mod tests {
     // --- Helpers ---
     fn create_test_resource(code: &str) -> AnyResource {
         Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: code.to_string(),
             name: "Test Resource".to_string(),

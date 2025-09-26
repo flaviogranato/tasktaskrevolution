@@ -192,6 +192,8 @@ mod tests {
             "John Doe".to_string(),
             None,
             "Developer".to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,

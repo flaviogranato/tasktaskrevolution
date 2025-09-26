@@ -951,6 +951,8 @@ mod tests {
                 created_by: None,
             },
             spec: crate::infrastructure::persistence::manifests::resource_manifest::ResourceSpec {
+                project_id: None,
+                scope: ResourceScope::Company,
                 start_date: None,
                 end_date: None,
                 time_off_balance: 0,
