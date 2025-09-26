@@ -131,6 +131,27 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::MigrateCommand,
     },
+    /// Serve HTML files locally
+    Serve {
+        /// Port to serve on
+        #[clap(short, long, default_value = "3000")]
+        port: u16,
+        /// Host to bind to
+        #[clap(long, default_value = "localhost")]
+        host: String,
+        /// Directory to serve from
+        #[clap(short, long, default_value = "dist")]
+        directory: PathBuf,
+        /// Enable live reload
+        #[clap(long)]
+        live_reload: bool,
+        /// Enable CORS for development
+        #[clap(long)]
+        cors: bool,
+        /// Enable debug mode
+        #[clap(long)]
+        debug: bool,
+    },
 }
 
 impl Cli {
@@ -220,6 +241,18 @@ impl Cli {
                 })
             }
             Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),
+            Commands::Serve {
+                port,
+                host,
+                directory,
+                live_reload,
+                cors,
+                debug,
+            } => {
+                tokio::runtime::Runtime::new()
+                    .unwrap()
+                    .block_on(handlers::serve_handler::handle_serve_command(port, host, directory, live_reload, cors, debug))
+            }
         }
     }
 }

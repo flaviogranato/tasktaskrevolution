@@ -4,6 +4,7 @@ pub mod migrate_handler;
 pub mod project_handler;
 pub mod report_handler;
 pub mod resource_handler;
+pub mod serve_handler;
 pub mod task_handler;
 pub mod template_handler;
 pub mod unlink_handler;
