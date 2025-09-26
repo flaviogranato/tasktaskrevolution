@@ -207,3 +207,168 @@ impl StateTransition for Cancelled {
         Some("Cancelled tasks cannot transition to other states".to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_planned_state() {
+        let state = Planned;
+        assert!(state.can_start());
+        assert!(!state.can_complete());
+        assert!(state.can_block());
+        assert!(state.can_cancel());
+        assert_eq!(state.display_name(), "Planned");
+    }
+
+    #[test]
+    fn test_in_progress_state() {
+        let state = InProgress { progress: 50 };
+        assert!(!state.can_start());
+        assert!(!state.can_complete());
+        assert!(state.can_block());
+        assert!(state.can_cancel());
+        assert_eq!(state.display_name(), "In Progress");
+
+        let completed_state = InProgress { progress: 100 };
+        assert!(completed_state.can_complete());
+    }
+
+    #[test]
+    fn test_blocked_state() {
+        let state = Blocked {
+            reason: "Waiting for review".to_string(),
+        };
+        assert!(!state.can_start());
+        assert!(!state.can_complete());
+        assert!(!state.can_block());
+        assert!(state.can_cancel());
+        assert_eq!(state.display_name(), "Blocked");
+    }
+
+    #[test]
+    fn test_completed_state() {
+        let state = Completed;
+        assert!(!state.can_start());
+        assert!(!state.can_complete());
+        assert!(!state.can_block());
+        assert!(!state.can_cancel());
+        assert_eq!(state.display_name(), "Completed");
+    }
+
+    #[test]
+    fn test_cancelled_state() {
+        let state = Cancelled;
+        assert!(!state.can_start());
+        assert!(!state.can_complete());
+        assert!(!state.can_block());
+        assert!(!state.can_cancel());
+        assert_eq!(state.display_name(), "Cancelled");
+    }
+
+    #[test]
+    fn test_planned_to_in_progress_transition() {
+        let state = Planned;
+        let result = state.transition_to();
+        assert!(result.is_ok());
+        let in_progress = result.unwrap();
+        assert_eq!(in_progress.progress, 0);
+        
+        // Test transition_blocked_reason separately
+        let state2 = Planned;
+        assert!(state2.transition_blocked_reason().is_none());
+    }
+
+    #[test]
+    fn test_in_progress_to_completed_transition_success() {
+        let state = InProgress { progress: 100 };
+        let result = state.transition_to();
+        assert!(result.is_ok());
+        let completed = result.unwrap();
+        assert!(matches!(completed, Completed));
+        
+        // Test transition_blocked_reason separately
+        let state2 = InProgress { progress: 100 };
+        assert!(state2.transition_blocked_reason().is_none());
+    }
+
+    #[test]
+    fn test_in_progress_to_completed_transition_failure() {
+        let state = InProgress { progress: 50 };
+        let result = state.transition_to();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Cannot complete task with 50% progress"));
+        
+        // Test transition_blocked_reason separately
+        let state2 = InProgress { progress: 50 };
+        assert!(state2.transition_blocked_reason().is_some());
+        assert!(state2.transition_blocked_reason().unwrap().contains("Task must be 100% complete"));
+    }
+
+    #[test]
+    fn test_blocked_to_in_progress_transition() {
+        let state = Blocked {
+            reason: "Waiting for review".to_string(),
+        };
+        let result = state.transition_to();
+        assert!(result.is_ok());
+        let in_progress = result.unwrap();
+        assert_eq!(in_progress.progress, 0);
+        
+        // Test transition_blocked_reason separately
+        let state2 = Blocked {
+            reason: "Waiting for review".to_string(),
+        };
+        assert!(state2.transition_blocked_reason().is_none());
+    }
+
+    #[test]
+    fn test_completed_to_in_progress_transition() {
+        let state = Completed;
+        let result = state.transition_to();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Completed tasks cannot transition to other states"));
+        
+        // Test transition_blocked_reason separately
+        let state2 = Completed;
+        assert!(state2.transition_blocked_reason().is_some());
+        assert!(state2.transition_blocked_reason().unwrap().contains("Completed tasks cannot transition to other states"));
+    }
+
+    #[test]
+    fn test_cancelled_to_planned_transition() {
+        let state = Cancelled;
+        let result = state.transition_to();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Cancelled tasks cannot transition to other states"));
+        
+        // Test transition_blocked_reason separately
+        let state2 = Cancelled;
+        assert!(state2.transition_blocked_reason().is_some());
+        assert!(state2.transition_blocked_reason().unwrap().contains("Cancelled tasks cannot transition to other states"));
+    }
+
+    #[test]
+    fn test_state_equality() {
+        assert_eq!(Planned, Planned);
+        assert_eq!(InProgress { progress: 50 }, InProgress { progress: 50 });
+        assert_ne!(InProgress { progress: 50 }, InProgress { progress: 75 });
+        assert_eq!(Completed, Completed);
+        assert_eq!(Cancelled, Cancelled);
+    }
+
+    #[test]
+    fn test_state_clone() {
+        let state = InProgress { progress: 75 };
+        let cloned = state.clone();
+        assert_eq!(state, cloned);
+    }
+
+    #[test]
+    fn test_state_serialization() {
+        let state = InProgress { progress: 50 };
+        let serialized = serde_yaml::to_string(&state).unwrap();
+        assert!(serialized.contains("progress: 50"));
+    }
+}

@@ -540,4 +540,243 @@ mod tests {
         let errors = project.validate().unwrap();
         assert!(errors.is_empty());
     }
+
+    #[test]
+    fn test_project_validation_invalid_code() {
+        let project = Project {
+            id: "test-id".to_string(),
+            code: "".to_string(),
+            name: "Test Project".to_string(),
+            description: None,
+            status: ProjectStatus::Planned,
+            priority: ProjectPriority::Medium,
+            start_date: None,
+            end_date: None,
+            actual_start_date: None,
+            actual_end_date: None,
+            company_code: "COMP-001".to_string(),
+            manager_id: None,
+            created_by: "user@example.com".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            tasks: HashMap::new(),
+            resources: HashMap::new(),
+            settings: ProjectSettings {
+                timezone: None,
+                vacation_rules: None,
+                work_hours: None,
+            },
+            metadata: HashMap::new(),
+        };
+
+        let errors = project.validate().unwrap();
+        assert!(!errors.is_empty());
+        assert!(errors.contains(&"Project code cannot be empty".to_string()));
+    }
+
+    #[test]
+    fn test_project_validation_invalid_name() {
+        let project = Project {
+            id: "test-id".to_string(),
+            code: "PROJ-001".to_string(),
+            name: "".to_string(),
+            description: None,
+            status: ProjectStatus::Planned,
+            priority: ProjectPriority::Medium,
+            start_date: None,
+            end_date: None,
+            actual_start_date: None,
+            actual_end_date: None,
+            company_code: "COMP-001".to_string(),
+            manager_id: None,
+            created_by: "user@example.com".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            tasks: HashMap::new(),
+            resources: HashMap::new(),
+            settings: ProjectSettings {
+                timezone: None,
+                vacation_rules: None,
+                work_hours: None,
+            },
+            metadata: HashMap::new(),
+        };
+
+        let errors = project.validate().unwrap();
+        assert!(!errors.is_empty());
+        assert!(errors.contains(&"Project name cannot be empty".to_string()));
+    }
+
+    #[test]
+    fn test_project_validation_invalid_date_range() {
+        let project = Project {
+            id: "test-id".to_string(),
+            code: "PROJ-001".to_string(),
+            name: "Test Project".to_string(),
+            description: None,
+            status: ProjectStatus::Planned,
+            priority: ProjectPriority::Medium,
+            start_date: Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()),
+            end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
+            actual_start_date: None,
+            actual_end_date: None,
+            company_code: "COMP-001".to_string(),
+            manager_id: None,
+            created_by: "user@example.com".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            tasks: HashMap::new(),
+            resources: HashMap::new(),
+            settings: ProjectSettings {
+                timezone: None,
+                vacation_rules: None,
+                work_hours: None,
+            },
+            metadata: HashMap::new(),
+        };
+
+        let errors = project.validate().unwrap();
+        assert!(!errors.is_empty());
+        assert!(errors.contains(&"Project end date must be after start date".to_string()));
+    }
+
+    #[test]
+    fn test_project_priority_weight() {
+        assert_eq!(ProjectPriority::Low.weight(), 1);
+        assert_eq!(ProjectPriority::Medium.weight(), 2);
+        assert_eq!(ProjectPriority::High.weight(), 3);
+        assert_eq!(ProjectPriority::Critical.weight(), 4);
+    }
+
+    #[test]
+    fn test_project_status_display() {
+        assert_eq!(format!("{}", ProjectStatus::Planned), "Planned");
+        assert_eq!(format!("{}", ProjectStatus::InProgress), "In Progress");
+        assert_eq!(format!("{}", ProjectStatus::OnHold), "On Hold");
+        assert_eq!(format!("{}", ProjectStatus::Completed), "Completed");
+        assert_eq!(format!("{}", ProjectStatus::Cancelled), "Cancelled");
+    }
+
+    #[test]
+    fn test_project_status_is_active() {
+        assert!(!ProjectStatus::Planned.is_active());
+        assert!(ProjectStatus::InProgress.is_active());
+        assert!(ProjectStatus::OnHold.is_active());
+        assert!(!ProjectStatus::Completed.is_active());
+        assert!(!ProjectStatus::Cancelled.is_active());
+    }
+
+    #[test]
+    fn test_project_status_can_transition_to() {
+        // Planned -> InProgress, Cancelled
+        assert!(ProjectStatus::Planned.can_transition_to(&ProjectStatus::InProgress));
+        assert!(ProjectStatus::Planned.can_transition_to(&ProjectStatus::Cancelled));
+        assert!(!ProjectStatus::Planned.can_transition_to(&ProjectStatus::OnHold));
+        assert!(!ProjectStatus::Planned.can_transition_to(&ProjectStatus::Completed));
+
+        // InProgress -> OnHold, Completed
+        assert!(ProjectStatus::InProgress.can_transition_to(&ProjectStatus::OnHold));
+        assert!(ProjectStatus::InProgress.can_transition_to(&ProjectStatus::Completed));
+        assert!(!ProjectStatus::InProgress.can_transition_to(&ProjectStatus::Planned));
+        assert!(!ProjectStatus::InProgress.can_transition_to(&ProjectStatus::Cancelled));
+
+        // OnHold -> InProgress, Cancelled
+        assert!(ProjectStatus::OnHold.can_transition_to(&ProjectStatus::InProgress));
+        assert!(ProjectStatus::OnHold.can_transition_to(&ProjectStatus::Cancelled));
+        assert!(!ProjectStatus::OnHold.can_transition_to(&ProjectStatus::Planned));
+        assert!(!ProjectStatus::OnHold.can_transition_to(&ProjectStatus::Completed));
+
+        // Completed -> (não pode mudar)
+        assert!(!ProjectStatus::Completed.can_transition_to(&ProjectStatus::Planned));
+        assert!(!ProjectStatus::Completed.can_transition_to(&ProjectStatus::InProgress));
+        assert!(!ProjectStatus::Completed.can_transition_to(&ProjectStatus::OnHold));
+        assert!(!ProjectStatus::Completed.can_transition_to(&ProjectStatus::Cancelled));
+
+        // Cancelled -> (não pode mudar)
+        assert!(!ProjectStatus::Cancelled.can_transition_to(&ProjectStatus::Planned));
+        assert!(!ProjectStatus::Cancelled.can_transition_to(&ProjectStatus::InProgress));
+        assert!(!ProjectStatus::Cancelled.can_transition_to(&ProjectStatus::OnHold));
+        assert!(!ProjectStatus::Cancelled.can_transition_to(&ProjectStatus::Completed));
+    }
+
+    #[test]
+    fn test_project_validation_methods() {
+        let project = Project::new(
+            "PROJ-001".to_string(),
+            "Test Project".to_string(),
+            "COMP-001".to_string(),
+            "user@example.com".to_string(),
+        )
+        .unwrap();
+
+        assert!(project.is_code_valid());
+        assert!(project.is_name_valid());
+        assert!(project.is_date_range_valid());
+    }
+
+    #[test]
+    fn test_project_validation_methods_invalid() {
+        let project = Project {
+            id: "test-id".to_string(),
+            code: "".to_string(),
+            name: "".to_string(),
+            description: None,
+            status: ProjectStatus::Planned,
+            priority: ProjectPriority::Medium,
+            start_date: Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()),
+            end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 10).unwrap()),
+            actual_start_date: None,
+            actual_end_date: None,
+            company_code: "COMP-001".to_string(),
+            manager_id: None,
+            created_by: "user@example.com".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            tasks: HashMap::new(),
+            resources: HashMap::new(),
+            settings: ProjectSettings {
+                timezone: None,
+                vacation_rules: None,
+                work_hours: None,
+            },
+            metadata: HashMap::new(),
+        };
+
+        assert!(!project.is_code_valid());
+        assert!(!project.is_name_valid());
+        assert!(!project.is_date_range_valid());
+    }
+
+    #[test]
+    fn test_project_validation_methods_partial() {
+        let project = Project {
+            id: "test-id".to_string(),
+            code: "PROJ-001".to_string(),
+            name: "".to_string(),
+            description: None,
+            status: ProjectStatus::Planned,
+            priority: ProjectPriority::Medium,
+            start_date: None,
+            end_date: None,
+            actual_start_date: None,
+            actual_end_date: None,
+            company_code: "COMP-001".to_string(),
+            manager_id: None,
+            created_by: "user@example.com".to_string(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+            tasks: HashMap::new(),
+            resources: HashMap::new(),
+            settings: ProjectSettings {
+                timezone: None,
+                vacation_rules: None,
+                work_hours: None,
+            },
+            metadata: HashMap::new(),
+        };
+
+        assert!(project.is_code_valid());
+        assert!(!project.is_name_valid());
+        assert!(project.is_date_range_valid());
+    }
 }

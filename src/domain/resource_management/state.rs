@@ -166,3 +166,159 @@ pub trait ResourceStateExt: ResourceState {
 }
 
 impl<T: ResourceState> ResourceStateExt for T {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Local;
+
+    fn create_test_project_assignment() -> ProjectAssignment {
+        ProjectAssignment {
+            project_id: "PROJ-001".to_string(),
+            start_date: Local::now(),
+            end_date: Local::now(),
+            allocation_percentage: 100,
+        }
+    }
+
+    #[test]
+    fn test_available_state() {
+        let state = Available;
+        assert!(state.can_assign());
+        assert!(state.can_deactivate());
+        assert!(!state.can_reactivate());
+        assert_eq!(state.display_name(), "Available");
+        assert_eq!(state.assignment_count(), 0);
+    }
+
+    #[test]
+    fn test_assigned_state() {
+        let assignments = vec![
+            create_test_project_assignment(),
+            create_test_project_assignment(),
+        ];
+        let state = Assigned {
+            project_assignments: assignments,
+        };
+        assert!(state.can_assign());
+        assert!(state.can_deactivate());
+        assert!(!state.can_reactivate());
+        assert_eq!(state.display_name(), "Assigned");
+        assert_eq!(state.assignment_count(), 2);
+    }
+
+    #[test]
+    fn test_inactive_state() {
+        let state = Inactive;
+        assert!(!state.can_assign());
+        assert!(!state.can_deactivate());
+        assert!(state.can_reactivate());
+        assert_eq!(state.display_name(), "Inactive");
+        assert_eq!(state.assignment_count(), 0);
+    }
+
+    #[test]
+    fn test_available_to_assigned_transition() {
+        let state = Available;
+        let result = state.transition_to();
+        assert!(result.is_ok());
+        let assigned = result.unwrap();
+        assert_eq!(assigned.project_assignments.len(), 0);
+        assert!(assigned.transition_blocked_reason().is_none());
+    }
+
+    #[test]
+    fn test_assigned_to_inactive_transition_success() {
+        let state = Assigned {
+            project_assignments: Vec::new(),
+        };
+        let result = state.transition_to();
+        assert!(result.is_ok());
+        let inactive = result.unwrap();
+        assert!(matches!(inactive, Inactive));
+        // Check transition_blocked_reason before calling transition_to
+        let state2 = Assigned {
+            project_assignments: Vec::new(),
+        };
+        assert!(state2.transition_blocked_reason().is_none());
+    }
+
+    #[test]
+    fn test_assigned_to_inactive_transition_failure() {
+        let state = Assigned {
+            project_assignments: vec![create_test_project_assignment()],
+        };
+        let result = state.transition_to();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Cannot deactivate resource with active project assignments"));
+        // Check transition_blocked_reason before calling transition_to
+        let state2 = Assigned {
+            project_assignments: vec![create_test_project_assignment()],
+        };
+        assert!(state2.transition_blocked_reason().is_some());
+        assert!(state2.transition_blocked_reason().unwrap().contains("Resource has active project assignments"));
+    }
+
+    #[test]
+    fn test_inactive_to_available_transition() {
+        let state = Inactive;
+        let result = state.transition_to();
+        assert!(result.is_ok());
+        let available = result.unwrap();
+        assert!(matches!(available, Available));
+        // Check transition_blocked_reason before calling transition_to
+        let state2 = Inactive;
+        assert!(state2.transition_blocked_reason().is_none());
+    }
+
+    #[test]
+    fn test_resource_state_ext_is_overloaded() {
+        let state = Assigned {
+            project_assignments: vec![
+                create_test_project_assignment(),
+                create_test_project_assignment(),
+                create_test_project_assignment(),
+            ],
+        };
+        assert!(state.is_overloaded(2));
+        assert!(!state.is_overloaded(5));
+    }
+
+    #[test]
+    fn test_resource_state_ext_is_underutilized() {
+        let state = Assigned {
+            project_assignments: vec![create_test_project_assignment()],
+        };
+        assert!(state.is_underutilized(3));
+        assert!(!state.is_underutilized(1));
+    }
+
+    #[test]
+    fn test_resource_state_ext_utilization_percentage() {
+        let state = Assigned {
+            project_assignments: vec![
+                create_test_project_assignment(),
+                create_test_project_assignment(),
+            ],
+        };
+        assert_eq!(state.utilization_percentage(4), 50.0);
+        assert_eq!(state.utilization_percentage(2), 100.0);
+        assert_eq!(state.utilization_percentage(0), 0.0);
+    }
+
+    #[test]
+    fn test_available_state_ext_methods() {
+        let state = Available;
+        assert!(!state.is_overloaded(1));
+        assert!(state.is_underutilized(1));
+        assert_eq!(state.utilization_percentage(1), 0.0);
+    }
+
+    #[test]
+    fn test_inactive_state_ext_methods() {
+        let state = Inactive;
+        assert!(!state.is_overloaded(1));
+        assert!(state.is_underutilized(1));
+        assert_eq!(state.utilization_percentage(1), 0.0);
+    }
+}

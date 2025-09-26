@@ -652,4 +652,372 @@ mod tests {
         assert!(display.contains("2024-01-05"));
         assert!(display.contains("Critical: true"));
     }
+
+    #[test]
+    fn test_calculation_config_custom() {
+        let config = CalculationConfig {
+            project_start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            default_task_duration: Duration::days(2),
+            working_days_only: true,
+            working_hours_per_day: 6,
+            cache_enabled: false,
+        };
+
+        assert_eq!(config.project_start_date, NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
+        assert_eq!(config.default_task_duration, Duration::days(2));
+        assert!(config.working_days_only);
+        assert_eq!(config.working_hours_per_day, 6);
+        assert!(!config.cache_enabled);
+    }
+
+    #[test]
+    fn test_dependency_calculation_engine_new() {
+        let config = CalculationConfig::default();
+        let engine = DependencyCalculationEngine::new(config);
+        assert_eq!(engine.cache_stats(), (0, 0));
+    }
+
+    #[test]
+    fn test_dependency_calculation_engine_with_custom_config() {
+        let config = CalculationConfig {
+            project_start_date: NaiveDate::from_ymd_opt(2024, 1, 1).unwrap(),
+            default_task_duration: Duration::days(3),
+            working_days_only: false,
+            working_hours_per_day: 6,
+            cache_enabled: true,
+        };
+        let engine = DependencyCalculationEngine::new(config);
+        assert_eq!(engine.cache_stats(), (0, 0));
+    }
+
+    #[test]
+    fn test_task_calculation_status_variants() {
+        let ready_status = TaskCalculationStatus::Ready;
+        let waiting_status = TaskCalculationStatus::Waiting;
+        let calculated_status = TaskCalculationStatus::Calculated;
+        let error_status = TaskCalculationStatus::Error("Test error".to_string());
+
+        assert_eq!(ready_status, TaskCalculationStatus::Ready);
+        assert_eq!(waiting_status, TaskCalculationStatus::Waiting);
+        assert_eq!(calculated_status, TaskCalculationStatus::Calculated);
+        assert!(matches!(error_status, TaskCalculationStatus::Error(_)));
+    }
+
+    #[test]
+    fn test_calculation_result_creation() {
+        let result = CalculationResult {
+            task_id: "test_task".to_string(),
+            calculated_start_date: Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
+            calculated_end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 5).unwrap()),
+            is_critical: false,
+            total_float: Some(Duration::days(2)),
+            free_float: Some(Duration::days(1)),
+            dependencies_satisfied: true,
+            calculation_order: 1,
+        };
+
+        assert_eq!(result.task_id, "test_task");
+        assert!(result.calculated_start_date.is_some());
+        assert!(result.calculated_end_date.is_some());
+        assert!(!result.is_critical);
+        assert!(result.total_float.is_some());
+        assert!(result.free_float.is_some());
+        assert!(result.dependencies_satisfied);
+        assert_eq!(result.calculation_order, 1);
+    }
+
+    #[test]
+    fn test_calculation_result_with_none_dates() {
+        let result = CalculationResult {
+            task_id: "test_task".to_string(),
+            calculated_start_date: None,
+            calculated_end_date: None,
+            is_critical: false,
+            total_float: None,
+            free_float: None,
+            dependencies_satisfied: false,
+            calculation_order: 0,
+        };
+
+        assert_eq!(result.task_id, "test_task");
+        assert!(result.calculated_start_date.is_none());
+        assert!(result.calculated_end_date.is_none());
+        assert!(!result.is_critical);
+        assert!(result.total_float.is_none());
+        assert!(result.free_float.is_none());
+        assert!(!result.dependencies_satisfied);
+        assert_eq!(result.calculation_order, 0);
+    }
+
+    #[test]
+    fn test_calculate_project_dates_with_empty_graph() {
+        let mut engine = DependencyCalculationEngine::with_default_config();
+        let graph = AdvancedDependencyGraph::new();
+
+        let results = engine.calculate_project_dates(&graph).unwrap();
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_calculate_project_dates_with_single_task() {
+        let mut engine = DependencyCalculationEngine::with_default_config();
+        let mut graph = AdvancedDependencyGraph::new();
+
+        let task = TaskNode::new(
+            "single_task".to_string(),
+            "Single Task".to_string(),
+            None,
+            None,
+            Some(Duration::days(3)),
+        );
+        graph.add_task(task);
+
+        let results = engine.calculate_project_dates(&graph).unwrap();
+        assert_eq!(results.len(), 1);
+        assert!(results.contains_key("single_task"));
+    }
+
+    #[test]
+    fn test_topological_sort_with_empty_graph() {
+        let engine = DependencyCalculationEngine::with_default_config();
+        let graph = AdvancedDependencyGraph::new();
+
+        let sorted = engine.topological_sort(&graph).unwrap();
+        assert_eq!(sorted.len(), 0);
+    }
+
+    #[test]
+    fn test_topological_sort_with_single_task() {
+        let engine = DependencyCalculationEngine::with_default_config();
+        let mut graph = AdvancedDependencyGraph::new();
+
+        let task = TaskNode::new(
+            "single_task".to_string(),
+            "Single Task".to_string(),
+            None,
+            None,
+            None,
+        );
+        graph.add_task(task);
+
+        let sorted = engine.topological_sort(&graph).unwrap();
+        assert_eq!(sorted.len(), 1);
+        assert_eq!(sorted[0], "single_task");
+    }
+
+    #[test]
+    fn test_topological_sort_with_parallel_tasks() {
+        let engine = DependencyCalculationEngine::with_default_config();
+        let mut graph = AdvancedDependencyGraph::new();
+
+        let task1 = TaskNode::new("task1".to_string(), "Task 1".to_string(), None, None, None);
+        let task2 = TaskNode::new("task2".to_string(), "Task 2".to_string(), None, None, None);
+        let task3 = TaskNode::new("task3".to_string(), "Task 3".to_string(), None, None, None);
+
+        graph.add_task(task1);
+        graph.add_task(task2);
+        graph.add_task(task3);
+
+        // Sem dependências - todas as tarefas são independentes
+        let sorted = engine.topological_sort(&graph).unwrap();
+        assert_eq!(sorted.len(), 3);
+        // A ordem pode variar, mas todas as tarefas devem estar presentes
+        assert!(sorted.contains(&"task1".to_string()));
+        assert!(sorted.contains(&"task2".to_string()));
+        assert!(sorted.contains(&"task3".to_string()));
+    }
+
+    #[test]
+    fn test_calculate_task_dates_with_valid_dependency() {
+        let engine = DependencyCalculationEngine::with_default_config();
+        let mut graph = AdvancedDependencyGraph::new();
+
+        let task1 = TaskNode::new(
+            "task1".to_string(),
+            "Task 1".to_string(),
+            None,
+            None,
+            Some(Duration::days(5)),
+        );
+        let task2 = TaskNode::new(
+            "task2".to_string(),
+            "Task 2".to_string(),
+            None,
+            None,
+            Some(Duration::days(3)),
+        );
+
+        graph.add_task(task1);
+        graph.add_task(task2);
+
+        let dep = AdvancedDependency::new(
+            "task1".to_string(),
+            "task2".to_string(),
+            DependencyType::FinishToStart,
+            LagType::zero(),
+            "user1".to_string(),
+            None,
+        );
+        graph.add_dependency(dep).unwrap();
+
+        let mut calculation_results = HashMap::new();
+        let mut task_status = HashMap::new();
+        let result = engine.calculate_task_dates(
+            "task2",
+            &graph,
+            &mut calculation_results,
+            &mut task_status,
+            0,
+        );
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_calculate_task_dates_with_nonexistent_task() {
+        let engine = DependencyCalculationEngine::with_default_config();
+        let graph = AdvancedDependencyGraph::new();
+        let mut calculation_results = HashMap::new();
+        let mut task_status = HashMap::new();
+
+        let result = engine.calculate_task_dates(
+            "nonexistent",
+            &graph,
+            &mut calculation_results,
+            &mut task_status,
+            0,
+        );
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_calculate_task_dates_with_circular_dependency() {
+        let _engine = DependencyCalculationEngine::with_default_config();
+        let mut graph = AdvancedDependencyGraph::new();
+
+        let task1 = TaskNode::new("task1".to_string(), "Task 1".to_string(), None, None, None);
+        let task2 = TaskNode::new("task2".to_string(), "Task 2".to_string(), None, None, None);
+
+        graph.add_task(task1);
+        graph.add_task(task2);
+
+        // Tentar criar dependência circular (deve falhar no grafo)
+        let dep1 = AdvancedDependency::new(
+            "task1".to_string(),
+            "task2".to_string(),
+            DependencyType::FinishToStart,
+            LagType::zero(),
+            "user1".to_string(),
+            None,
+        );
+        let dep2 = AdvancedDependency::new(
+            "task2".to_string(),
+            "task1".to_string(),
+            DependencyType::FinishToStart,
+            LagType::zero(),
+            "user1".to_string(),
+            None,
+        );
+
+        graph.add_dependency(dep1).unwrap();
+        let dep2_result = graph.add_dependency(dep2);
+        assert!(dep2_result.is_err()); // Deve falhar por dependência circular
+    }
+
+    #[test]
+    fn test_cache_stats() {
+        let engine = DependencyCalculationEngine::with_default_config();
+        let (hits, misses) = engine.cache_stats();
+        assert_eq!(hits, 0);
+        assert_eq!(misses, 0);
+    }
+
+    #[test]
+    fn test_clear_cache() {
+        let mut engine = DependencyCalculationEngine::with_default_config();
+        engine.clear_cache();
+        let (hits, misses) = engine.cache_stats();
+        assert_eq!(hits, 0);
+        assert_eq!(misses, 0);
+    }
+
+    #[test]
+    fn test_get_calculation_config() {
+        let config = CalculationConfig::default();
+        let engine = DependencyCalculationEngine::new(config.clone());
+        let retrieved_config = engine.config();
+        assert_eq!(retrieved_config.project_start_date, config.project_start_date);
+        assert_eq!(retrieved_config.default_task_duration, config.default_task_duration);
+        assert_eq!(retrieved_config.working_hours_per_day, config.working_hours_per_day);
+        assert_eq!(retrieved_config.cache_enabled, config.cache_enabled);
+        assert_eq!(retrieved_config.working_days_only, config.working_days_only);
+    }
+
+    #[test]
+    fn test_update_calculation_config() {
+        let mut engine = DependencyCalculationEngine::with_default_config();
+        let mut new_config = CalculationConfig::default();
+        new_config.working_hours_per_day = 6;
+        new_config.cache_enabled = false;
+
+        engine.update_config(new_config.clone());
+        let retrieved_config = engine.config();
+        assert_eq!(retrieved_config.working_hours_per_day, 6);
+        assert!(!retrieved_config.cache_enabled);
+    }
+
+    #[test]
+    fn test_calculation_result_equality() {
+        let result1 = CalculationResult {
+            task_id: "task1".to_string(),
+            calculated_start_date: Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
+            calculated_end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 5).unwrap()),
+            is_critical: true,
+            total_float: Some(Duration::days(0)),
+            free_float: None,
+            dependencies_satisfied: true,
+            calculation_order: 0,
+        };
+
+        let result2 = CalculationResult {
+            task_id: "task1".to_string(),
+            calculated_start_date: Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
+            calculated_end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 5).unwrap()),
+            is_critical: true,
+            total_float: Some(Duration::days(0)),
+            free_float: None,
+            dependencies_satisfied: true,
+            calculation_order: 0,
+        };
+
+        assert_eq!(result1, result2);
+    }
+
+    #[test]
+    fn test_calculation_result_inequality() {
+        let result1 = CalculationResult {
+            task_id: "task1".to_string(),
+            calculated_start_date: Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
+            calculated_end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 5).unwrap()),
+            is_critical: true,
+            total_float: Some(Duration::days(0)),
+            free_float: None,
+            dependencies_satisfied: true,
+            calculation_order: 0,
+        };
+
+        let result2 = CalculationResult {
+            task_id: "task2".to_string(),
+            calculated_start_date: Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()),
+            calculated_end_date: Some(NaiveDate::from_ymd_opt(2024, 1, 5).unwrap()),
+            is_critical: true,
+            total_float: Some(Duration::days(0)),
+            free_float: None,
+            dependencies_satisfied: true,
+            calculation_order: 0,
+        };
+
+        assert_ne!(result1, result2);
+    }
 }

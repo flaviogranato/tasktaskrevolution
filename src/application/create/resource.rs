@@ -222,4 +222,238 @@ mod test {
             panic!("Expected Available resource");
         }
     }
+
+    #[test]
+    fn test_create_resource_with_custom_code() {
+        let mock_repo = MockResourceRepository::new(false);
+        let use_case = CreateResourceUseCase::new(mock_repo);
+        let name = "Custom Resource";
+        let resource_type = "Designer";
+        let custom_code = "DES-001".to_string();
+
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: Some(custom_code.clone()),
+            email: None,
+            start_date: None,
+            end_date: None,
+        };
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
+
+        let saved_config = use_case.repository.saved_config.borrow();
+        assert!(saved_config.is_some());
+        let any_resource = saved_config.as_ref().unwrap();
+        assert_eq!(any_resource.name(), name);
+        if let AnyResource::Available(r) = any_resource {
+            assert_eq!(r.code, custom_code);
+        } else {
+            panic!("Expected Available resource");
+        }
+    }
+
+    #[test]
+    fn test_create_resource_with_email() {
+        let mock_repo = MockResourceRepository::new(false);
+        let use_case = CreateResourceUseCase::new(mock_repo);
+        let name = "Resource with Email";
+        let resource_type = "Manager";
+        let email = "test@example.com".to_string();
+
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: Some(email.clone()),
+            start_date: None,
+            end_date: None,
+        };
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
+
+        let saved_config = use_case.repository.saved_config.borrow();
+        assert!(saved_config.is_some());
+        let any_resource = saved_config.as_ref().unwrap();
+        assert_eq!(any_resource.name(), name);
+        if let AnyResource::Available(r) = any_resource {
+            assert_eq!(r.email, Some(email));
+        } else {
+            panic!("Expected Available resource");
+        }
+    }
+
+    #[test]
+    fn test_create_resource_with_dates() {
+        let mock_repo = MockResourceRepository::new(false);
+        let use_case = CreateResourceUseCase::new(mock_repo);
+        let name = "Resource with Dates";
+        let resource_type = "Business Analyst";
+        let start_date = chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let end_date = chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: None,
+            start_date: Some(start_date),
+            end_date: Some(end_date),
+        };
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
+
+        let saved_config = use_case.repository.saved_config.borrow();
+        assert!(saved_config.is_some());
+        let any_resource = saved_config.as_ref().unwrap();
+        assert_eq!(any_resource.name(), name);
+        if let AnyResource::Available(r) = any_resource {
+            assert_eq!(r.start_date, Some(start_date));
+            assert_eq!(r.end_date, Some(end_date));
+        } else {
+            panic!("Expected Available resource");
+        }
+    }
+
+    #[test]
+    fn test_create_resource_with_project_code() {
+        let mock_repo = MockResourceRepository::new(false);
+        let use_case = CreateResourceUseCase::new(mock_repo);
+        let name = "Project Resource";
+        let resource_type = "Developer";
+        let project_code = "PROJ-001".to_string();
+
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: Some(project_code),
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+        };
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
+
+        let saved_config = use_case.repository.saved_config.borrow();
+        assert!(saved_config.is_some());
+        let any_resource = saved_config.as_ref().unwrap();
+        assert_eq!(any_resource.name(), name);
+    }
+
+    #[test]
+    fn test_create_resource_use_case_creation() {
+        let mock_repo = MockResourceRepository::new(false);
+        let _use_case = CreateResourceUseCase::new(mock_repo);
+        
+        // Test that the use case was created successfully
+        assert!(true); // If we get here, creation succeeded
+    }
+
+    #[test]
+    fn test_create_resource_repository_error() {
+        let mock_repo = MockResourceRepository::new(true);
+        let use_case = CreateResourceUseCase::new(mock_repo);
+        let name = "Test Resource";
+        let resource_type = "Developer";
+
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+        };
+        let result = use_case.execute(params);
+        assert!(result.is_err());
+        
+        match result.unwrap_err() {
+            AppError::ValidationError { field, message } => {
+                assert_eq!(field, "repository");
+                assert_eq!(message, "Erro mockado ao salvar");
+            }
+            _ => panic!("Expected ValidationError"),
+        }
+    }
+
+    #[test]
+    fn test_create_resource_minimal_parameters() {
+        let mock_repo = MockResourceRepository::new(false);
+        let use_case = CreateResourceUseCase::new(mock_repo);
+        let name = "Minimal Resource";
+        let resource_type = "Developer";
+
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+        };
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
+
+        let saved_config = use_case.repository.saved_config.borrow();
+        assert!(saved_config.is_some());
+        let any_resource = saved_config.as_ref().unwrap();
+        assert_eq!(any_resource.name(), name);
+        if let AnyResource::Available(r) = any_resource {
+            assert_eq!(r.resource_type, resource_type);
+        } else {
+            panic!("Expected Available resource");
+        }
+    }
+
+    #[test]
+    fn test_create_resource_with_all_parameters() {
+        let mock_repo = MockResourceRepository::new(false);
+        let use_case = CreateResourceUseCase::new(mock_repo);
+        let name = "Complete Resource";
+        let resource_type = "Manager";
+        let custom_code = "MGR-001".to_string();
+        let email = "manager@example.com".to_string();
+        let project_code = "PROJ-001".to_string();
+        let start_date = chrono::NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
+        let end_date = chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+
+        let params = CreateResourceParams {
+            name: name.to_string(),
+            resource_type: resource_type.to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: Some(project_code),
+            code: Some(custom_code.clone()),
+            email: Some(email.clone()),
+            start_date: Some(start_date),
+            end_date: Some(end_date),
+        };
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
+
+        let saved_config = use_case.repository.saved_config.borrow();
+        assert!(saved_config.is_some());
+        let any_resource = saved_config.as_ref().unwrap();
+        assert_eq!(any_resource.name(), name);
+        if let AnyResource::Available(r) = any_resource {
+            assert_eq!(r.code, custom_code);
+            assert_eq!(r.resource_type, resource_type);
+            assert_eq!(r.email, Some(email));
+            assert_eq!(r.start_date, Some(start_date));
+            assert_eq!(r.end_date, Some(end_date));
+        } else {
+            panic!("Expected Available resource");
+        }
+    }
 }
