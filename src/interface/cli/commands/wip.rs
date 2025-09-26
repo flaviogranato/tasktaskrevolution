@@ -4,7 +4,7 @@ use crate::application::errors::AppError;
 use crate::domain::resource_management::{
     any_resource::AnyResource,
     repository::ResourceRepository,
-    resource::{WipLimits, WipStatus},
+    resource::{WipLimits, WipStatus, ResourceScope},
 };
 use crate::interface::cli::table_formatter::TableFormatter;
 use clap::{Args, Subcommand};
@@ -413,6 +413,8 @@ mod tests {
             name.to_string(),
             None,
             "Developer".to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,

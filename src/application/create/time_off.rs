@@ -1,5 +1,6 @@
 use crate::application::errors::AppError;
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::resource_management::resource::ResourceScope;
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {

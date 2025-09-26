@@ -4,7 +4,7 @@ use crate::application::errors::AppError;
 use crate::domain::resource_management::{
     any_resource::AnyResource,
     repository::ResourceRepository,
-    resource::{TaskAssignment, TaskAssignmentStatus},
+    resource::{TaskAssignment, TaskAssignmentStatus, ResourceScope},
 };
 use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
 use chrono::Local;
@@ -403,6 +403,8 @@ mod tests {
             name.to_string(),
             None,
             resource_type.to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,

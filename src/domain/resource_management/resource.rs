@@ -676,7 +676,7 @@ mod tests {
             state: Available,
         };
         let expected = format!(
-            "Resource {{ id: {id:?}, code: dev-7, name: James, email: Some(\"james@test.com\"), resource_type: Developer, scope: Company, project_id: None, vacations: None, time_off_balance: 40, state: Available }}"
+            "Resource {{ id: {id:?}, code: dev-7, name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, time_off_balance: 40, state: Available }}"
         );
         assert_eq!(resource.to_string(), expected);
     }
@@ -722,8 +722,6 @@ mod tests {
     #[test]
     fn test_resource_creation_with_valid_data() {
         let resource = Resource::<Available> {
-            project_id: None,
-            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -755,6 +753,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "Test Resource".to_string(),
@@ -776,6 +775,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "".to_string(),
             name: "Test Resource".to_string(),
@@ -800,6 +800,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -821,6 +822,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "".to_string(),
@@ -845,6 +847,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -866,6 +869,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -887,6 +891,7 @@ mod tests {
         let no_email_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -910,6 +915,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -932,6 +938,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "".to_string(),
             name: "".to_string(),
@@ -961,6 +968,7 @@ mod tests {
         let available_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
+            
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),

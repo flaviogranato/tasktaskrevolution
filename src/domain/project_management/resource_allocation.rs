@@ -587,19 +587,13 @@ mod tests {
 
     #[test]
     fn test_resource_creation() {
-        let resource = Resource::new(
-            "RES-001".to_string(),
-            "John Doe".to_string(),
-            ResourceType::Human,
-            "COMP-001".to_string(),
-            "user-001".to_string(),
-        );
+        let resource = Resource::new("RES-001".to_string(), "John Doe".to_string(), ResourceType::Human, "COMP-001".to_string(), ResourceScope::Company, None, );
 
         assert!(resource.is_ok());
 
         let resource = resource.unwrap();
         assert_eq!(resource.code, "RES-001");
-        assert_eq!(resource.name, "John Doe");
+        assert_eq!(resource.name, None, "John Doe");
         assert_eq!(resource.resource_type, ResourceType::Human);
         assert_eq!(resource.company_code, "COMP-001");
         assert_eq!(resource.status, ResourceStatus::Active);
@@ -655,13 +649,7 @@ mod tests {
 
     #[test]
     fn test_resource_availability() {
-        let resource = Resource::new(
-            "RES-001".to_string(),
-            "John Doe".to_string(),
-            ResourceType::Human,
-            "COMP-001".to_string(),
-            "user-001".to_string(),
-        ).unwrap();
+        let resource = Resource::new("RES-001".to_string(), "John Doe".to_string(), ResourceType::Human, "COMP-001".to_string(), ResourceScope::Company, None, ).unwrap();
 
         let today = Utc::now().date_naive();
         let weekday = today.weekday();
@@ -669,9 +657,7 @@ mod tests {
         // Verificar disponibilidade padrão (segunda a sexta)
         let is_available = match weekday {
             chrono::Weekday::Mon | chrono::Weekday::Tue | chrono::Weekday::Wed |
-            chrono::Weekday::Thu | chrono::Weekday::Fri => true,
-            _ => false,
-        };
+            chrono::Weekday::Thu | chrono::Weekday::Fri => true, _ => false, None, };
 
         assert_eq!(resource.is_available_on_date(today), is_available);
     }

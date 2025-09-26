@@ -915,7 +915,7 @@ impl Default for FileResourceRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::resource_management::resource::Resource;
+    use crate::domain::resource_management::resource::{Resource, ResourceScope};
     use crate::domain::resource_management::state::Available;
     use crate::infrastructure::persistence::manifests::resource_manifest::ResourceManifest;
     use std::fs;
@@ -927,6 +927,8 @@ mod tests {
             name.to_string(),
             None,
             resource_type.to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,

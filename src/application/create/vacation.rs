@@ -66,7 +66,7 @@ mod tests {
     use crate::application::errors::AppError;
     use crate::domain::resource_management::{
         AnyResource,
-        resource::{Period, PeriodType, Resource},
+        resource::{Period, PeriodType, Resource, ResourceScope},
     };
     use chrono::{DateTime, Local, NaiveDateTime};
     use std::cell::RefCell;
