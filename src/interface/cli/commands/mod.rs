@@ -5,6 +5,7 @@ pub mod link;
 pub mod list;
 pub mod migrate;
 pub mod project;
+pub mod query;
 pub mod report;
 pub mod resource;
 pub mod task;

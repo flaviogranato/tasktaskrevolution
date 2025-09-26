@@ -2,6 +2,8 @@ pub mod command;
 pub mod convertable;
 pub mod factory;
 pub mod observer;
+pub mod query_engine;
+pub mod query_parser;
 pub mod repository;
 pub mod specification;
 pub mod validatable;

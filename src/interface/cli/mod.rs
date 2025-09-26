@@ -114,6 +114,18 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::TaskCommand,
     },
+    /// Query entities with filtering
+    Query {
+        /// Query string to parse and execute
+        #[clap(long)]
+        query: String,
+        /// Entity type to query (project, task, resource, company)
+        #[clap(long, default_value = "project")]
+        entity_type: String,
+        /// Output format (json, table)
+        #[clap(long, default_value = "table")]
+        format: String,
+    },
     /// Migration tools
     Migrate {
         #[clap(subcommand)]
@@ -194,6 +206,11 @@ impl Cli {
             Commands::Build { output, base_url } => command_executor::execute_build(output, base_url),
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),
+            Commands::Query { query, entity_type, format } => {
+                use crate::interface::cli::commands::query::execute_query;
+                use crate::interface::cli::commands::query::QueryArgs;
+                execute_query(QueryArgs { query, entity_type, format })
+            },
             Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),
         }
     }
