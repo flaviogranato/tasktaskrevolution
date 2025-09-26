@@ -1,5 +1,5 @@
 use crate::application::errors::AppError;
-use crate::domain::resource_management::{ResourceTypeValidator, repository::ResourceRepository, resource::Resource};
+use crate::domain::resource_management::{ResourceTypeValidator, repository::ResourceRepository, resource::{Resource, ResourceScope}};
 
 #[derive(Debug, Clone)]
 pub struct CreateResourceParams {
@@ -11,6 +11,7 @@ pub struct CreateResourceParams {
     pub email: Option<String>,
     pub start_date: Option<chrono::NaiveDate>,
     pub end_date: Option<chrono::NaiveDate>,
+    pub scope: ResourceScope,
 }
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
@@ -36,11 +37,18 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
             None => self.repository.get_next_code(&params.resource_type)?,
         };
         let name = params.name.clone();
+        let project_id = match params.scope {
+            ResourceScope::Company => None,
+            ResourceScope::Project => params.project_code.clone(),
+        };
+        
         let r = Resource::new(
             code,
             params.name,
             params.email,
             params.resource_type,
+            params.scope,
+            project_id,
             params.start_date,
             params.end_date,
             None,

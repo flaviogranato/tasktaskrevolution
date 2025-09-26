@@ -37,6 +37,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
                 email: Some(email),
                 start_date: None,
                 end_date: None,
+                scope: crate::domain::resource_management::resource::ResourceScope::Company,
             };
             match create_use_case.execute(params) {
                 Ok(_resource) => {

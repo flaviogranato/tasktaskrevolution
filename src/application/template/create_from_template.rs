@@ -84,6 +84,7 @@ impl<
                 email: None,        // No email from template
                 start_date: None,   // No start date from template
                 end_date: None,     // No end date from template
+                scope: crate::domain::resource_management::resource::ResourceScope::Company,
             };
             self.create_resource_use_case.execute(params)?;
 
