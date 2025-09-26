@@ -175,6 +175,7 @@ mod test {
             email: None,
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Company,
         };
         let result = use_case.execute(params);
         assert!(result.is_ok());
@@ -196,6 +197,7 @@ mod test {
             email: None,
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Company,
         };
         let result = use_case.execute(params);
         assert!(result.is_err());
@@ -216,6 +218,7 @@ mod test {
             email: None,
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Company,
         };
         let _ = use_case.execute(params);
 
@@ -248,6 +251,7 @@ mod test {
             email: None,
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Company,
         };
         let result = use_case.execute(params);
         assert!(result.is_ok());
@@ -280,6 +284,7 @@ mod test {
             email: Some(email.clone()),
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Company,
         };
         let result = use_case.execute(params);
         assert!(result.is_ok());
@@ -313,6 +318,7 @@ mod test {
             email: None,
             start_date: Some(start_date),
             end_date: Some(end_date),
+            scope: ResourceScope::Company,
         };
         let result = use_case.execute(params);
         assert!(result.is_ok());
@@ -346,6 +352,7 @@ mod test {
             email: None,
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Project,
         };
         let result = use_case.execute(params);
         assert!(result.is_ok());
@@ -381,6 +388,7 @@ mod test {
             email: None,
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Company,
         };
         let result = use_case.execute(params);
         assert!(result.is_err());
@@ -410,6 +418,7 @@ mod test {
             email: None,
             start_date: None,
             end_date: None,
+            scope: ResourceScope::Company,
         };
         let result = use_case.execute(params);
         assert!(result.is_ok());
@@ -446,6 +455,7 @@ mod test {
             email: Some(email.clone()),
             start_date: Some(start_date),
             end_date: Some(end_date),
+            scope: ResourceScope::Project,
         };
         let result = use_case.execute(params);
         assert!(result.is_ok());

@@ -722,6 +722,8 @@ mod tests {
     #[test]
     fn test_resource_creation_with_valid_data() {
         let resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -751,6 +753,8 @@ mod tests {
     fn test_resource_code_validation() {
         // Valid code
         let valid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "Test Resource".to_string(),
@@ -770,6 +774,8 @@ mod tests {
 
         // Invalid code (empty)
         let invalid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "".to_string(),
             name: "Test Resource".to_string(),
@@ -792,6 +798,8 @@ mod tests {
     fn test_resource_name_validation() {
         // Valid name
         let valid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -811,6 +819,8 @@ mod tests {
 
         // Invalid name (empty)
         let invalid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "".to_string(),
@@ -833,6 +843,8 @@ mod tests {
     fn test_resource_email_validation() {
         // Valid email
         let valid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -852,6 +864,8 @@ mod tests {
 
         // Invalid email format
         let invalid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -871,6 +885,8 @@ mod tests {
 
         // No email (should be valid)
         let no_email_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -892,6 +908,8 @@ mod tests {
     #[test]
     fn test_resource_comprehensive_validation() {
         let valid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -912,6 +930,8 @@ mod tests {
         assert_eq!(validation_result.unwrap().len(), 0); // No validation errors
 
         let invalid_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "".to_string(),
             name: "".to_string(),
@@ -939,6 +959,8 @@ mod tests {
     #[test]
     fn test_resource_state_transitions() {
         let available_resource = Resource::<Available> {
+            project_id: None,
+            scope: ResourceScope::Company,
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
