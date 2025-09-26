@@ -77,7 +77,7 @@ mod tests {
             }
             Ok(self.resources.clone())
         }
-        
+
         fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -88,7 +88,7 @@ mod tests {
             // Filter resources by company (simplified for testing)
             Ok(self.resources.clone())
         }
-        
+
         fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -102,7 +102,7 @@ mod tests {
                 .map(|r| (r.clone(), "TEST-COMPANY".to_string(), vec!["PROJ-1".to_string()]))
                 .collect())
         }
-        
+
         fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -137,7 +137,7 @@ mod tests {
             }
             Ok(resource)
         }
-        
+
         fn save_time_off(&self, _r: &str, _h: u32, _d: &str, _desc: Option<String>) -> Result<AnyResource, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -148,7 +148,7 @@ mod tests {
             // Return a mock resource for testing
             Ok(create_test_resource("Test", "test-1", "Developer"))
         }
-        
+
         fn save_vacation(
             &self,
             _r: &str,
@@ -166,7 +166,7 @@ mod tests {
             // Return a mock resource for testing
             Ok(create_test_resource("Test", "test-1", "Developer"))
         }
-        
+
         fn check_if_layoff_period(
             &self,
             _s: &chrono::DateTime<chrono::Local>,
@@ -174,7 +174,7 @@ mod tests {
         ) -> bool {
             false // Mock implementation
         }
-        
+
         fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
@@ -346,8 +346,8 @@ mod tests {
     fn test_list_resources_use_case_creation() {
         let mock_repo = MockResourceRepository::new(vec![]);
         let _use_case = ListResourcesUseCase::new(mock_repo);
-        
+
         // Test that the use case was created successfully
-        assert!(true); // If we get here, creation succeeded
+        // If we get here, creation succeeded
     }
 }

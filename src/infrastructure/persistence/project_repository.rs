@@ -94,7 +94,10 @@ impl FileProjectRepository {
 
         for entry in walker.flatten() {
             let task_path = entry.path();
-            crate::interface::cli::logging::Logger::debug_file_operation("Loading task from", &task_path.to_string_lossy());
+            crate::interface::cli::logging::Logger::debug_file_operation(
+                "Loading task from",
+                &task_path.to_string_lossy(),
+            );
             let yaml = fs::read_to_string(task_path).map_err(|e| AppError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: task_path.to_string_lossy().to_string(),

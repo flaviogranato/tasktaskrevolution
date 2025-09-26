@@ -158,20 +158,20 @@ fn find_task_code(temp: &assert_fs::TempDir, project_code: &str) -> Result<Strin
                 {
                     // Found the project, now look for tasks in the tasks subdirectory
                     let tasks_dir = path.parent().unwrap().join("tasks");
-                    if tasks_dir.exists() {
-                        if let Ok(task_entries) = std::fs::read_dir(&tasks_dir) {
-                            for task_entry in task_entries.flatten() {
-                                let task_path = task_entry.path();
-                                if task_path.is_file()
-                                    && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                                    && let Ok(task_content) = std::fs::read_to_string(&task_path)
-                                    && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
-                                    && let Some(task_metadata) = task_yaml.get("metadata")
-                                    && let Some(code) = task_metadata.get("code").and_then(|v| v.as_str())
-                                {
-                                    task_code = Some(code.to_string());
-                                    break;
-                                }
+                    if tasks_dir.exists()
+                        && let Ok(task_entries) = std::fs::read_dir(&tasks_dir)
+                    {
+                        for task_entry in task_entries.flatten() {
+                            let task_path = task_entry.path();
+                            if task_path.is_file()
+                                && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                && let Ok(task_content) = std::fs::read_to_string(&task_path)
+                                && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                                && let Some(task_metadata) = task_yaml.get("metadata")
+                                && let Some(code) = task_metadata.get("code").and_then(|v| v.as_str())
+                            {
+                                task_code = Some(code.to_string());
+                                break;
                             }
                         }
                     }
@@ -196,22 +196,21 @@ fn find_resource_code(temp: &assert_fs::TempDir) -> Result<String, Box<dyn std::
             let path = entry.path();
             if path.is_dir() {
                 let resources_dir = path.join("resources");
-                if resources_dir.exists() {
-                    if let Ok(resource_entries) = std::fs::read_dir(&resources_dir) {
-                        for resource_entry in resource_entries.flatten() {
-                            let resource_path = resource_entry.path();
-                            if resource_path.is_file()
-                                && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                if resources_dir.exists()
+                    && let Ok(resource_entries) = std::fs::read_dir(&resources_dir)
+                {
+                    for resource_entry in resource_entries.flatten() {
+                        let resource_path = resource_entry.path();
+                        if resource_path.is_file() && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                        {
+                            // Read the YAML file to get the actual resource code
+                            if let Ok(content) = std::fs::read_to_string(&resource_path)
+                                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                && let Some(metadata) = yaml.get("metadata")
+                                && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
                             {
-                                // Read the YAML file to get the actual resource code
-                                if let Ok(content) = std::fs::read_to_string(&resource_path)
-                                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                                    && let Some(metadata) = yaml.get("metadata")
-                                    && let Some(code) = metadata.get("code").and_then(|v| v.as_str())
-                                {
-                                    resource_code = Some(code.to_string());
-                                    break;
-                                }
+                                resource_code = Some(code.to_string());
+                                break;
                             }
                         }
                     }
@@ -250,24 +249,23 @@ fn verify_task_updated(
                 {
                     // Found the project, now look for tasks in the tasks subdirectory
                     let tasks_dir = path.parent().unwrap().join("tasks");
-                    if tasks_dir.exists() {
-                        if let Ok(task_entries) = std::fs::read_dir(&tasks_dir) {
-                            for task_entry in task_entries.flatten() {
-                                let task_path = task_entry.path();
-                                if task_path.is_file()
-                                    && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                                    && let Ok(task_content) = std::fs::read_to_string(&task_path)
-                                    && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
-                                    && let Some(task_metadata) = task_yaml.get("metadata")
-                                    && let Some(task_code_from_file) =
-                                        task_metadata.get("code").and_then(|v| v.as_str())
-                                {
-                                    // task_code might include .yaml extension, so we need to strip it
-                                    let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(task_code);
-                                    if task_code_from_file == task_code_without_ext {
-                                        task_file = Some(task_path);
-                                        break;
-                                    }
+                    if tasks_dir.exists()
+                        && let Ok(task_entries) = std::fs::read_dir(&tasks_dir)
+                    {
+                        for task_entry in task_entries.flatten() {
+                            let task_path = task_entry.path();
+                            if task_path.is_file()
+                                && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                && let Ok(task_content) = std::fs::read_to_string(&task_path)
+                                && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                                && let Some(task_metadata) = task_yaml.get("metadata")
+                                && let Some(task_code_from_file) = task_metadata.get("code").and_then(|v| v.as_str())
+                            {
+                                // task_code might include .yaml extension, so we need to strip it
+                                let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(task_code);
+                                if task_code_from_file == task_code_without_ext {
+                                    task_file = Some(task_path);
+                                    break;
                                 }
                             }
                         }
@@ -310,18 +308,18 @@ fn verify_project_updated(
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                if let Ok(content) = std::fs::read_to_string(&path)
-                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                    && let Some(code) = yaml
-                        .get("metadata")
-                        .and_then(|m| m.get("code"))
-                        .and_then(|c| c.as_str())
-                    && code == project_code
-                {
-                    project_file = Some(path);
-                    break;
-                }
+            if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                && let Ok(content) = std::fs::read_to_string(&path)
+                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                && let Some(code) = yaml
+                    .get("metadata")
+                    .and_then(|m| m.get("code"))
+                    .and_then(|c| c.as_str())
+                && code == project_code
+            {
+                project_file = Some(path);
+                break;
             }
         }
     }
@@ -353,23 +351,23 @@ fn verify_resource_updated(
     let mut resource_file = None;
 
     // Search in global resources directory (ID-based format)
-    if resources_dir.exists() {
-        if let Ok(entries) = std::fs::read_dir(&resources_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    if let Ok(content) = std::fs::read_to_string(&path)
-                        && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                        && let Some(code) = yaml
-                            .get("metadata")
-                            .and_then(|m| m.get("code"))
-                            .and_then(|c| c.as_str())
-                        && code == resource_code
-                    {
-                        resource_file = Some(path);
-                        break;
-                    }
-                }
+    if resources_dir.exists()
+        && let Ok(entries) = std::fs::read_dir(&resources_dir)
+    {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                && let Ok(content) = std::fs::read_to_string(&path)
+                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                && let Some(code) = yaml
+                    .get("metadata")
+                    .and_then(|m| m.get("code"))
+                    .and_then(|c| c.as_str())
+                && code == resource_code
+            {
+                resource_file = Some(path);
+                break;
             }
         }
     }
@@ -382,23 +380,23 @@ fn verify_resource_updated(
                 let path = entry.path();
                 if path.is_dir() {
                     let company_resources_dir = path.join("resources");
-                    if company_resources_dir.exists() {
-                        if let Ok(resource_entries) = std::fs::read_dir(&company_resources_dir) {
-                            for resource_entry in resource_entries.flatten() {
-                                let resource_path = resource_entry.path();
-                                if resource_path.is_file()
-                                    && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                                    && let Ok(content) = std::fs::read_to_string(&resource_path)
-                                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                                    && let Some(code) = yaml
-                                        .get("metadata")
-                                        .and_then(|m| m.get("code"))
-                                        .and_then(|c| c.as_str())
-                                    && code == resource_code
-                                {
-                                    resource_file = Some(resource_path);
-                                    break;
-                                }
+                    if company_resources_dir.exists()
+                        && let Ok(resource_entries) = std::fs::read_dir(&company_resources_dir)
+                    {
+                        for resource_entry in resource_entries.flatten() {
+                            let resource_path = resource_entry.path();
+                            if resource_path.is_file()
+                                && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                && let Ok(content) = std::fs::read_to_string(&resource_path)
+                                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                && let Some(code) = yaml
+                                    .get("metadata")
+                                    .and_then(|m| m.get("code"))
+                                    .and_then(|c| c.as_str())
+                                && code == resource_code
+                            {
+                                resource_file = Some(resource_path);
+                                break;
                             }
                         }
                     }
@@ -482,11 +480,11 @@ fn test_task_update_company_context() -> Result<(), Box<dyn std::error::Error>> 
 
     // Change to company context
     let company_dir = temp.path();
-    std::env::set_current_dir(&company_dir)?;
+    std::env::set_current_dir(company_dir)?;
 
     // Update task from company context
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(&company_dir);
+    cmd.current_dir(company_dir);
     cmd.args([
         "update",
         "task",
@@ -603,11 +601,11 @@ fn test_project_update_company_context() -> Result<(), Box<dyn std::error::Error
 
     // Change to company context
     let company_dir = temp.path();
-    std::env::set_current_dir(&company_dir)?;
+    std::env::set_current_dir(company_dir)?;
 
     // Update project from company context
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(&company_dir);
+    cmd.current_dir(company_dir);
     cmd.args([
         "update",
         "project",
@@ -676,11 +674,11 @@ fn test_resource_update_company_context() -> Result<(), Box<dyn std::error::Erro
 
     // Change to company context (use the root directory since we're using ID-based naming)
     let company_dir = temp.path();
-    std::env::set_current_dir(&company_dir)?;
+    std::env::set_current_dir(company_dir)?;
 
     // Update resource from company context
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(&company_dir);
+    cmd.current_dir(company_dir);
     cmd.args([
         "update",
         "resource",
@@ -774,10 +772,10 @@ fn test_update_context_validation_errors() -> Result<(), Box<dyn std::error::Err
 
     // Test wrong company parameter in company context
     let company_dir = temp.path();
-    std::env::set_current_dir(&company_dir)?;
+    std::env::set_current_dir(company_dir)?;
 
     let mut cmd = Command::cargo_bin("ttr")?;
-    cmd.current_dir(&company_dir);
+    cmd.current_dir(company_dir);
     cmd.args([
         "update",
         "task",
@@ -915,38 +913,37 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                if let Ok(content) = std::fs::read_to_string(&path)
-                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                    && let Some(code) = yaml
-                        .get("metadata")
-                        .and_then(|m| m.get("code"))
-                        .and_then(|c| c.as_str())
-                    && code == project_code
+            if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                && let Ok(content) = std::fs::read_to_string(&path)
+                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                && let Some(code) = yaml
+                    .get("metadata")
+                    .and_then(|m| m.get("code"))
+                    .and_then(|c| c.as_str())
+                && code == project_code
+            {
+                // Found the project, now look for tasks in the tasks subdirectory
+                let tasks_dir = path.parent().unwrap().join("tasks");
+                if tasks_dir.exists()
+                    && let Ok(task_entries) = std::fs::read_dir(&tasks_dir)
                 {
-                    // Found the project, now look for tasks in the tasks subdirectory
-                    let tasks_dir = path.parent().unwrap().join("tasks");
-                    if tasks_dir.exists() {
-                        if let Ok(task_entries) = std::fs::read_dir(&tasks_dir) {
-                            for task_entry in task_entries.flatten() {
-                                let task_path = task_entry.path();
-                                if task_path.is_file()
-                                    && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                                    && let Ok(task_content) = std::fs::read_to_string(&task_path)
-                                    && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
-                                    && let Some(task_metadata) = task_yaml.get("metadata")
-                                    && let Some(task_code_from_file) =
-                                        task_metadata.get("code").and_then(|v| v.as_str())
-                                    && task_code_from_file == task_code
-                                {
-                                    task_file = Some(task_path);
-                                    break;
-                                }
-                            }
+                    for task_entry in task_entries.flatten() {
+                        let task_path = task_entry.path();
+                        if task_path.is_file()
+                            && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                            && let Ok(task_content) = std::fs::read_to_string(&task_path)
+                            && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                            && let Some(task_metadata) = task_yaml.get("metadata")
+                            && let Some(task_code_from_file) = task_metadata.get("code").and_then(|v| v.as_str())
+                            && task_code_from_file == task_code
+                        {
+                            task_file = Some(task_path);
+                            break;
                         }
                     }
-                    break;
                 }
+                break;
             }
         }
     }
@@ -980,18 +977,18 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
     if let Ok(entries) = std::fs::read_dir(&projects_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                if let Ok(content) = std::fs::read_to_string(&path)
-                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                    && let Some(code) = yaml
-                        .get("metadata")
-                        .and_then(|m| m.get("code"))
-                        .and_then(|c| c.as_str())
-                    && code == project_code
-                {
-                    project_file = Some(path);
-                    break;
-                }
+            if path.is_file()
+                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                && let Ok(content) = std::fs::read_to_string(&path)
+                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                && let Some(code) = yaml
+                    .get("metadata")
+                    .and_then(|m| m.get("code"))
+                    .and_then(|c| c.as_str())
+                && code == project_code
+            {
+                project_file = Some(path);
+                break;
             }
         }
     }

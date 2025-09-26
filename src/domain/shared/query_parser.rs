@@ -4,14 +4,14 @@ use std::fmt;
 /// Representa um operador de comparação
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ComparisonOperator {
-    Equal,           // =
-    NotEqual,        // !=
-    GreaterThan,     // >
-    LessThan,        // <
-    GreaterOrEqual,  // >=
-    LessOrEqual,     // <=
-    Contains,        // ~ (contém)
-    NotContains,     // !~ (não contém)
+    Equal,          // =
+    NotEqual,       // !=
+    GreaterThan,    // >
+    LessThan,       // <
+    GreaterOrEqual, // >=
+    LessOrEqual,    // <=
+    Contains,       // ~ (contém)
+    NotContains,    // !~ (não contém)
 }
 
 impl fmt::Display for ComparisonOperator {
@@ -168,7 +168,7 @@ impl QueryParser {
 
     fn parse_expression(&mut self) -> Result<QueryExpression, QueryParseError> {
         self.skip_whitespace();
-        
+
         if self.peek() == Some('(') {
             let _ = self.consume('(');
             let expr = self.parse_expression()?;
@@ -181,7 +181,7 @@ impl QueryParser {
             let expr = self.parse_expression()?;
             return Ok(QueryExpression::Not(Box::new(expr)));
         }
-        
+
         // Handle NOT keyword
         if self.starts_with("NOT") {
             self.advance_by(3);
@@ -209,7 +209,7 @@ impl QueryParser {
     fn parse_condition(&mut self) -> Result<FilterCondition, QueryParseError> {
         let field = self.parse_field()?;
         self.skip_whitespace();
-        
+
         // Handle the colon operator (field:value syntax)
         if self.peek() == Some(':') {
             let _ = self.consume(':');
@@ -221,17 +221,13 @@ impl QueryParser {
                 value,
             });
         }
-        
+
         let operator = self.parse_comparison_operator()?;
         self.skip_whitespace();
-        
+
         let value = self.parse_value()?;
-        
-        Ok(FilterCondition {
-            field,
-            operator,
-            value,
-        })
+
+        Ok(FilterCondition { field, operator, value })
     }
 
     fn parse_field(&mut self) -> Result<String, QueryParseError> {
@@ -243,11 +239,11 @@ impl QueryParser {
                 break;
             }
         }
-        
+
         if self.position == start {
             return Err(QueryParseError::InvalidField("Empty field name".to_string()));
         }
-        
+
         Ok(self.input[start..self.position].to_string())
     }
 
@@ -256,7 +252,7 @@ impl QueryParser {
             let _ = self.consume('=');
             return Ok(ComparisonOperator::Equal);
         }
-        
+
         if self.peek() == Some('!') {
             let _ = self.consume('!');
             if self.peek() == Some('=') {
@@ -269,7 +265,7 @@ impl QueryParser {
             }
             return Err(QueryParseError::UnsupportedOperator("!".to_string()));
         }
-        
+
         if self.peek() == Some('>') {
             let _ = self.consume('>');
             if self.peek() == Some('=') {
@@ -278,7 +274,7 @@ impl QueryParser {
             }
             return Ok(ComparisonOperator::GreaterThan);
         }
-        
+
         if self.peek() == Some('<') {
             let _ = self.consume('<');
             if self.peek() == Some('=') {
@@ -287,14 +283,14 @@ impl QueryParser {
             }
             return Ok(ComparisonOperator::LessThan);
         }
-        
+
         if self.peek() == Some('~') {
             let _ = self.consume('~');
             return Ok(ComparisonOperator::Contains);
         }
-        
+
         Err(QueryParseError::UnsupportedOperator(
-            self.peek().unwrap_or(' ').to_string()
+            self.peek().unwrap_or(' ').to_string(),
         ))
     }
 
@@ -303,18 +299,18 @@ impl QueryParser {
             self.advance_by(3);
             return Some(LogicalOperator::And);
         }
-        
+
         if self.starts_with("OR") {
             self.advance_by(2);
             return Some(LogicalOperator::Or);
         }
-        
+
         None
     }
 
     fn parse_value(&mut self) -> Result<QueryValue, QueryParseError> {
         self.skip_whitespace();
-        
+
         if self.peek() == Some('\'') {
             let _ = self.consume('\'');
             let start = self.position;
@@ -327,17 +323,17 @@ impl QueryParser {
             self.expect('\'')?;
             return Ok(QueryValue::String(self.input[start..self.position - 1].to_string()));
         }
-        
+
         if self.peek() == Some('t') && self.starts_with("true") {
             self.advance_by(4);
             return Ok(QueryValue::Boolean(true));
         }
-        
+
         if self.peek() == Some('f') && self.starts_with("false") {
             self.advance_by(5);
             return Ok(QueryValue::Boolean(false));
         }
-        
+
         // Try to parse as date (YYYY-MM-DD) first
         if self.position < self.input.len() && self.input.len() - self.position >= 10 {
             let date_str = &self.input[self.position..self.position + 10];
@@ -346,7 +342,7 @@ impl QueryParser {
                 return Ok(QueryValue::Date(date));
             }
         }
-        
+
         // Try to parse as number
         let start = self.position;
         let mut has_dot = false;
@@ -360,14 +356,14 @@ impl QueryParser {
                 break;
             }
         }
-        
+
         if self.position > start {
             let num_str = &self.input[start..self.position];
             if let Ok(num) = num_str.parse::<f64>() {
                 return Ok(QueryValue::Number(num));
             }
         }
-        
+
         // Default to string (unquoted)
         let start = self.position;
         while let Some(c) = self.peek() {
@@ -377,7 +373,7 @@ impl QueryParser {
                 break;
             }
         }
-        
+
         if self.position > start {
             Ok(QueryValue::String(self.input[start..self.position].to_string()))
         } else {
@@ -406,9 +402,7 @@ impl QueryParser {
             self.advance();
             Ok(())
         } else {
-            Err(QueryParseError::UnexpectedToken(
-                self.peek().unwrap_or(' ').to_string()
-            ))
+            Err(QueryParseError::UnexpectedToken(self.peek().unwrap_or(' ').to_string()))
         }
     }
 
@@ -439,7 +433,7 @@ mod tests {
     fn test_parse_simple_condition() {
         let mut parser = QueryParser::new("status:active".to_string());
         let query = parser.parse().unwrap();
-        
+
         match query.expression {
             QueryExpression::Condition(condition) => {
                 assert_eq!(condition.field, "status");
@@ -454,7 +448,7 @@ mod tests {
     fn test_parse_quoted_string() {
         let mut parser = QueryParser::new("name:'John Doe'".to_string());
         let query = parser.parse().unwrap();
-        
+
         match query.expression {
             QueryExpression::Condition(condition) => {
                 assert_eq!(condition.field, "name");
@@ -469,9 +463,13 @@ mod tests {
     fn test_parse_logical_and() {
         let mut parser = QueryParser::new("status:active AND priority:high".to_string());
         let query = parser.parse().unwrap();
-        
+
         match query.expression {
-            QueryExpression::Logical { operator, left, right } => {
+            QueryExpression::Logical {
+                operator,
+                left: _left,
+                right,
+            } => {
                 assert_eq!(operator, LogicalOperator::And);
                 assert!(right.is_some());
             }
@@ -483,7 +481,7 @@ mod tests {
     fn test_parse_boolean_value() {
         let mut parser = QueryParser::new("active:true".to_string());
         let query = parser.parse().unwrap();
-        
+
         match query.expression {
             QueryExpression::Condition(condition) => {
                 assert_eq!(condition.field, "active");
@@ -497,7 +495,7 @@ mod tests {
     fn test_parse_number_value() {
         let mut parser = QueryParser::new("progress:75.5".to_string());
         let query = parser.parse().unwrap();
-        
+
         match query.expression {
             QueryExpression::Condition(condition) => {
                 assert_eq!(condition.field, "progress");
@@ -511,7 +509,7 @@ mod tests {
     fn test_parse_date_value() {
         let mut parser = QueryParser::new("created:2024-01-15".to_string());
         let query = parser.parse().unwrap();
-        
+
         match query.expression {
             QueryExpression::Condition(condition) => {
                 assert_eq!(condition.field, "created");
@@ -539,7 +537,7 @@ mod tests {
         for (input, expected_op) in test_cases {
             let mut parser = QueryParser::new(input.to_string());
             let query = parser.parse().unwrap();
-            
+
             match query.expression {
                 QueryExpression::Condition(condition) => {
                     assert_eq!(condition.operator, expected_op);
@@ -553,7 +551,7 @@ mod tests {
     fn test_parse_complex_expression() {
         let mut parser = QueryParser::new("(status:active OR status:pending) AND priority:high".to_string());
         let query = parser.parse().unwrap();
-        
+
         // Should parse without error
         assert!(!matches!(query.expression, QueryExpression::Condition(_)));
     }
@@ -562,7 +560,7 @@ mod tests {
     fn test_parse_not_expression() {
         let mut parser = QueryParser::new("NOT status:cancelled".to_string());
         let query = parser.parse().unwrap();
-        
+
         match query.expression {
             QueryExpression::Not(_) => {}
             _ => panic!("Expected NOT expression"),

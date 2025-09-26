@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use uuid7;
 
 use crate::application::errors::AppError;
-use crate::domain::shared::query_parser::QueryValue;
 use crate::domain::shared::query_engine::Queryable;
+use crate::domain::shared::query_parser::QueryValue;
 
 /// Represents a company entity in the system.
 ///
@@ -210,6 +210,26 @@ impl Company {
     }
 }
 
+impl Queryable for Company {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match field {
+            "id" => Some(QueryValue::String(self.id.clone())),
+            "code" => Some(QueryValue::String(self.code.clone())),
+            "name" => Some(QueryValue::String(self.name.clone())),
+            "email" => self.email.as_ref().map(|e| QueryValue::String(e.clone())),
+            "status" => Some(QueryValue::String(self.status.to_string())),
+            "is_active" => Some(QueryValue::Boolean(self.is_active())),
+            "created_at" => Some(QueryValue::DateTime(self.created_at.naive_utc())),
+            "updated_at" => Some(QueryValue::DateTime(self.updated_at.naive_utc())),
+            _ => None,
+        }
+    }
+
+    fn entity_type() -> &'static str {
+        "company"
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -286,25 +306,5 @@ mod tests {
         company.change_status(CompanyStatus::Inactive);
         assert!(!company.is_active());
         assert_eq!(company.status, CompanyStatus::Inactive);
-    }
-}
-
-impl Queryable for Company {
-    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
-        match field {
-            "id" => Some(QueryValue::String(self.id.clone())),
-            "code" => Some(QueryValue::String(self.code.clone())),
-            "name" => Some(QueryValue::String(self.name.clone())),
-            "email" => self.email.as_ref().map(|e| QueryValue::String(e.clone())),
-            "status" => Some(QueryValue::String(self.status.to_string())),
-            "is_active" => Some(QueryValue::Boolean(self.is_active())),
-            "created_at" => Some(QueryValue::DateTime(self.created_at.naive_utc())),
-            "updated_at" => Some(QueryValue::DateTime(self.updated_at.naive_utc())),
-            _ => None,
-        }
-    }
-    
-    fn entity_type() -> &'static str {
-        "company"
     }
 }

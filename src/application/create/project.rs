@@ -181,9 +181,16 @@ mod test {
         let name = "Custom Project";
         let custom_code = "CUSTOM-001".to_string();
 
-        let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), Some(custom_code.clone()), None, None);
+        let result = use_case.execute(
+            name,
+            None,
+            "TEST_COMPANY".to_string(),
+            Some(custom_code.clone()),
+            None,
+            None,
+        );
         assert!(result.is_ok());
-        
+
         let project = result.unwrap();
         assert_eq!(project.code(), custom_code);
         assert_eq!(project.name(), name);
@@ -197,9 +204,16 @@ mod test {
         let start_date = chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
         let end_date = chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
 
-        let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), None, Some(start_date), Some(end_date));
+        let result = use_case.execute(
+            name,
+            None,
+            "TEST_COMPANY".to_string(),
+            None,
+            Some(start_date),
+            Some(end_date),
+        );
         assert!(result.is_ok());
-        
+
         let project = result.unwrap();
         assert_eq!(project.name(), name);
         assert_eq!(project.start_date(), Some(start_date));
@@ -215,7 +229,7 @@ mod test {
 
         let result = use_case.execute(name, Some(description), "TEST_COMPANY".to_string(), None, None, None);
         assert!(result.is_ok());
-        
+
         let project = result.unwrap();
         assert_eq!(project.name(), name);
         assert_eq!(project.description(), Some(&description.to_string()));
@@ -225,9 +239,9 @@ mod test {
     fn test_create_project_use_case_creation() {
         let mock_repo = MockProjectRepository::new(false);
         let _use_case = CreateProjectUseCase::new(mock_repo);
-        
+
         // Test that the use case was created successfully
-        assert!(true); // If we get here, creation succeeded
+        // If we get here, creation succeeded
     }
 
     #[test]
@@ -238,7 +252,7 @@ mod test {
 
         let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), None, None, None);
         assert!(result.is_err());
-        
+
         match result.unwrap_err() {
             AppError::ValidationError { field, message } => {
                 assert_eq!(field, "repository");
@@ -256,7 +270,7 @@ mod test {
 
         let result = use_case.execute(name, None, "TEST_COMPANY".to_string(), None, None, None);
         assert!(result.is_ok());
-        
+
         let project = result.unwrap();
         assert_eq!(project.name(), name);
         assert_eq!(project.company_code(), "TEST_COMPANY");
@@ -274,15 +288,15 @@ mod test {
         let end_date = chrono::NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
 
         let result = use_case.execute(
-            name, 
-            Some(description), 
-            "TEST_COMPANY".to_string(), 
-            Some(custom_code.clone()), 
-            Some(start_date), 
-            Some(end_date)
+            name,
+            Some(description),
+            "TEST_COMPANY".to_string(),
+            Some(custom_code.clone()),
+            Some(start_date),
+            Some(end_date),
         );
         assert!(result.is_ok());
-        
+
         let project = result.unwrap();
         assert_eq!(project.name(), name);
         assert_eq!(project.description(), Some(&description.to_string()));

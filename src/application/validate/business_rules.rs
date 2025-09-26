@@ -270,7 +270,9 @@ mod tests {
         }
 
         fn load(&self) -> Result<AnyProject, AppError> {
-            Err(AppError::ProjectNotFound { code: "test".to_string() })
+            Err(AppError::ProjectNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
@@ -288,7 +290,9 @@ mod tests {
 
     impl ResourceRepository for MockResourceRepository {
         fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn save_in_hierarchy(
@@ -297,7 +301,9 @@ mod tests {
             _company_code: &str,
             _project_code: Option<&str>,
         ) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
@@ -323,7 +329,9 @@ mod tests {
             _date: &str,
             _description: Option<String>,
         ) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn save_vacation(
@@ -334,7 +342,9 @@ mod tests {
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
         ) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound { code: "test".to_string() })
+            Err(AppError::ResourceNotFound {
+                code: "test".to_string(),
+            })
         }
 
         fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
@@ -396,7 +406,6 @@ mod tests {
 
         let _use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
         // Should not panic
-        assert!(true);
     }
 
     #[test]
@@ -422,7 +431,7 @@ mod tests {
         let result = use_case.execute();
         assert!(result.is_ok());
         let results = result.unwrap();
-        
+
         // Verify that all results are ValidationResult instances
         for validation_result in results {
             assert!(matches!(validation_result, ValidationResult { .. }));
@@ -621,7 +630,6 @@ mod tests {
 
         // Should not panic even with invalid date format
         let _result = use_case.check_layoff_overlap(&vacation_period, &layoff_period);
-        assert!(true);
     }
 
     #[test]
@@ -633,12 +641,15 @@ mod tests {
         let use_case = ValidateBusinessRulesUseCase::new(&project_repo, &resource_repo, &company_repo);
 
         // Create a mock project with start and end dates
-        let project = AnyProject::Project(crate::domain::project_management::project::Project::new(
-            "PROJ-001".to_string(),
-            "Test Project".to_string(),
-            "COMP-001".to_string(),
-            "user1".to_string(),
-        ).unwrap());
+        let project = AnyProject::Project(
+            crate::domain::project_management::project::Project::new(
+                "PROJ-001".to_string(),
+                "Test Project".to_string(),
+                "COMP-001".to_string(),
+                "user1".to_string(),
+            )
+            .unwrap(),
+        );
 
         let resources = vec![]; // Empty resources
         let vacation_rules = crate::domain::project_management::project::VacationRules::default();
@@ -677,8 +688,8 @@ mod tests {
 
     #[test]
     fn test_validation_result_info_builder() {
-        let result = ValidationResult::info("Test info".to_string())
-            .with_entity("Task".to_string(), "TASK-001".to_string());
+        let result =
+            ValidationResult::info("Test info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
 
         assert_eq!(result.severity, ValidationSeverity::Info);
         assert_eq!(result.message, "Test info");
@@ -723,8 +734,8 @@ mod tests {
         let resource_result = ValidationResult::warning("Resource warning".to_string())
             .with_entity("Resource".to_string(), "RES-001".to_string());
 
-        let task_result = ValidationResult::info("Task info".to_string())
-            .with_entity("Task".to_string(), "TASK-001".to_string());
+        let task_result =
+            ValidationResult::info("Task info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
 
         assert_eq!(project_result.entity_type, Some("Project".to_string()));
         assert_eq!(resource_result.entity_type, Some("Resource".to_string()));

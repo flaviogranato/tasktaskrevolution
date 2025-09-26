@@ -591,68 +591,130 @@ mod tests {
             if field == "name" && message == "Name cannot be empty"));
 
         let project_validation = AppError::project_validation_failed("Invalid project data");
-        assert!(matches!(project_validation, AppError::ProjectValidationFailed { details } 
-            if details == "Invalid project data"));
+        assert!(
+            matches!(project_validation, AppError::ProjectValidationFailed { details } 
+            if details == "Invalid project data")
+        );
 
         let resource_validation = AppError::resource_validation_failed("Invalid resource data");
-        assert!(matches!(resource_validation, AppError::ResourceValidationFailed { details } 
-            if details == "Invalid resource data"));
+        assert!(
+            matches!(resource_validation, AppError::ResourceValidationFailed { details }
+            if details == "Invalid resource data")
+        );
 
         let task_validation = AppError::task_validation_failed("Invalid task data");
-        assert!(matches!(task_validation, AppError::TaskValidationFailed { details } 
+        assert!(matches!(task_validation, AppError::TaskValidationFailed { details }
             if details == "Invalid task data"));
 
         // Repository and Persistence Errors
         let repository_error = AppError::repository_error("find", "Database connection failed");
-        assert!(matches!(repository_error, AppError::RepositoryError { operation, details } 
-            if operation == "find" && details == "Database connection failed"));
+        assert!(
+            matches!(repository_error, AppError::RepositoryError { operation, details }
+            if operation == "find" && details == "Database connection failed")
+        );
 
         let persistence_error = AppError::persistence_error("save", "File write failed");
-        assert!(matches!(persistence_error, AppError::PersistenceError { operation, details } 
-            if operation == "save" && details == "File write failed"));
+        assert!(
+            matches!(persistence_error, AppError::PersistenceError { operation, details }
+            if operation == "save" && details == "File write failed")
+        );
 
         // I/O Errors
         let io_error = AppError::io_error("read", "File not found");
-        assert!(matches!(io_error, AppError::IoError { operation, details } 
+        assert!(matches!(io_error, AppError::IoError { operation, details }
             if operation == "read" && details == "File not found"));
 
         let io_error_with_path = AppError::io_error_with_path("write", "/path/to/file", "Permission denied");
-        assert!(matches!(io_error_with_path, AppError::IoErrorWithPath { operation, path, details } 
-            if operation == "write" && path == "/path/to/file" && details == "Permission denied"));
+        assert!(
+            matches!(io_error_with_path, AppError::IoErrorWithPath { operation, path, details }
+            if operation == "write" && path == "/path/to/file" && details == "Permission denied")
+        );
 
         // Serialization Errors
         let serialization_error = AppError::serialization_error("JSON", "Invalid UTF-8");
-        assert!(matches!(serialization_error, AppError::SerializationError { format, details } 
-            if format == "JSON" && details == "Invalid UTF-8"));
+        assert!(
+            matches!(serialization_error, AppError::SerializationError { format, details }
+            if format == "JSON" && details == "Invalid UTF-8")
+        );
 
         let deserialization_error = AppError::deserialization_error("YAML", "Invalid format");
-        assert!(matches!(deserialization_error, AppError::DeserializationError { format, details } 
-            if format == "YAML" && details == "Invalid format"));
+        assert!(
+            matches!(deserialization_error, AppError::DeserializationError { format, details }
+            if format == "YAML" && details == "Invalid format")
+        );
     }
 
     #[test]
     fn test_all_error_display_formatting() {
         // Test display formatting for all error variants
         let errors = vec![
-            (AppError::project_not_found("PROJ-001"), "Project with code 'PROJ-001' not found"),
-            (AppError::resource_not_found("RES-001"), "Resource with code 'RES-001' not found"),
-            (AppError::task_not_found("TASK-001"), "Task with code 'TASK-001' not found"),
-            (AppError::company_not_found("COMP-001"), "Company with code 'COMP-001' not found"),
-            (AppError::validation_error("name", "Cannot be empty"), "Validation error for field 'name': Cannot be empty"),
-            (AppError::project_validation_failed("Invalid data"), "Project validation failed: Invalid data"),
-            (AppError::resource_validation_failed("Invalid data"), "Resource validation failed: Invalid data"),
-            (AppError::task_validation_failed("Invalid data"), "Task validation failed: Invalid data"),
-            (AppError::repository_error("find", "Database connection failed"), "Repository error during find: Database connection failed"),
-            (AppError::persistence_error("save", "File write failed"), "Persistence error during save: File write failed"),
-            (AppError::io_error("read", "File not found"), "I/O error during read: File not found"),
-            (AppError::io_error_with_path("write", "/path", "Permission denied"), "I/O error during write on path '/path': Permission denied"),
-            (AppError::serialization_error("JSON", "Invalid UTF-8"), "Serialization error for format 'JSON': Invalid UTF-8"),
-            (AppError::deserialization_error("YAML", "Invalid format"), "Deserialization error for format 'YAML': Invalid format"),
+            (
+                AppError::project_not_found("PROJ-001"),
+                "Project with code 'PROJ-001' not found",
+            ),
+            (
+                AppError::resource_not_found("RES-001"),
+                "Resource with code 'RES-001' not found",
+            ),
+            (
+                AppError::task_not_found("TASK-001"),
+                "Task with code 'TASK-001' not found",
+            ),
+            (
+                AppError::company_not_found("COMP-001"),
+                "Company with code 'COMP-001' not found",
+            ),
+            (
+                AppError::validation_error("name", "Cannot be empty"),
+                "Validation error for field 'name': Cannot be empty",
+            ),
+            (
+                AppError::project_validation_failed("Invalid data"),
+                "Project validation failed: Invalid data",
+            ),
+            (
+                AppError::resource_validation_failed("Invalid data"),
+                "Resource validation failed: Invalid data",
+            ),
+            (
+                AppError::task_validation_failed("Invalid data"),
+                "Task validation failed: Invalid data",
+            ),
+            (
+                AppError::repository_error("find", "Database connection failed"),
+                "Repository error during find: Database connection failed",
+            ),
+            (
+                AppError::persistence_error("save", "File write failed"),
+                "Persistence error during save: File write failed",
+            ),
+            (
+                AppError::io_error("read", "File not found"),
+                "I/O error during read: File not found",
+            ),
+            (
+                AppError::io_error_with_path("write", "/path", "Permission denied"),
+                "I/O error during write on path '/path': Permission denied",
+            ),
+            (
+                AppError::serialization_error("JSON", "Invalid UTF-8"),
+                "Serialization error for format 'JSON': Invalid UTF-8",
+            ),
+            (
+                AppError::deserialization_error("YAML", "Invalid format"),
+                "Deserialization error for format 'YAML': Invalid format",
+            ),
         ];
 
         for (error, expected) in errors {
             let display = format!("{}", error);
-            assert!(display.contains(expected), "Expected '{}' to contain '{}', got '{}'", display, expected, display);
+            assert!(
+                display.contains(expected),
+                "Expected '{}' to contain '{}', got '{}'",
+                display,
+                expected,
+                display
+            );
         }
     }
 

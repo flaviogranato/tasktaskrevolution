@@ -359,7 +359,8 @@ mod tests {
 
     #[test]
     fn test_apply_creation_rules_timezone_pacific_auckland() {
-        let result = CompanySettingsBusinessRules::apply_creation_rules("John Doe", "john@company.com", "Pacific/Auckland");
+        let result =
+            CompanySettingsBusinessRules::apply_creation_rules("John Doe", "john@company.com", "Pacific/Auckland");
         assert!(
             matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
             if field == "default_timezone" && reason.contains("muito extremo"))
@@ -368,11 +369,7 @@ mod tests {
 
     #[test]
     fn test_apply_update_rules_success() {
-        let current_config = Config::new(
-            "Old Name".to_string(),
-            "old@company.com".to_string(),
-            "UTC".to_string(),
-        );
+        let current_config = Config::new("Old Name".to_string(), "old@company.com".to_string(), "UTC".to_string());
         let result = CompanySettingsBusinessRules::apply_update_rules(
             &current_config,
             Some("New Name"),
@@ -389,12 +386,7 @@ mod tests {
             "john@company.com".to_string(),
             "UTC".to_string(),
         );
-        let result = CompanySettingsBusinessRules::apply_update_rules(
-            &current_config,
-            Some("Jane Doe"),
-            None,
-            None,
-        );
+        let result = CompanySettingsBusinessRules::apply_update_rules(&current_config, Some("Jane Doe"), None, None);
         assert!(result.is_ok());
         let updated_config = result.unwrap();
         assert_eq!(updated_config.manager_name, "Jane Doe");
@@ -466,17 +458,19 @@ mod tests {
         );
         let result = CompanySettingsBusinessRules::apply_migration_rules(&old_config, &new_config);
         // Pode falhar por horário comercial, mas se passar, deve ser sucesso
-        if result.is_ok() {
-            assert!(result.is_ok());
-        } else {
-            // Se falhar, deve ser por horário comercial, não por timezone incompatível
-            let error = result.unwrap_err();
-            match error {
-                AppError::OperationNotAllowed { operation, reason } => {
-                    assert_eq!(operation, "migration");
-                    assert!(reason.contains("horário comercial"));
+        match result {
+            Ok(_) => {
+                // Se passar, deve ser sucesso
+            }
+            Err(error) => {
+                // Se falhar, deve ser por horário comercial, não por timezone incompatível
+                match error {
+                    AppError::OperationNotAllowed { operation, reason } => {
+                        assert_eq!(operation, "migration");
+                        assert!(reason.contains("horário comercial"));
+                    }
+                    _ => panic!("Expected OperationNotAllowed error"),
                 }
-                _ => panic!("Expected OperationNotAllowed error"),
             }
         }
     }

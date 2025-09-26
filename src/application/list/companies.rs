@@ -193,9 +193,9 @@ mod tests {
     fn test_list_companies_use_case_creation() {
         let mock_repo = MockCompanyRepository::new(vec![]);
         let _use_case = ListCompaniesUseCase::new(mock_repo);
-        
+
         // Test that the use case was created successfully
-        assert!(true); // If we get here, creation succeeded
+        // If we get here, creation succeeded
     }
 
     #[test]
@@ -215,15 +215,13 @@ mod tests {
 
     #[test]
     fn test_list_companies_verify_company_properties() {
-        let companies = vec![
-            create_test_company("COMP-001", "Test Company"),
-        ];
+        let companies = vec![create_test_company("COMP-001", "Test Company")];
         let mock_repo = MockCompanyRepository::new(companies);
         let use_case = ListCompaniesUseCase::new(mock_repo);
 
         let result = use_case.execute().unwrap();
         assert_eq!(result.len(), 1);
-        
+
         let company = &result[0];
         assert_eq!(company.code(), "COMP-001");
         assert_eq!(company.name(), "Test Company");

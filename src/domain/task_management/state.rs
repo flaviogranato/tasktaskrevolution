@@ -274,7 +274,7 @@ mod tests {
         assert!(result.is_ok());
         let in_progress = result.unwrap();
         assert_eq!(in_progress.progress, 0);
-        
+
         // Test transition_blocked_reason separately
         let state2 = Planned;
         assert!(state2.transition_blocked_reason().is_none());
@@ -287,7 +287,7 @@ mod tests {
         assert!(result.is_ok());
         let completed = result.unwrap();
         assert!(matches!(completed, Completed));
-        
+
         // Test transition_blocked_reason separately
         let state2 = InProgress { progress: 100 };
         assert!(state2.transition_blocked_reason().is_none());
@@ -299,11 +299,16 @@ mod tests {
         let result = state.transition_to();
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Cannot complete task with 50% progress"));
-        
+
         // Test transition_blocked_reason separately
         let state2 = InProgress { progress: 50 };
         assert!(state2.transition_blocked_reason().is_some());
-        assert!(state2.transition_blocked_reason().unwrap().contains("Task must be 100% complete"));
+        assert!(
+            state2
+                .transition_blocked_reason()
+                .unwrap()
+                .contains("Task must be 100% complete")
+        );
     }
 
     #[test]
@@ -315,7 +320,7 @@ mod tests {
         assert!(result.is_ok());
         let in_progress = result.unwrap();
         assert_eq!(in_progress.progress, 0);
-        
+
         // Test transition_blocked_reason separately
         let state2 = Blocked {
             reason: "Waiting for review".to_string(),
@@ -328,12 +333,21 @@ mod tests {
         let state = Completed;
         let result = state.transition_to();
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Completed tasks cannot transition to other states"));
-        
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Completed tasks cannot transition to other states")
+        );
+
         // Test transition_blocked_reason separately
         let state2 = Completed;
         assert!(state2.transition_blocked_reason().is_some());
-        assert!(state2.transition_blocked_reason().unwrap().contains("Completed tasks cannot transition to other states"));
+        assert!(
+            state2
+                .transition_blocked_reason()
+                .unwrap()
+                .contains("Completed tasks cannot transition to other states")
+        );
     }
 
     #[test]
@@ -341,12 +355,21 @@ mod tests {
         let state = Cancelled;
         let result = state.transition_to();
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Cancelled tasks cannot transition to other states"));
-        
+        assert!(
+            result
+                .unwrap_err()
+                .contains("Cancelled tasks cannot transition to other states")
+        );
+
         // Test transition_blocked_reason separately
         let state2 = Cancelled;
         assert!(state2.transition_blocked_reason().is_some());
-        assert!(state2.transition_blocked_reason().unwrap().contains("Cancelled tasks cannot transition to other states"));
+        assert!(
+            state2
+                .transition_blocked_reason()
+                .unwrap()
+                .contains("Cancelled tasks cannot transition to other states")
+        );
     }
 
     #[test]

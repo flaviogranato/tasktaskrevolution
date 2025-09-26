@@ -105,7 +105,6 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let _resolver = CodeResolver::new(temp_dir.path());
         // Should not panic
-        assert!(true);
     }
 
     #[test]

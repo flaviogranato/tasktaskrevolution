@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 
+use super::super::shared::query_engine::Queryable;
+use super::super::shared::query_parser::QueryValue;
 use super::{
     state::{Blocked, Cancelled, Completed, InProgress, Planned},
     task::Task,
 };
-use super::super::shared::query_parser::QueryValue;
-use super::super::shared::query_engine::Queryable;
 use chrono::NaiveDate;
 use serde::Serialize;
 use uuid7::Uuid;
@@ -411,11 +411,51 @@ impl From<Task<Cancelled>> for AnyTask {
     }
 }
 
+impl Queryable for AnyTask {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match self {
+            AnyTask::Planned(task) => get_task_field_value(task, field, self.status()),
+            AnyTask::InProgress(task) => get_task_field_value(task, field, self.status()),
+            AnyTask::Blocked(task) => get_task_field_value(task, field, self.status()),
+            AnyTask::Completed(task) => get_task_field_value(task, field, self.status()),
+            AnyTask::Cancelled(task) => get_task_field_value(task, field, self.status()),
+        }
+    }
+
+    fn entity_type() -> &'static str {
+        "task"
+    }
+}
+
+fn get_task_field_value(
+    task: &Task<impl crate::domain::task_management::state::TaskState>,
+    field: &str,
+    status: &str,
+) -> Option<QueryValue> {
+    match field {
+        "id" => Some(QueryValue::String(task.id.to_string())),
+        "code" => Some(QueryValue::String(task.code.clone())),
+        "name" => Some(QueryValue::String(task.name.clone())),
+        "description" => task.description.as_ref().map(|d| QueryValue::String(d.clone())),
+        "project_code" => Some(QueryValue::String(task.project_code.clone())),
+        "status" => Some(QueryValue::String(status.to_string())),
+        "start_date" => Some(QueryValue::Date(task.start_date)),
+        "due_date" => Some(QueryValue::Date(task.due_date)),
+        "actual_end_date" => task.actual_end_date.map(QueryValue::Date),
+        "priority" => Some(QueryValue::String(task.priority.to_string())),
+        "category" => Some(QueryValue::String(task.category.to_string())),
+        "assigned_resources_count" => Some(QueryValue::Number(task.assigned_resources.len() as f64)),
+        "dependencies_count" => Some(QueryValue::Number(task.dependencies.len() as f64)),
+        "is_overdue" => Some(QueryValue::Boolean(task.due_date < chrono::Local::now().date_naive())),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::category::Category;
     use super::super::priority::Priority;
+    use super::*;
     use chrono::NaiveDate;
     use uuid7::uuid7;
 
@@ -551,7 +591,6 @@ mod tests {
         assert_eq!(any_task.status(), "Completed");
     }
 
-
     #[test]
     fn test_any_task_complete() {
         let planned_task = create_test_task_planned();
@@ -607,43 +646,5 @@ mod tests {
         let any_task = AnyTask::Planned(planned_task);
         let cloned = any_task.clone();
         assert_eq!(any_task, cloned);
-    }
-}
-
-impl Queryable for AnyTask {
-    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
-        match self {
-            AnyTask::Planned(task) => get_task_field_value(task, field, self.status()),
-            AnyTask::InProgress(task) => get_task_field_value(task, field, self.status()),
-            AnyTask::Blocked(task) => get_task_field_value(task, field, self.status()),
-            AnyTask::Completed(task) => get_task_field_value(task, field, self.status()),
-            AnyTask::Cancelled(task) => get_task_field_value(task, field, self.status()),
-        }
-    }
-    
-    fn entity_type() -> &'static str {
-        "task"
-    }
-}
-
-fn get_task_field_value(task: &Task<impl crate::domain::task_management::state::TaskState>, field: &str, status: &str) -> Option<QueryValue> {
-    match field {
-        "id" => Some(QueryValue::String(task.id.to_string())),
-        "code" => Some(QueryValue::String(task.code.clone())),
-        "name" => Some(QueryValue::String(task.name.clone())),
-        "description" => task.description.as_ref().map(|d| QueryValue::String(d.clone())),
-        "project_code" => Some(QueryValue::String(task.project_code.clone())),
-        "status" => Some(QueryValue::String(status.to_string())),
-        "start_date" => Some(QueryValue::Date(*task.start_date())),
-        "due_date" => Some(QueryValue::Date(*task.due_date())),
-        "actual_end_date" => task.actual_end_date().map(|d| QueryValue::Date(*d)),
-        "priority" => Some(QueryValue::String(task.priority.to_string())),
-        "category" => Some(QueryValue::String(task.category.to_string())),
-        "assigned_resources_count" => Some(QueryValue::Number(task.assigned_resources().len() as f64)),
-        "dependencies_count" => Some(QueryValue::Number(task.dependencies().len() as f64)),
-        "is_overdue" => Some(QueryValue::Boolean(
-            task.due_date() < &chrono::Local::now().date_naive()
-        )),
-        _ => None,
     }
 }

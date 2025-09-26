@@ -148,7 +148,7 @@ impl Cli {
     fn init_logging(&self) {
         let verbose = self.verbose || self.debug;
         let quiet = self.quiet;
-        
+
         // Set environment variables for backward compatibility
         unsafe {
             std::env::set_var("TTR_VERBOSE", if verbose { "1" } else { "0" });
@@ -206,11 +206,19 @@ impl Cli {
             Commands::Build { output, base_url } => command_executor::execute_build(output, base_url),
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),
-            Commands::Query { query, entity_type, format } => {
-                use crate::interface::cli::commands::query::execute_query;
+            Commands::Query {
+                query,
+                entity_type,
+                format,
+            } => {
                 use crate::interface::cli::commands::query::QueryArgs;
-                execute_query(QueryArgs { query, entity_type, format })
-            },
+                use crate::interface::cli::commands::query::execute_query;
+                execute_query(QueryArgs {
+                    query,
+                    entity_type,
+                    format,
+                })
+            }
             Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),
         }
     }

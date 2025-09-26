@@ -1,6 +1,6 @@
 pub mod engine;
-pub mod types;
 pub mod formatters;
+pub mod types;
 
 pub use engine::ReportEngine;
 pub use types::*;
