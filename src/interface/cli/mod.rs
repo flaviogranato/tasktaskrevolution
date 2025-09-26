@@ -131,6 +131,7 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::MigrateCommand,
     },
+    /// Test data validation
     /// Serve HTML files locally
     Serve {
         /// Port to serve on
