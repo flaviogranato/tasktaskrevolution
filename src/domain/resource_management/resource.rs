@@ -122,16 +122,11 @@ impl fmt::Display for TaskAssignmentStatus {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum ResourceScope {
+    #[default]
     Company,
     Project,
-}
-
-impl Default for ResourceScope {
-    fn default() -> Self {
-        ResourceScope::Company
-    }
 }
 
 impl fmt::Display for ResourceScope {
@@ -753,7 +748,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "Test Resource".to_string(),
@@ -775,7 +770,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "".to_string(),
             name: "Test Resource".to_string(),
@@ -800,7 +795,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -822,7 +817,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "".to_string(),
@@ -847,7 +842,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -869,7 +864,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -891,7 +886,7 @@ mod tests {
         let no_email_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -915,7 +910,7 @@ mod tests {
         let valid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),
@@ -938,7 +933,7 @@ mod tests {
         let invalid_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "".to_string(),
             name: "".to_string(),
@@ -968,7 +963,7 @@ mod tests {
         let available_resource = Resource::<Available> {
             project_id: None,
             scope: ResourceScope::Company,
-            
+
             id: uuid7(),
             code: "RES-001".to_string(),
             name: "John Doe".to_string(),

@@ -248,11 +248,16 @@ impl Cli {
                 live_reload,
                 cors,
                 debug,
-            } => {
-                tokio::runtime::Runtime::new()
-                    .unwrap()
-                    .block_on(handlers::serve_handler::handle_serve_command(port, host, directory, live_reload, cors, debug))
-            }
+            } => tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(handlers::serve_handler::handle_serve_command(
+                    port,
+                    host,
+                    directory,
+                    live_reload,
+                    cors,
+                    debug,
+                )),
         }
     }
 }

@@ -167,6 +167,7 @@ metadata:
   resourceType: {}
   status: Available
 spec:
+  scope: Company
   timeOffBalance: 0
   timeOffHistory: []
 "#,
@@ -233,6 +234,7 @@ metadata:
   resourceType: {}
   status: Available
 spec:
+  scope: Company
   timeOffBalance: 0
   timeOffHistory: []
 "#,

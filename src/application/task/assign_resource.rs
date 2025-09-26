@@ -4,7 +4,7 @@ use crate::application::errors::AppError;
 use crate::domain::resource_management::{
     any_resource::AnyResource,
     repository::ResourceRepository,
-    resource::{TaskAssignment, TaskAssignmentStatus, ResourceScope},
+    resource::{TaskAssignment, TaskAssignmentStatus},
 };
 use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
 use chrono::Local;
@@ -398,6 +398,7 @@ mod tests {
     }
 
     fn create_test_resource(code: &str, name: &str, resource_type: &str) -> AnyResource {
+        use crate::domain::resource_management::resource::ResourceScope;
         Resource::new(
             code.to_string(),
             name.to_string(),

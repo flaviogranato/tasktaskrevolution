@@ -6,7 +6,7 @@ use crate::domain::resource_management::{
     ResourceTypeValidator,
     any_resource::AnyResource,
     repository::{ResourceRepository, ResourceRepositoryWithId},
-    resource::{WipLimits, ResourceScope},
+    resource::{ResourceScope, WipLimits},
 };
 use std::fmt;
 

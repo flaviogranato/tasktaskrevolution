@@ -108,11 +108,10 @@ impl Server {
         };
 
         // Start the server
-        let (_, server) = warp::serve(routes)
-            .bind_with_graceful_shutdown(addr, async move {
-                shutdown_rx.recv().await.ok();
-                Logger::info("Server shutting down...");
-            });
+        let (_, server) = warp::serve(routes).bind_with_graceful_shutdown(addr, async move {
+            shutdown_rx.recv().await.ok();
+            Logger::info("Server shutting down...");
+        });
 
         Logger::info(&format!("Server running at http://{}:{}", host, port));
         Logger::info("Press Ctrl+C to stop the server");
@@ -154,30 +153,29 @@ impl Server {
         };
 
         // Static file serving
-        let static_files = warp::path::full()
-            .and_then(move |path: FullPath| {
-                let directory = directory.clone();
-                let live_reload_script = live_reload_script.to_string();
-                async move {
-                    let path = path.as_str().trim_start_matches('/');
-                    let file_path = directory.join(path);
+        let static_files = warp::path::full().and_then(move |path: FullPath| {
+            let directory = directory.clone();
+            let live_reload_script = live_reload_script.to_string();
+            async move {
+                let path = path.as_str().trim_start_matches('/');
+                let file_path = directory.join(path);
 
-                    // Security check - prevent directory traversal
-                    if !file_path.starts_with(&directory) {
-                        return Err(warp::reject::not_found());
-                    }
-
-                    if file_path.is_dir() {
-                        // Serve directory listing
-                        Self::serve_directory_listing_static(&file_path, &directory).await
-                    } else if file_path.is_file() {
-                        // Serve file
-                        Self::serve_file_static(&file_path, &live_reload_script).await
-                    } else {
-                        Err(warp::reject::not_found())
-                    }
+                // Security check - prevent directory traversal
+                if !file_path.starts_with(&directory) {
+                    return Err(warp::reject::not_found());
                 }
-            });
+
+                if file_path.is_dir() {
+                    // Serve directory listing
+                    Self::serve_directory_listing_static(&file_path, &directory).await
+                } else if file_path.is_file() {
+                    // Serve file
+                    Self::serve_file_static(&file_path, &live_reload_script).await
+                } else {
+                    Err(warp::reject::not_found())
+                }
+            }
+        });
 
         // Root redirect to index.html
         let root_redirect = warp::path::end()
@@ -192,16 +190,14 @@ impl Server {
         live_reload_script: &str,
     ) -> Result<warp::reply::Response, warp::Rejection> {
         use std::fs;
-        use warp::http::header::{HeaderValue, CONTENT_TYPE};
+        use warp::http::header::{CONTENT_TYPE, HeaderValue};
         use warp::reply::Response;
 
         match fs::read(file_path) {
             Ok(mut content) => {
                 // Inject live reload script for HTML files
-                let content_type = mime_guess::from_path(file_path)
-                    .first_or_octet_stream()
-                    .to_string();
-                
+                let content_type = mime_guess::from_path(file_path).first_or_octet_stream().to_string();
+
                 if content_type.starts_with("text/html") && !live_reload_script.is_empty() {
                     let mut html_content = String::from_utf8_lossy(&content).to_string();
                     if let Some(body_end) = html_content.rfind("</body>") {
@@ -226,7 +222,7 @@ impl Server {
         base_dir: &std::path::Path,
     ) -> Result<warp::reply::Response, warp::Rejection> {
         use std::fs;
-        use warp::http::header::{HeaderValue, CONTENT_TYPE};
+        use warp::http::header::{CONTENT_TYPE, HeaderValue};
         use warp::reply::Response;
 
         let mut entries = Vec::new();
@@ -384,7 +380,8 @@ mod tests {
                     false,
                     false,
                     false,
-                ).await;
+                )
+                .await;
             });
         });
 
@@ -434,9 +431,9 @@ mod tests {
             },
         ];
         let dir_path = std::path::Path::new("/test");
-        
+
         let html = Server::generate_directory_listing_html_static(entries, dir_path);
-        
+
         assert!(html.contains("Directory listing for /test"));
         assert!(html.contains("file1.html"));
         assert!(html.contains("subdir"));
@@ -447,12 +444,7 @@ mod tests {
     #[test]
     fn test_server_creation() {
         let temp_dir = TempDir::new().unwrap();
-        let server = Server::new(
-            temp_dir.path().to_path_buf(),
-            true,
-            true,
-            true,
-        );
+        let server = Server::new(temp_dir.path().to_path_buf(), true, true, true);
 
         assert_eq!(server.directory, temp_dir.path());
         assert!(server.live_reload);
