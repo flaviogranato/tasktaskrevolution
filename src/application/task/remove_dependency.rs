@@ -2,7 +2,8 @@
 #![allow(unused_imports)]
 
 use crate::application::errors::AppError;
-use crate::domain::project_management::repository::ProjectRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 use std::fmt;
 
@@ -36,19 +37,25 @@ impl From<AppError> for RemoveDependencyError {
 }
 
 /// `RemoveTaskDependencyUseCase` is responsible for removing a dependency between two tasks.
-pub struct RemoveTaskDependencyUseCase<PR>
+pub struct RemoveTaskDependencyUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
+    code_resolver: CR,
 }
 
-impl<PR> RemoveTaskDependencyUseCase<PR>
+impl<PR, CR> RemoveTaskDependencyUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR) -> Self {
-        Self { project_repository }
+    pub fn new(project_repository: PR, code_resolver: CR) -> Self {
+        Self {
+            project_repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(
@@ -57,13 +64,19 @@ where
         task_code: &str,
         dependency_code: &str,
     ) -> Result<AnyTask, RemoveDependencyError> {
-        // 1. Load the project aggregate
+        // 1. Resolve project code to ID
+        let project_id = self
+            .code_resolver
+            .resolve_project_code(project_code)
+            .map_err(RemoveDependencyError::RepositoryError)?;
+
+        // 2. Load the project aggregate using ID
         let mut project = self
             .project_repository
-            .find_by_code(project_code)?
+            .find_by_id(&project_id)?
             .ok_or_else(|| RemoveDependencyError::ProjectNotFound(project_code.to_string()))?;
 
-        // 2. Ensure both tasks exist within the project
+        // 3. Ensure both tasks exist within the project
         if !project.tasks().contains_key(task_code) {
             return Err(RemoveDependencyError::TaskNotFound(task_code.to_string()));
         }
@@ -71,7 +84,7 @@ where
             return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string()));
         }
 
-        // 3. Check if the dependency actually exists
+        // 4. Check if the dependency actually exists
         let task = project.tasks().get(task_code).unwrap();
         let dependencies = match task {
             AnyTask::Planned(t) => &t.dependencies,
@@ -85,19 +98,19 @@ where
             return Err(RemoveDependencyError::DependencyNotFound(dependency_code.to_string()));
         }
 
-        // 4. Validate that removing the dependency won't break critical constraints
+        // 5. Validate that removing the dependency won't break critical constraints
         if self.is_task_blocked_by_dependency(&project, task_code, dependency_code)? {
             return Err(RemoveDependencyError::AppError(
                 "Cannot remove dependency: task is currently blocked by another dependency.".to_string(),
             ));
         }
 
-        // 5. Remove the dependency from the task
+        // 6. Remove the dependency from the task
         let updated_task = project
             .remove_dependency_from_task(task_code, dependency_code)
             .map_err(RemoveDependencyError::AppError)?;
 
-        // 6. Save the updated project
+        // 7. Save the updated project
         self.project_repository.save(project.clone())?;
 
         Ok(updated_task)
@@ -174,6 +187,62 @@ mod tests {
         }
     }
 
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+            // For testing, map "project-id" to the first project
+            if id == "project-id" {
+                Ok(self.projects.borrow().values().next().cloned())
+            } else {
+                Ok(None)
+            }
+        }
+    }
+
+    struct MockCodeResolver {
+        should_fail: bool,
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            if self.should_fail {
+                Err(AppError::ValidationError {
+                    field: "code_resolver".to_string(),
+                    message: "Mock failure".to_string(),
+                })
+            } else {
+                Ok("project-id".to_string())
+            }
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("resource-id".to_string())
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("task-id".to_string())
+        }
+
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("company-id".to_string())
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+    }
+
     // --- Helpers ---
     fn create_test_task(code: &str, dependencies: Vec<String>) -> Task<Planned> {
         Task::<Planned> {
@@ -220,7 +289,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
@@ -245,7 +315,8 @@ mod tests {
             projects: RefCell::new(HashMap::new()),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("NONEXISTENT-PROJ", "TASK-A", "TASK-B");
@@ -264,7 +335,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "NONEXISTENT-TASK", "TASK-B");
@@ -284,7 +356,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
@@ -304,7 +377,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B"); // Try to remove TASK-B from TASK-A's dependencies
@@ -345,7 +419,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
@@ -387,7 +462,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
@@ -407,7 +483,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project.clone())])),
         };
 
-        let use_case = RemoveTaskDependencyUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(project_repo, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
@@ -456,7 +533,22 @@ mod tests {
             }
         }
 
-        let use_case = RemoveTaskDependencyUseCase::new(FailingMockProjectRepository);
+        impl ProjectRepositoryWithId for FailingMockProjectRepository {
+            fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+                if id == "project-id" {
+                    let project = setup_test_project(vec![
+                        create_test_task("TASK-A", vec!["TASK-B".to_string()]).into(),
+                        create_test_task("TASK-B", vec![]).into(),
+                    ]);
+                    Ok(Some(project))
+                } else {
+                    Ok(None)
+                }
+            }
+        }
+
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = RemoveTaskDependencyUseCase::new(FailingMockProjectRepository, code_resolver);
 
         // Act
         let result = use_case.execute("PROJ-1", "TASK-A", "TASK-B");
