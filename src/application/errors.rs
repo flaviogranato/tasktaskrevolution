@@ -498,6 +498,15 @@ impl From<serde_yaml::Error> for AppError {
     }
 }
 
+impl From<serde_json::Error> for AppError {
+    fn from(err: serde_json::Error) -> Self {
+        Self::SerializationError {
+            format: "JSON".to_string(),
+            details: err.to_string(),
+        }
+    }
+}
+
 // Result type alias for application operations
 pub type AppResult<T> = Result<T, AppError>;
 
