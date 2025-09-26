@@ -27,6 +27,7 @@ use crate::interface::cli::{
     Cli,
     commands::{CreateCommand, DeleteCommand, ListCommand, UpdateCommand},
     context_manager::ContextManager,
+    logging::Logger,
     table_formatter::TableFormatter,
 };
 use chrono::NaiveDate;
@@ -424,10 +425,9 @@ impl SimplifiedExecutor {
             }
             ListCommand::Tasks { project, company } => {
                 context_manager.validate_command("list", "tasks")?;
-                println!(
-                    "DEBUG: ListCommand::Tasks - project: {:?}, company: {:?}",
-                    project, company
-                );
+                Logger::debug_fmt(|| {
+                    format!("ListCommand::Tasks - project: {:?}, company: {:?}", project, company)
+                });
 
                 if let Some(project_code) = project {
                     // List tasks for specific project
@@ -470,17 +470,16 @@ impl SimplifiedExecutor {
                     }
                 } else {
                     // List tasks based on current context
-                    if Cli::is_verbose() {
-                        println!("DEBUG: No project parameter provided, using current context");
-                        println!("DEBUG: Current context: {:?}", context_manager.context());
-                    }
+                    Logger::debug("No project parameter provided, using current context");
+                    Logger::debug_fmt(|| {
+                        format!("Current context: {:?}", context_manager.context())
+                    });
                     match context_manager.context() {
                         ExecutionContext::Project(company_code, project_code) => {
                             // In project context, list tasks for current project
-                            println!(
-                                "DEBUG: Project context detected - company: {}, project: {}",
-                                company_code, project_code
-                            );
+                            Logger::debug_fmt(|| {
+                                format!("Project context detected - company: {}, project: {}", company_code, project_code)
+                            });
                             let project_repo = context_manager.get_project_repository();
                             let use_case = ListTasksUseCase::new(project_repo);
 
