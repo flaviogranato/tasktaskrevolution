@@ -1,6 +1,7 @@
 #![allow(unused_imports)]
 use crate::application::errors::AppError;
-use crate::domain::project_management::repository::ProjectRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::any_task::AnyTask;
 use crate::domain::task_management::{Category, Priority};
 use std::fmt;
@@ -39,19 +40,25 @@ impl From<AppError> for LinkAppError {
 }
 
 /// `LinkTaskUseCase` is responsible for creating a dependency between two tasks.
-pub struct LinkTaskUseCase<PR>
+pub struct LinkTaskUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
     project_repository: PR,
+    code_resolver: CR,
 }
 
-impl<PR> LinkTaskUseCase<PR>
+impl<PR, CR> LinkTaskUseCase<PR, CR>
 where
-    PR: ProjectRepository,
+    PR: ProjectRepository + ProjectRepositoryWithId,
+    CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR) -> Self {
-        Self { project_repository }
+    pub fn new(project_repository: PR, code_resolver: CR) -> Self {
+        Self {
+            project_repository,
+            code_resolver,
+        }
     }
 
     pub fn execute(&self, project_code: &str, task_code: &str, dependency_code: &str) -> Result<AnyTask, LinkAppError> {
@@ -59,13 +66,19 @@ where
             return Err(LinkAppError::AppError("A task cannot depend on itself.".to_string()));
         }
 
-        // 1. Load the project aggregate that contains the tasks.
+        // 1. Resolve project code to ID
+        let project_id = self
+            .code_resolver
+            .resolve_project_code(project_code)
+            .map_err(LinkAppError::RepositoryError)?;
+
+        // 2. Load the project aggregate using ID
         let mut project = self
             .project_repository
-            .find_by_code(project_code)?
+            .find_by_id(&project_id)?
             .ok_or_else(|| LinkAppError::ProjectNotFound(project_code.to_string()))?;
 
-        // 2. Ensure both tasks exist within the project.
+        // 3. Ensure both tasks exist within the project.
         if !project.tasks().contains_key(task_code) {
             return Err(LinkAppError::TaskNotFound(task_code.to_string()));
         }
@@ -73,7 +86,7 @@ where
             return Err(LinkAppError::DependencyNotFound(dependency_code.to_string()));
         }
 
-        // 3. Check for circular dependencies.
+        // 4. Check for circular dependencies.
         // We perform a DFS traversal starting from the dependency to see if it eventually leads back to the original task.
         let mut stack = vec![dependency_code.to_string()];
         let mut visited = std::collections::HashSet::new();
@@ -105,12 +118,12 @@ where
             }
         }
 
-        // 4. Add the dependency to the task.
+        // 5. Add the dependency to the task.
         let updated_task = project
             .add_dependency_to_task(task_code, dependency_code)
             .map_err(LinkAppError::AppError)?;
 
-        // 5. Save the entire project aggregate with the modified task.
+        // 6. Save the entire project aggregate with the modified task.
         self.project_repository.save(project.clone())?;
 
         Ok(updated_task)
@@ -160,6 +173,62 @@ mod tests {
         }
     }
 
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+            // For testing, map "project-id" to the first project
+            if id == "project-id" {
+                Ok(self.projects.borrow().values().next().cloned())
+            } else {
+                Ok(None)
+            }
+        }
+    }
+
+    struct MockCodeResolver {
+        should_fail: bool,
+    }
+
+    impl CodeResolverTrait for MockCodeResolver {
+        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+            if self.should_fail {
+                Err(AppError::ValidationError {
+                    field: "code_resolver".to_string(),
+                    message: "Mock failure".to_string(),
+                })
+            } else {
+                Ok("project-id".to_string())
+            }
+        }
+
+        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("resource-id".to_string())
+        }
+
+        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("task-id".to_string())
+        }
+
+        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+            Ok("company-id".to_string())
+        }
+
+        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+
+        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+            Ok(())
+        }
+    }
+
     // --- Helpers ---
     fn create_test_task(code: &str) -> AnyTask {
         Task::<Planned> {
@@ -203,7 +272,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
             should_fail_save: false,
         };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "B", "A");
 
@@ -224,7 +294,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
             should_fail_save: false,
         };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "B_NONEXISTENT", "A");
         assert!(matches!(result, Err(LinkAppError::TaskNotFound(_))));
@@ -237,7 +308,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
             should_fail_save: false,
         };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "A", "B_NONEXISTENT");
         assert!(matches!(result, Err(LinkAppError::DependencyNotFound(_))));
@@ -250,7 +322,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
             should_fail_save: false,
         };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "A", "A");
         assert!(matches!(result, Err(LinkAppError::AppError(_))));
@@ -270,7 +343,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
             should_fail_save: false,
         };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         // Try to create dependency A -> B, which would create a cycle (A -> B -> A)
         let result = use_case.execute("PROJ-1", "A", "B");
@@ -309,7 +383,8 @@ mod tests {
             projects: RefCell::new(HashMap::from([(project.code().to_string(), project)])),
             should_fail_save: false,
         };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         // This should succeed and test all the different task state match arms
         let result = use_case.execute("PROJ-1", "A", "B");
@@ -322,7 +397,8 @@ mod tests {
             projects: RefCell::new(HashMap::new()), // Empty repository
             should_fail_save: false,
         };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("NONEXISTENT_PROJECT", "A", "B");
         assert!(matches!(result, Err(LinkAppError::ProjectNotFound(_))));
@@ -364,8 +440,19 @@ mod tests {
             }
         }
 
+        impl ProjectRepositoryWithId for FailingMockProjectRepository {
+            fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+                if id == "project-id" {
+                    Ok(Some(self.project.clone()))
+                } else {
+                    Ok(None)
+                }
+            }
+        }
+
         let project_repo = FailingMockProjectRepository { project };
-        let use_case = LinkTaskUseCase::new(project_repo);
+        let code_resolver = MockCodeResolver { should_fail: false };
+        let use_case = LinkTaskUseCase::new(project_repo, code_resolver);
 
         let result = use_case.execute("PROJ-1", "A", "B");
         assert!(result.is_err());

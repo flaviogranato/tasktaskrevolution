@@ -151,7 +151,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             company: _,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
-            let link_use_case = LinkTaskUseCase::new(project_repository);
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
+            let link_use_case = LinkTaskUseCase::new(project_repository, code_resolver);
 
             match link_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
@@ -171,8 +172,9 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             company: _,
         } => {
             let project_repository = FileProjectRepository::with_base_path(".".into());
+            let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
             let unlink_use_case =
-                crate::application::task::remove_dependency::RemoveTaskDependencyUseCase::new(project_repository);
+                crate::application::task::remove_dependency::RemoveTaskDependencyUseCase::new(project_repository, code_resolver);
 
             match unlink_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
