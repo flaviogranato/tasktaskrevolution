@@ -53,18 +53,13 @@ impl AnyProject {
     pub fn cancel_task(&mut self, task_code: &str) -> Result<AnyTask, String> {
         match self {
             AnyProject::Project(p) => {
-                println!("DEBUG: Looking for task with code: {}", task_code);
-                println!("DEBUG: Available tasks: {:?}", p.tasks.keys().collect::<Vec<_>>());
                 if let Some(task) = p.tasks.get(task_code) {
-                    println!("DEBUG: Found task, cancelling it");
                     // Create a new cancelled task by cloning and cancelling
                     let cancelled_task = task.clone().cancel();
                     // Replace the old task with the cancelled one
                     p.tasks.insert(task_code.to_string(), cancelled_task.clone());
-                    println!("DEBUG: Task cancelled successfully");
                     Ok(cancelled_task)
                 } else {
-                    println!("DEBUG: Task not found in project");
                     Err(format!("Task '{}' not found in project", task_code))
                 }
             }
@@ -160,13 +155,13 @@ impl AnyProject {
         match self {
             AnyProject::Project(p) => {
                 // Insert the task directly using its code
-                if std::env::var("TTR_VERBOSE").unwrap_or_default() == "1" {
-                    println!("DEBUG: Adding task to project: {} - {}", task.code(), task.name());
-                }
+                crate::interface::cli::logging::Logger::debug_fmt(|| {
+                    format!("Adding task to project: {} - {}", task.code(), task.name())
+                });
                 p.tasks.insert(task.code().to_string(), task);
-                if std::env::var("TTR_VERBOSE").unwrap_or_default() == "1" {
-                    println!("DEBUG: Project now has {} tasks", p.tasks.len());
-                }
+                crate::interface::cli::logging::Logger::debug_fmt(|| {
+                    format!("Project now has {} tasks", p.tasks.len())
+                });
             }
         }
     }

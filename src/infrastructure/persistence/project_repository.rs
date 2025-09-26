@@ -94,9 +94,7 @@ impl FileProjectRepository {
 
         for entry in walker.flatten() {
             let task_path = entry.path();
-            if std::env::var("TTR_VERBOSE").unwrap_or_default() == "1" {
-                println!("DEBUG: Loading task from: {:?}", task_path);
-            }
+            crate::interface::cli::logging::Logger::debug_file_operation("Loading task from", &task_path.to_string_lossy());
             let yaml = fs::read_to_string(task_path).map_err(|e| AppError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: task_path.to_string_lossy().to_string(),
@@ -111,9 +109,7 @@ impl FileProjectRepository {
                 format: "YAML".to_string(),
                 details: format!("Error converting task manifest: {e}"),
             })?;
-            if std::env::var("TTR_VERBOSE").unwrap_or_default() == "1" {
-                println!("DEBUG: Loaded task: {} - {}", task.code(), task.name());
-            }
+            crate::interface::cli::logging::Logger::debug_data_loaded("task", task.code(), task.name());
             project.add_task(task);
         }
 

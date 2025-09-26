@@ -5,6 +5,7 @@ pub mod command_executor;
 pub mod commands;
 pub mod context_manager;
 pub mod handlers;
+pub mod logging;
 pub mod simplified_executor;
 pub mod table_formatter;
 
@@ -15,9 +16,15 @@ pub mod table_formatter;
        long_about = None,
        name = "ttr")]
 pub struct Cli {
-    /// Enable verbose output
+    /// Enable verbose output (alias for --debug)
     #[clap(short, long, global = true)]
     pub verbose: bool,
+    /// Enable debug output (alias for --verbose)
+    #[clap(long, global = true)]
+    pub debug: bool,
+    /// Enable quiet output (minimal information)
+    #[clap(short, long, global = true)]
+    pub quiet: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -115,16 +122,48 @@ pub enum Commands {
 }
 
 impl Cli {
-    /// Check if verbose output is enabled
+    /// Check if verbose/debug output is enabled
     pub fn is_verbose() -> bool {
         std::env::var("TTR_VERBOSE").unwrap_or_default() == "1"
     }
 
-    pub fn execute(self) -> Result<(), Box<dyn std::error::Error>> {
-        // Set global verbose flag
+    /// Check if quiet output is enabled
+    pub fn is_quiet() -> bool {
+        std::env::var("TTR_QUIET").unwrap_or_default() == "1"
+    }
+
+    /// Initialize logging based on flags
+    fn init_logging(&self) {
+        let verbose = self.verbose || self.debug;
+        let quiet = self.quiet;
+        
+        // Set environment variables for backward compatibility
         unsafe {
-            std::env::set_var("TTR_VERBOSE", if self.verbose { "1" } else { "0" });
+            std::env::set_var("TTR_VERBOSE", if verbose { "1" } else { "0" });
+            std::env::set_var("TTR_QUIET", if quiet { "1" } else { "0" });
         }
+
+        // Initialize logging
+        if verbose {
+            unsafe {
+                std::env::set_var("RUST_LOG", "debug");
+            }
+        } else if quiet {
+            unsafe {
+                std::env::set_var("RUST_LOG", "error");
+            }
+        } else {
+            unsafe {
+                std::env::set_var("RUST_LOG", "info");
+            }
+        }
+
+        let _ = env_logger::try_init();
+    }
+
+    pub fn execute(self) -> Result<(), Box<dyn std::error::Error>> {
+        // Initialize logging
+        self.init_logging();
 
         match self.command {
             Commands::Init {
