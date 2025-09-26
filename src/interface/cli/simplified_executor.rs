@@ -251,6 +251,7 @@ impl SimplifiedExecutor {
                     email: Some(email),
                     start_date: start_date_parsed,
                     end_date: end_date_parsed,
+                    scope: crate::domain::resource_management::resource::ResourceScope::Company,
                 };
                 match use_case.execute(params) {
                     Ok(_) => {

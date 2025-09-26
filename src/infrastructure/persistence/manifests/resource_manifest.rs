@@ -5,7 +5,7 @@ use uuid7::Uuid;
 
 use crate::domain::resource_management::{
     AnyResource,
-    resource::{Period, PeriodType, ProjectAssignment, Resource, TimeOffEntry, WipLimits},
+    resource::{Period, PeriodType, ProjectAssignment, Resource, ResourceScope, TimeOffEntry, WipLimits},
     state::{Assigned, Available},
 };
 
@@ -38,6 +38,9 @@ pub struct ResourceSpec {
     pub time_off_balance: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub time_off_history: Option<Vec<TimeOffEntry>>,
+    pub scope: ResourceScope,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -188,6 +191,8 @@ impl From<AnyResource> for ResourceManifest {
                     project_assignments: None,
                     time_off_balance: r.time_off_balance,
                     time_off_history: r.time_off_history,
+                    scope: r.scope,
+                    project_id: r.project_id,
                 },
             ),
             AnyResource::Assigned(r) => (
@@ -210,6 +215,8 @@ impl From<AnyResource> for ResourceManifest {
                     ),
                     time_off_balance: r.time_off_balance,
                     time_off_history: r.time_off_history,
+                    scope: r.scope,
+                    project_id: r.project_id,
                 },
             ),
             AnyResource::Inactive(r) => (
@@ -226,6 +233,8 @@ impl From<AnyResource> for ResourceManifest {
                     project_assignments: None,
                     time_off_balance: r.time_off_balance,
                     time_off_history: r.time_off_history,
+                    scope: r.scope,
+                    project_id: r.project_id,
                 },
             ),
         };
@@ -294,6 +303,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     name,
                     email,
                     resource_type,
+                    scope: manifest.spec.scope,
+                    project_id: manifest.spec.project_id,
                     start_date,
                     end_date,
                     vacations,
@@ -310,6 +321,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                 name,
                 email,
                 resource_type,
+                scope: manifest.spec.scope,
+                project_id: manifest.spec.project_id,
                 start_date,
                 end_date,
                 vacations,
@@ -327,6 +340,8 @@ impl TryFrom<ResourceManifest> for AnyResource {
                     name,
                     email,
                     resource_type,
+                    scope: manifest.spec.scope,
+                    project_id: manifest.spec.project_id,
                     start_date,
                     end_date,
                     vacations,

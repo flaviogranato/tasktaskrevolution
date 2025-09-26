@@ -123,6 +123,27 @@ impl fmt::Display for TaskAssignmentStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ResourceScope {
+    Company,
+    Project,
+}
+
+impl Default for ResourceScope {
+    fn default() -> Self {
+        ResourceScope::Company
+    }
+}
+
+impl fmt::Display for ResourceScope {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ResourceScope::Company => write!(f, "Company"),
+            ResourceScope::Project => write!(f, "Project"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum WipStatus {
     WithinLimits,
     NearLimit,
@@ -148,6 +169,8 @@ pub struct Resource<S: ResourceState> {
     pub name: String,
     pub email: Option<String>,
     pub resource_type: String,
+    pub scope: ResourceScope,
+    pub project_id: Option<String>, // Only set for project-scoped resources
     pub start_date: Option<chrono::NaiveDate>,
     pub end_date: Option<chrono::NaiveDate>,
     pub vacations: Option<Vec<Period>>,
@@ -165,6 +188,8 @@ impl Resource<Available> {
         name: String,
         email: Option<String>,
         resource_type: String,
+        scope: ResourceScope,
+        project_id: Option<String>,
         start_date: Option<chrono::NaiveDate>,
         end_date: Option<chrono::NaiveDate>,
         vacations: Option<Vec<Period>>,
@@ -176,6 +201,8 @@ impl Resource<Available> {
             name,
             email,
             resource_type,
+            scope,
+            project_id,
             start_date,
             end_date,
             vacations,
@@ -195,6 +222,8 @@ impl Resource<Available> {
             name: self.name,
             email: self.email,
             resource_type: self.resource_type,
+            scope: self.scope,
+            project_id: self.project_id,
             start_date: self.start_date,
             end_date: self.end_date,
             vacations: self.vacations,
@@ -216,6 +245,8 @@ impl Resource<Available> {
             name: self.name,
             email: self.email,
             resource_type: self.resource_type,
+            scope: self.scope,
+            project_id: self.project_id,
             start_date: self.start_date,
             end_date: self.end_date,
             vacations: self.vacations,
@@ -243,6 +274,8 @@ impl Resource<Assigned> {
             name: self.name,
             email: self.email,
             resource_type: self.resource_type,
+            scope: self.scope,
+            project_id: self.project_id,
             start_date: self.start_date,
             end_date: self.end_date,
             vacations: self.vacations,
@@ -501,6 +534,8 @@ impl Transition for Resource<Available> {
             name: self.name,
             email: self.email,
             resource_type: self.resource_type,
+            scope: self.scope,
+            project_id: self.project_id,
             start_date: self.start_date,
             end_date: self.end_date,
             vacations: self.vacations,
@@ -523,6 +558,8 @@ impl Transition for Resource<Inactive> {
             name: self.name,
             email: self.email,
             resource_type: self.resource_type,
+            scope: self.scope,
+            project_id: self.project_id,
             start_date: self.start_date,
             end_date: self.end_date,
             vacations: self.vacations,
@@ -627,6 +664,8 @@ mod tests {
             name: "James".to_string(),
             email: Some("james@test.com".to_string()),
             resource_type: "Developer".to_string(),
+            scope: ResourceScope::Company,
+            project_id: None,
             start_date: None,
             end_date: None,
             vacations: None,
@@ -637,7 +676,7 @@ mod tests {
             state: Available,
         };
         let expected = format!(
-            "Resource {{ id: {id:?}, code: dev-7, name: James, email: Some(\"james@test.com\"), resource_type: Developer, vacations: None, time_off_balance: 40, state: Available }}"
+            "Resource {{ id: {id:?}, code: dev-7, name: James, email: Some(\"james@test.com\"), resource_type: Developer, scope: Company, project_id: None, vacations: None, time_off_balance: 40, state: Available }}"
         );
         assert_eq!(resource.to_string(), expected);
     }
@@ -649,6 +688,8 @@ mod tests {
             "Tester".to_string(),
             None,
             "QA".to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,
@@ -975,6 +1016,8 @@ mod tests {
             "John Doe".to_string(),
             Some("john@example.com".to_string()),
             "Developer".to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,
@@ -998,6 +1041,8 @@ mod tests {
             "John Doe".to_string(),
             Some("john@example.com".to_string()),
             "Developer".to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,
@@ -1047,6 +1092,8 @@ mod tests {
             "John Doe".to_string(),
             Some("john@example.com".to_string()),
             "Developer".to_string(),
+            ResourceScope::Company,
+            None,
             None,
             None,
             None,
