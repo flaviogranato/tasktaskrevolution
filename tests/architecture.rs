@@ -100,11 +100,11 @@ fn forbid_anyhow_and_thiserror_in_source_and_cargo_toml() {
     let cargo = read_to_string(cargo_toml);
     for banned in ["anyhow", "thiserror"] {
         assert!(
-            !cargo.contains(&format!("{} =", banned)) && !cargo.contains(&format!("{}=", banned)) && !cargo.contains(&format!("\n{}\n", banned)),
+            !cargo.contains(&format!("{} =", banned))
+                && !cargo.contains(&format!("{}=", banned))
+                && !cargo.contains(&format!("\n{}\n", banned)),
             "Cargo.toml must not include '{}' dependency",
             banned
         );
     }
 }
-
-
