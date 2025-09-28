@@ -227,7 +227,7 @@ impl TestE2ECommand {
         } else if args.input.is_dir() {
             for entry in std::fs::read_dir(&args.input)? {
                 let entry = entry?;
-                if entry.path().extension().map_or(false, |ext| ext == "html") {
+                if entry.path().extension().is_some_and(|ext| ext == "html") {
                     let html = std::fs::read_to_string(entry.path())?;
                     let results = validator.validate(&html);
                     all_results.extend(results);
@@ -425,7 +425,7 @@ impl TestE2ECommand {
     }
 
     /// Load test results from directory
-    async fn load_test_results(input_dir: &PathBuf) -> Result<E2ETestReport, AppError> {
+    async fn load_test_results(input_dir: &std::path::Path) -> Result<E2ETestReport, AppError> {
         let report_file = input_dir.join("e2e-report.json");
         let json_content = std::fs::read_to_string(report_file)?;
         let report: E2ETestReport = serde_json::from_str(&json_content)?;
@@ -433,7 +433,7 @@ impl TestE2ECommand {
     }
 
     /// Generate HTML report
-    async fn generate_html_report(report: &E2ETestReport, output_file: &PathBuf) -> Result<(), AppError> {
+    async fn generate_html_report(report: &E2ETestReport, output_file: &std::path::Path) -> Result<(), AppError> {
         let html_content = format!(
             r#"<!DOCTYPE html>
 <html>
@@ -506,14 +506,14 @@ impl TestE2ECommand {
     }
 
     /// Generate JSON report
-    async fn generate_json_report(report: &E2ETestReport, output_file: &PathBuf) -> Result<(), AppError> {
+    async fn generate_json_report(report: &E2ETestReport, output_file: &std::path::Path) -> Result<(), AppError> {
         let json_content = serde_json::to_string_pretty(report)?;
         std::fs::write(output_file, json_content)?;
         Ok(())
     }
 
     /// Generate CSV report
-    async fn generate_csv_report(report: &E2ETestReport, output_file: &PathBuf) -> Result<(), AppError> {
+    async fn generate_csv_report(report: &E2ETestReport, output_file: &std::path::Path) -> Result<(), AppError> {
         let mut csv_content = String::from("Test Name,Status,Duration,Error Message\n");
 
         for result in &report.results {
