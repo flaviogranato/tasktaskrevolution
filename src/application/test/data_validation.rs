@@ -107,6 +107,9 @@ pub struct DataValidationService {
 }
 
 impl DataValidationService {
+    fn normalize_code(&self, s: &str) -> String {
+        s.trim().to_lowercase()
+    }
     pub fn new(
         company_repo: Arc<dyn CompanyRepository>,
         project_repo: Arc<dyn ProjectRepository>,
@@ -288,7 +291,9 @@ impl DataValidationService {
             }
 
             // Validate email format if provided
-            if let Some(email) = &company.email && !self.is_valid_email(email) {
+            if let Some(email) = &company.email
+                && !self.is_valid_email(email)
+            {
                 errors.push(ValidationError {
                     field: "email".to_string(),
                     expected: "valid email format".to_string(),
@@ -429,13 +434,19 @@ impl DataValidationService {
             }
 
             // Relationship: company exists for this resource
-            let company_exists = companies.iter().any(|c| c.code == company_code);
-            if !company_exists {
+            let norm_company = self.normalize_code(&company_code);
+            let company_exists = companies.iter().any(|c| self.normalize_code(c.code()) == norm_company);
+            if !company_exists && company_code != "UNKNOWN" {
                 errors.push(ValidationError {
                     field: "company_code".to_string(),
                     expected: "existing company code".to_string(),
                     actual: company_code.clone(),
                     message: "Resource references non-existent company".to_string(),
+                });
+            } else if company_code == "UNKNOWN" {
+                warnings.push(ValidationWarning {
+                    field: "company_code".to_string(),
+                    message: "Resource company could not be inferred from path (context unknown)".to_string(),
                 });
             }
 
@@ -447,28 +458,34 @@ impl DataValidationService {
             });
         }
 
-        // Consistency: duplicate resource code check
-        let mut seen_codes = std::collections::HashSet::new();
-        let mut duplicate_codes = std::collections::HashSet::new();
+        // Consistency: duplicate resource code check (merge into existing result)
+        use std::collections::{HashMap, HashSet};
+        // Group by code -> unique IDs observed
+        let mut code_to_ids: HashMap<String, HashSet<String>> = HashMap::new();
         for (resource, _c, _p) in resources_with_ctx {
-            let code = resource.code().to_string();
-            if !seen_codes.insert(code.clone()) {
-                duplicate_codes.insert(code);
-            }
+            code_to_ids
+                .entry(resource.code().to_string())
+                .or_default()
+                .insert(resource.id().to_string());
         }
-        if !duplicate_codes.is_empty() {
-            for dup in duplicate_codes {
-                results.push(DataValidationResult {
-                    entity_type: "Resource".to_string(),
-                    entity_id: dup.clone(),
-                    errors: vec![ValidationError {
+        let duplicates: Vec<String> = code_to_ids
+            .into_iter()
+            .filter_map(|(code, ids)| if ids.len() > 1 { Some(code) } else { None })
+            .collect();
+        if !duplicates.is_empty() {
+            let mut idx_map: HashMap<String, usize> = HashMap::new();
+            for (i, r) in results.iter().enumerate() {
+                idx_map.entry(r.entity_id.clone()).or_insert(i);
+            }
+            for dup in duplicates {
+                if let Some(&i) = idx_map.get(&dup) {
+                    results[i].errors.push(ValidationError {
                         field: "code".to_string(),
                         expected: "unique code".to_string(),
-                        actual: dup,
+                        actual: dup.clone(),
                         message: "Duplicate resource code found".to_string(),
-                    }],
-                    warnings: vec![],
-                });
+                    });
+                }
             }
         }
 
@@ -482,7 +499,13 @@ impl DataValidationService {
         let resources = self.resource_repo.find_all()?;
         let mut results = Vec::new();
 
+        use std::collections::HashSet;
+        let mut seen_task_codes: HashSet<String> = HashSet::new();
         for task in tasks {
+            let norm_task_code = self.normalize_code(task.code());
+            if !seen_task_codes.insert(norm_task_code) {
+                continue; // skip duplicate task entries
+            }
             let mut errors = Vec::new();
             let mut warnings = Vec::new();
 
@@ -705,7 +728,9 @@ impl DataValidationService {
         }
 
         // Validate email format if provided
-        if let Some(email) = &company.email && !self.is_valid_email(email) {
+        if let Some(email) = &company.email
+            && !self.is_valid_email(email)
+        {
             errors.push(ValidationError {
                 field: "email".to_string(),
                 expected: "valid email format".to_string(),

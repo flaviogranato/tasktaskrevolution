@@ -147,6 +147,8 @@ impl TestDataCommand {
             }
         };
 
+        // Dedupe results by (entity_type, entity_id)
+        let results = Self::dedupe_results(results);
         // Calculate summary
         let summary = Self::calculate_summary(&results);
 
@@ -247,6 +249,8 @@ impl TestDataCommand {
             }
         };
 
+        // Dedupe results by (entity_type, entity_id)
+        let results = Self::dedupe_results(results);
         // Calculate summary
         let summary = Self::calculate_summary(&results);
 
@@ -268,12 +272,16 @@ impl TestDataCommand {
         let mut total_errors = 0;
         let mut total_warnings = 0;
         let mut valid_entities = 0;
+        let mut entities_with_warnings = 0;
 
         for result in results {
             total_errors += result.errors.len();
             total_warnings += result.warnings.len();
             if result.errors.is_empty() {
                 valid_entities += 1;
+            }
+            if !result.warnings.is_empty() {
+                entities_with_warnings += 1;
             }
         }
 
@@ -282,7 +290,7 @@ impl TestDataCommand {
             valid_entities,
             invalid_entities: total_entities - valid_entities,
             entities_with_errors: total_entities - valid_entities,
-            entities_with_warnings: 0, // Will be calculated properly in the actual implementation
+            entities_with_warnings,
             total_errors,
             total_warnings,
             success_rate: if total_entities > 0 {
@@ -291,6 +299,44 @@ impl TestDataCommand {
                 0.0
             },
         }
+    }
+
+    /// Dedupe results by (entity_type, entity_id) and merge errors/warnings
+    fn dedupe_results(results: Vec<DataValidationResult>) -> Vec<DataValidationResult> {
+        use std::collections::{HashMap, HashSet};
+        let mut map: HashMap<(String, String), DataValidationResult> = HashMap::new();
+        for mut r in results.into_iter() {
+            let key = (r.entity_type.clone(), r.entity_id.clone());
+            map.entry(key)
+                .and_modify(|existing| {
+                    // merge errors
+                    let mut seen_err: HashSet<(String, String)> = existing
+                        .errors
+                        .iter()
+                        .map(|e| (e.field.clone(), e.message.clone()))
+                        .collect();
+                    for e in r.errors.drain(..) {
+                        let sig = (e.field.clone(), e.message.clone());
+                        if seen_err.insert(sig) {
+                            existing.errors.push(e);
+                        }
+                    }
+                    // merge warnings
+                    let mut seen_warn: HashSet<(String, String)> = existing
+                        .warnings
+                        .iter()
+                        .map(|w| (w.field.clone(), w.message.clone()))
+                        .collect();
+                    for w in r.warnings.drain(..) {
+                        let sig = (w.field.clone(), w.message.clone());
+                        if seen_warn.insert(sig) {
+                            existing.warnings.push(w);
+                        }
+                    }
+                })
+                .or_insert(r);
+        }
+        map.into_values().collect()
     }
 
     /// Save validation results
@@ -339,24 +385,24 @@ impl TestDataCommand {
         output_path: &PathBuf,
         detailed: bool,
     ) -> Result<(), AppError> {
-        let mut html_content = String::from(
+        let mut html_content = format!(
             r#"<!DOCTYPE html>
 <html>
 <head>
     <title>Data Validation Report</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .summary { background: #f5f5f5; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .entity-result { margin: 10px 0; padding: 15px; border-radius: 5px; border-left: 4px solid; }
-        .valid { border-left-color: #28a745; background: #d4edda; }
-        .invalid { border-left-color: #dc3545; background: #f8d7da; }
-        .warning { border-left-color: #ffc107; background: #fff3cd; }
-        .error { color: #dc3545; font-weight: bold; }
-        .warning-text { color: #856404; }
-        .stats { display: flex; gap: 20px; margin: 10px 0; }
-        .stat { text-align: center; }
-        .stat-value { font-size: 24px; font-weight: bold; }
-        .stat-label { font-size: 14px; color: #666; }
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .summary {{ background: #f5f5f5; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
+        .entity-result {{ margin: 10px 0; padding: 15px; border-radius: 5px; border-left: 4px solid; }}
+        .valid {{ border-left-color: #28a745; background: #d4edda; }}
+        .invalid {{ border-left-color: #dc3545; background: #f8d7da; }}
+        .warning {{ border-left-color: #ffc107; background: #fff3cd; }}
+        .error {{ color: #dc3545; font-weight: bold; }}
+        .warning-text {{ color: #856404; }}
+        .stats {{ display: flex; gap: 20px; margin: 10px 0; }}
+        .stat {{ text-align: center; }}
+        .stat-value {{ font-size: 24px; font-weight: bold; }}
+        .stat-label {{ font-size: 14px; color: #666; }}
     </style>
 </head>
 <body>
@@ -392,14 +438,13 @@ impl TestDataCommand {
     </div>
     <h2>Validation Results</h2>
 "#,
+            report.summary.total_entities,
+            report.summary.valid_entities,
+            report.summary.invalid_entities,
+            report.summary.total_errors,
+            report.summary.total_warnings,
+            report.summary.success_rate,
         );
-
-        html_content = html_content.replace("{}", &report.summary.total_entities.to_string());
-        html_content = html_content.replace("{}", &report.summary.valid_entities.to_string());
-        html_content = html_content.replace("{}", &report.summary.invalid_entities.to_string());
-        html_content = html_content.replace("{}", &report.summary.total_errors.to_string());
-        html_content = html_content.replace("{}", &report.summary.total_warnings.to_string());
-        html_content = html_content.replace("{:.1}%", &format!("{:.1}%", report.summary.success_rate));
 
         // Add entity results
         for result in &report.results {
