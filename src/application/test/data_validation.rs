@@ -288,15 +288,13 @@ impl DataValidationService {
             }
 
             // Validate email format if provided
-            if let Some(email) = &company.email {
-                if !self.is_valid_email(email) {
-                    errors.push(ValidationError {
-                        field: "email".to_string(),
-                        expected: "valid email format".to_string(),
-                        actual: email.clone(),
-                        message: "Invalid email format".to_string(),
-                    });
-                }
+            if let Some(email) = &company.email && !self.is_valid_email(email) {
+                errors.push(ValidationError {
+                    field: "email".to_string(),
+                    expected: "valid email format".to_string(),
+                    actual: email.clone(),
+                    message: "Invalid email format".to_string(),
+                });
             }
 
             results.push(DataValidationResult {
@@ -580,15 +578,13 @@ impl DataValidationService {
         }
 
         // Validate email format if provided
-        if let Some(email) = &company.email {
-            if !self.is_valid_email(email) {
-                errors.push(ValidationError {
-                    field: "email".to_string(),
-                    expected: "valid email format".to_string(),
-                    actual: email.clone(),
-                    message: "Invalid email format".to_string(),
-                });
-            }
+        if let Some(email) = &company.email && !self.is_valid_email(email) {
+            errors.push(ValidationError {
+                field: "email".to_string(),
+                expected: "valid email format".to_string(),
+                actual: email.clone(),
+                message: "Invalid email format".to_string(),
+            });
         }
 
         DataValidationResult {
