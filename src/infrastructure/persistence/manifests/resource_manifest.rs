@@ -38,9 +38,14 @@ pub struct ResourceSpec {
     pub time_off_balance: u32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub time_off_history: Option<Vec<TimeOffEntry>>,
+    #[serde(default = "default_scope")]
     pub scope: ResourceScope,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub project_id: Option<String>,
+}
+
+fn default_scope() -> ResourceScope {
+    ResourceScope::Company
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]

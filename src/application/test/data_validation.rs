@@ -321,7 +321,7 @@ impl DataValidationService {
 
         for project in projects {
             let mut errors = Vec::new();
-            let mut warnings = Vec::new();
+            let warnings = Vec::new();
 
             // Validate project name
             if project.name().is_empty() {
@@ -397,6 +397,9 @@ impl DataValidationService {
         // Use context-aware listing to enable relationship checks
         let resources_with_ctx = self.resource_repo.find_all_with_context()?;
         let companies = self.company_repo.find_all()?;
+        // Build normalized set of company codes
+        use std::collections::HashSet;
+        let company_code_set: HashSet<String> = companies.iter().map(|c| self.normalize_code(c.code())).collect();
         let mut results = Vec::new();
 
         for (resource, company_code, _projects) in resources_with_ctx.clone() {
@@ -435,7 +438,7 @@ impl DataValidationService {
 
             // Relationship: company exists for this resource
             let norm_company = self.normalize_code(&company_code);
-            let company_exists = companies.iter().any(|c| self.normalize_code(c.code()) == norm_company);
+            let company_exists = company_code_set.contains(&norm_company);
             if !company_exists && company_code != "UNKNOWN" {
                 errors.push(ValidationError {
                     field: "company_code".to_string(),
@@ -459,7 +462,7 @@ impl DataValidationService {
         }
 
         // Consistency: duplicate resource code check (merge into existing result)
-        use std::collections::{HashMap, HashSet};
+        use std::collections::HashMap;
         // Group by code -> unique IDs observed
         let mut code_to_ids: HashMap<String, HashSet<String>> = HashMap::new();
         for (resource, _c, _p) in resources_with_ctx {
@@ -507,7 +510,7 @@ impl DataValidationService {
                 continue; // skip duplicate task entries
             }
             let mut errors = Vec::new();
-            let mut warnings = Vec::new();
+            let warnings = Vec::new();
 
             // Validate task name
             if task.name().is_empty() {
@@ -589,11 +592,13 @@ impl DataValidationService {
     }
 
     /// Validate date format
+    #[allow(dead_code)]
     fn is_valid_date(&self, date_str: &str) -> bool {
         chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d").is_ok()
     }
 
     /// Validate URL format
+    #[allow(dead_code)]
     fn is_valid_url(&self, url: &str) -> bool {
         url.starts_with("http://") || url.starts_with("https://")
     }
@@ -657,6 +662,7 @@ impl DataValidationService {
     }
 
     /// Validate resource relationships
+    #[allow(dead_code)]
     fn validate_resource_relationships(
         &self,
         _resource: &AnyResource,
@@ -748,12 +754,13 @@ impl DataValidationService {
     }
 
     /// Validate a single project
+    #[allow(dead_code)]
     fn validate_single_project(
         &self,
         project: &crate::domain::project_management::project::Project,
     ) -> DataValidationResult {
         let mut errors = Vec::new();
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
 
         // Validate project name
         if project.name().is_empty() {
@@ -786,7 +793,7 @@ impl DataValidationService {
     /// Validate a single any project
     fn validate_single_any_project(&self, project: &AnyProject) -> DataValidationResult {
         let mut errors = Vec::new();
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
 
         // Validate project name
         if project.name().is_empty() {
@@ -819,7 +826,7 @@ impl DataValidationService {
     /// Validate a single task
     fn validate_single_task(&self, task: &AnyTask) -> DataValidationResult {
         let mut errors = Vec::new();
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
 
         // Validate task name
         if task.name().is_empty() {
@@ -852,7 +859,7 @@ impl DataValidationService {
     /// Validate a single resource
     fn validate_single_resource(&self, resource: &AnyResource) -> DataValidationResult {
         let mut errors = Vec::new();
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
 
         // Validate resource name
         if resource.name().is_empty() {

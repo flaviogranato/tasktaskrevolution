@@ -103,9 +103,9 @@ impl TestDataCommand {
 
     /// Run data validation
     async fn run_validation(args: &RunDataValidationArgs, base_path: &str) -> Result<(), AppError> {
-        println!("🔍 Starting data validation...");
+        println!("Starting data validation...");
         if args.verbose {
-            println!("📊 Configuration:");
+            println!("Configuration:");
             println!("  Entity: {}", args.entity);
             println!("  Format: {}", args.format);
             println!("  Output: {:?}", args.output);
@@ -120,23 +120,23 @@ impl TestDataCommand {
         // Run validation based on entity type
         let results = match args.entity.as_str() {
             "company" => {
-                println!("🏢 Validating companies...");
+                println!("Validating companies...");
                 validation_service.validate_companies().await?
             }
             "project" => {
-                println!("📁 Validating projects...");
+                println!("Validating projects...");
                 validation_service.validate_projects().await?
             }
             "task" => {
-                println!("✅ Validating tasks...");
+                println!("Validating tasks...");
                 validation_service.validate_tasks().await?
             }
             "resource" => {
-                println!("👥 Validating resources...");
+                println!("Validating resources...");
                 validation_service.validate_resources().await?
             }
             "all" => {
-                println!("🔍 Validating all entities...");
+                println!("Validating all entities...");
                 validation_service.validate_all().await?
             }
             _ => {
@@ -174,7 +174,7 @@ impl TestDataCommand {
 
     /// Generate validation report
     async fn generate_report(args: &ReportDataValidationArgs, _base_path: &str) -> Result<(), AppError> {
-        println!("📊 Generating data validation report...");
+        println!("Generating data validation report...");
         if args.detailed {
             println!("  Detailed report requested");
         }
@@ -195,13 +195,13 @@ impl TestDataCommand {
             }
         }
 
-        println!("✅ Report generated successfully!");
+        println!("Report generated successfully.");
         Ok(())
     }
 
     /// Validate specific entity
     async fn validate_entity(args: &ValidateEntityArgs, base_path: &str) -> Result<(), AppError> {
-        println!("🔍 Validating {} entity...", args.entity);
+        println!("Validating {} entity...", args.entity);
         if args.verbose {
             println!("  ID: {:?}", args.id);
             println!("  Format: {}", args.format);
@@ -347,7 +347,7 @@ impl TestDataCommand {
         verbose: bool,
     ) -> Result<(), AppError> {
         if verbose {
-            println!("💾 Saving results to {:?} in {} format", output_path, format);
+            println!("Saving results to {:?} in {} format", output_path, format);
         }
 
         match format {
@@ -534,16 +534,16 @@ impl TestDataCommand {
 
     /// Print validation summary
     fn print_summary(report: &DataValidationReport, verbose: bool) {
-        println!("\n📊 Validation Summary:");
+        println!("\nValidation Summary:");
         println!("  Total Entities: {}", report.summary.total_entities);
-        println!("  ✅ Valid: {}", report.summary.valid_entities);
-        println!("  ❌ Invalid: {}", report.summary.invalid_entities);
-        println!("  🚨 Errors: {}", report.summary.total_errors);
-        println!("  ⚠️  Warnings: {}", report.summary.total_warnings);
-        println!("  📈 Success Rate: {:.1}%", report.summary.success_rate);
+        println!("  Valid: {}", report.summary.valid_entities);
+        println!("  Invalid: {}", report.summary.invalid_entities);
+        println!("  Errors: {}", report.summary.total_errors);
+        println!("  Warnings: {}", report.summary.total_warnings);
+        println!("  Success Rate: {:.1}%", report.summary.success_rate);
 
         if verbose && report.summary.total_errors > 0 {
-            println!("\n❌ Validation Errors:");
+            println!("\nValidation Errors:");
             for result in &report.results {
                 if !result.errors.is_empty() {
                     println!("  {} - {}:", result.entity_type, result.entity_id);
@@ -555,7 +555,7 @@ impl TestDataCommand {
         }
 
         if verbose && report.summary.total_warnings > 0 {
-            println!("\n⚠️  Validation Warnings:");
+            println!("\nValidation Warnings:");
             for result in &report.results {
                 if !result.warnings.is_empty() {
                     println!("  {} - {}:", result.entity_type, result.entity_id);
@@ -588,5 +588,42 @@ impl TestDataCommand {
             resource_repo,
             task_repo,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calculate_summary() {
+        let results = vec![
+            DataValidationResult {
+                entity_type: "Company".to_string(),
+                entity_id: "C1".to_string(),
+                errors: vec![],
+                warnings: vec![],
+            },
+            DataValidationResult {
+                entity_type: "Project".to_string(),
+                entity_id: "P1".to_string(),
+                errors: vec![ValidationError {
+                    field: "code".to_string(),
+                    expected: "non-empty".to_string(),
+                    actual: "".to_string(),
+                    message: "Project code cannot be empty".to_string(),
+                }],
+                warnings: vec![],
+            },
+        ];
+
+        let summary = TestDataCommand::calculate_summary(&results);
+        assert_eq!(summary.total_entities, 2);
+        assert_eq!(summary.valid_entities, 1);
+        assert_eq!(summary.invalid_entities, 1);
+        assert_eq!(summary.entities_with_errors, 1);
+        assert_eq!(summary.total_errors, 1);
+        assert_eq!(summary.total_warnings, 0);
+        assert!((summary.success_rate - 50.0).abs() < f64::EPSILON);
     }
 }
