@@ -7,7 +7,7 @@ use crate::infrastructure::persistence::{
     config_repository::FileConfigRepository, project_repository::FileProjectRepository,
     resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
 };
-use crate::interface::assets::{StaticAssets, TemplateAssets};
+use crate::interface::assets::TemplateAssets;
 
 use glob::glob;
 
@@ -55,12 +55,7 @@ impl BuildUseCase {
         }
         fs::create_dir_all(&self.output_dir)?;
 
-        // 2. Copy all embedded static assets to the output directory.
-        for filename in StaticAssets::iter() {
-            let asset = StaticAssets::get(filename.as_ref()).unwrap();
-            let dest_path = self.output_dir.join(filename.as_ref());
-            fs::write(dest_path, asset.data)?;
-        }
+        // 2. Static assets step removed (no static folder usage at the moment).
 
         // 3. Load global configuration.
         let config_repo = FileConfigRepository::with_base_path(self.base_path.clone());
