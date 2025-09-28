@@ -311,6 +311,7 @@ impl DataValidationService {
     /// Validate project data
     pub async fn validate_projects(&self) -> Result<Vec<DataValidationResult>, AppError> {
         let projects = self.project_repo.find_all()?;
+        let companies = self.company_repo.find_all()?;
         let mut results = Vec::new();
 
         for project in projects {
@@ -337,6 +338,19 @@ impl DataValidationService {
                 });
             }
 
+            // Additional format validation
+            if !project.code().is_empty() && !self.is_valid_code_format(project.code()) {
+                errors.push(ValidationError {
+                    field: "code".to_string(),
+                    expected: "alphanumeric format with hyphens".to_string(),
+                    actual: project.code().to_string(),
+                    message: "Project code should contain only letters, numbers, and hyphens".to_string(),
+                });
+            }
+
+            // Relationship validation
+            errors.extend(self.validate_project_relationships(&project, &companies));
+
             results.push(DataValidationResult {
                 entity_type: "Project".to_string(),
                 entity_id: project.code().to_string(),
@@ -345,15 +359,42 @@ impl DataValidationService {
             });
         }
 
+        // Consistency: duplicate code check across projects
+        let mut seen_codes = std::collections::HashSet::new();
+        let mut duplicate_codes = std::collections::HashSet::new();
+        for project in self.project_repo.find_all()? {
+            let code = project.code().to_string();
+            if !seen_codes.insert(code.clone()) {
+                duplicate_codes.insert(code);
+            }
+        }
+        if !duplicate_codes.is_empty() {
+            for dup in duplicate_codes {
+                results.push(DataValidationResult {
+                    entity_type: "Project".to_string(),
+                    entity_id: dup.clone(),
+                    errors: vec![ValidationError {
+                        field: "code".to_string(),
+                        expected: "unique code".to_string(),
+                        actual: dup,
+                        message: "Duplicate project code found".to_string(),
+                    }],
+                    warnings: vec![],
+                });
+            }
+        }
+
         Ok(results)
     }
 
     /// Validate resource data
     pub async fn validate_resources(&self) -> Result<Vec<DataValidationResult>, AppError> {
-        let resources = self.resource_repo.find_all()?;
+        // Use context-aware listing to enable relationship checks
+        let resources_with_ctx = self.resource_repo.find_all_with_context()?;
+        let companies = self.company_repo.find_all()?;
         let mut results = Vec::new();
 
-        for resource in resources {
+        for (resource, company_code, _projects) in resources_with_ctx.clone() {
             let mut errors = Vec::new();
             let mut warnings = Vec::new();
 
@@ -377,6 +418,27 @@ impl DataValidationService {
                 });
             }
 
+            // Additional format validation
+            if !resource.code().is_empty() && !self.is_valid_code_format(resource.code()) {
+                errors.push(ValidationError {
+                    field: "code".to_string(),
+                    expected: "alphanumeric format with hyphens".to_string(),
+                    actual: resource.code().to_string(),
+                    message: "Resource code should contain only letters, numbers, and hyphens".to_string(),
+                });
+            }
+
+            // Relationship: company exists for this resource
+            let company_exists = companies.iter().any(|c| c.code == company_code);
+            if !company_exists {
+                errors.push(ValidationError {
+                    field: "company_code".to_string(),
+                    expected: "existing company code".to_string(),
+                    actual: company_code.clone(),
+                    message: "Resource references non-existent company".to_string(),
+                });
+            }
+
             results.push(DataValidationResult {
                 entity_type: "Resource".to_string(),
                 entity_id: resource.code().to_string(),
@@ -385,12 +447,39 @@ impl DataValidationService {
             });
         }
 
+        // Consistency: duplicate resource code check
+        let mut seen_codes = std::collections::HashSet::new();
+        let mut duplicate_codes = std::collections::HashSet::new();
+        for (resource, _c, _p) in resources_with_ctx {
+            let code = resource.code().to_string();
+            if !seen_codes.insert(code.clone()) {
+                duplicate_codes.insert(code);
+            }
+        }
+        if !duplicate_codes.is_empty() {
+            for dup in duplicate_codes {
+                results.push(DataValidationResult {
+                    entity_type: "Resource".to_string(),
+                    entity_id: dup.clone(),
+                    errors: vec![ValidationError {
+                        field: "code".to_string(),
+                        expected: "unique code".to_string(),
+                        actual: dup,
+                        message: "Duplicate resource code found".to_string(),
+                    }],
+                    warnings: vec![],
+                });
+            }
+        }
+
         Ok(results)
     }
 
     /// Validate task data
     pub async fn validate_tasks(&self) -> Result<Vec<DataValidationResult>, AppError> {
         let tasks = self.task_repo.find_all()?;
+        let projects = self.project_repo.find_all()?;
+        let resources = self.resource_repo.find_all()?;
         let mut results = Vec::new();
 
         for task in tasks {
@@ -417,12 +506,50 @@ impl DataValidationService {
                 });
             }
 
+            // Additional format validation
+            if !task.code().is_empty() && !self.is_valid_code_format(task.code()) {
+                errors.push(ValidationError {
+                    field: "code".to_string(),
+                    expected: "alphanumeric format with hyphens".to_string(),
+                    actual: task.code().to_string(),
+                    message: "Task code should contain only letters, numbers, and hyphens".to_string(),
+                });
+            }
+
+            // Relationship validation
+            errors.extend(self.validate_task_relationships(&task, &projects, &resources));
+
             results.push(DataValidationResult {
                 entity_type: "Task".to_string(),
                 entity_id: task.code().to_string(),
                 errors,
                 warnings,
             });
+        }
+
+        // Consistency: duplicate task code check
+        let mut seen_codes = std::collections::HashSet::new();
+        let mut duplicate_codes = std::collections::HashSet::new();
+        for task in self.task_repo.find_all()? {
+            let code = task.code().to_string();
+            if !seen_codes.insert(code.clone()) {
+                duplicate_codes.insert(code);
+            }
+        }
+        if !duplicate_codes.is_empty() {
+            for dup in duplicate_codes {
+                results.push(DataValidationResult {
+                    entity_type: "Task".to_string(),
+                    entity_id: dup.clone(),
+                    errors: vec![ValidationError {
+                        field: "code".to_string(),
+                        expected: "unique code".to_string(),
+                        actual: dup,
+                        message: "Duplicate task code found".to_string(),
+                    }],
+                    warnings: vec![],
+                });
+            }
         }
 
         Ok(results)
@@ -451,18 +578,18 @@ impl DataValidationService {
     /// Validate project relationships
     fn validate_project_relationships(
         &self,
-        project: &crate::domain::project_management::project::Project,
+        project: &AnyProject,
         companies: &[crate::domain::company_management::company::Company],
     ) -> Vec<ValidationError> {
         let mut errors = Vec::new();
 
         // Check if company exists (by code)
-        let company_exists = companies.iter().any(|c| c.code == project.company_code);
+        let company_exists = companies.iter().any(|c| c.code == project.company_code());
         if !company_exists {
             errors.push(ValidationError {
                 field: "company_id".to_string(),
                 expected: "existing company ID".to_string(),
-                actual: project.company_code.clone(),
+                actual: project.company_code().to_string(),
                 message: "Project references non-existent company".to_string(),
             });
         }
@@ -474,13 +601,13 @@ impl DataValidationService {
     fn validate_task_relationships(
         &self,
         task: &AnyTask,
-        projects: &[crate::domain::project_management::project::Project],
+        projects: &[AnyProject],
         resources: &[AnyResource],
     ) -> Vec<ValidationError> {
         let mut errors = Vec::new();
 
         // Check if project exists
-        let project_exists = projects.iter().any(|p| p.code == task.project_code());
+        let project_exists = projects.iter().any(|p| p.code() == task.project_code());
         if !project_exists {
             errors.push(ValidationError {
                 field: "project_id".to_string(),
