@@ -1,5 +1,5 @@
-use crate::application::test::e2e_testing::*;
 use crate::application::errors::AppError;
+use crate::application::test::e2e_testing::*;
 use clap::{Args, Parser};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -129,18 +129,10 @@ impl TestE2ECommand {
     /// Execute the E2E test command
     pub async fn execute(&self, base_path: &str) -> Result<(), AppError> {
         match self {
-            TestE2ECommand::Run(args) => {
-                Self::run_tests(args, base_path).await
-            }
-            TestE2ECommand::Report(args) => {
-                Self::generate_report(args, base_path).await
-            }
-            TestE2ECommand::Validate(args) => {
-                Self::validate_html(args, base_path).await
-            }
-            TestE2ECommand::Create(args) => {
-                Self::create_test_template(args, base_path).await
-            }
+            TestE2ECommand::Run(args) => Self::run_tests(args, base_path).await,
+            TestE2ECommand::Report(args) => Self::generate_report(args, base_path).await,
+            TestE2ECommand::Validate(args) => Self::validate_html(args, base_path).await,
+            TestE2ECommand::Create(args) => Self::create_test_template(args, base_path).await,
         }
     }
 
@@ -206,10 +198,12 @@ impl TestE2ECommand {
             "html" => Self::generate_html_report(&results, &args.output).await?,
             "json" => Self::generate_json_report(&results, &args.output).await?,
             "csv" => Self::generate_csv_report(&results, &args.output).await?,
-            _ => return Err(AppError::ValidationError { 
-                field: "format".to_string(), 
-                message: "Unsupported report format".to_string() 
-            }),
+            _ => {
+                return Err(AppError::ValidationError {
+                    field: "format".to_string(),
+                    message: "Unsupported report format".to_string(),
+                });
+            }
         }
 
         println!("✅ Report generated successfully!");
@@ -253,9 +247,9 @@ impl TestE2ECommand {
         println!("  Failed: {}", failed);
 
         if args.strict && failed > 0 {
-            return Err(AppError::ValidationError { 
-                field: "validation".to_string(), 
-                message: format!("{} validation errors found", failed) 
+            return Err(AppError::ValidationError {
+                field: "validation".to_string(),
+                message: format!("{} validation errors found", failed),
             });
         }
 
@@ -290,14 +284,12 @@ impl TestE2ECommand {
                     wait_time: None,
                 },
             ],
-            expected_results: vec![
-                ExpectedResult {
-                    assertion_type: AssertionType::ElementExists,
-                    selector: Some("h1".to_string()),
-                    expected_value: None,
-                    message: "Page should have h1 element".to_string(),
-                },
-            ],
+            expected_results: vec![ExpectedResult {
+                assertion_type: AssertionType::ElementExists,
+                selector: Some("h1".to_string()),
+                expected_value: None,
+                message: "Page should have h1 element".to_string(),
+            }],
         };
 
         let yaml_content = serde_yaml::to_string(&test)?;
@@ -326,9 +318,9 @@ impl TestE2ECommand {
             "performance" => Ok(TestType::Performance),
             "accessibility" => Ok(TestType::Accessibility),
             "responsive" => Ok(TestType::Responsive),
-            _ => Err(AppError::ValidationError { 
-                field: "test_type".to_string(), 
-                message: format!("Unknown test type: {}", test_type) 
+            _ => Err(AppError::ValidationError {
+                field: "test_type".to_string(),
+                message: format!("Unknown test type: {}", test_type),
             }),
         }
     }
@@ -357,14 +349,12 @@ impl TestE2ECommand {
                         wait_time: None,
                     },
                 ],
-                expected_results: vec![
-                    ExpectedResult {
-                        assertion_type: AssertionType::ElementExists,
-                        selector: Some("h1".to_string()),
-                        expected_value: None,
-                        message: "Page should have h1 element".to_string(),
-                    },
-                ],
+                expected_results: vec![ExpectedResult {
+                    assertion_type: AssertionType::ElementExists,
+                    selector: Some("h1".to_string()),
+                    expected_value: None,
+                    message: "Page should have h1 element".to_string(),
+                }],
             });
         }
 
@@ -388,14 +378,12 @@ impl TestE2ECommand {
                         wait_time: None,
                     },
                 ],
-                expected_results: vec![
-                    ExpectedResult {
-                        assertion_type: AssertionType::ElementExists,
-                        selector: Some(".company-list".to_string()),
-                        expected_value: None,
-                        message: "Company list should be present".to_string(),
-                    },
-                ],
+                expected_results: vec![ExpectedResult {
+                    assertion_type: AssertionType::ElementExists,
+                    selector: Some(".company-list".to_string()),
+                    expected_value: None,
+                    message: "Company list should be present".to_string(),
+                }],
             });
         }
 
@@ -481,31 +469,36 @@ impl TestE2ECommand {
             report.summary.skipped_tests,
             report.summary.success_rate,
             report.summary.total_duration.as_secs_f64(),
-            report.results.iter().map(|result| {
-                let class = match result.status {
-                    TestStatus::Passed => "passed",
-                    TestStatus::Failed => "failed",
-                    TestStatus::Skipped => "skipped",
-                    TestStatus::Error => "failed",
-                };
-                format!(
-                    r#"<div class="test-result {}">
+            report
+                .results
+                .iter()
+                .map(|result| {
+                    let class = match result.status {
+                        TestStatus::Passed => "passed",
+                        TestStatus::Failed => "failed",
+                        TestStatus::Skipped => "skipped",
+                        TestStatus::Error => "failed",
+                    };
+                    format!(
+                        r#"<div class="test-result {}">
                         <h3>{}</h3>
                         <p>Status: {:?}</p>
                         <p>Duration: {:.2}s</p>
                         {}
                     </div>"#,
-                    class,
-                    result.test_name,
-                    result.status,
-                    result.duration.as_secs_f64(),
-                    if let Some(error) = &result.error_message {
-                        format!("<p>Error: {}</p>", error)
-                    } else {
-                        String::new()
-                    }
-                )
-            }).collect::<Vec<_>>().join("\n")
+                        class,
+                        result.test_name,
+                        result.status,
+                        result.duration.as_secs_f64(),
+                        if let Some(error) = &result.error_message {
+                            format!("<p>Error: {}</p>", error)
+                        } else {
+                            String::new()
+                        }
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
         );
 
         std::fs::write(output_file, html_content)?;
@@ -522,7 +515,7 @@ impl TestE2ECommand {
     /// Generate CSV report
     async fn generate_csv_report(report: &E2ETestReport, output_file: &PathBuf) -> Result<(), AppError> {
         let mut csv_content = String::from("Test Name,Status,Duration,Error Message\n");
-        
+
         for result in &report.results {
             csv_content.push_str(&format!(
                 "{},{:?},{:.2},{}\n",
@@ -545,13 +538,20 @@ impl TestE2ECommand {
         println!("  ❌ Failed: {}", report.summary.failed_tests);
         println!("  ⏭️  Skipped: {}", report.summary.skipped_tests);
         println!("  📈 Success Rate: {:.1}%", report.summary.success_rate);
-        println!("  ⏱️  Total Duration: {:.2}s", report.summary.total_duration.as_secs_f64());
+        println!(
+            "  ⏱️  Total Duration: {:.2}s",
+            report.summary.total_duration.as_secs_f64()
+        );
 
         if report.summary.failed_tests > 0 {
             println!("\n❌ Failed Tests:");
             for result in &report.results {
                 if matches!(result.status, TestStatus::Failed) {
-                    println!("  - {}: {}", result.test_name, result.error_message.as_deref().unwrap_or("Unknown error"));
+                    println!(
+                        "  - {}: {}",
+                        result.test_name,
+                        result.error_message.as_deref().unwrap_or("Unknown error")
+                    );
                 }
             }
         }

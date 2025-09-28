@@ -249,9 +249,21 @@ impl E2ETestRunner {
     /// Generate test report
     pub fn generate_report(&self) -> E2ETestReport {
         let total_tests = self.results.len();
-        let passed_tests = self.results.iter().filter(|r| matches!(r.status, TestStatus::Passed)).count();
-        let failed_tests = self.results.iter().filter(|r| matches!(r.status, TestStatus::Failed)).count();
-        let skipped_tests = self.results.iter().filter(|r| matches!(r.status, TestStatus::Skipped)).count();
+        let passed_tests = self
+            .results
+            .iter()
+            .filter(|r| matches!(r.status, TestStatus::Passed))
+            .count();
+        let failed_tests = self
+            .results
+            .iter()
+            .filter(|r| matches!(r.status, TestStatus::Failed))
+            .count();
+        let skipped_tests = self
+            .results
+            .iter()
+            .filter(|r| matches!(r.status, TestStatus::Skipped))
+            .count();
 
         let total_duration = self.results.iter().map(|r| r.duration).sum();
 
@@ -262,7 +274,11 @@ impl E2ETestRunner {
                 failed_tests,
                 skipped_tests,
                 total_duration,
-                success_rate: if total_tests > 0 { (passed_tests as f64 / total_tests as f64) * 100.0 } else { 0.0 },
+                success_rate: if total_tests > 0 {
+                    (passed_tests as f64 / total_tests as f64) * 100.0
+                } else {
+                    0.0
+                },
             },
             results: self.results.clone(),
             generated_at: chrono::Utc::now(),
@@ -319,9 +335,7 @@ pub enum ValidationSeverity {
 
 impl HTMLValidator {
     pub fn new() -> Self {
-        let mut validator = Self {
-            rules: Vec::new(),
-        };
+        let mut validator = Self { rules: Vec::new() };
         validator.add_default_rules();
         validator
     }
@@ -415,7 +429,7 @@ impl HTMLValidator {
             validator: Box::new(|html| {
                 let img_tags: Vec<&str> = html.split("<img").collect();
                 let mut missing_alt = 0;
-                
+
                 for img in img_tags.iter().skip(1) {
                     if !img.contains("alt=") {
                         missing_alt += 1;
@@ -475,11 +489,13 @@ impl DataIntegrityValidator {
             serde_json::Value::String(s) => s,
             serde_json::Value::Number(n) => &n.to_string(),
             serde_json::Value::Bool(b) => &b.to_string(),
-            _ => return ValidationResult {
-                passed: false,
-                message: format!("Unsupported data type for key: {}", key),
-                severity: ValidationSeverity::Error,
-            },
+            _ => {
+                return ValidationResult {
+                    passed: false,
+                    message: format!("Unsupported data type for key: {}", key),
+                    severity: ValidationSeverity::Error,
+                };
+            }
         };
 
         if html.contains(search_value) {
@@ -553,7 +569,10 @@ mod tests {
     #[tokio::test]
     async fn test_data_integrity_validator() {
         let mut validator = DataIntegrityValidator::new();
-        validator.set_expected_data("company_name".to_string(), serde_json::Value::String("Test Company".to_string()));
+        validator.set_expected_data(
+            "company_name".to_string(),
+            serde_json::Value::String("Test Company".to_string()),
+        );
 
         let html = "<h1>Test Company</h1>";
         let results = validator.validate(html);
@@ -578,7 +597,7 @@ mod tests {
         };
 
         let runner = E2ETestRunner::new(config);
-        
+
         let test = E2ETest {
             name: "test_navigation".to_string(),
             description: "Test basic navigation".to_string(),
@@ -597,14 +616,12 @@ mod tests {
                     wait_time: None,
                 },
             ],
-            expected_results: vec![
-                ExpectedResult {
-                    assertion_type: AssertionType::ElementExists,
-                    selector: Some("h1".to_string()),
-                    expected_value: None,
-                    message: "Page should have h1 element".to_string(),
-                },
-            ],
+            expected_results: vec![ExpectedResult {
+                assertion_type: AssertionType::ElementExists,
+                selector: Some("h1".to_string()),
+                expected_value: None,
+                message: "Page should have h1 element".to_string(),
+            }],
         };
 
         let result = runner.run_test(&test).await.unwrap();
