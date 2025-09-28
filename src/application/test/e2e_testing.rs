@@ -141,6 +141,7 @@ pub enum AssertionType {
 
 /// E2E test runner
 pub struct E2ETestRunner {
+    #[allow(dead_code)]
     config: E2ETestConfig,
     results: Vec<E2ETestResult>,
 }
@@ -454,6 +455,12 @@ impl HTMLValidator {
     }
 }
 
+impl Default for HTMLValidator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Data integrity validator for E2E tests
 pub struct DataIntegrityValidator {
     expected_data: HashMap<String, serde_json::Value>,
@@ -511,6 +518,12 @@ impl DataIntegrityValidator {
                 severity: ValidationSeverity::Error,
             }
         }
+    }
+}
+
+impl Default for DataIntegrityValidator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

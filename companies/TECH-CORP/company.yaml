@@ -1,0 +1,12 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Company
+metadata:
+  id: 01996dev-0000-0000-0000-000000techc
+  code: TECH-CORP
+  name: Tech Corp
+  createdAt: 2025-09-28T00:00:00Z
+  updatedAt: 2025-09-28T00:00:00Z
+  createdBy: system
+spec:
+  size: medium
+  status: active
