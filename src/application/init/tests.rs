@@ -30,7 +30,7 @@ impl MockConfigRepository {
 }
 
 impl ConfigRepository for MockConfigRepository {
-    fn save(&self, _config: ConfigManifest, _path: &Path) -> Result<(), AppError> {
+    fn save(&self, _config: Config, _path: &Path) -> Result<(), AppError> {
         if self.should_fail {
             return Err(AppError::new(AppErrorKind::PersistenceError {
                 operation: "save".to_string(),

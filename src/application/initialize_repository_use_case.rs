@@ -2,6 +2,7 @@
 
 use crate::application::errors::AppError;
 use crate::domain::company_settings::{config::Config, repository::ConfigRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::shared::convertable::Convertible;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use std::path::{Path, PathBuf};
@@ -49,9 +50,9 @@ mod test {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, config: ConfigManifest, path: &Path) -> Result<(), AppError> {
+        fn save(&self, config: Config, path: &Path) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
                 });
@@ -62,14 +63,14 @@ mod test {
             Ok(())
         }
 
-        fn create_repository_dir(&self, path: &Path) -> Result<(), AppError> {
+        fn create_repository_dir(&self, path: &Path) -> DomainResult<()> {
             *self.created_path.borrow_mut() = Some(path.clone());
             Ok(())
         }
 
-        fn load(&self) -> Result<(Config, PathBuf), AppError> {
+        fn load(&self) -> DomainResult<(Config, PathBuf)> {
             if self.should_fail {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao carregar".to_string(),
                 });
