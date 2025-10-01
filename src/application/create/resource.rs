@@ -167,10 +167,38 @@ mod test {
         }
     }
 
+    struct MockConfigRepository;
+
+    impl MockConfigRepository {
+        fn new() -> Self {
+            Self
+        }
+    }
+
+    impl ConfigRepository for MockConfigRepository {
+        fn save(&self, _config: crate::domain::company_settings::config::Config, _path: &std::path::Path) -> DomainResult<()> {
+            Ok(())
+        }
+
+        fn create_repository_dir(&self, _path: &std::path::Path) -> DomainResult<()> {
+            Ok(())
+        }
+
+        fn load(&self) -> DomainResult<(crate::domain::company_settings::config::Config, std::path::PathBuf)> {
+            let config = crate::domain::company_settings::config::Config::new(
+                "Test Manager".to_string(),
+                "test@example.com".to_string(),
+                "UTC".to_string(),
+            );
+            Ok((config, std::path::PathBuf::from("/test/path")))
+        }
+    }
+
     #[test]
     fn test_create_project_success() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "John";
         let resource_type = "Developer";
 
@@ -192,7 +220,8 @@ mod test {
     #[test]
     fn test_create_project_failure() {
         let mock_repo = MockResourceRepository::new(true);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "John";
         let resource_type = "Developer";
 
@@ -214,7 +243,8 @@ mod test {
     #[test]
     fn test_verify_config_saved() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "John";
         let resource_type = "Developer";
         let params = CreateResourceParams {
@@ -245,7 +275,8 @@ mod test {
     #[test]
     fn test_create_resource_with_custom_code() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Custom Resource";
         let resource_type = "Designer";
         let custom_code = "DES-001".to_string();
@@ -278,7 +309,8 @@ mod test {
     #[test]
     fn test_create_resource_with_email() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Resource with Email";
         let resource_type = "Manager";
         let email = "test@example.com".to_string();
@@ -311,7 +343,8 @@ mod test {
     #[test]
     fn test_create_resource_with_dates() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Resource with Dates";
         let resource_type = "Business Analyst";
         let start_date = chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
@@ -346,7 +379,8 @@ mod test {
     #[test]
     fn test_create_resource_with_project_code() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Project Resource";
         let resource_type = "Developer";
         let project_code = "PROJ-001".to_string();
@@ -374,7 +408,8 @@ mod test {
     #[test]
     fn test_create_resource_use_case_creation() {
         let mock_repo = MockResourceRepository::new(false);
-        let _use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let _use_case = CreateResourceUseCase::new(mock_repo, config_repo);
 
         // Test that the use case was created successfully
         // If we get here, creation succeeded
@@ -383,7 +418,8 @@ mod test {
     #[test]
     fn test_create_resource_repository_error() {
         let mock_repo = MockResourceRepository::new(true);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Test Resource";
         let resource_type = "Developer";
 
@@ -413,7 +449,8 @@ mod test {
     #[test]
     fn test_create_resource_minimal_parameters() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Minimal Resource";
         let resource_type = "Developer";
 
@@ -445,7 +482,8 @@ mod test {
     #[test]
     fn test_create_resource_with_all_parameters() {
         let mock_repo = MockResourceRepository::new(false);
-        let use_case = CreateResourceUseCase::new(mock_repo);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Complete Resource";
         let resource_type = "Manager";
         let custom_code = "MGR-001".to_string();
