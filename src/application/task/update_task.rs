@@ -41,7 +41,6 @@ impl From<crate::domain::shared::errors::DomainError> for UpdateAppError {
     }
 }
 
-impl From<crate::domain::shared::errors::DomainError> for UpdateAppError {
     fn from(err: crate::domain::shared::errors::DomainError) -> Self {
         UpdateAppError::RepositoryError(err.into())
     }
