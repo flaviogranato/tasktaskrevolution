@@ -113,65 +113,65 @@ mod tests {
     }
 
     impl CodeResolverTrait for MockCodeResolver {
-        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_company_code(&self, _code: &str) -> DomainResult<String> {
             if self.should_fail {
-                Err(AppError::validation_error("company", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("company", "Mock failure")))
             } else {
                 Ok("company-id".to_string())
             }
         }
 
-        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_project_code(&self, _code: &str) -> DomainResult<String> {
             if self.should_fail {
-                Err(AppError::validation_error("project", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("project", "Mock failure")))
             } else {
                 Ok("project-id".to_string())
             }
         }
 
-        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_resource_code(&self, _code: &str) -> DomainResult<String> {
             if self.should_fail {
-                Err(AppError::validation_error("resource", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("resource", "Mock failure")))
             } else {
                 Ok("resource-id".to_string())
             }
         }
 
-        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
             if self.should_fail {
-                Err(AppError::validation_error("task", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("task", "Mock failure")))
             } else {
                 Ok("task-id".to_string())
             }
         }
 
-        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_company_code(&self, _code: &str) -> DomainResult<()> {
             if self.should_fail {
-                Err(AppError::validation_error("company", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("company", "Mock failure")))
             } else {
                 Ok(())
             }
         }
 
-        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_project_code(&self, _code: &str) -> DomainResult<()> {
             if self.should_fail {
-                Err(AppError::validation_error("project", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("project", "Mock failure")))
             } else {
                 Ok(())
             }
         }
 
-        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_resource_code(&self, _code: &str) -> DomainResult<()> {
             if self.should_fail {
-                Err(AppError::validation_error("resource", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("resource", "Mock failure")))
             } else {
                 Ok(())
             }
         }
 
-        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_task_code(&self, _code: &str) -> DomainResult<()> {
             if self.should_fail {
-                Err(AppError::validation_error("task", "Mock failure"))
+                Err(DomainError::from(AppError::validation_error("task", "Mock failure")))
             } else {
                 Ok(())
             }
