@@ -59,11 +59,10 @@ where
     type_validator: ResourceTypeValidator,
 }
 
-impl<RR, CR, C> UpdateResourceUseCase<RR, CR>
+impl<RR, CR> UpdateResourceUseCase<RR, CR>
 where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
-    C: ConfigRepository,
 {
     pub fn new(resource_repository: RR, code_resolver: CR, config_repository: C) -> Self {
         Self {
