@@ -290,12 +290,12 @@ mod test {
             Ok(())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().values().find(|p| p.code() == code).cloned())
         }
 
         // Unimplemented methods
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             unimplemented!()
         }
         fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
