@@ -117,7 +117,7 @@ mod tests {
     use crate::domain::company_settings::repository::ConfigRepository;
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     // Mock repository for testing
     struct MockConfigRepository {
@@ -142,7 +142,7 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), AppError> {
+        fn save(&self, _config: ConfigManifest, _path: &Path) -> Result<(), AppError> {
             if self.should_fail {
                 return Err(AppError::IoError {
                     operation: "save".to_string(),
@@ -152,7 +152,7 @@ mod tests {
             Ok(())
         }
 
-        fn create_repository_dir(&self, _path: PathBuf) -> Result<(), AppError> {
+        fn create_repository_dir(&self, _path: &Path) -> Result<(), AppError> {
             Ok(())
         }
 

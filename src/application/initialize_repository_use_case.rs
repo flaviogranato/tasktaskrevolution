@@ -4,7 +4,7 @@ use crate::application::errors::AppError;
 use crate::domain::company_settings::{config::Config, repository::ConfigRepository};
 use crate::domain::shared::convertable::Convertible;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[allow(dead_code)]
 pub struct InitializeRepositoryUseCase<R: ConfigRepository> {
@@ -49,7 +49,7 @@ mod test {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, config: ConfigManifest, path: PathBuf) -> Result<(), AppError> {
+        fn save(&self, config: ConfigManifest, path: &Path) -> Result<(), AppError> {
             if self.should_fail {
                 return Err(AppError::ValidationError {
                     field: "repository".to_string(),
@@ -62,7 +62,7 @@ mod test {
             Ok(())
         }
 
-        fn create_repository_dir(&self, path: PathBuf) -> Result<(), AppError> {
+        fn create_repository_dir(&self, path: &Path) -> Result<(), AppError> {
             *self.created_path.borrow_mut() = Some(path.clone());
             Ok(())
         }
