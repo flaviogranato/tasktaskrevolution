@@ -8,6 +8,7 @@ use crate::domain::resource_management::{
 };
 use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use chrono::Local;
 use std::fmt;
 
@@ -288,13 +289,13 @@ mod tests {
     }
     
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: AnyProject) -> Result<(), AppError> { unimplemented!() }
-        fn load(&self) -> Result<AnyProject, AppError> { unimplemented!() }
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> { Ok(self.projects.borrow().values().cloned().collect()) }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn save(&self, _project: AnyProject) -> DomainResult<()> { unimplemented!() }
+        fn load(&self) -> DomainResult<AnyProject> { unimplemented!() }
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> { Ok(self.projects.borrow().values().cloned().collect()) }
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn get_next_code(&self) -> Result<String, AppError> { unimplemented!() }
+        fn get_next_code(&self) -> DomainResult<String> { unimplemented!() }
     }
     
     fn create_test_project(code: &str) -> AnyProject {
@@ -314,16 +315,16 @@ mod tests {
     }
 
     impl TaskRepository for MockTaskRepository {
-        fn save(&self, task: AnyTask) -> Result<AnyTask, AppError> {
+        fn save(&self, task: AnyTask) -> DomainResult<AnyTask> {
             self.tasks.borrow_mut().insert(task.code().to_string(), task.clone());
             Ok(task)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyTask>> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyTask>> {
             Ok(self.tasks.borrow().get(code).cloned())
         }
 
@@ -332,19 +333,19 @@ mod tests {
             task: AnyTask,
             _company_code: &str,
             _project_code: &str,
-        ) -> Result<AnyTask, AppError> {
+        ) -> DomainResult<AnyTask> {
             self.save(task)
         }
 
-        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+        fn find_by_project(&self, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
             unimplemented!()
         }
 
-        fn get_next_code(&self, _project_code: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, _project_code: &str) -> DomainResult<String> {
             unimplemented!()
         }
     }
@@ -354,25 +355,25 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
+        fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             self.resources
                 .borrow_mut()
                 .insert(resource.code().to_string(), resource.clone());
             Ok(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
             Ok(self.resources.borrow().get(code).cloned())
         }
 
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
             Ok(vec![])
         }
-        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+        fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
             Ok(vec![])
         }
 
@@ -381,7 +382,7 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             self.save(resource)
         }
 
@@ -391,7 +392,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
@@ -402,7 +403,7 @@ mod tests {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
@@ -414,7 +415,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, _resource_type: &str) -> DomainResult<String> {
             unimplemented!()
         }
     }
@@ -624,18 +625,18 @@ mod tests {
         }
 
         impl TaskRepository for FailingMockTaskRepository {
-            fn save(&self, _task: AnyTask) -> Result<AnyTask, AppError> {
-                Err(AppError::ValidationError {
+            fn save(&self, _task: AnyTask) -> DomainResult<AnyTask> {
+                Err(DomainError::from(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Save failed".to_string(),
-                })
+                }))
             }
 
-            fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
+            fn find_all(&self) -> DomainResult<Vec<AnyTask>> {
                 Ok(self.tasks.borrow().values().cloned().collect())
             }
 
-            fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
+            fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyTask>> {
                 Ok(self.tasks.borrow().get(code).cloned())
             }
 
@@ -644,19 +645,19 @@ mod tests {
                 task: AnyTask,
                 _company_code: &str,
                 _project_code: &str,
-            ) -> Result<AnyTask, AppError> {
+            ) -> DomainResult<AnyTask> {
                 self.save(task)
             }
 
-            fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+            fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
                 Ok(self.tasks.borrow().values().cloned().collect())
             }
 
-            fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+            fn find_by_project(&self, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
                 unimplemented!()
             }
 
-            fn get_next_code(&self, _project_code: &str) -> Result<String, AppError> {
+            fn get_next_code(&self, _project_code: &str) -> DomainResult<String> {
                 unimplemented!()
             }
         }
