@@ -186,7 +186,7 @@ mod tests {
             false
         }
 
-        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, resource_type: &str) -> DomainResult<String> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }
