@@ -865,7 +865,7 @@ spec:
         let mut company_file = File::create(company_dir.join("company.yaml")).unwrap();
         writeln!(company_file, "{company_content}").unwrap();
 
-        let project_dir = company_dir.join("projects").join("my-project");
+        let project_dir = company_dir.join("projects").join("proj-1");
         fs::create_dir_all(&project_dir).unwrap();
         let project_content = r#"
 apiVersion: tasktaskrevolution.io/v1alpha1
@@ -874,6 +874,7 @@ metadata:
   code: "proj-1"
   name: "My Test Project"
   description: "A description for the test project."
+  companyCode: "test-company"
 spec:
   status: "InProgress"
   startDate: "2024-08-01"
