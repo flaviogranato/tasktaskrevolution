@@ -56,7 +56,7 @@ impl InitManagerUseCase {
             field: "path".to_string(),
             message: e.to_string(),
         })?;
-        self.repository.save(config.clone(), current_dir)?;
+        self.repository.save(config.clone(), &current_dir)?;
 
         Ok(config)
     }

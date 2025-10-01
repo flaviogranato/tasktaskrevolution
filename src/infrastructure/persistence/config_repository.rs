@@ -4,7 +4,7 @@ use crate::domain::{
     shared::convertable::Convertible,
 };
 use serde_yaml::to_string;
-use std::{fs, path::PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 
 #[derive(Clone)]
 pub struct FileConfigRepository {
@@ -30,7 +30,7 @@ impl Default for FileConfigRepository {
 }
 
 impl ConfigRepository for FileConfigRepository {
-    fn save(&self, config: Config, path: PathBuf) -> DomainResult<()> {
+    fn save(&self, config: Config, path: &Path) -> DomainResult<()> {
         let config_yaml = to_string(&config).map_err(|e| DomainError::SerializationError {
             operation: "YAML serialization".to_string(),
             details: e.to_string(),
@@ -44,7 +44,7 @@ impl ConfigRepository for FileConfigRepository {
         Ok(())
     }
 
-    fn create_repository_dir(&self, path: PathBuf) -> DomainResult<()> {
+    fn create_repository_dir(&self, path: &Path) -> DomainResult<()> {
         if !path.exists() {
             fs::create_dir(&path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "create directory".to_string(),

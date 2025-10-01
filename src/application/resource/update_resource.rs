@@ -69,7 +69,7 @@ where
         Self {
             resource_repository,
             code_resolver,
-            type_validator: ResourceTypeValidator::new(Box::new(FileConfigRepository::new())),
+            type_validator: ResourceTypeValidator::new(),
         }
     }
 

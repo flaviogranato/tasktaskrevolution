@@ -29,7 +29,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new<C: ConfigRepository + 'static>(repository: R, _config_repository: C) -> Self {
         Self {
             repository,
-            type_validator: ResourceTypeValidator::new(Box::new(FileConfigRepository::new())),
+            type_validator: ResourceTypeValidator::new(),
         }
     }
     pub fn execute(&self, params: CreateResourceParams) -> Result<(), AppError> {
