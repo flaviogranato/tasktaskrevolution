@@ -4,7 +4,6 @@ use crate::domain::project_management::{
     any_project::AnyProject,
     repository::{ProjectRepository, ProjectRepositoryWithId},
 };
-use crate::domain::shared::errors::DomainResult;
 use std::fmt;
 
 #[derive(Debug)]
@@ -62,7 +61,7 @@ where
         let project_id = self
             .code_resolver
             .resolve_project_code(project_code)
-            .map_err(DescribeAppError::RepositoryError)?;
+            .map_err(|e| DescribeAppError::RepositoryError(AppError::from(e)))?;
 
         // 2. Use ID for internal operation
         self.project_repository
