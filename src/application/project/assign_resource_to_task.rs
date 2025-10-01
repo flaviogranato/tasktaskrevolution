@@ -228,13 +228,13 @@ mod tests {
             unimplemented!()
         }
 
-        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, resource_type: &str) -> DomainResult<String> {
             Ok(format!("{}-1", resource_type.to_lowercase()))
         }
     }
 
     impl ResourceRepositoryWithId for MockResourceRepository {
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyResource>> {
             Ok(self.resources.iter().find(|r| r.id().to_string() == id).cloned())
         }
     }
@@ -264,11 +264,11 @@ mod tests {
     }
 
     impl CodeResolverTrait for MockCodeResolver {
-        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_company_code(&self, _code: &str) -> DomainResult<String> {
             Err(AppError::validation_error("company", "Not implemented in mock"))
         }
 
-        fn resolve_project_code(&self, code: &str) -> Result<String, AppError> {
+        fn resolve_project_code(&self, code: &str) -> DomainResult<String> {
             self.project_codes
                 .borrow()
                 .get(code)
@@ -276,7 +276,7 @@ mod tests {
                 .ok_or_else(|| AppError::validation_error("project", format!("Project '{}' not found", code)))
         }
 
-        fn resolve_resource_code(&self, code: &str) -> Result<String, AppError> {
+        fn resolve_resource_code(&self, code: &str) -> DomainResult<String> {
             self.resource_codes
                 .borrow()
                 .get(code)
@@ -284,25 +284,25 @@ mod tests {
                 .ok_or_else(|| AppError::validation_error("resource", format!("Resource '{}' not found", code)))
         }
 
-        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
             Err(AppError::validation_error("task", "Not implemented in mock"))
         }
 
-        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_company_code(&self, _code: &str) -> DomainResult<()> {
             Err(AppError::validation_error("company", "Not implemented in mock"))
         }
 
-        fn validate_project_code(&self, code: &str) -> Result<(), AppError> {
+        fn validate_project_code(&self, code: &str) -> DomainResult<()> {
             self.resolve_project_code(code)?;
             Ok(())
         }
 
-        fn validate_resource_code(&self, code: &str) -> Result<(), AppError> {
+        fn validate_resource_code(&self, code: &str) -> DomainResult<()> {
             self.resolve_resource_code(code)?;
             Ok(())
         }
 
-        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_task_code(&self, _code: &str) -> DomainResult<()> {
             Err(AppError::validation_error("task", "Not implemented in mock"))
         }
     }
