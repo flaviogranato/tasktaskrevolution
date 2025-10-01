@@ -56,9 +56,6 @@ impl From<crate::domain::shared::errors::DomainError> for AssignResourceToAppErr
     }
 }
 
-    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
-        AssignResourceToAppError::RepositoryError(err.into())
-    }
 }
 
 pub struct AssignResourceToTaskUseCase<TR, RR, PR>
