@@ -3,6 +3,7 @@ use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use std::fmt;
 
 #[derive(Debug)]
@@ -108,59 +109,59 @@ mod tests {
     }
 
     impl CodeResolverTrait for MockCodeResolver {
-        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
-            Err(AppError::validation_error("company", "Not implemented in mock"))
+        fn resolve_company_code(&self, _code: &str) -> DomainResult<String> {
+            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
         }
 
-        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_project_code(&self, _code: &str) -> DomainResult<String> {
             Ok("mock-project-id".to_string())
         }
 
-        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
-            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        fn resolve_resource_code(&self, _code: &str) -> DomainResult<String> {
+            Err(DomainError::from(AppError::validation_error("resource", "Not implemented in mock")))
         }
 
-        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
-            Err(AppError::validation_error("task", "Not implemented in mock"))
+        fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
+            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
         }
 
-        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
-            Err(AppError::validation_error("company", "Not implemented in mock"))
+        fn validate_company_code(&self, _code: &str) -> DomainResult<()> {
+            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
         }
 
-        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_project_code(&self, _code: &str) -> DomainResult<()> {
             Ok(())
         }
 
-        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
-            Err(AppError::validation_error("resource", "Not implemented in mock"))
+        fn validate_resource_code(&self, _code: &str) -> DomainResult<()> {
+            Err(DomainError::from(AppError::validation_error("resource", "Not implemented in mock")))
         }
 
-        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
-            Err(AppError::validation_error("task", "Not implemented in mock"))
+        fn validate_task_code(&self, _code: &str) -> DomainResult<()> {
+            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
         }
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, _project: AnyProject) -> DomainResult<()> {
             unimplemented!()
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             unimplemented!()
         }
     }
 
     impl ProjectRepositoryWithId for MockProjectRepository {
-        fn find_by_id(&self, _id: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_id(&self, _id: &str) -> DomainResult<Option<AnyProject>> {
             // For tests, we'll return the first project in the map
             Ok(self.projects.borrow().values().next().cloned())
         }
