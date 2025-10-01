@@ -151,11 +151,11 @@ mod tests {
             Ok(self.projects.borrow().get(code).cloned())
         }
 
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             unimplemented!()
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             unimplemented!()
         }
 
