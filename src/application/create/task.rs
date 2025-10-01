@@ -3,6 +3,7 @@ use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{AnyTask, TaskBuilder, repository::TaskRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use chrono::NaiveDate;
 
 pub struct CreateTaskArgs {
@@ -221,12 +222,12 @@ mod test {
     }
 
     impl TaskRepository for MockTaskRepository {
-        fn save(&self, task: AnyTask) -> Result<AnyTask, AppError> {
+        fn save(&self, task: AnyTask) -> DomainResult<AnyTask> {
             self.tasks.borrow_mut().insert(task.code().to_string(), task.clone());
             Ok(task)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyTask>> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
