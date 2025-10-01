@@ -70,7 +70,7 @@ where
         let resource_id = self
             .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(DeactivateAppError::RepositoryError)?;
+            .map_err(|e| DeactivateAppError::RepositoryError(AppError::from(e)))?;
 
         // 2. Find the resource from the repository using ID
         let resource = self
