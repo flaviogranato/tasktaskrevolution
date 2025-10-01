@@ -1,6 +1,7 @@
 #![allow(unused_imports)]
 use crate::domain::task_management::{Category, Priority};
 use crate::domain::{project_management::repository::ProjectRepository, task_management::AnyTask};
+use crate::domain::shared::errors::DomainResult;
 use csv::Writer;
 use std::error::Error;
 use std::io;
@@ -132,19 +133,19 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             Ok(self.project.clone())
         }
-        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, _project: AnyProject) -> DomainResult<()> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             unimplemented!()
         }
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, _code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(Some(self.project.clone()))
         }
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             unimplemented!()
         }
     }
@@ -509,25 +510,25 @@ mod tests {
         struct ErrorMockProjectRepository;
 
         impl ProjectRepository for ErrorMockProjectRepository {
-            fn load(&self) -> Result<AnyProject, AppError> {
-                Err(AppError::ValidationError {
+            fn load(&self) -> DomainResult<AnyProject> {
+                Err(crate::domain::shared::errors::DomainError::ValidationError {
                     field: "repository".to_string(),
                     message: "Repository error".to_string(),
                 })
             }
-            fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+            fn save(&self, _project: AnyProject) -> DomainResult<()> {
                 unimplemented!()
             }
-            fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+            fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
                 unimplemented!()
             }
-            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
-                Err(AppError::RepositoryError {
+            fn find_by_code(&self, _code: &str) -> DomainResult<Option<AnyProject>> {
+                Err(crate::domain::shared::errors::DomainError::IoError {
                     operation: "find_by_code".to_string(),
                     details: "Repository error".to_string(),
                 })
             }
-            fn get_next_code(&self) -> Result<String, AppError> {
+            fn get_next_code(&self) -> DomainResult<String> {
                 unimplemented!()
             }
         }
