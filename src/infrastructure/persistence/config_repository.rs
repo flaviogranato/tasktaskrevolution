@@ -3,6 +3,7 @@ use crate::domain::{
     company_settings::{Config, repository::ConfigRepository},
     shared::convertable::Convertible,
 };
+use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use serde_yaml::to_string;
 use std::{fs, path::{Path, PathBuf}};
 
@@ -72,13 +73,13 @@ impl ConfigRepository for FileConfigRepository {
                     path: config_path.to_string_lossy().to_string(),
                     details: e.to_string(),
                 })?;
-                let manifest: Config =
+                let manifest: ConfigManifest =
                     serde_yaml::from_str(&file_content).map_err(|e| DomainError::SerializationError {
                         operation: "YAML serialization".to_string(),
                         details: e.to_string(),
                     })?;
 
-                return Ok((manifest, current_path));
+                return Ok((manifest.to(), current_path));
             }
 
             if !current_path.pop() {

@@ -835,9 +835,9 @@ kind: Config
 metadata:
   createdAt: "2024-01-01T00:00:00Z"
 spec:
-  manager_name: "Test Manager"
-  manager_email: "manager@test.com"
-  default_timezone: "America/Sao_Paulo"
+  managerName: "Test Manager"
+  managerEmail: "manager@test.com"
+  defaultTimezone: "America/Sao_Paulo"
 "#;
         let mut config_file = File::create(root.join("config.yaml")).unwrap();
         writeln!(config_file, "{config_content}").unwrap();
