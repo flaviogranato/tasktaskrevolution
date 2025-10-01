@@ -24,7 +24,7 @@ pub struct CreateResourceUseCase<R: ResourceRepository> {
     type_validator: ResourceTypeValidator,
 }
 
-impl<R: ResourceRepository, C: ConfigRepository> CreateResourceUseCase<R> {
+impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R, config_repository: C) -> Self {
         Self {
             repository,
