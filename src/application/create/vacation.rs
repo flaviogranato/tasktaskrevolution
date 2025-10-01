@@ -186,7 +186,7 @@ mod tests {
                     AnyResource::Available(r) => r.vacations = add_vacation(r.vacations.clone()),
                     AnyResource::Assigned(r) => r.vacations = add_vacation(r.vacations.clone()),
                     AnyResource::Inactive(_) => {
-                        return Err(AppError::ResourceInvalidState {
+                        return Err(DomainError::ResourceInvalidState {
                             current: "Inactive".to_string(),
                             expected: "Active".to_string(),
                         });
@@ -194,7 +194,7 @@ mod tests {
                 }
                 Ok(any_resource.clone())
             } else {
-                Err(AppError::ResourceNotFound {
+                Err(DomainError::ResourceNotFound {
                     code: resource_name.to_string(),
                 })
             }
