@@ -1051,6 +1051,7 @@ kind: Project
 metadata:
   code: "proj-completed"
   name: "Completed Project"
+  companyCode: "test-company"
 spec:
   status: "Completed"
   startDate: "2024-01-01"
@@ -1069,6 +1070,7 @@ kind: Project
 metadata:
   code: "proj-cancelled"
   name: "Cancelled Project"
+  companyCode: "test-company"
 spec:
   status: "Cancelled"
   startDate: "2024-01-01"
@@ -1087,6 +1089,7 @@ kind: Project
 metadata:
   code: "proj-in-progress"
   name: "In Progress Project"
+  companyCode: "test-company"
 spec:
   status: "InProgress"
   startDate: "2024-01-01"
@@ -1142,6 +1145,7 @@ kind: Project
 metadata:
   code: "proj-with-tz"
   name: "Project With Timezone"
+  companyCode: "test-company"
 spec:
   status: "Planned"
   startDate: "2024-01-01"
