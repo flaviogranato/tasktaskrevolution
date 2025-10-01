@@ -209,7 +209,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _desc: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
@@ -220,7 +220,7 @@ mod tests {
             _end: &str,
             _comp: bool,
             _hours: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
