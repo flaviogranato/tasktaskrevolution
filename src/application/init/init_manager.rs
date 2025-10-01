@@ -52,12 +52,11 @@ impl InitManagerUseCase {
         // Save to repository
         use crate::domain::shared::convertable::Convertible;
         use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
-        let config_manifest = <ConfigManifest as Convertible<Config>>::from(config.clone());
         let current_dir = std::env::current_dir().map_err(|e| AppError::ValidationError {
             field: "path".to_string(),
             message: e.to_string(),
         })?;
-        self.repository.save(config_manifest, current_dir)?;
+        self.repository.save(config.clone(), current_dir)?;
 
         Ok(config)
     }
