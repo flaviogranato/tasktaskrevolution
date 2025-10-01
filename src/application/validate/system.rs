@@ -6,6 +6,7 @@ use crate::application::errors::AppError;
 use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::shared::errors::DomainResult;
 
 pub struct ValidateSystemUseCase<P, R, C>
 where
@@ -196,28 +197,28 @@ mod tests {
     struct MockCompanyRepository;
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: crate::domain::project_management::any_project::AnyProject) -> Result<(), AppError> {
+        fn save(&self, _project: crate::domain::project_management::any_project::AnyProject) -> DomainResult<()> {
             Ok(())
         }
 
-        fn load(&self) -> Result<crate::domain::project_management::any_project::AnyProject, AppError> {
-            Err(AppError::ProjectNotFound {
+        fn load(&self) -> DomainResult<crate::domain::project_management::any_project::AnyProject> {
+            Err(crate::domain::shared::errors::DomainError::ProjectNotFound {
                 code: "test".to_string(),
             })
         }
 
-        fn find_all(&self) -> Result<Vec<crate::domain::project_management::any_project::AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<crate::domain::project_management::any_project::AnyProject>> {
             Ok(vec![])
         }
 
         fn find_by_code(
             &self,
             _code: &str,
-        ) -> Result<Option<crate::domain::project_management::any_project::AnyProject>, AppError> {
+        ) -> DomainResult<Option<crate::domain::project_management::any_project::AnyProject>> {
             Ok(None)
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             Ok("PROJ-001".to_string())
         }
     }
@@ -226,8 +227,8 @@ mod tests {
         fn save(
             &self,
             _resource: crate::domain::resource_management::any_resource::AnyResource,
-        ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        ) -> DomainResult<crate::domain::resource_management::any_resource::AnyResource> {
+            Err(crate::domain::shared::errors::DomainError::ResourceNotFound {
                 code: "test".to_string(),
             })
         }
@@ -237,40 +238,37 @@ mod tests {
             _resource: crate::domain::resource_management::any_resource::AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        ) -> DomainResult<crate::domain::resource_management::any_resource::AnyResource> {
+            Err(crate::domain::shared::errors::DomainError::ResourceNotFound {
                 code: "test".to_string(),
             })
         }
 
-        fn find_all(&self) -> Result<Vec<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<crate::domain::resource_management::any_resource::AnyResource>> {
             Ok(vec![])
         }
 
         fn find_by_company(
             &self,
             _company_code: &str,
-        ) -> Result<Vec<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
+        ) -> DomainResult<Vec<crate::domain::resource_management::any_resource::AnyResource>> {
             Ok(vec![])
         }
 
         fn find_all_with_context(
             &self,
-        ) -> Result<
-            Vec<(
+        ) -> DomainResult<Vec<(
                 crate::domain::resource_management::any_resource::AnyResource,
                 String,
                 Vec<String>,
-            )>,
-            AppError,
-        > {
+            )>> {
             Ok(vec![])
         }
 
         fn find_by_code(
             &self,
             _code: &str,
-        ) -> Result<Option<crate::domain::resource_management::any_resource::AnyResource>, AppError> {
+        ) -> DomainResult<Option<crate::domain::resource_management::any_resource::AnyResource>> {
             Ok(None)
         }
 
@@ -280,8 +278,8 @@ mod tests {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        ) -> DomainResult<crate::domain::resource_management::any_resource::AnyResource> {
+            Err(crate::domain::shared::errors::DomainError::ResourceNotFound {
                 code: "test".to_string(),
             })
         }
@@ -293,8 +291,8 @@ mod tests {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<crate::domain::resource_management::any_resource::AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        ) -> DomainResult<crate::domain::resource_management::any_resource::AnyResource> {
+            Err(crate::domain::shared::errors::DomainError::ResourceNotFound {
                 code: "test".to_string(),
             })
         }
@@ -303,58 +301,58 @@ mod tests {
             false
         }
 
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, _resource_type: &str) -> DomainResult<String> {
             Ok("RES-001".to_string())
         }
     }
 
     impl CompanyRepository for MockCompanyRepository {
-        fn save(&self, _company: crate::domain::company_management::company::Company) -> Result<(), AppError> {
+        fn save(&self, _company: crate::domain::company_management::company::Company) -> DomainResult<()> {
             Ok(())
         }
 
-        fn find_all(&self) -> Result<Vec<crate::domain::company_management::company::Company>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<crate::domain::company_management::company::Company>> {
             Ok(vec![])
         }
 
         fn find_by_code(
             &self,
             _code: &str,
-        ) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
+        ) -> DomainResult<Option<crate::domain::company_management::company::Company>> {
             Ok(None)
         }
 
         fn find_by_id(
             &self,
             _id: &str,
-        ) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
+        ) -> DomainResult<Option<crate::domain::company_management::company::Company>> {
             Ok(None)
         }
 
         fn find_by_name(
             &self,
             _name: &str,
-        ) -> Result<Option<crate::domain::company_management::company::Company>, AppError> {
+        ) -> DomainResult<Option<crate::domain::company_management::company::Company>> {
             Ok(None)
         }
 
-        fn update(&self, _company: crate::domain::company_management::company::Company) -> Result<(), AppError> {
+        fn update(&self, _company: crate::domain::company_management::company::Company) -> DomainResult<()> {
             Ok(())
         }
 
-        fn delete(&self, _id: &str) -> Result<(), AppError> {
+        fn delete(&self, _id: &str) -> DomainResult<()> {
             Ok(())
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             Ok("COMP-001".to_string())
         }
 
-        fn code_exists(&self, _code: &str) -> Result<bool, AppError> {
+        fn code_exists(&self, _code: &str) -> DomainResult<bool> {
             Ok(false)
         }
 
-        fn name_exists(&self, _name: &str) -> Result<bool, AppError> {
+        fn name_exists(&self, _name: &str) -> DomainResult<bool> {
             Ok(false)
         }
     }
