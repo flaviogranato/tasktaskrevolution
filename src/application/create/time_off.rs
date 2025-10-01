@@ -257,7 +257,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "Validation error for field 'repository': Simulated repository error"
+            "Validation error in field 'repository': Simulated repository error"
         );
     }
 
