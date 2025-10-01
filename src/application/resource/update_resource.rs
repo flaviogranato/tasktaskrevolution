@@ -83,7 +83,7 @@ where
         let resource_id = self
             .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(UpdateAppError::RepositoryError)?;
+            .map_err(|e| UpdateAppError::RepositoryError(AppError::from(e)))?;
 
         // 2. Load the resource aggregate using ID
         let mut resource = self
