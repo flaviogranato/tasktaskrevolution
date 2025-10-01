@@ -87,13 +87,13 @@ where
         let project_id = self
             .code_resolver
             .resolve_project_code(project_code)
-            .map_err(AssignResourceToAppError::RepositoryError)?;
+            .map_err(|e| AssignResourceToAppError::RepositoryError(AppError::from(e)))?;
 
         // 2. Resolve resource code to ID
         let resource_id = self
             .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(AssignResourceToAppError::RepositoryError)?;
+            .map_err(|e| AssignResourceToAppError::RepositoryError(AppError::from(e)))?;
 
         // 3. Load the project aggregate using ID
         let mut project = self

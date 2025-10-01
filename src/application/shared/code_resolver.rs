@@ -1,4 +1,5 @@
 use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
@@ -10,14 +11,14 @@ use crate::infrastructure::persistence::{
 
 /// Trait for resolving entity codes to IDs
 pub trait CodeResolverTrait {
-    fn resolve_company_code(&self, code: &str) -> Result<String, AppError>;
-    fn resolve_project_code(&self, code: &str) -> Result<String, AppError>;
-    fn resolve_resource_code(&self, code: &str) -> Result<String, AppError>;
-    fn resolve_task_code(&self, code: &str) -> Result<String, AppError>;
-    fn validate_company_code(&self, code: &str) -> Result<(), AppError>;
-    fn validate_project_code(&self, code: &str) -> Result<(), AppError>;
-    fn validate_resource_code(&self, code: &str) -> Result<(), AppError>;
-    fn validate_task_code(&self, code: &str) -> Result<(), AppError>;
+    fn resolve_company_code(&self, code: &str) -> DomainResult<String>;
+    fn resolve_project_code(&self, code: &str) -> DomainResult<String>;
+    fn resolve_resource_code(&self, code: &str) -> DomainResult<String>;
+    fn resolve_task_code(&self, code: &str) -> DomainResult<String>;
+    fn validate_company_code(&self, code: &str) -> DomainResult<()>;
+    fn validate_project_code(&self, code: &str) -> DomainResult<()>;
+    fn validate_resource_code(&self, code: &str) -> DomainResult<()>;
+    fn validate_task_code(&self, code: &str) -> DomainResult<()>;
 }
 
 /// Service responsible for resolving entity codes to IDs for internal operations
@@ -29,54 +30,54 @@ pub struct CodeResolver {
 }
 
 impl CodeResolverTrait for CodeResolver {
-    fn resolve_company_code(&self, code: &str) -> Result<String, AppError> {
+    fn resolve_company_code(&self, code: &str) -> DomainResult<String> {
         let company = self
             .company_repository
             .find_by_code(code)?
-            .ok_or_else(|| AppError::validation_error("company", format!("Company '{}' not found", code)))?;
+            .ok_or_else(|| DomainError::from(AppError::validation_error("company", format!("Company '{}' not found", code))))?;
         Ok(company.id)
     }
 
-    fn resolve_project_code(&self, code: &str) -> Result<String, AppError> {
+    fn resolve_project_code(&self, code: &str) -> DomainResult<String> {
         let project = self
             .project_repository
             .find_by_code(code)?
-            .ok_or_else(|| AppError::validation_error("project", format!("Project '{}' not found", code)))?;
+            .ok_or_else(|| DomainError::from(AppError::validation_error("project", format!("Project '{}' not found", code))))?;
         Ok(project.id().to_string())
     }
 
-    fn resolve_resource_code(&self, code: &str) -> Result<String, AppError> {
+    fn resolve_resource_code(&self, code: &str) -> DomainResult<String> {
         let resource = self
             .resource_repository
             .find_by_code(code)?
-            .ok_or_else(|| AppError::validation_error("resource", format!("Resource '{}' not found", code)))?;
+            .ok_or_else(|| DomainError::from(AppError::validation_error("resource", format!("Resource '{}' not found", code))))?;
         Ok(resource.id().to_string())
     }
 
-    fn resolve_task_code(&self, code: &str) -> Result<String, AppError> {
+    fn resolve_task_code(&self, code: &str) -> DomainResult<String> {
         let task = self
             .task_repository
             .find_by_code(code)?
-            .ok_or_else(|| AppError::validation_error("task", format!("Task '{}' not found", code)))?;
+            .ok_or_else(|| DomainError::from(AppError::validation_error("task", format!("Task '{}' not found", code))))?;
         Ok(task.id().to_string())
     }
 
-    fn validate_company_code(&self, code: &str) -> Result<(), AppError> {
+    fn validate_company_code(&self, code: &str) -> DomainResult<()> {
         self.resolve_company_code(code)?;
         Ok(())
     }
 
-    fn validate_project_code(&self, code: &str) -> Result<(), AppError> {
+    fn validate_project_code(&self, code: &str) -> DomainResult<()> {
         self.resolve_project_code(code)?;
         Ok(())
     }
 
-    fn validate_resource_code(&self, code: &str) -> Result<(), AppError> {
+    fn validate_resource_code(&self, code: &str) -> DomainResult<()> {
         self.resolve_resource_code(code)?;
         Ok(())
     }
 
-    fn validate_task_code(&self, code: &str) -> Result<(), AppError> {
+    fn validate_task_code(&self, code: &str) -> DomainResult<()> {
         self.resolve_task_code(code)?;
         Ok(())
     }
