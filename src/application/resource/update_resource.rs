@@ -57,7 +57,6 @@ where
 {
     resource_repository: RR,
     code_resolver: CR,
-    config_repository: C,
     type_validator: ResourceTypeValidator,
 }
 
@@ -71,7 +70,6 @@ where
         Self {
             resource_repository,
             code_resolver,
-            config_repository,
             type_validator: ResourceTypeValidator::new(Box::new(config_repository)),
         }
     }
