@@ -159,13 +159,13 @@ mod tests {
             unimplemented!()
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             unimplemented!()
         }
     }
 
     impl ProjectRepositoryWithId for MockProjectRepository {
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().values().find(|p| p.id() == id).cloned())
         }
     }
