@@ -19,12 +19,12 @@ pub struct CreateResourceParams {
     pub scope: ResourceScope,
 }
 
-pub struct CreateResourceUseCase<R: ResourceRepository, C: ConfigRepository> {
+pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
     type_validator: ResourceTypeValidator,
 }
 
-impl<R: ResourceRepository, C: ConfigRepository> CreateResourceUseCase<R, C> {
+impl<R: ResourceRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R, config_repository: C) -> Self {
         Self {
             repository,
