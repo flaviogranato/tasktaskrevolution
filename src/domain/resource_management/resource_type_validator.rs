@@ -1,19 +1,14 @@
 use crate::domain::company_settings::repository::ConfigRepository;
-use std::sync::Arc;
 
-pub struct ResourceTypeValidator {
-    config_repository: Arc<dyn ConfigRepository>,
-}
+pub struct ResourceTypeValidator;
 
 impl ResourceTypeValidator {
-    pub fn new(config_repository: Arc<dyn ConfigRepository>) -> Self {
-        Self {
-            config_repository,
-        }
+    pub fn new(_config_repository: Box<dyn ConfigRepository>) -> Self {
+        Self
     }
 
-    pub fn validate_resource_type(&self, resource_type: &str) -> Result<(), String> {
-        match self.config_repository.load() {
+    pub fn validate_resource_type(&self, resource_type: &str, config_repository: &dyn ConfigRepository) -> Result<(), String> {
+        match config_repository.load() {
             Ok((config, _)) => {
                 if config.resource_types.is_empty() {
                     // If config has no resource types defined, allow any type (backward compatibility)
@@ -36,8 +31,8 @@ impl ResourceTypeValidator {
         }
     }
 
-    pub fn get_valid_resource_types(&self) -> Result<Vec<String>, String> {
-        match self.config_repository.load() {
+    pub fn get_valid_resource_types(&self, config_repository: &dyn ConfigRepository) -> Result<Vec<String>, String> {
+        match config_repository.load() {
             Ok((config, _)) => Ok(config.resource_types),
             Err(e) => Err(format!("Could not load config: {}", e)),
         }
