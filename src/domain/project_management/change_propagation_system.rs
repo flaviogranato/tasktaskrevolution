@@ -10,7 +10,7 @@ use std::fmt;
 
 use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType, LagType};
 use super::dependency_calculation_engine::{CalculationConfig, CalculationResult, DependencyCalculationEngine};
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 // ============================================================================
 // ENUMS
@@ -133,7 +133,7 @@ impl ChangePropagationSystem {
         change_id: String,
         change_type: ChangeType,
         graph: &mut AdvancedDependencyGraph,
-    ) -> Result<PropagationResult, AppError> {
+    ) -> DomainResult<PropagationResult> {
         // Validar a mudança
         self.validate_change(&change_type, graph)?;
 
@@ -189,7 +189,7 @@ impl ChangePropagationSystem {
         &mut self,
         result: &mut PropagationResult,
         graph: &mut AdvancedDependencyGraph,
-    ) -> Result<(), AppError> {
+    ) -> DomainResult<()> {
         result.status = PropagationStatus::InProgress;
 
         // Recalcular datas das tarefas afetadas
@@ -220,7 +220,7 @@ impl ChangePropagationSystem {
         &self,
         change_type: &ChangeType,
         graph: &mut AdvancedDependencyGraph,
-    ) -> Result<(), AppError> {
+    ) -> DomainResult<()> {
         match change_type {
             ChangeType::StartDateChanged(_, _new_date, _) => {
                 // Atualizar data de início de uma tarefa específica
@@ -316,18 +316,18 @@ impl ChangePropagationSystem {
     }
 
     /// Valida se uma mudança é válida
-    fn validate_change(&self, change_type: &ChangeType, graph: &AdvancedDependencyGraph) -> Result<(), AppError> {
+    fn validate_change(&self, change_type: &ChangeType, graph: &AdvancedDependencyGraph) -> DomainResult<()> {
         match change_type {
             ChangeType::StartDateChanged(task_id, new_date, _) => {
                 if !graph.nodes.contains_key(task_id) {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "task_id".to_string(),
                         message: format!("Task {} not found", task_id),
                     });
                 }
                 // Validar se a nova data é válida
                 if *new_date < chrono::Utc::now().date_naive() {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "start_date".to_string(),
                         message: "Start date cannot be in the past".to_string(),
                     });
@@ -335,14 +335,14 @@ impl ChangePropagationSystem {
             }
             ChangeType::EndDateChanged(task_id, new_date, _) => {
                 if !graph.nodes.contains_key(task_id) {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "task_id".to_string(),
                         message: format!("Task {} not found", task_id),
                     });
                 }
                 // Validar se a nova data é válida
                 if *new_date < chrono::Utc::now().date_naive() {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "end_date".to_string(),
                         message: "End date cannot be in the past".to_string(),
                     });
@@ -351,13 +351,13 @@ impl ChangePropagationSystem {
             ChangeType::DependencyAdded(dep) => {
                 dep.validate()?;
                 if !graph.nodes.contains_key(&dep.predecessor_id) {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "predecessor_id".to_string(),
                         message: "Predecessor task not found".to_string(),
                     });
                 }
                 if !graph.nodes.contains_key(&dep.successor_id) {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "successor_id".to_string(),
                         message: "Successor task not found".to_string(),
                     });
@@ -376,11 +376,11 @@ impl ChangePropagationSystem {
         &self,
         results: &HashMap<String, CalculationResult>,
         _graph: &AdvancedDependencyGraph,
-    ) -> Result<(), AppError> {
+    ) -> DomainResult<()> {
         // Verificar se todas as dependências são satisfeitas
         for (task_id, result) in results {
             if !result.dependencies_satisfied {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "dependencies".to_string(),
                     message: format!("Dependencies not satisfied for task {}", task_id),
                 });
@@ -390,7 +390,7 @@ impl ChangePropagationSystem {
             if let (Some(start), Some(end)) = (result.calculated_start_date, result.calculated_end_date)
                 && start > end
             {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "date_range".to_string(),
                     message: format!("Invalid date range for task {}: {} > {}", task_id, start, end),
                 });
@@ -401,13 +401,13 @@ impl ChangePropagationSystem {
     }
 
     /// Reverte uma mudança
-    pub fn rollback_change(&mut self, change_id: &str, graph: &mut AdvancedDependencyGraph) -> Result<(), AppError> {
+    pub fn rollback_change(&mut self, change_id: &str, graph: &mut AdvancedDependencyGraph) -> DomainResult<()> {
         // Encontrar a mudança no histórico
         let change = self
             .change_history
             .iter()
             .find(|c| c.change_id == change_id)
-            .ok_or_else(|| AppError::ValidationError {
+            .ok_or_else(|| DomainError::ValidationError {
                 field: "change_id".to_string(),
                 message: format!("Change {} not found", change_id),
             })?;
@@ -430,7 +430,7 @@ impl ChangePropagationSystem {
     }
 
     /// Cria uma mudança reversa
-    fn create_reverse_change(&self, change_type: &ChangeType) -> Result<ChangeType, AppError> {
+    fn create_reverse_change(&self, change_type: &ChangeType) -> DomainResult<ChangeType> {
         match change_type {
             ChangeType::StartDateChanged(task_id, old_date, _) => {
                 Ok(ChangeType::StartDateChanged(task_id.clone(), *old_date, *old_date))
@@ -460,12 +460,12 @@ impl ChangePropagationSystem {
             ChangeType::DependencyRemoved(_predecessor, _successor) => {
                 // Para reverter remoção, precisaríamos recriar a dependência
                 // Isso requer informações adicionais que não temos aqui
-                Err(AppError::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "rollback".to_string(),
                     message: "Cannot rollback dependency removal without original dependency data".to_string(),
                 })
             }
-            _ => Err(AppError::ValidationError {
+            _ => Err(DomainError::ValidationError {
                 field: "rollback".to_string(),
                 message: "Cannot rollback this type of change".to_string(),
             }),
@@ -476,7 +476,7 @@ impl ChangePropagationSystem {
     pub fn process_pending_changes(
         &mut self,
         graph: &mut AdvancedDependencyGraph,
-    ) -> Result<Vec<PropagationResult>, AppError> {
+    ) -> DomainResult<Vec<PropagationResult>> {
         let mut results = Vec::new();
         let pending = self.pending_changes.clone();
         self.pending_changes.clear();

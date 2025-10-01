@@ -35,7 +35,6 @@ fn domain_must_not_depend_on_application() {
 }
 
 #[test]
-#[ignore] // Unignore após resolver: domain não depende de interface/infrastructure (ver issues #260, #264, #265, #271)
 fn domain_must_not_depend_on_interface_or_infrastructure() {
     let domain_dir = Path::new("src/domain");
     for file in collect_rs_files(domain_dir) {

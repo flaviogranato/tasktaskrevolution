@@ -2,7 +2,7 @@ use chrono::{NaiveDate, Duration};
 use std::collections::{HashMap, HashSet, VecDeque};
 use uuid7::Uuid;
 
-use crate::domain::shared::errors::{AppError, AppErrorKind};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 // ============================================================================
 // ENUMS
@@ -75,12 +75,9 @@ impl TaskDependency {
         dependency_type: DependencyType,
         lag: LagType,
         created_by: String,
-    ) -> Result<Self, AppError> {
+    ) -> DomainResult<Self> {
         if predecessor_id == successor_id {
-            return Err(AppError::new(AppErrorKind::ValidationError {
-                field: "dependency".to_string(),
-                message: "Task cannot depend on itself".to_string(),
-            }));
+            return Err(DomainError::validation_error("dependency", "Task cannot depend on itself"));
         }
 
         Ok(Self {
@@ -99,7 +96,7 @@ impl TaskDependency {
         predecessor_start: NaiveDate,
         predecessor_end: NaiveDate,
         predecessor_duration: Duration,
-    ) -> Result<NaiveDate, AppError> {
+    ) -> DomainResult<NaiveDate> {
         match self.dependency_type {
             DependencyType::FinishToStart => {
                 let base_date = predecessor_end;
@@ -122,7 +119,7 @@ impl TaskDependency {
         }
     }
 
-    fn apply_lag(&self, base_date: NaiveDate) -> Result<NaiveDate, AppError> {
+    fn apply_lag(&self, base_date: NaiveDate) -> DomainResult<NaiveDate> {
         match &self.lag {
             LagType::Positive(duration) => {
                 Ok(base_date + duration.num_days())
@@ -130,7 +127,7 @@ impl TaskDependency {
             LagType::Negative(duration) => {
                 let days = duration.num_days();
                 if days > base_date.signed_duration_since(NaiveDate::from_ymd_opt(1900, 1, 1).unwrap()).num_days() {
-                    return Err(AppError::new(AppErrorKind::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "lag".to_string(),
                         message: "Negative lag would result in invalid date".to_string(),
                     }));
@@ -155,17 +152,17 @@ impl DependencyGraph {
         self.edges.insert(task.id.clone(), Vec::new());
     }
 
-    pub fn add_dependency(&mut self, dependency: TaskDependency) -> Result<(), AppError> {
+    pub fn add_dependency(&mut self, dependency: TaskDependency) -> DomainResult<()> {
         // Validar se as tarefas existem
         if !self.nodes.contains_key(&dependency.predecessor_id) {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "predecessor_id".to_string(),
                 message: "Predecessor task does not exist".to_string(),
             }));
         }
 
         if !self.nodes.contains_key(&dependency.successor_id) {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "successor_id".to_string(),
                 message: "Successor task does not exist".to_string(),
             }));
@@ -173,7 +170,7 @@ impl DependencyGraph {
 
         // Verificar se a dependência já existe
         if self.has_dependency(&dependency.predecessor_id, &dependency.successor_id) {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "Dependency already exists".to_string(),
             }));
@@ -181,7 +178,7 @@ impl DependencyGraph {
 
         // Verificar se criaria ciclo
         if self.would_create_cycle(&dependency.predecessor_id, &dependency.successor_id) {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "Dependency would create a cycle".to_string(),
             }));
@@ -204,7 +201,7 @@ impl DependencyGraph {
         Ok(())
     }
 
-    pub fn remove_dependency(&mut self, predecessor_id: &str, successor_id: &str) -> Result<(), AppError> {
+    pub fn remove_dependency(&mut self, predecessor_id: &str, successor_id: &str) -> DomainResult<()> {
         // Remover da lista de edges
         if let Some(edges) = self.edges.get_mut(predecessor_id) {
             edges.retain(|d| d.successor_id != successor_id);
@@ -271,9 +268,9 @@ impl DependencyGraph {
         false
     }
 
-    pub fn calculate_critical_path(&self) -> Result<CriticalPathResult, AppError> {
+    pub fn calculate_critical_path(&self) -> DomainResult<CriticalPathResult> {
         if self.nodes.is_empty() {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "graph".to_string(),
                 message: "Cannot calculate critical path for empty graph".to_string(),
             }));
@@ -303,7 +300,7 @@ impl DependencyGraph {
         })
     }
 
-    fn forward_pass(&self) -> Result<HashMap<String, NaiveDate>, AppError> {
+    fn forward_pass(&self) -> DomainResult<HashMap<String, NaiveDate>> {
         let mut early_start_dates = HashMap::new();
         let mut in_degree = HashMap::new();
         let mut queue = VecDeque::new();
@@ -323,7 +320,7 @@ impl DependencyGraph {
         // Processar nós em ordem topológica
         while let Some(node_id) = queue.pop_front() {
             let node = self.nodes.get(&node_id)
-                .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                .ok_or_else(|| DomainError::ValidationError {
                     field: "node".to_string(),
                     message: format!("Node {} not found", node_id),
                 }))?;
@@ -338,13 +335,13 @@ impl DependencyGraph {
                         for edge in pred_edges {
                             if edge.successor_id == node_id {
                                 let pred_early_start = early_start_dates.get(pred_id)
-                                    .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                                    .ok_or_else(|| DomainError::ValidationError {
                                         field: "predecessor".to_string(),
                                         message: format!("Early start date not found for predecessor {}", pred_id),
                                     }))?;
 
                                 let pred_node = self.nodes.get(pred_id)
-                                    .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                                    .ok_or_else(|| DomainError::ValidationError {
                                         field: "predecessor".to_string(),
                                         message: format!("Predecessor node {} not found", pred_id),
                                     }))?;
@@ -371,7 +368,7 @@ impl DependencyGraph {
             // Atualizar in-degree dos sucessores
             for edge in self.edges.get(&node_id).unwrap_or(&Vec::new()) {
                 let successor_degree = in_degree.get_mut(&edge.successor_id)
-                    .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                    .ok_or_else(|| DomainError::ValidationError {
                         field: "successor".to_string(),
                         message: format!("Successor {} not found in in-degree map", edge.successor_id),
                     }))?;
@@ -386,7 +383,7 @@ impl DependencyGraph {
         Ok(early_start_dates)
     }
 
-    fn backward_pass(&self, early_start_dates: &HashMap<String, NaiveDate>) -> Result<HashMap<String, NaiveDate>, AppError> {
+    fn backward_pass(&self, early_start_dates: &HashMap<String, NaiveDate>) -> DomainResult<HashMap<String, NaiveDate>> {
         let mut late_start_dates = HashMap::new();
         let mut out_degree = HashMap::new();
         let mut queue = VecDeque::new();
@@ -406,7 +403,7 @@ impl DependencyGraph {
         // Processar nós em ordem topológica reversa
         while let Some(node_id) = queue.pop_front() {
             let node = self.nodes.get(&node_id)
-                .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                .ok_or_else(|| DomainError::ValidationError {
                     field: "node".to_string(),
                     message: format!("Node {} not found", node_id),
                 }))?;
@@ -414,7 +411,7 @@ impl DependencyGraph {
             // Calcular late start date
             let late_start = if node.successors.is_empty() {
                 early_start_dates.get(&node_id)
-                    .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                    .ok_or_else(|| DomainError::ValidationError {
                         field: "early_start".to_string(),
                         message: format!("Early start date not found for node {}", node_id),
                     }))?
@@ -426,7 +423,7 @@ impl DependencyGraph {
                         for edge in succ_edges {
                             if edge.successor_id == *succ_id {
                                 let succ_late_start = late_start_dates.get(succ_id)
-                                    .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                                    .ok_or_else(|| DomainError::ValidationError {
                                         field: "successor".to_string(),
                                         message: format!("Late start date not found for successor {}", succ_id),
                                     }))?;
@@ -453,7 +450,7 @@ impl DependencyGraph {
             // Atualizar out-degree dos predecessores
             for pred_id in &node.predecessors {
                 let pred_out_degree = out_degree.get_mut(pred_id)
-                    .ok_or_else(|| AppError::new(AppErrorKind::ValidationError {
+                    .ok_or_else(|| DomainError::ValidationError {
                         field: "predecessor".to_string(),
                         message: format!("Predecessor {} not found in out-degree map", pred_id),
                     }))?;
@@ -528,7 +525,7 @@ impl DependencyGraph {
         }
     }
 
-    pub fn get_topological_order(&self) -> Result<Vec<String>, AppError> {
+    pub fn get_topological_order(&self) -> DomainResult<Vec<String>> {
         let mut visited = HashSet::new();
         let mut rec_stack = HashSet::new();
         let mut order = Vec::new();
@@ -536,7 +533,7 @@ impl DependencyGraph {
         for node_id in self.nodes.keys() {
             if !visited.contains(node_id) {
                 if !self.dfs_topological(node_id, &mut visited, &mut rec_stack, &mut order) {
-                    return Err(AppError::new(AppErrorKind::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "graph".to_string(),
                         message: "Graph contains cycles, cannot determine topological order".to_string(),
                     }));

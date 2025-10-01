@@ -56,7 +56,6 @@ impl From<crate::domain::shared::errors::DomainError> for AssignResourceToAppErr
     }
 }
 
-
 pub struct AssignResourceToTaskUseCase<TR, RR, PR>
 where
     TR: TaskRepository,

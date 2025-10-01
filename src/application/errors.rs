@@ -507,6 +507,107 @@ impl From<serde_json::Error> for AppError {
     }
 }
 
+// Conversion from DomainError to AppError
+impl From<crate::domain::shared::errors::DomainError> for AppError {
+    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
+        match err {
+            crate::domain::shared::errors::DomainError::EntityNotFound { entity_type, identifier } => {
+                match entity_type.as_str() {
+                    "Project" => AppError::ProjectNotFound { code: identifier },
+                    "Resource" => AppError::ResourceNotFound { code: identifier },
+                    "Task" => AppError::TaskNotFound { code: identifier },
+                    "Company" => AppError::CompanyNotFound { code: identifier },
+                    _ => AppError::Generic { message: format!("{} with identifier '{}' not found", entity_type, identifier) },
+                }
+            }
+            crate::domain::shared::errors::DomainError::EntityAlreadyExists { entity_type, identifier } => {
+                match entity_type.as_str() {
+                    "Project" => AppError::ProjectAlreadyExists { code: identifier },
+                    "Resource" => AppError::ResourceAlreadyExists { code: identifier },
+                    "Task" => AppError::TaskAlreadyExists { code: identifier },
+                    "Company" => AppError::CompanyAlreadyExists { code: identifier },
+                    _ => AppError::Generic { message: format!("{} with identifier '{}' already exists", entity_type, identifier) },
+                }
+            }
+            crate::domain::shared::errors::DomainError::ValidationError { field, message } => {
+                AppError::ValidationError { field, message }
+            }
+            crate::domain::shared::errors::DomainError::BusinessRuleViolation { rule, details } => {
+                AppError::OperationNotAllowed { operation: rule, reason: details }
+            }
+            crate::domain::shared::errors::DomainError::InvalidState { current, expected, entity } => {
+                match entity.as_str() {
+                    "Project" => AppError::ProjectInvalidState { current, expected },
+                    "Resource" => AppError::ResourceInvalidState { current, expected },
+                    "Task" => AppError::TaskInvalidState { current, expected },
+                    _ => AppError::Generic { message: format!("Invalid state for {}: current '{}', expected '{}'", entity, current, expected) },
+                }
+            }
+            crate::domain::shared::errors::DomainError::CircularDependency { entities } => {
+                AppError::CircularDependency { task_codes: entities.join(", ") }
+            }
+            crate::domain::shared::errors::DomainError::ConstraintViolation { constraint, details } => {
+                AppError::OperationNotAllowed { operation: constraint, reason: details }
+            }
+            crate::domain::shared::errors::DomainError::IoError { operation, details } => {
+                AppError::IoError { operation, details }
+            }
+            crate::domain::shared::errors::DomainError::IoErrorWithPath { operation, path, details } => {
+                AppError::IoErrorWithPath { operation, path, details }
+            }
+            crate::domain::shared::errors::DomainError::SerializationError { operation, details } => {
+                AppError::SerializationError { format: operation, details }
+            }
+            crate::domain::shared::errors::DomainError::ConfigurationError { details } => {
+                AppError::Generic { message: format!("Configuration error: {}", details) }
+            }
+            crate::domain::shared::errors::DomainError::ConfigurationInvalid { field, value, reason } => {
+                AppError::ConfigurationInvalid { field, value, reason }
+            }
+            crate::domain::shared::errors::DomainError::OperationNotAllowed { operation, reason } => {
+                AppError::OperationNotAllowed { operation, reason }
+            }
+            // Legacy specific errors for backward compatibility
+            crate::domain::shared::errors::DomainError::ProjectNotFound { code } => {
+                AppError::ProjectNotFound { code }
+            }
+            crate::domain::shared::errors::DomainError::ResourceNotFound { code } => {
+                AppError::ResourceNotFound { code }
+            }
+            crate::domain::shared::errors::DomainError::TaskNotFound { code } => {
+                AppError::TaskNotFound { code }
+            }
+            crate::domain::shared::errors::DomainError::CompanyNotFound { code } => {
+                AppError::CompanyNotFound { code }
+            }
+            crate::domain::shared::errors::DomainError::ProjectAlreadyExists { code } => {
+                AppError::ProjectAlreadyExists { code }
+            }
+            crate::domain::shared::errors::DomainError::ResourceAlreadyExists { code } => {
+                AppError::ResourceAlreadyExists { code }
+            }
+            crate::domain::shared::errors::DomainError::TaskAlreadyExists { code } => {
+                AppError::TaskAlreadyExists { code }
+            }
+            crate::domain::shared::errors::DomainError::CompanyAlreadyExists { code } => {
+                AppError::CompanyAlreadyExists { code }
+            }
+            crate::domain::shared::errors::DomainError::ProjectInvalidState { current, expected } => {
+                AppError::ProjectInvalidState { current, expected }
+            }
+            crate::domain::shared::errors::DomainError::ResourceInvalidState { current, expected } => {
+                AppError::ResourceInvalidState { current, expected }
+            }
+            crate::domain::shared::errors::DomainError::TaskInvalidState { current, expected } => {
+                AppError::TaskInvalidState { current, expected }
+            }
+            crate::domain::shared::errors::DomainError::DomainError { message } => {
+                AppError::Generic { message }
+            }
+        }
+    }
+}
+
 // Result type alias for application operations
 pub type AppResult<T> = Result<T, AppError>;
 

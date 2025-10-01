@@ -1,7 +1,8 @@
 use super::category::Category;
 use super::priority::Priority;
 use super::state::Planned;
-use super::task::{AppError, Task};
+use super::task::Task;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use chrono::NaiveDate;
 use std::marker::PhantomData;
 use uuid7::{Uuid, uuid7};
@@ -116,9 +117,9 @@ impl TaskBuilder<WithName> {
     }
 
     /// Sets the start and due dates for the task, validating that the range is valid.
-    pub fn dates(self, start: NaiveDate, due: NaiveDate) -> Result<TaskBuilder<WithDates>, AppError> {
+    pub fn dates(self, start: NaiveDate, due: NaiveDate) -> DomainResult<TaskBuilder<WithDates>> {
         if start > due {
-            return Err(AppError::InvalidDateRange);
+            return Err(DomainError::validation_error("dates", "Start date must be before or equal to due date"));
         }
 
         Ok(TaskBuilder {
@@ -149,14 +150,14 @@ impl TaskBuilder<WithDates> {
     pub fn validate_vacations(
         self,
         resource_vacations: &[(String, NaiveDate, NaiveDate)],
-    ) -> Result<TaskBuilder<Ready>, AppError> {
+    ) -> DomainResult<TaskBuilder<Ready>> {
         let start = self.start_date.unwrap();
         let due = self.due_date.unwrap();
 
         for res in &self.assigned_resources {
             for (vac_res, vac_start, vac_end) in resource_vacations {
                 if res == vac_res && start <= *vac_end && due >= *vac_start {
-                    return Err(AppError::ResourceOnVacation(res.clone()));
+                    return Err(DomainError::business_rule_violation("resource_availability", &format!("Resource {} is on vacation during the specified period", res)));
                 }
             }
         }
@@ -179,14 +180,14 @@ impl TaskBuilder<WithDates> {
 #[allow(dead_code)]
 impl TaskBuilder<Ready> {
     /// Builds the final `Task<Planned>` instance.
-    pub fn build(self) -> Result<Task<Planned>, AppError> {
+    pub fn build(self) -> DomainResult<Task<Planned>> {
         Ok(Task {
             id: self.id,
             project_code: self
                 .project_code
-                .ok_or(AppError::MissingField("project_code".to_string()))?,
-            code: self.code.ok_or(AppError::MissingField("code".to_string()))?,
-            name: self.name.ok_or(AppError::MissingField("name".to_string()))?,
+                .ok_or_else(|| DomainError::validation_error("project_code", "Project code is required"))?,
+            code: self.code.ok_or_else(|| DomainError::validation_error("code", "Task code is required"))?,
+            name: self.name.ok_or_else(|| DomainError::validation_error("name", "Task name is required"))?,
             description: None,
             state: Planned, // The task starts in the 'Planned' state.
             start_date: self.start_date.unwrap(),
@@ -242,7 +243,7 @@ mod tests {
                 NaiveDate::from_ymd_opt(2025, 5, 1).unwrap(),
             );
 
-        assert!(matches!(result, Err(AppError::InvalidDateRange)));
+        assert!(matches!(result, Err(DomainError::ValidationError { field, message: _ }) if field == "dates"));
     }
 
     #[test]
@@ -265,7 +266,7 @@ mod tests {
             .assign_resource("RES-002")
             .validate_vacations(&vacations);
 
-        assert!(matches!(result, Err(AppError::ResourceOnVacation(res)) if res == "RES-002"));
+        assert!(matches!(result, Err(DomainError::BusinessRuleViolation { rule, details: _ }) if rule == "resource_availability"));
     }
 
     #[test]

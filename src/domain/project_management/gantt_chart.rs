@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 use super::advanced_dependencies::{AdvancedDependencyGraph, DependencyType};
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 // ============================================================================
 // ENUMS
@@ -971,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /// Converte um AdvancedDependencyGraph em GanttChart
-    pub fn from_dependency_graph(graph: &AdvancedDependencyGraph, config: GanttConfig) -> Result<Self, AppError> {
+    pub fn from_dependency_graph(graph: &AdvancedDependencyGraph, config: GanttConfig) -> DomainResult<Self> {
         let start_date = config.start_date;
         let end_date = config.end_date;
         let mut gantt = GanttChart::new(config);

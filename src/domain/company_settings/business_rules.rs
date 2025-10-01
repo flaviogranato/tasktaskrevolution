@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::company_settings::config::Config;
 use crate::domain::company_settings::validations::CompanySettingsValidator;
 
@@ -13,7 +13,7 @@ impl CompanySettingsBusinessRules {
         manager_name: &str,
         manager_email: &str,
         default_timezone: &str,
-    ) -> Result<Config, AppError> {
+    ) -> DomainResult<Config> {
         // 1. Aplicar regras de negócio específicas primeiro
         Self::apply_name_business_rules(manager_name)?;
         Self::apply_email_business_rules(manager_email)?;
@@ -31,10 +31,10 @@ impl CompanySettingsBusinessRules {
     }
 
     /// Aplica regras de negócio específicas para o nome
-    fn apply_name_business_rules(name: &str) -> Result<(), AppError> {
+    fn apply_name_business_rules(name: &str) -> DomainResult<()> {
         // Regra: Nome não pode conter apenas espaços
         if name.trim().is_empty() {
-            return Err(AppError::ConfigurationInvalid {
+            return Err(DomainError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
                 reason: "Nome do gerente não pode conter apenas espaços".to_string(),
@@ -46,7 +46,7 @@ impl CompanySettingsBusinessRules {
         let has_valid_word = words.iter().any(|word| word.len() >= 2);
 
         if !has_valid_word {
-            return Err(AppError::ConfigurationInvalid {
+            return Err(DomainError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
                 reason: "Nome do gerente deve ter pelo menos uma palavra com 2+ caracteres".to_string(),
@@ -55,7 +55,7 @@ impl CompanySettingsBusinessRules {
 
         // Regra: Nome não pode começar ou terminar com hífen ou apóstrofo
         if name.starts_with('-') || name.starts_with('\'') || name.ends_with('-') || name.ends_with('\'') {
-            return Err(AppError::ConfigurationInvalid {
+            return Err(DomainError::ConfigurationInvalid {
                 field: "manager_name".to_string(),
                 value: name.to_string(),
                 reason: "Nome do gerente não pode começar ou terminar com hífen ou apóstrofo".to_string(),
@@ -66,10 +66,10 @@ impl CompanySettingsBusinessRules {
     }
 
     /// Aplica regras de negócio específicas para o email
-    fn apply_email_business_rules(email: &str) -> Result<(), AppError> {
+    fn apply_email_business_rules(email: &str) -> DomainResult<()> {
         // Regra: Email deve ser único (simulado - em produção seria verificado no banco)
         if email == "admin@system.local" {
-            return Err(AppError::ConfigurationInvalid {
+            return Err(DomainError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Email 'admin@system.local' é reservado para o sistema".to_string(),
@@ -79,7 +79,7 @@ impl CompanySettingsBusinessRules {
         // Regra: Email não pode ser muito genérico
         let generic_emails = ["test@example.com", "admin@company.com", "user@domain.com"];
         if generic_emails.contains(&email) {
-            return Err(AppError::ConfigurationInvalid {
+            return Err(DomainError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Email muito genérico, use um email específico da empresa".to_string(),
@@ -91,7 +91,7 @@ impl CompanySettingsBusinessRules {
         if let Some(domain) = email.split('@').nth(1)
             && invalid_domains.contains(&domain)
         {
-            return Err(AppError::ConfigurationInvalid {
+            return Err(DomainError::ConfigurationInvalid {
                 field: "manager_email".to_string(),
                 value: email.to_string(),
                 reason: "Domínio de email inválido".to_string(),
@@ -102,7 +102,7 @@ impl CompanySettingsBusinessRules {
     }
 
     /// Aplica regras de negócio específicas para o fuso horário
-    fn apply_timezone_business_rules(timezone: &str) -> Result<(), AppError> {
+    fn apply_timezone_business_rules(timezone: &str) -> DomainResult<()> {
         // Regra: Fuso horário deve ser apropriado para o contexto da empresa
         let recommended_timezones = ["America/Sao_Paulo", "America/New_York", "Europe/London", "UTC"];
 
@@ -114,7 +114,7 @@ impl CompanySettingsBusinessRules {
         // Regra: Não permitir fusos horários muito extremos para empresas
         let extreme_timezones = ["Asia/Tokyo", "Pacific/Auckland"];
         if extreme_timezones.contains(&timezone) {
-            return Err(AppError::ConfigurationInvalid {
+            return Err(DomainError::ConfigurationInvalid {
                 field: "default_timezone".to_string(),
                 value: timezone.to_string(),
                 reason: "Fuso horário muito extremo para o contexto da empresa".to_string(),
@@ -130,7 +130,7 @@ impl CompanySettingsBusinessRules {
         new_manager_name: Option<&str>,
         new_manager_email: Option<&str>,
         new_default_timezone: Option<&str>,
-    ) -> Result<Config, AppError> {
+    ) -> DomainResult<Config> {
         let manager_name = new_manager_name.unwrap_or(&current_config.manager_name);
         let manager_email = new_manager_email.unwrap_or(&current_config.manager_email);
         let default_timezone = new_default_timezone.unwrap_or(&current_config.default_timezone);
@@ -140,11 +140,11 @@ impl CompanySettingsBusinessRules {
     }
 
     /// Valida se uma configuração pode ser removida
-    pub fn can_remove_config(config: &Config) -> Result<bool, AppError> {
+    pub fn can_remove_config(config: &Config) -> DomainResult<bool> {
         // Regra: Configuração não pode ser removida se for a única configuração ativa
         // Simulado - em produção seria verificado no banco
         if config.manager_email == "admin@system.local" {
-            return Err(AppError::OperationNotAllowed {
+            return Err(DomainError::OperationNotAllowed {
                 operation: "remove".to_string(),
                 reason: "Configuração do sistema não pode ser removida".to_string(),
             });
@@ -154,12 +154,12 @@ impl CompanySettingsBusinessRules {
     }
 
     /// Aplica regras de negócio para migração de configurações
-    pub fn apply_migration_rules(old_config: &Config, new_config: &Config) -> Result<(), AppError> {
+    pub fn apply_migration_rules(old_config: &Config, new_config: &Config) -> DomainResult<()> {
         // Regra: Migração só pode ser feita em horário de baixa atividade
         // Simulado - em produção seria verificado o horário atual
         let current_hour = 14; // Simulado
         if (9..=18).contains(&current_hour) {
-            return Err(AppError::OperationNotAllowed {
+            return Err(DomainError::OperationNotAllowed {
                 operation: "migration".to_string(),
                 reason: "Migração só pode ser feita fora do horário comercial".to_string(),
             });
@@ -169,7 +169,7 @@ impl CompanySettingsBusinessRules {
         if old_config.default_timezone != new_config.default_timezone {
             // Verificar se a mudança é compatível
             if !Self::is_timezone_change_compatible(&old_config.default_timezone, &new_config.default_timezone) {
-                return Err(AppError::ConfigurationInvalid {
+                return Err(DomainError::ConfigurationInvalid {
                     field: "default_timezone".to_string(),
                     value: new_config.default_timezone.clone(),
                     reason: "Mudança de fuso horário não é compatível com a configuração atual".to_string(),
@@ -214,7 +214,7 @@ mod tests {
     fn test_apply_creation_rules_name_with_spaces_only() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("   ", "john@company.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("espaços"))
         );
     }
@@ -223,7 +223,7 @@ mod tests {
     fn test_apply_creation_rules_name_starts_with_hyphen() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("-John Doe", "john@company.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("hífen"))
         );
     }
@@ -232,7 +232,7 @@ mod tests {
     fn test_apply_creation_rules_reserved_email() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("Admin User", "admin@system.local", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("reservado"))
         );
     }
@@ -241,7 +241,7 @@ mod tests {
     fn test_apply_creation_rules_generic_email() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("Admin User", "admin@company.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("genérico"))
         );
     }
@@ -251,7 +251,7 @@ mod tests {
         let result =
             CompanySettingsBusinessRules::apply_creation_rules("Admin User", "admin@specificcompany.com", "Asia/Tokyo");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "default_timezone" && reason.contains("muito extremo"))
         );
     }
@@ -265,7 +265,7 @@ mod tests {
         );
         let result = CompanySettingsBusinessRules::can_remove_config(&config);
         assert!(
-            matches!(result, Err(AppError::OperationNotAllowed { operation, reason })
+            matches!(result, Err(DomainError::OperationNotAllowed { operation, reason })
             if operation == "remove" && reason.contains("sistema"))
         );
     }
@@ -289,7 +289,7 @@ mod tests {
     fn test_apply_creation_rules_name_single_character() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("A", "john@company.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("2+ caracteres"))
         );
     }
@@ -298,7 +298,7 @@ mod tests {
     fn test_apply_creation_rules_name_ends_with_apostrophe() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("John'", "john@company.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("apóstrofo"))
         );
     }
@@ -307,7 +307,7 @@ mod tests {
     fn test_apply_creation_rules_name_starts_with_apostrophe() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("'John", "john@company.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("apóstrofo"))
         );
     }
@@ -316,7 +316,7 @@ mod tests {
     fn test_apply_creation_rules_name_ends_with_hyphen() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("John-", "john@company.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_name" && reason.contains("hífen"))
         );
     }
@@ -325,7 +325,7 @@ mod tests {
     fn test_apply_creation_rules_email_invalid_domain_localhost() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("John Doe", "john@localhost", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("Domínio de email inválido"))
         );
     }
@@ -334,7 +334,7 @@ mod tests {
     fn test_apply_creation_rules_email_invalid_domain_127_0_0_1() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("John Doe", "john@127.0.0.1", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("Domínio de email inválido"))
         );
     }
@@ -343,7 +343,7 @@ mod tests {
     fn test_apply_creation_rules_email_generic_test_example() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("John Doe", "test@example.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("genérico"))
         );
     }
@@ -352,7 +352,7 @@ mod tests {
     fn test_apply_creation_rules_email_generic_user_domain() {
         let result = CompanySettingsBusinessRules::apply_creation_rules("John Doe", "user@domain.com", "UTC");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "manager_email" && reason.contains("genérico"))
         );
     }
@@ -362,7 +362,7 @@ mod tests {
         let result =
             CompanySettingsBusinessRules::apply_creation_rules("John Doe", "john@company.com", "Pacific/Auckland");
         assert!(
-            matches!(result, Err(AppError::ConfigurationInvalid { field, reason, value: _ })
+            matches!(result, Err(DomainError::ConfigurationInvalid { field, reason, value: _ })
             if field == "default_timezone" && reason.contains("muito extremo"))
         );
     }
@@ -420,7 +420,7 @@ mod tests {
         );
         let result = CompanySettingsBusinessRules::apply_migration_rules(&old_config, &new_config);
         assert!(
-            matches!(result, Err(AppError::OperationNotAllowed { operation, reason })
+            matches!(result, Err(DomainError::OperationNotAllowed { operation, reason })
             if operation == "migration" && reason.contains("horário comercial"))
         );
     }
@@ -465,7 +465,7 @@ mod tests {
             Err(error) => {
                 // Se falhar, deve ser por horário comercial, não por timezone incompatível
                 match error {
-                    AppError::OperationNotAllowed { operation, reason } => {
+                    DomainError::OperationNotAllowed { operation, reason } => {
                         assert_eq!(operation, "migration");
                         assert!(reason.contains("horário comercial"));
                     }

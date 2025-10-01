@@ -10,7 +10,7 @@ use std::fmt;
 
 use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType};
 use super::dependency_calculation_engine::CalculationResult;
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 // ============================================================================
 // ENUMS
@@ -449,10 +449,10 @@ impl ConflictValidationSystem {
         &self,
         dependency: &AdvancedDependency,
         graph: &AdvancedDependencyGraph,
-    ) -> Result<(), AppError> {
+    ) -> DomainResult<()> {
         // Verificar se criaria ciclo
         if self.would_create_cycle(dependency, graph) {
-            return Err(AppError::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "Adding this dependency would create a circular dependency".to_string(),
             });
@@ -460,14 +460,14 @@ impl ConflictValidationSystem {
 
         // Verificar se as tarefas existem
         if !graph.nodes.contains_key(&dependency.predecessor_id) {
-            return Err(AppError::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "predecessor_id".to_string(),
                 message: "Predecessor task does not exist".to_string(),
             });
         }
 
         if !graph.nodes.contains_key(&dependency.successor_id) {
-            return Err(AppError::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "successor_id".to_string(),
                 message: "Successor task does not exist".to_string(),
             });
@@ -475,7 +475,7 @@ impl ConflictValidationSystem {
 
         // Verificar se a dependência já existe
         if graph.has_dependency(&dependency.predecessor_id, &dependency.successor_id) {
-            return Err(AppError::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency".to_string(),
                 message: "Dependency already exists".to_string(),
             });

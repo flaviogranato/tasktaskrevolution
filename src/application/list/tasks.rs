@@ -3,6 +3,7 @@ use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 pub struct ListTasksUseCase<R: ProjectRepository + ProjectRepositoryWithId, CR: CodeResolverTrait> {
     repository: R,
@@ -178,21 +179,21 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "load".to_string(),
                     details: "Mock failure".to_string(),
                 });
             }
-            self.project.clone().ok_or(AppError::ProjectNotFound {
+            self.project.clone().ok_or(DomainError::ProjectNotFound {
                 code: "not-found".to_string(),
             })
         }
 
-        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, _project: AnyProject) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -200,9 +201,9 @@ mod tests {
             Ok(())
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_all".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -210,9 +211,9 @@ mod tests {
             Ok(self.projects.clone())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_code".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -233,9 +234,9 @@ mod tests {
             Ok(None)
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "get_next_code".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -245,9 +246,9 @@ mod tests {
     }
 
     impl ProjectRepositoryWithId for MockProjectRepository {
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_id".to_string(),
                     details: "Mock failure".to_string(),
                 });

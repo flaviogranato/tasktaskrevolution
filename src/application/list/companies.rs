@@ -1,5 +1,6 @@
 use crate::application::errors::AppError;
 use crate::domain::company_management::{Company, repository::CompanyRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 pub struct ListCompaniesUseCase<R: CompanyRepository> {
     repository: R,
@@ -11,7 +12,7 @@ impl<R: CompanyRepository> ListCompaniesUseCase<R> {
     }
 
     pub fn execute(&self) -> Result<Vec<Company>, AppError> {
-        self.repository.find_all()
+        Ok(self.repository.find_all()?)
     }
 }
 
@@ -42,9 +43,9 @@ mod tests {
     }
 
     impl CompanyRepository for MockCompanyRepository {
-        fn save(&self, company: Company) -> Result<(), AppError> {
+        fn save(&self, company: Company) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -53,9 +54,9 @@ mod tests {
             Ok(())
         }
 
-        fn find_by_id(&self, _id: &str) -> Result<Option<Company>, AppError> {
+        fn find_by_id(&self, _id: &str) -> DomainResult<Option<Company>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_id".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -63,9 +64,9 @@ mod tests {
             Ok(None)
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<Company>, AppError> {
+        fn find_by_code(&self, _code: &str) -> DomainResult<Option<Company>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_code".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -73,9 +74,9 @@ mod tests {
             Ok(None)
         }
 
-        fn find_by_name(&self, _name: &str) -> Result<Option<Company>, AppError> {
+        fn find_by_name(&self, _name: &str) -> DomainResult<Option<Company>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_name".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -83,9 +84,9 @@ mod tests {
             Ok(None)
         }
 
-        fn find_all(&self) -> Result<Vec<Company>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<Company>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_all".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -93,9 +94,9 @@ mod tests {
             Ok(self.companies.read().unwrap().clone())
         }
 
-        fn update(&self, _company: Company) -> Result<(), AppError> {
+        fn update(&self, _company: Company) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "update".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -103,9 +104,9 @@ mod tests {
             Ok(())
         }
 
-        fn delete(&self, _id: &str) -> Result<(), AppError> {
+        fn delete(&self, _id: &str) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "delete".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -113,9 +114,9 @@ mod tests {
             Ok(())
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "get_next_code".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -123,9 +124,9 @@ mod tests {
             Ok("COMP-001".to_string())
         }
 
-        fn code_exists(&self, _code: &str) -> Result<bool, AppError> {
+        fn code_exists(&self, _code: &str) -> DomainResult<bool> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "code_exists".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -133,9 +134,9 @@ mod tests {
             Ok(false)
         }
 
-        fn name_exists(&self, _name: &str) -> Result<bool, AppError> {
+        fn name_exists(&self, _name: &str) -> DomainResult<bool> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "name_exists".to_string(),
                     details: "Mock failure".to_string(),
                 });

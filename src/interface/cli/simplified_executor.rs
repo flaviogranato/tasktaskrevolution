@@ -32,6 +32,7 @@ use crate::interface::cli::{
     table_formatter::TableFormatter,
 };
 use chrono::NaiveDate;
+use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 /// Simplified command executor that directly calls use cases
 pub struct SimplifiedExecutor;
@@ -221,7 +222,7 @@ impl SimplifiedExecutor {
 
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
-                let config_repo = context_manager.create_config_repository();
+                let config_repo = FileConfigRepository::new();
                 let use_case = CreateResourceUseCase::new(resource_repo, config_repo);
 
                 // Parse dates if provided
@@ -747,7 +748,7 @@ impl SimplifiedExecutor {
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
                 let code_resolver = Self::create_code_resolver(&context_manager)?;
-                let config_repo = context_manager.create_config_repository();
+                let config_repo = FileConfigRepository::new();
                 let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver, config_repo);
 
                 let args = UpdateResourceArgs {

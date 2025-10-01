@@ -2,7 +2,7 @@
 
 pub(crate) use std::fmt::Display;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Config {
     pub id: Option<String>,
     pub manager_name: String,
@@ -17,7 +17,7 @@ pub struct Config {
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum WorkDay {
     Monday,
     Tuesday,

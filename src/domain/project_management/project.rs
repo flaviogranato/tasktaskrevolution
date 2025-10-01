@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use super::super::task_management::any_task::AnyTask;
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -179,19 +179,13 @@ impl Default for WorkHours {
 }
 
 impl Project {
-    pub fn new(code: String, name: String, company_code: String, created_by: String) -> Result<Self, AppError> {
+    pub fn new(code: String, name: String, company_code: String, created_by: String) -> DomainResult<Self> {
         if code.trim().is_empty() {
-            return Err(AppError::ValidationError {
-                field: "code".to_string(),
-                message: "Project code cannot be empty".to_string(),
-            });
+            return Err(DomainError::validation_error("code", "Project code cannot be empty"));
         }
 
         if name.trim().is_empty() {
-            return Err(AppError::ValidationError {
-                field: "name".to_string(),
-                message: "Project name cannot be empty".to_string(),
-            });
+            return Err(DomainError::validation_error("name", "Project name cannot be empty"));
         }
 
         let now = Utc::now();
@@ -219,12 +213,9 @@ impl Project {
         })
     }
 
-    pub fn change_status(&mut self, new_status: ProjectStatus) -> Result<(), AppError> {
+    pub fn change_status(&mut self, new_status: ProjectStatus) -> DomainResult<()> {
         if !self.status.can_transition_to(&new_status) {
-            return Err(AppError::ValidationError {
-                field: "status".to_string(),
-                message: format!("Cannot transition from {:?} to {:?}", self.status, new_status),
-            });
+            return Err(DomainError::validation_error("status", &format!("Cannot transition from {:?} to {:?}", self.status, new_status)));
         }
 
         // Validações específicas por status
@@ -246,37 +237,28 @@ impl Project {
         Ok(())
     }
 
-    fn validate_can_start(&self) -> Result<(), AppError> {
+    fn validate_can_start(&self) -> DomainResult<()> {
         if self.tasks.is_empty() {
-            return Err(AppError::ValidationError {
-                field: "tasks".to_string(),
-                message: "Project must have at least one task to start".to_string(),
-            });
+            return Err(DomainError::validation_error("tasks", "Project must have at least one task to start"));
         }
         Ok(())
     }
 
-    fn validate_can_complete(&self) -> Result<(), AppError> {
+    fn validate_can_complete(&self) -> DomainResult<()> {
         let all_tasks_completed = self.tasks.values().all(|task| task.status() == "Completed");
 
         if !all_tasks_completed {
-            return Err(AppError::ValidationError {
-                field: "tasks".to_string(),
-                message: "All tasks must be completed before marking project as complete".to_string(),
-            });
+            return Err(DomainError::validation_error("tasks", "All tasks must be completed before marking project as complete"));
         }
         Ok(())
     }
 
-    pub fn add_task(&mut self, task: AnyTask) -> Result<(), AppError> {
+    pub fn add_task(&mut self, task: AnyTask) -> DomainResult<()> {
         // Use the task code as the ID
         let task_id = task.code().to_string();
 
         if self.tasks.contains_key(&task_id) {
-            return Err(AppError::ValidationError {
-                field: "task_id".to_string(),
-                message: "Task with this ID already exists".to_string(),
-            });
+            return Err(DomainError::validation_error("task_id", "Task with this ID already exists"));
         }
 
         self.tasks.insert(task_id, task);
@@ -285,7 +267,7 @@ impl Project {
         Ok(())
     }
 
-    pub fn remove_task(&mut self, task_id: &str) -> Result<(), AppError> {
+    pub fn remove_task(&mut self, task_id: &str) -> DomainResult<()> {
         if let Some(_task) = self.tasks.get(task_id) {
             // Verificar se a tarefa pode ser removida
             // Implementar quando tivermos acesso ao AnyTask
@@ -297,14 +279,11 @@ impl Project {
         Ok(())
     }
 
-    pub fn assign_resource(&mut self, assignment: ResourceAssignment) -> Result<(), AppError> {
+    pub fn assign_resource(&mut self, assignment: ResourceAssignment) -> DomainResult<()> {
         let key = format!("{}_{}", assignment.resource_id, assignment.task_id);
 
         if self.resources.contains_key(&key) {
-            return Err(AppError::ValidationError {
-                field: "resource_assignment".to_string(),
-                message: "Resource is already assigned to this task".to_string(),
-            });
+            return Err(DomainError::validation_error("resource_assignment", "Resource is already assigned to this task"));
         }
 
         self.resources.insert(key, assignment);
@@ -313,7 +292,7 @@ impl Project {
         Ok(())
     }
 
-    pub fn remove_resource_assignment(&mut self, resource_id: &str, task_id: &str) -> Result<(), AppError> {
+    pub fn remove_resource_assignment(&mut self, resource_id: &str, task_id: &str) -> DomainResult<()> {
         let key = format!("{}_{}", resource_id, task_id);
 
         if let Some(_assignment) = self.resources.get(&key) {

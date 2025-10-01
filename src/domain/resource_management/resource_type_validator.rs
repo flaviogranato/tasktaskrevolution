@@ -1,14 +1,13 @@
 use crate::domain::company_settings::repository::ConfigRepository;
-use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 pub struct ResourceTypeValidator {
-    config_repository: FileConfigRepository,
+    config_repository: Box<dyn ConfigRepository>,
 }
 
 impl ResourceTypeValidator {
-    pub fn new() -> Self {
+    pub fn new(config_repository: Box<dyn ConfigRepository>) -> Self {
         Self {
-            config_repository: FileConfigRepository::new(),
+            config_repository,
         }
     }
 
@@ -44,16 +43,12 @@ impl ResourceTypeValidator {
     }
 }
 
-impl Default for ResourceTypeValidator {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// Default implementation removed to avoid circular dependency issues
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::errors::AppError;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::domain::company_settings::config::Config;
     use std::path::PathBuf;
 
@@ -91,29 +86,29 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn load(&self) -> Result<(Config, PathBuf), AppError> {
+        fn load(&self) -> DomainResult<(Config, PathBuf)> {
             if self.should_fail {
-                Err(AppError::ConfigurationNotFound {
-                    path: "mock_error".to_string(),
+                Err(DomainError::ConfigurationError {
+                    details: "mock_error".to_string(),
                 })
             } else if let Some(config) = &self.config {
                 Ok((config.clone(), PathBuf::from("test_path")))
             } else {
-                Err(AppError::ConfigurationNotFound {
-                    path: "no_config".to_string(),
+                Err(DomainError::ConfigurationError {
+                    details: "no_config".to_string(),
                 })
             }
         }
 
         fn save(
             &self,
-            _config: crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest,
+            _config: crate::domain::company_settings::config::Config,
             _path: PathBuf,
-        ) -> Result<(), AppError> {
+        ) -> DomainResult<()> {
             Ok(())
         }
 
-        fn create_repository_dir(&self, _path: PathBuf) -> Result<(), AppError> {
+        fn create_repository_dir(&self, _path: PathBuf) -> DomainResult<()> {
             Ok(())
         }
     }
@@ -131,19 +126,20 @@ mod tests {
 
     #[test]
     fn test_resource_type_validator_creation() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         assert!(matches!(validator, ResourceTypeValidator { .. }));
     }
 
     #[test]
     fn test_resource_type_validator_default() {
-        let validator = ResourceTypeValidator::default();
+        let mock_repo = tests::MockConfigRepository::new();
+        let validator = ResourceTypeValidator::new(Box::new(mock_repo));
         assert!(matches!(validator, ResourceTypeValidator { .. }));
     }
 
     #[test]
     fn test_validate_resource_type_with_valid_type() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         // This test will pass if config is loaded successfully
         let result = validator.validate_resource_type("Developer");
         assert!(result.is_ok());
@@ -151,7 +147,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_with_invalid_type() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         // This test will pass if config is loaded successfully
         let result = validator.validate_resource_type("InvalidType");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
@@ -160,7 +156,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_empty_string() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.validate_resource_type("");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
         assert!(result.is_ok() || result.is_err());
@@ -168,7 +164,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_case_sensitive() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.validate_resource_type("developer");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
         assert!(result.is_ok() || result.is_err());
@@ -176,7 +172,7 @@ mod tests {
 
     #[test]
     fn test_get_valid_resource_types() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.get_valid_resource_types();
         // Should either be Ok (if config loaded) or Err (if config not found)
         assert!(result.is_ok() || result.is_err());
@@ -186,7 +182,7 @@ mod tests {
     fn test_validate_resource_type_with_empty_config() {
         // We can't easily test this without dependency injection, but we can test the logic
         // by creating a validator and testing its behavior
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.validate_resource_type("AnyType");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
         assert!(result.is_ok() || result.is_err());
@@ -194,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_whitespace() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.validate_resource_type("  Developer  ");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
         assert!(result.is_ok() || result.is_err());
@@ -202,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_special_characters() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.validate_resource_type("Developer-123");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
         assert!(result.is_ok() || result.is_err());
@@ -210,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_unicode() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.validate_resource_type("Développeur");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
         assert!(result.is_ok() || result.is_err());
@@ -218,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_very_long_string() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let long_string = "A".repeat(1000);
         let result = validator.validate_resource_type(&long_string);
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
@@ -227,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_validate_resource_type_null_byte() {
-        let validator = ResourceTypeValidator::new();
+        let validator = ResourceTypeValidator::new(Box::new(MockConfigRepository::new()));
         let result = validator.validate_resource_type("Developer\0");
         // Should either be Ok (if config not found) or Err (if config found and type invalid)
         assert!(result.is_ok() || result.is_err());

@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 
 use super::advanced_dependencies::{AdvancedDependency, AdvancedDependencyGraph, DependencyType, TaskNode};
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 // ============================================================================
 // ENUMS
@@ -100,7 +100,7 @@ impl DependencyCalculationEngine {
     pub fn calculate_project_dates(
         &mut self,
         graph: &AdvancedDependencyGraph,
-    ) -> Result<HashMap<String, CalculationResult>, AppError> {
+    ) -> DomainResult<HashMap<String, CalculationResult>> {
         // Limpar cache se necessário
         if !self.config.cache_enabled {
             self.cache.clear();
@@ -143,7 +143,7 @@ impl DependencyCalculationEngine {
         calculated_results: &HashMap<String, CalculationResult>,
         task_status: &mut HashMap<String, TaskCalculationStatus>,
         order: usize,
-    ) -> Result<Option<CalculationResult>, AppError> {
+    ) -> DomainResult<Option<CalculationResult>> {
         // Verificar se já está no cache
         if self.config.cache_enabled
             && let Some(cached) = self.cache.get(task_id)
@@ -151,7 +151,7 @@ impl DependencyCalculationEngine {
             return Ok(Some(cached.clone()));
         }
 
-        let task = graph.nodes.get(task_id).ok_or_else(|| AppError::ValidationError {
+        let task = graph.nodes.get(task_id).ok_or_else(|| DomainError::ValidationError {
             field: "task_id".to_string(),
             message: format!("Task {} not found", task_id),
         })?;
@@ -204,7 +204,7 @@ impl DependencyCalculationEngine {
         task: &TaskNode,
         dependencies: &[&AdvancedDependency],
         calculated_results: &HashMap<String, CalculationResult>,
-    ) -> Result<(Option<NaiveDate>, Option<NaiveDate>), AppError> {
+    ) -> DomainResult<(Option<NaiveDate>, Option<NaiveDate>)> {
         let mut latest_start_date = None;
         let mut latest_end_date = None;
 
@@ -212,7 +212,7 @@ impl DependencyCalculationEngine {
             let predecessor_result =
                 calculated_results
                     .get(&dep.predecessor_id)
-                    .ok_or_else(|| AppError::ValidationError {
+                    .ok_or_else(|| DomainError::ValidationError {
                         field: "predecessor".to_string(),
                         message: format!("Predecessor {} not calculated", dep.predecessor_id),
                     })?;
@@ -223,7 +223,7 @@ impl DependencyCalculationEngine {
                     let base_date =
                         predecessor_result
                             .calculated_end_date
-                            .ok_or_else(|| AppError::ValidationError {
+                            .ok_or_else(|| DomainError::ValidationError {
                                 field: "predecessor_end_date".to_string(),
                                 message: "Predecessor end date not available".to_string(),
                             })?;
@@ -235,7 +235,7 @@ impl DependencyCalculationEngine {
                     let base_date =
                         predecessor_result
                             .calculated_start_date
-                            .ok_or_else(|| AppError::ValidationError {
+                            .ok_or_else(|| DomainError::ValidationError {
                                 field: "predecessor_start_date".to_string(),
                                 message: "Predecessor start date not available".to_string(),
                             })?;
@@ -247,7 +247,7 @@ impl DependencyCalculationEngine {
                     let base_date =
                         predecessor_result
                             .calculated_end_date
-                            .ok_or_else(|| AppError::ValidationError {
+                            .ok_or_else(|| DomainError::ValidationError {
                                 field: "predecessor_end_date".to_string(),
                                 message: "Predecessor end date not available".to_string(),
                             })?;
@@ -259,7 +259,7 @@ impl DependencyCalculationEngine {
                     let base_date =
                         predecessor_result
                             .calculated_start_date
-                            .ok_or_else(|| AppError::ValidationError {
+                            .ok_or_else(|| DomainError::ValidationError {
                                 field: "predecessor_start_date".to_string(),
                                 message: "Predecessor start date not available".to_string(),
                             })?;
@@ -301,7 +301,7 @@ impl DependencyCalculationEngine {
     }
 
     /// Ordenação topológica das tarefas
-    fn topological_sort(&self, graph: &AdvancedDependencyGraph) -> Result<Vec<String>, AppError> {
+    fn topological_sort(&self, graph: &AdvancedDependencyGraph) -> DomainResult<Vec<String>> {
         let mut in_degree = HashMap::new();
         let mut result = Vec::new();
         let mut queue = VecDeque::new();
@@ -343,7 +343,7 @@ impl DependencyCalculationEngine {
 
         // Verificar se todas as tarefas foram processadas (sem ciclos)
         if result.len() != graph.nodes.len() {
-            return Err(AppError::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dependency_graph".to_string(),
                 message: "Circular dependency detected in project".to_string(),
             });
@@ -357,7 +357,7 @@ impl DependencyCalculationEngine {
         &self,
         results: &mut HashMap<String, CalculationResult>,
         graph: &AdvancedDependencyGraph,
-    ) -> Result<(), AppError> {
+    ) -> DomainResult<()> {
         // Calcular data de fim do projeto
         let project_end_date = results
             .values()
@@ -411,7 +411,7 @@ impl DependencyCalculationEngine {
         &mut self,
         modified_task_id: &str,
         graph: &AdvancedDependencyGraph,
-    ) -> Result<HashMap<String, CalculationResult>, AppError> {
+    ) -> DomainResult<HashMap<String, CalculationResult>> {
         // Encontrar todas as tarefas afetadas (sucessores)
         let affected_tasks = self.find_affected_tasks(modified_task_id, graph);
 
