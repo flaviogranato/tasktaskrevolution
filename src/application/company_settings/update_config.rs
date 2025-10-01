@@ -353,7 +353,7 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: ConfigManifest, _path: &Path) -> Result<(), crate::application::errors::AppError> {
+        fn save(&self, _config: Config, _path: &Path) -> Result<(), crate::application::errors::AppError> {
             Ok(())
         }
 
