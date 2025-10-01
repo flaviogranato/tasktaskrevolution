@@ -144,26 +144,26 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, project: AnyProject) -> DomainResult<()> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             unimplemented!()
         }
     }
 
     impl ProjectRepositoryWithId for MockProjectRepository {
-        fn find_by_id(&self, _id: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_id(&self, _id: &str) -> DomainResult<Option<AnyProject>> {
             // For tests, we'll return the first project in the map
             Ok(self.projects.borrow().values().next().cloned())
         }
