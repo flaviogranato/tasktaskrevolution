@@ -139,7 +139,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
@@ -150,9 +150,9 @@ mod tests {
             end_date: &str,
             is_time_off_compensation: bool,
             compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             if self.should_fail {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
                     message: "Simulated repository error".to_string(),
                 });
