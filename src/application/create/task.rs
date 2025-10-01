@@ -307,7 +307,7 @@ mod test {
     }
 
     impl ProjectRepositoryWithId for MockProjectRepository {
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().get(id).cloned())
         }
     }
