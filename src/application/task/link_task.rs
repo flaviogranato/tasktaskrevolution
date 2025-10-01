@@ -39,6 +39,12 @@ impl From<AppError> for LinkAppError {
     }
 }
 
+impl From<crate::domain::shared::errors::DomainError> for LinkAppError {
+    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
+        LinkAppError::RepositoryError(err.into())
+    }
+}
+
 /// `LinkTaskUseCase` is responsible for creating a dependency between two tasks.
 pub struct LinkTaskUseCase<PR, CR>
 where

@@ -36,6 +36,12 @@ impl From<AppError> for RemoveDependencyError {
     }
 }
 
+impl From<crate::domain::shared::errors::DomainError> for RemoveDependencyError {
+    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
+        RemoveDependencyError::RepositoryError(err.into())
+    }
+}
+
 /// `RemoveTaskDependencyUseCase` is responsible for removing a dependency between two tasks.
 pub struct RemoveTaskDependencyUseCase<PR, CR>
 where
