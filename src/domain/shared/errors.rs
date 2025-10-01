@@ -419,6 +419,48 @@ impl From<std::io::Error> for DomainError {
 /// Result type alias for domain operations
 pub type DomainResult<T> = Result<T, DomainError>;
 
+// Conversion from AppError to DomainError
+impl From<crate::application::errors::AppError> for DomainError {
+    fn from(err: crate::application::errors::AppError) -> Self {
+        match err {
+            crate::application::errors::AppError::ProjectNotFound { code } => {
+                DomainError::ProjectNotFound { code }
+            }
+            crate::application::errors::AppError::ResourceNotFound { code } => {
+                DomainError::ResourceNotFound { code }
+            }
+            crate::application::errors::AppError::TaskNotFound { code } => {
+                DomainError::TaskNotFound { code }
+            }
+            crate::application::errors::AppError::CompanyNotFound { code } => {
+                DomainError::CompanyNotFound { code }
+            }
+            crate::application::errors::AppError::ValidationError { field, message } => {
+                DomainError::ValidationError { field, message }
+            }
+            crate::application::errors::AppError::OperationNotAllowed { operation, reason } => {
+                DomainError::OperationNotAllowed { operation, reason }
+            }
+            crate::application::errors::AppError::IoError { operation, details } => {
+                DomainError::IoError { operation, details }
+            }
+            crate::application::errors::AppError::IoErrorWithPath { operation, path, details } => {
+                DomainError::IoErrorWithPath { operation, path, details }
+            }
+            crate::application::errors::AppError::SerializationError { operation, details } => {
+                DomainError::SerializationError { operation, details }
+            }
+            crate::application::errors::AppError::ConfigurationError { details } => {
+                DomainError::ConfigurationError { details }
+            }
+            crate::application::errors::AppError::ConfigurationInvalid { field, value, reason } => {
+                DomainError::ConfigurationInvalid { field, value, reason }
+            }
+            _ => DomainError::DomainError { message: err.to_string() }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
