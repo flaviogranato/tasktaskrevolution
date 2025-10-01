@@ -12,7 +12,10 @@ use crate::{
             update_resource::{UpdateResourceArgs, UpdateResourceUseCase},
         },
     },
-    infrastructure::persistence::resource_repository::FileResourceRepository,
+    infrastructure::persistence::{
+        resource_repository::FileResourceRepository,
+        config_repository::FileConfigRepository,
+    },
 };
 use chrono::NaiveDate;
 

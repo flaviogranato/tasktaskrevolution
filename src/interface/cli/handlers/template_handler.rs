@@ -10,6 +10,7 @@ use crate::{
     infrastructure::persistence::{
         company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
         resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
+        config_repository::FileConfigRepository,
     },
 };
 use std::collections::HashMap;
