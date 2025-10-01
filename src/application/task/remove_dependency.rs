@@ -74,7 +74,7 @@ where
         let project_id = self
             .code_resolver
             .resolve_project_code(project_code)
-            .map_err(RemoveDependencyError::RepositoryError)?;
+            .map_err(|e| RemoveDependencyError::RepositoryError(AppError::from(e)))?;
 
         // 2. Load the project aggregate using ID
         let mut project = self
