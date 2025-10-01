@@ -9,7 +9,7 @@ use crate::domain::resource_management::{
     resource::{ResourceScope, WipLimits},
 };
 use crate::domain::company_settings::repository::ConfigRepository;
-use std::sync::Arc;
+use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 use std::fmt;
 
 #[derive(Debug)]
@@ -57,7 +57,6 @@ where
 {
     resource_repository: RR,
     code_resolver: CR,
-    config_repository: Arc<dyn ConfigRepository>,
     type_validator: ResourceTypeValidator,
 }
 
@@ -66,13 +65,11 @@ where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
 {
-    pub fn new<C: ConfigRepository + 'static>(resource_repository: RR, code_resolver: CR, config_repository: C) -> Self {
-        let config_repo = Arc::new(config_repository);
+    pub fn new<C: ConfigRepository + 'static>(resource_repository: RR, code_resolver: CR, _config_repository: C) -> Self {
         Self {
             resource_repository,
             code_resolver,
-            config_repository: config_repo.clone(),
-            type_validator: ResourceTypeValidator::new(config_repo),
+            type_validator: ResourceTypeValidator::new(Box::new(FileConfigRepository::new())),
         }
     }
 
@@ -105,8 +102,9 @@ where
         }
         if let Some(resource_type) = args.resource_type {
             // Validate resource type against config
+            let config_repo = FileConfigRepository::new();
             self.type_validator
-                .validate_resource_type(&resource_type)
+                .validate_resource_type(&resource_type, &config_repo)
                 .map_err(UpdateAppError::AppError)?;
             resource.set_resource_type(resource_type);
         }
