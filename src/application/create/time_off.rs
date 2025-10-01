@@ -132,10 +132,10 @@ mod tests {
             hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             // Force error for specific test case
             if resource_name == "error_resource" {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
                     message: "Simulated repository error".to_string(),
                 });
@@ -178,7 +178,7 @@ mod tests {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!("Not needed for these tests")
         }
 
