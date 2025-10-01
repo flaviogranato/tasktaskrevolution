@@ -67,7 +67,7 @@ where
         let project_id = self
             .code_resolver
             .resolve_project_code(project_code)
-            .map_err(CancelAppError::RepositoryError)?;
+            .map_err(|e| CancelAppError::RepositoryError(AppError::from(e)))?;
 
         // 2. Load the project aggregate using ID
         let project = self
