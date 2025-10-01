@@ -40,6 +40,12 @@ impl From<crate::domain::shared::errors::DomainError> for DeleteAppError {
     }
 }
 
+impl From<crate::domain::shared::errors::DomainError> for DeleteAppError {
+    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
+        DeleteAppError::RepositoryError(err.into())
+    }
+}
+
 pub struct DeleteTaskUseCase<PR, CR>
 where
     PR: ProjectRepository + ProjectRepositoryWithId,
