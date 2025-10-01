@@ -1,4 +1,5 @@
 use crate::domain::company_settings::repository::ConfigRepository;
+use std::path::Path;
 
 pub struct ResourceTypeValidator;
 
@@ -99,12 +100,12 @@ mod tests {
         fn save(
             &self,
             _config: crate::domain::company_settings::config::Config,
-            _path: PathBuf,
+            _path: &Path,
         ) -> DomainResult<()> {
             Ok(())
         }
 
-        fn create_repository_dir(&self, _path: PathBuf) -> DomainResult<()> {
+        fn create_repository_dir(&self, _path: &Path) -> DomainResult<()> {
             Ok(())
         }
     }

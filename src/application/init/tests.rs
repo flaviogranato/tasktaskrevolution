@@ -5,7 +5,7 @@ use crate::infrastructure::persistence::config_repository::ConfigRepository;
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use chrono::{NaiveTime, Utc};
 use std::cell::RefCell;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 // Mock repository for testing
 struct MockConfigRepository {
@@ -30,7 +30,7 @@ impl MockConfigRepository {
 }
 
 impl ConfigRepository for MockConfigRepository {
-    fn save(&self, _config: ConfigManifest, _path: PathBuf) -> Result<(), AppError> {
+    fn save(&self, _config: ConfigManifest, _path: &Path) -> Result<(), AppError> {
         if self.should_fail {
             return Err(AppError::new(AppErrorKind::PersistenceError {
                 operation: "save".to_string(),
@@ -40,7 +40,7 @@ impl ConfigRepository for MockConfigRepository {
         Ok(())
     }
 
-    fn create_repository_dir(&self, _path: PathBuf) -> Result<(), AppError> {
+    fn create_repository_dir(&self, _path: &Path) -> Result<(), AppError> {
         Ok(())
     }
 
