@@ -175,11 +175,11 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             Ok(self.resources.clone())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
             Ok(self.resources.iter().find(|r| r.code() == code).cloned())
         }
 
