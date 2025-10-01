@@ -257,6 +257,33 @@ mod tests {
         }
     }
 
+    struct MockConfigRepository;
+
+    impl MockConfigRepository {
+        fn new() -> Self {
+            Self
+        }
+    }
+
+    impl ConfigRepository for MockConfigRepository {
+        fn save(&self, _config: crate::domain::company_settings::config::Config, _path: &std::path::Path) -> DomainResult<()> {
+            Ok(())
+        }
+
+        fn create_repository_dir(&self, _path: &std::path::Path) -> DomainResult<()> {
+            Ok(())
+        }
+
+        fn load(&self) -> DomainResult<(crate::domain::company_settings::config::Config, std::path::PathBuf)> {
+            let config = crate::domain::company_settings::config::Config::new(
+                "Test Manager".to_string(),
+                "test@example.com".to_string(),
+                "UTC".to_string(),
+            );
+            Ok((config, std::path::PathBuf::from("/test/path")))
+        }
+    }
+
     // --- Helpers ---
     fn create_test_resource(code: &str, name: &str, email: &str, r#type: &str) -> AnyResource {
         Resource::<Available> {
@@ -291,7 +318,8 @@ mod tests {
         let code_resolver = MockCodeResolver::new();
         code_resolver.add_resource("DEV-1", &resource_id);
 
-        let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver);
+        let config_repo = MockConfigRepository::new();
+        let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver, config_repo);
 
         let args = UpdateResourceArgs {
             name: Some("New Name".to_string()),
@@ -314,7 +342,8 @@ mod tests {
             resources: RefCell::new(HashMap::new()),
         };
         let code_resolver = MockCodeResolver::new();
-        let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver);
+        let config_repo = MockConfigRepository::new();
+        let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver, config_repo);
 
         let args = UpdateResourceArgs {
             name: Some("New Name".to_string()),
