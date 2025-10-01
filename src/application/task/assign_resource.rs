@@ -136,13 +136,11 @@ where
         // 8. Save the updated task
         let saved_task = self
             .task_repository
-            .save(updated_task)
-            .map_err(AssignResourceToAppError::RepositoryError)?;
+            .save(updated_task)?;
 
         // 9. Save the updated resource using save_in_hierarchy
         self.resource_repository
-            .save_in_hierarchy(updated_resource, project.company_code(), Some(project_code))
-            .map_err(AssignResourceToAppError::RepositoryError)?;
+            .save_in_hierarchy(updated_resource, project.company_code(), Some(project_code))?;
 
         Ok(saved_task)
     }

@@ -17,8 +17,8 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
     }
     pub fn execute(&self, path: PathBuf, manager_name: String, manager_email: String) -> Result<(), AppError> {
         let config = Config::new(manager_name.clone(), manager_email.clone(), "UTC".to_string());
-        self.repository.create_repository_dir(path.clone())?;
-        self.repository.save(config, path.clone())?;
+        self.repository.create_repository_dir(&path)?;
+        self.repository.save(config, &path)?;
         println!("Configuração iniciada em: {}", path.display());
 
         Ok(())

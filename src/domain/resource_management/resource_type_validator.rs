@@ -3,7 +3,7 @@ use crate::domain::company_settings::repository::ConfigRepository;
 pub struct ResourceTypeValidator;
 
 impl ResourceTypeValidator {
-    pub fn new(_config_repository: Box<dyn ConfigRepository>) -> Self {
+    pub fn new() -> Self {
         Self
     }
 
