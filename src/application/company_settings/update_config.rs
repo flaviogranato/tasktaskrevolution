@@ -346,6 +346,7 @@ mod tests {
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::{Path, PathBuf};
+    use crate::domain::shared::errors::{DomainError, DomainResult};
 
     // Mock repository for testing
     struct MockConfigRepository {
@@ -353,17 +354,17 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: Config, _path: &Path) -> Result<(), crate::application::errors::AppError> {
+        fn save(&self, _config: Config, _path: &Path) -> DomainResult<()> {
             Ok(())
         }
 
-        fn create_repository_dir(&self, _path: &Path) -> Result<(), crate::application::errors::AppError> {
+        fn create_repository_dir(&self, _path: &Path) -> DomainResult<()> {
             Ok(())
         }
 
-        fn load(&self) -> Result<(Config, PathBuf), crate::application::errors::AppError> {
+        fn load(&self) -> DomainResult<(Config, PathBuf)> {
             self.config.borrow().clone().map(|c| (c, PathBuf::from("/tmp"))).ok_or(
-                crate::application::errors::AppError::ValidationError {
+                DomainError::ValidationError {
                     field: "configuration".to_string(),
                     message: "Configuration field missing: config".to_string(),
                 },

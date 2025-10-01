@@ -115,6 +115,7 @@ impl InitManagerUseCase {
 mod tests {
     use super::*;
     use crate::domain::company_settings::repository::ConfigRepository;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::{Path, PathBuf};
@@ -142,9 +143,9 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: Config, _path: &Path) -> Result<(), AppError> {
+        fn save(&self, _config: Config, _path: &Path) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save".to_string(),
                     details: "Database connection failed".to_string(),
                 });
@@ -152,16 +153,16 @@ mod tests {
             Ok(())
         }
 
-        fn create_repository_dir(&self, _path: &Path) -> Result<(), AppError> {
+        fn create_repository_dir(&self, _path: &Path) -> DomainResult<()> {
             Ok(())
         }
 
-        fn load(&self) -> Result<(Config, PathBuf), AppError> {
+        fn load(&self) -> DomainResult<(Config, PathBuf)> {
             self.saved_config
                 .borrow()
                 .clone()
                 .map(|c| (c, PathBuf::from("/tmp")))
-                .ok_or(AppError::ValidationError {
+                .ok_or(DomainError::ValidationError {
                     field: "config".to_string(),
                     message: "Configuration missing".to_string(),
                 })

@@ -2,6 +2,7 @@ use super::*;
 use crate::domain::shared::errors::{AppError, AppErrorKind};
 use crate::domain::company_settings::{Config, WorkDay};
 use crate::infrastructure::persistence::config_repository::ConfigRepository;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use chrono::{NaiveTime, Utc};
 use std::cell::RefCell;
@@ -30,26 +31,27 @@ impl MockConfigRepository {
 }
 
 impl ConfigRepository for MockConfigRepository {
-    fn save(&self, _config: Config, _path: &Path) -> Result<(), AppError> {
+    fn save(&self, _config: Config, _path: &Path) -> DomainResult<()> {
         if self.should_fail {
-            return Err(AppError::new(AppErrorKind::PersistenceError {
+            return Err(DomainError::IoError {
                 operation: "save".to_string(),
                 details: "Database connection failed".to_string(),
-            }));
+            });
         }
         Ok(())
     }
 
-    fn create_repository_dir(&self, _path: &Path) -> Result<(), AppError> {
+    fn create_repository_dir(&self, _path: &Path) -> DomainResult<()> {
         Ok(())
     }
 
-    fn load(&self) -> Result<(Config, PathBuf), AppError> {
+    fn load(&self) -> DomainResult<(Config, PathBuf)> {
         self.saved_config.borrow().clone().map(|c| {
             (c, PathBuf::from("/tmp"))
-        }).ok_or(AppError::new(AppErrorKind::ConfigurationMissing {
-            field: "config".to_string()
-        }))
+        }).ok_or(DomainError::ValidationError {
+            field: "config".to_string(),
+            message: "Configuration missing".to_string(),
+        })
     }
 }
 
