@@ -1,5 +1,6 @@
 use crate::application::errors::AppError;
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 pub struct ListProjectsUseCase<R: ProjectRepository> {
     repository: R,
@@ -11,7 +12,7 @@ impl<R: ProjectRepository> ListProjectsUseCase<R> {
     }
 
     pub fn execute(&self) -> Result<Vec<AnyProject>, AppError> {
-        self.repository.find_all()
+        Ok(self.repository.find_all()?)
     }
 }
 
@@ -43,9 +44,9 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, project: AnyProject) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -54,9 +55,9 @@ mod tests {
             Ok(())
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_all".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -64,9 +65,9 @@ mod tests {
             Ok(self.projects.borrow().clone())
         }
 
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "load".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -75,14 +76,14 @@ mod tests {
                 .borrow()
                 .first()
                 .cloned()
-                .ok_or(AppError::ProjectNotFound {
+                .ok_or(DomainError::ProjectNotFound {
                     code: "not-found".to_string(),
                 })
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "get_next_code".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -90,9 +91,9 @@ mod tests {
             Ok("PROJ-NEXT".to_string())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_code".to_string(),
                     details: "Mock failure".to_string(),
                 });

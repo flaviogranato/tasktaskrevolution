@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::{AnyResource, Period, PeriodType, repository::ResourceRepository};
 use crate::infrastructure::persistence::{
@@ -98,39 +98,39 @@ impl FileResourceRepository {
     /// This includes:
     /// 1. Company global resources (can be allocated to any project)
     /// 2. Project-specific resources (belong only to this project)
-    pub fn find_all_by_project(&self, company_code: &str, project_code: &str) -> Result<Vec<AnyResource>, AppError> {
+    pub fn find_all_by_project(&self, company_code: &str, project_code: &str) -> DomainResult<Vec<AnyResource>> {
         let mut resources = Vec::new();
 
         // 1. Load company global resources (available for all projects)
         let company_resources_path = self.get_company_resources_path(company_code);
         if company_resources_path.exists() {
             let pattern = company_resources_path.join("*.yaml");
-            let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+            let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
                 field: "glob pattern".to_string(),
                 message: e.to_string(),
             })?;
 
             for entry in walker {
-                let entry = entry.map_err(|e| AppError::ValidationError {
+                let entry = entry.map_err(|e| DomainError::ValidationError {
                     field: "glob entry".to_string(),
                     message: e.to_string(),
                 })?;
                 let file_path = entry.as_path();
-                let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+                let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoErrorWithPath {
                     operation: "file read".to_string(),
                     path: file_path.to_string_lossy().to_string(),
                     details: e.to_string(),
                 })?;
 
                 let resource_manifest: ResourceManifest =
-                    serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                        format: "YAML".to_string(),
+                    serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+                        operation: "YAML serialization".to_string(),
                         details: format!("Error deserializing resource: {}", e),
                     })?;
 
                 resources.push(
-                    AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                        format: "YAML".to_string(),
+                    AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                        operation: "YAML serialization".to_string(),
                         details: format!("Error converting manifest: {}", e),
                     })?,
                 );
@@ -141,32 +141,32 @@ impl FileResourceRepository {
         let project_resources_path = self.get_project_resources_path(company_code, project_code);
         if project_resources_path.exists() {
             let pattern = project_resources_path.join("*.yaml");
-            let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+            let walker = glob(pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
                 field: "glob pattern".to_string(),
                 message: e.to_string(),
             })?;
 
             for entry in walker {
-                let entry = entry.map_err(|e| AppError::ValidationError {
+                let entry = entry.map_err(|e| DomainError::ValidationError {
                     field: "glob entry".to_string(),
                     message: e.to_string(),
                 })?;
                 let file_path = entry.as_path();
-                let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+                let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoErrorWithPath {
                     operation: "file read".to_string(),
                     path: file_path.to_string_lossy().to_string(),
                     details: e.to_string(),
                 })?;
 
                 let resource_manifest: ResourceManifest =
-                    serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                        format: "YAML".to_string(),
+                    serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+                        operation: "YAML serialization".to_string(),
                         details: format!("Error deserializing resource: {}", e),
                     })?;
 
                 resources.push(
-                    AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                        format: "YAML".to_string(),
+                    AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                        operation: "YAML serialization".to_string(),
                         details: format!("Error converting manifest: {}", e),
                     })?,
                 );
@@ -176,7 +176,7 @@ impl FileResourceRepository {
         Ok(resources)
     }
 
-    fn find_by_name(&self, resource_name: &str) -> Result<Option<AnyResource>, AppError> {
+    fn find_by_name(&self, resource_name: &str) -> DomainResult<Option<AnyResource>> {
         // Search in global resources directory: resources/*.yaml
         let resources_dir = self.get_resources_path();
         if resources_dir.exists() {
@@ -257,44 +257,44 @@ impl FileResourceRepository {
         Ok(None)
     }
 
-    fn read_resource_from_file(&self, file_path: &Path) -> Result<Option<AnyResource>, AppError> {
+    fn read_resource_from_file(&self, file_path: &Path) -> DomainResult<Option<AnyResource>> {
         if !file_path.exists() {
             return Ok(None);
         }
 
-        let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+        let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoErrorWithPath {
             operation: "file read".to_string(),
             path: file_path.to_string_lossy().to_string(),
             details: e.to_string(),
         })?;
-        let manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error deserializing resource: {}", e),
         })?;
-        let resource = AnyResource::try_from(manifest).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let resource = AnyResource::try_from(manifest).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error converting manifest: {}", e),
         })?;
         Ok(Some(resource))
     }
 
-    fn read_resource_from_dir(&self, dir: &Path) -> Result<Option<AnyResource>, AppError> {
+    fn read_resource_from_dir(&self, dir: &Path) -> DomainResult<Option<AnyResource>> {
         let manifest_path = dir.join("resource.yaml");
         if !manifest_path.exists() {
             return Ok(None);
         }
 
-        let yaml = fs::read_to_string(&manifest_path).map_err(|e| AppError::IoErrorWithPath {
+        let yaml = fs::read_to_string(&manifest_path).map_err(|e| DomainError::IoErrorWithPath {
             operation: "file read".to_string(),
             path: manifest_path.to_string_lossy().to_string(),
             details: e.to_string(),
         })?;
-        let manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let manifest: ResourceManifest = serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error deserializing resource: {}", e),
         })?;
-        let resource = AnyResource::try_from(manifest).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let resource = AnyResource::try_from(manifest).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error converting manifest: {}", e),
         })?;
         Ok(Some(resource))
@@ -302,13 +302,13 @@ impl FileResourceRepository {
 }
 
 impl ResourceRepository for FileResourceRepository {
-    fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
+    fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
         let resource_id = resource.id();
         let _resource_code = resource.code();
 
         // Create resources directory if it doesn't exist
         let resources_dir = self.get_resources_path();
-        fs::create_dir_all(&resources_dir).map_err(|e| AppError::IoError {
+        fs::create_dir_all(&resources_dir).map_err(|e| DomainError::IoError {
             operation: "create directory".to_string(),
             details: e.to_string(),
         })?;
@@ -316,12 +316,12 @@ impl ResourceRepository for FileResourceRepository {
         // Save resource file
         let file_path = self.get_resource_file_path_by_id(&resource_id.to_string());
         let resource_manifest = ResourceManifest::from(resource.clone());
-        let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error serializing resource: {}", e),
         })?;
 
-        fs::write(&file_path, yaml).map_err(|e| AppError::IoErrorWithPath {
+        fs::write(&file_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file_path.to_string_lossy().to_string(),
             details: e.to_string(),
@@ -338,7 +338,7 @@ impl ResourceRepository for FileResourceRepository {
         resource: AnyResource,
         company_code: &str,
         project_code: Option<&str>,
-    ) -> Result<AnyResource, AppError> {
+    ) -> DomainResult<AnyResource> {
         let file_path = if let Some(proj_code) = project_code {
             // Save as project-specific resource
             self.get_project_resource_path(company_code, proj_code, resource.name())
@@ -348,17 +348,17 @@ impl ResourceRepository for FileResourceRepository {
         };
 
         let resource_manifest = ResourceManifest::from(resource.clone());
-        let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error serializing resource: {}", e),
         })?;
 
-        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| AppError::IoError {
+        fs::create_dir_all(file_path.parent().unwrap()).map_err(|e| DomainError::IoError {
             operation: "create directory".to_string(),
             details: e.to_string(),
         })?;
 
-        fs::write(&file_path, yaml).map_err(|e| AppError::IoErrorWithPath {
+        fs::write(&file_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file_path.to_string_lossy().to_string(),
             details: e.to_string(),
@@ -367,7 +367,7 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resource)
     }
 
-    fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+    fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
         let mut resources = Vec::new();
         let companies_dir = self.base_path.join("companies");
 
@@ -402,7 +402,7 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resources)
     }
 
-    fn find_by_company(&self, company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+    fn find_by_company(&self, company_code: &str) -> DomainResult<Vec<AnyResource>> {
         let mut resources = Vec::new();
 
         // Search in company resources: companies/{company_code}/resources/*.yaml
@@ -413,32 +413,32 @@ impl ResourceRepository for FileResourceRepository {
             absolute_base.join(format!("companies/{}/resources/*.yaml", company_code))
         };
 
-        let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+        let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
 
         for entry in company_walker {
-            let entry = entry.map_err(|e| AppError::ValidationError {
+            let entry = entry.map_err(|e| DomainError::ValidationError {
                 field: "glob entry".to_string(),
                 message: e.to_string(),
             })?;
             let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: file_path.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
 
             let resource_manifest: ResourceManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
+                serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+                    operation: "YAML serialization".to_string(),
                     details: format!("Error deserializing resource: {}", e),
                 })?;
 
             resources.push(
-                AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
+                AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                    operation: "YAML serialization".to_string(),
                     details: format!("Error converting manifest: {}", e),
                 })?,
             );
@@ -448,32 +448,32 @@ impl ResourceRepository for FileResourceRepository {
         let project_pattern = self
             .base_path
             .join(format!("companies/{}/projects/*/resources/*.yaml", company_code));
-        let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+        let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
 
         for entry in project_walker {
-            let entry = entry.map_err(|e| AppError::ValidationError {
+            let entry = entry.map_err(|e| DomainError::ValidationError {
                 field: "glob entry".to_string(),
                 message: e.to_string(),
             })?;
             let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: file_path.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
 
             let resource_manifest: ResourceManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
+                serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+                    operation: "YAML serialization".to_string(),
                     details: format!("Error deserializing resource: {}", e),
                 })?;
 
             resources.push(
-                AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
+                AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                    operation: "YAML serialization".to_string(),
                     details: format!("Error converting manifest: {}", e),
                 })?,
             );
@@ -483,7 +483,7 @@ impl ResourceRepository for FileResourceRepository {
     }
 
     /// Find all resources with their context information (company and project codes)
-    fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+    fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
         let mut resources_with_context = Vec::new();
 
         // Search in company resources: companies/*/resources/*.yaml
@@ -493,13 +493,13 @@ impl ResourceRepository for FileResourceRepository {
         } else {
             absolute_base.join("companies/*/resources/*.yaml")
         };
-        let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+        let company_walker = glob(company_pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
 
         for entry in company_walker {
-            let entry = entry.map_err(|e| AppError::ValidationError {
+            let entry = entry.map_err(|e| DomainError::ValidationError {
                 field: "glob entry".to_string(),
                 message: e.to_string(),
             })?;
@@ -518,20 +518,20 @@ impl ResourceRepository for FileResourceRepository {
                 "UNKNOWN".to_string()
             };
 
-            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: file_path.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
 
             let resource_manifest: ResourceManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
+                serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+                    operation: "YAML serialization".to_string(),
                     details: format!("Error deserializing resource: {}", e),
                 })?;
 
-            let resource = AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
+            let resource = AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                operation: "YAML serialization".to_string(),
                 details: format!("Error converting manifest: {}", e),
             })?;
 
@@ -540,13 +540,13 @@ impl ResourceRepository for FileResourceRepository {
 
         // Search in project resources: companies/*/projects/*/resources/*.yaml
         let project_pattern = self.base_path.join("companies/*/projects/*/resources/*.yaml");
-        let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
+        let project_walker = glob(project_pattern.to_str().unwrap()).map_err(|e| DomainError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
 
         for entry in project_walker {
-            let entry = entry.map_err(|e| AppError::ValidationError {
+            let entry = entry.map_err(|e| DomainError::ValidationError {
                 field: "glob entry".to_string(),
                 message: e.to_string(),
             })?;
@@ -566,20 +566,20 @@ impl ResourceRepository for FileResourceRepository {
                 ("UNKNOWN".to_string(), "UNKNOWN".to_string())
             };
 
-            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
+            let yaml = fs::read_to_string(file_path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: file_path.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
 
             let resource_manifest: ResourceManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
+                serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+                    operation: "YAML serialization".to_string(),
                     details: format!("Error deserializing resource: {}", e),
                 })?;
 
-            let resource = AnyResource::try_from(resource_manifest).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
+            let resource = AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                operation: "YAML serialization".to_string(),
                 details: format!("Error converting manifest: {}", e),
             })?;
 
@@ -589,7 +589,7 @@ impl ResourceRepository for FileResourceRepository {
         Ok(resources_with_context)
     }
 
-    fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
+    fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
         // Search in global resources directory: resources/*.yaml
         let resources_dir = self.get_resources_path();
         if resources_dir.exists() {
@@ -676,10 +676,10 @@ impl ResourceRepository for FileResourceRepository {
         hours: u32,
         _date: &str,
         _description: Option<String>,
-    ) -> Result<AnyResource, AppError> {
+    ) -> DomainResult<AnyResource> {
         let resource = self
             .find_by_name(resource_name)?
-            .ok_or_else(|| AppError::ResourceNotFound {
+            .ok_or_else(|| DomainError::ResourceNotFound {
                 code: "unknown".to_string(),
             })?;
 
@@ -707,15 +707,15 @@ impl ResourceRepository for FileResourceRepository {
         end_date: &str,
         is_time_off_compensation: bool,
         compensated_hours: Option<u32>,
-    ) -> Result<AnyResource, AppError> {
+    ) -> DomainResult<AnyResource> {
         let resource = self
             .find_by_name(resource_name)?
-            .ok_or_else(|| AppError::ResourceNotFound {
+            .ok_or_else(|| DomainError::ResourceNotFound {
                 code: "unknown".to_string(),
             })?;
 
         let start_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
-            .map_err(|e| AppError::ValidationError {
+            .map_err(|e| DomainError::ValidationError {
                 field: "start_date".to_string(),
                 message: format!("Invalid start date: {}", e),
             })?
@@ -723,7 +723,7 @@ impl ResourceRepository for FileResourceRepository {
             .unwrap();
 
         let end_date = NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
-            .map_err(|e| AppError::ValidationError {
+            .map_err(|e| DomainError::ValidationError {
                 field: "end_date".to_string(),
                 message: format!("Invalid end date: {}", e),
             })?
@@ -731,7 +731,7 @@ impl ResourceRepository for FileResourceRepository {
             .unwrap();
 
         if end_date < start_date {
-            return Err(AppError::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "end_date".to_string(),
                 message: "End date must be after start date".to_string(),
             });
@@ -769,7 +769,7 @@ impl ResourceRepository for FileResourceRepository {
                 AnyResource::Assigned(r)
             }
             AnyResource::Inactive(_) => {
-                return Err(AppError::ResourceInvalidState {
+                return Err(DomainError::ResourceInvalidState {
                     current: "unknown".to_string(),
                     expected: "valid".to_string(),
                 });
@@ -794,7 +794,7 @@ impl ResourceRepository for FileResourceRepository {
         false
     }
 
-    fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
+    fn get_next_code(&self, resource_type: &str) -> DomainResult<String> {
         let all_resources = self.find_all()?;
         let prefix = resource_type.to_lowercase();
         let prefix_with_dash = format!("{prefix}-");
@@ -817,7 +817,7 @@ impl ResourceRepository for FileResourceRepository {
 }
 
 impl crate::domain::resource_management::repository::ResourceRepositoryWithId for FileResourceRepository {
-    fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError> {
+    fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyResource>> {
         // Search for resource by ID in ID-based format: resources/{id}.yaml
         let resource_file = self.get_resource_file_path_by_id(id);
         if resource_file.exists() {

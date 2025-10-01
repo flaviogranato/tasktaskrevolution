@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -8,37 +8,37 @@ use std::sync::{Arc, Mutex};
 /// A generic repository trait for domain entities
 pub trait Repository<T, ID> {
     /// Find an entity by ID
-    fn find_by_id(&self, id: &ID) -> Result<Option<T>, AppError>;
+    fn find_by_id(&self, id: &ID) -> DomainResult<Option<T>>;
 
     /// Find all entities
-    fn find_all(&self) -> Result<Vec<T>, AppError>;
+    fn find_all(&self) -> DomainResult<Vec<T>>;
 
     /// Save an entity
-    fn save(&self, entity: T) -> Result<T, AppError>;
+    fn save(&self, entity: T) -> DomainResult<T>;
 
     /// Update an existing entity
-    fn update(&self, entity: T) -> Result<T, AppError>;
+    fn update(&self, entity: T) -> DomainResult<T>;
 
     /// Delete an entity by ID
-    fn delete(&self, id: &ID) -> Result<bool, AppError>;
+    fn delete(&self, id: &ID) -> DomainResult<bool>;
 
     /// Check if an entity exists
-    fn exists(&self, id: &ID) -> Result<bool, AppError>;
+    fn exists(&self, id: &ID) -> DomainResult<bool>;
 
     /// Count all entities
-    fn count(&self) -> Result<usize, AppError>;
+    fn count(&self) -> DomainResult<usize>;
 }
 
 /// A repository that supports pagination
 pub trait PaginatedRepository<T, ID>: Repository<T, ID> {
     /// Find entities with pagination
-    fn find_with_pagination(&self, page: usize, size: usize) -> Result<PaginatedResult<T>, AppError>;
+    fn find_with_pagination(&self, page: usize, size: usize) -> DomainResult<PaginatedResult<T>>;
 }
 
 /// A repository that supports searching
 pub trait SearchableRepository<T, ID>: Repository<T, ID> {
     /// Search entities by criteria
-    fn search(&self, criteria: &SearchCriteria) -> Result<Vec<T>, AppError>;
+    fn search(&self, criteria: &SearchCriteria) -> DomainResult<Vec<T>>;
 
     /// Search entities with pagination
     fn search_with_pagination(
@@ -46,27 +46,27 @@ pub trait SearchableRepository<T, ID>: Repository<T, ID> {
         criteria: &SearchCriteria,
         page: usize,
         size: usize,
-    ) -> Result<PaginatedResult<T>, AppError>;
+    ) -> DomainResult<PaginatedResult<T>>;
 }
 
 /// A repository that supports transactions
 pub trait TransactionalRepository<T, ID>: Repository<T, ID> {
     /// Begin a transaction
-    fn begin_transaction(&self) -> Result<Box<dyn Transaction>, AppError>;
+    fn begin_transaction(&self) -> DomainResult<Box<dyn Transaction>>;
 
     /// Execute a function within a transaction
-    fn with_transaction<F, R>(&self, f: F) -> Result<R, AppError>
+    fn with_transaction<F, R>(&self, f: F) -> DomainResult<R>
     where
-        F: FnOnce(&dyn Transaction) -> Result<R, AppError>;
+        F: FnOnce(&dyn Transaction) -> DomainResult<R>;
 }
 
 /// A transaction that can be committed or rolled back
 pub trait Transaction {
     /// Commit the transaction
-    fn commit(self: Box<Self>) -> Result<(), AppError>;
+    fn commit(self: Box<Self>) -> DomainResult<()>;
 
     /// Rollback the transaction
-    fn rollback(self: Box<Self>) -> Result<(), AppError>;
+    fn rollback(self: Box<Self>) -> DomainResult<()>;
 }
 
 /// Search criteria for repositories
@@ -174,10 +174,10 @@ pub trait CachedRepository<T, ID>: Repository<T, ID> {
     fn cache_key(&self, id: &ID) -> String;
 
     /// Invalidate cache for an entity
-    fn invalidate_cache(&self, id: &ID) -> Result<(), AppError>;
+    fn invalidate_cache(&self, id: &ID) -> DomainResult<()>;
 
     /// Clear all cache
-    fn clear_cache(&self) -> Result<(), AppError>;
+    fn clear_cache(&self) -> DomainResult<()>;
 }
 
 /// A simple in-memory repository implementation
@@ -211,17 +211,17 @@ impl<T> Repository<T, String> for InMemoryRepository<T>
 where
     T: Clone,
 {
-    fn find_by_id(&self, id: &String) -> Result<Option<T>, AppError> {
+    fn find_by_id(&self, id: &String) -> DomainResult<Option<T>> {
         let entities = self.entities();
         Ok(entities.get(id).cloned())
     }
 
-    fn find_all(&self) -> Result<Vec<T>, AppError> {
+    fn find_all(&self) -> DomainResult<Vec<T>> {
         let entities = self.entities();
         Ok(entities.values().cloned().collect())
     }
 
-    fn save(&self, entity: T) -> Result<T, AppError> {
+    fn save(&self, entity: T) -> DomainResult<T> {
         // Extract ID from entity - this is a simplified approach
         // In a real implementation, you'd have a way to get the ID from the entity
         let mut entities = self.entities_mut();
@@ -236,7 +236,7 @@ where
         Ok(entity)
     }
 
-    fn update(&self, entity: T) -> Result<T, AppError> {
+    fn update(&self, entity: T) -> DomainResult<T> {
         // For this simplified implementation, we'll just save it
         // In a real implementation, you'd check if it exists first
         // Note: This creates a new entity with a new ID, not a true update
@@ -244,18 +244,18 @@ where
         Ok(entity)
     }
 
-    fn delete(&self, id: &String) -> Result<bool, AppError> {
+    fn delete(&self, id: &String) -> DomainResult<bool> {
         let mut entities = self.entities_mut();
         let deleted = entities.remove(id).is_some();
         Ok(deleted)
     }
 
-    fn exists(&self, id: &String) -> Result<bool, AppError> {
+    fn exists(&self, id: &String) -> DomainResult<bool> {
         let entities = self.entities();
         Ok(entities.contains_key(id))
     }
 
-    fn count(&self) -> Result<usize, AppError> {
+    fn count(&self) -> DomainResult<usize> {
         let entities = self.entities();
         Ok(entities.len())
     }
@@ -295,7 +295,7 @@ where
     R: Repository<T, ID>,
     ID: std::fmt::Debug,
 {
-    fn find_by_id(&self, id: &ID) -> Result<Option<T>, AppError> {
+    fn find_by_id(&self, id: &ID) -> DomainResult<Option<T>> {
         println!("Repository: Finding entity by ID: {:?}", id);
         let result = self.repository.find_by_id(id);
         match &result {
@@ -306,7 +306,7 @@ where
         result
     }
 
-    fn find_all(&self) -> Result<Vec<T>, AppError> {
+    fn find_all(&self) -> DomainResult<Vec<T>> {
         println!("Repository: Finding all entities");
         let result = self.repository.find_all();
         match &result {
@@ -316,7 +316,7 @@ where
         result
     }
 
-    fn save(&self, entity: T) -> Result<T, AppError> {
+    fn save(&self, entity: T) -> DomainResult<T> {
         println!("Repository: Saving entity");
         let result = self.repository.save(entity);
         match &result {
@@ -326,7 +326,7 @@ where
         result
     }
 
-    fn update(&self, entity: T) -> Result<T, AppError> {
+    fn update(&self, entity: T) -> DomainResult<T> {
         println!("Repository: Updating entity");
         let result = self.repository.update(entity);
         match &result {
@@ -336,7 +336,7 @@ where
         result
     }
 
-    fn delete(&self, id: &ID) -> Result<bool, AppError> {
+    fn delete(&self, id: &ID) -> DomainResult<bool> {
         println!("Repository: Deleting entity with ID: {:?}", id);
         let result = self.repository.delete(id);
         match &result {
@@ -346,7 +346,7 @@ where
         result
     }
 
-    fn exists(&self, id: &ID) -> Result<bool, AppError> {
+    fn exists(&self, id: &ID) -> DomainResult<bool> {
         println!("Repository: Checking if entity exists with ID: {:?}", id);
         let result = self.repository.exists(id);
         match &result {
@@ -356,7 +356,7 @@ where
         result
     }
 
-    fn count(&self) -> Result<usize, AppError> {
+    fn count(&self) -> DomainResult<usize> {
         println!("Repository: Counting entities");
         let result = self.repository.count();
         match &result {
@@ -409,46 +409,46 @@ mod tests {
     }
 
     impl Repository<MockEntity, String> for MockRepository {
-        fn find_by_id(&self, id: &String) -> Result<Option<MockEntity>, AppError> {
+        fn find_by_id(&self, id: &String) -> DomainResult<Option<MockEntity>> {
             let entities = self.entities.lock().unwrap();
             Ok(entities.get(id).cloned())
         }
 
-        fn find_all(&self) -> Result<Vec<MockEntity>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<MockEntity>> {
             let entities = self.entities.lock().unwrap();
             Ok(entities.values().cloned().collect())
         }
 
-        fn save(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn save(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             let mut entities = self.entities.lock().unwrap();
             entities.insert(entity.id.clone(), entity.clone());
             Ok(entity)
         }
 
-        fn update(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn update(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             let mut entities = self.entities.lock().unwrap();
             if entities.contains_key(&entity.id) {
                 entities.insert(entity.id.clone(), entity.clone());
                 Ok(entity)
             } else {
-                Err(AppError::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "entity".to_string(),
                     message: "Entity not found for update".to_string(),
                 })
             }
         }
 
-        fn delete(&self, id: &String) -> Result<bool, AppError> {
+        fn delete(&self, id: &String) -> DomainResult<bool> {
             let mut entities = self.entities.lock().unwrap();
             Ok(entities.remove(id).is_some())
         }
 
-        fn exists(&self, id: &String) -> Result<bool, AppError> {
+        fn exists(&self, id: &String) -> DomainResult<bool> {
             let entities = self.entities.lock().unwrap();
             Ok(entities.contains_key(id))
         }
 
-        fn count(&self) -> Result<usize, AppError> {
+        fn count(&self) -> DomainResult<usize> {
             let entities = self.entities.lock().unwrap();
             Ok(entities.len())
         }
@@ -468,37 +468,37 @@ mod tests {
     }
 
     impl Repository<MockEntity, String> for MockPaginatedRepository {
-        fn find_by_id(&self, id: &String) -> Result<Option<MockEntity>, AppError> {
+        fn find_by_id(&self, id: &String) -> DomainResult<Option<MockEntity>> {
             self.base_repository.find_by_id(id)
         }
 
-        fn find_all(&self) -> Result<Vec<MockEntity>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<MockEntity>> {
             self.base_repository.find_all()
         }
 
-        fn save(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn save(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             self.base_repository.save(entity)
         }
 
-        fn update(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn update(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             self.base_repository.update(entity)
         }
 
-        fn delete(&self, id: &String) -> Result<bool, AppError> {
+        fn delete(&self, id: &String) -> DomainResult<bool> {
             self.base_repository.delete(id)
         }
 
-        fn exists(&self, id: &String) -> Result<bool, AppError> {
+        fn exists(&self, id: &String) -> DomainResult<bool> {
             self.base_repository.exists(id)
         }
 
-        fn count(&self) -> Result<usize, AppError> {
+        fn count(&self) -> DomainResult<usize> {
             self.base_repository.count()
         }
     }
 
     impl PaginatedRepository<MockEntity, String> for MockPaginatedRepository {
-        fn find_with_pagination(&self, page: usize, size: usize) -> Result<PaginatedResult<MockEntity>, AppError> {
+        fn find_with_pagination(&self, page: usize, size: usize) -> DomainResult<PaginatedResult<MockEntity>> {
             let all_entities = self.find_all()?;
             let total = all_entities.len();
             let start = (page - 1) * size;
@@ -528,37 +528,37 @@ mod tests {
     }
 
     impl Repository<MockEntity, String> for MockSearchableRepository {
-        fn find_by_id(&self, id: &String) -> Result<Option<MockEntity>, AppError> {
+        fn find_by_id(&self, id: &String) -> DomainResult<Option<MockEntity>> {
             self.base_repository.find_by_id(id)
         }
 
-        fn find_all(&self) -> Result<Vec<MockEntity>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<MockEntity>> {
             self.base_repository.find_all()
         }
 
-        fn save(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn save(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             self.base_repository.save(entity)
         }
 
-        fn update(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn update(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             self.base_repository.update(entity)
         }
 
-        fn delete(&self, id: &String) -> Result<bool, AppError> {
+        fn delete(&self, id: &String) -> DomainResult<bool> {
             self.base_repository.delete(id)
         }
 
-        fn exists(&self, id: &String) -> Result<bool, AppError> {
+        fn exists(&self, id: &String) -> DomainResult<bool> {
             self.base_repository.exists(id)
         }
 
-        fn count(&self) -> Result<usize, AppError> {
+        fn count(&self) -> DomainResult<usize> {
             self.base_repository.count()
         }
     }
 
     impl SearchableRepository<MockEntity, String> for MockSearchableRepository {
-        fn search(&self, criteria: &SearchCriteria) -> Result<Vec<MockEntity>, AppError> {
+        fn search(&self, criteria: &SearchCriteria) -> DomainResult<Vec<MockEntity>> {
             let all_entities = self.find_all()?;
             let mut filtered_entities = all_entities;
 
@@ -598,7 +598,7 @@ mod tests {
             criteria: &SearchCriteria,
             page: usize,
             size: usize,
-        ) -> Result<PaginatedResult<MockEntity>, AppError> {
+        ) -> DomainResult<PaginatedResult<MockEntity>> {
             let filtered_entities = self.search(criteria)?;
             let total = filtered_entities.len();
             let start = (page - 1) * size;
@@ -628,43 +628,43 @@ mod tests {
     }
 
     impl Repository<MockEntity, String> for MockTransactionalRepository {
-        fn find_by_id(&self, id: &String) -> Result<Option<MockEntity>, AppError> {
+        fn find_by_id(&self, id: &String) -> DomainResult<Option<MockEntity>> {
             self.base_repository.find_by_id(id)
         }
 
-        fn find_all(&self) -> Result<Vec<MockEntity>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<MockEntity>> {
             self.base_repository.find_all()
         }
 
-        fn save(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn save(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             self.base_repository.save(entity)
         }
 
-        fn update(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn update(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             self.base_repository.update(entity)
         }
 
-        fn delete(&self, id: &String) -> Result<bool, AppError> {
+        fn delete(&self, id: &String) -> DomainResult<bool> {
             self.base_repository.delete(id)
         }
 
-        fn exists(&self, id: &String) -> Result<bool, AppError> {
+        fn exists(&self, id: &String) -> DomainResult<bool> {
             self.base_repository.exists(id)
         }
 
-        fn count(&self) -> Result<usize, AppError> {
+        fn count(&self) -> DomainResult<usize> {
             self.base_repository.count()
         }
     }
 
     impl TransactionalRepository<MockEntity, String> for MockTransactionalRepository {
-        fn begin_transaction(&self) -> Result<Box<dyn Transaction>, AppError> {
+        fn begin_transaction(&self) -> DomainResult<Box<dyn Transaction>> {
             Ok(Box::new(MockTransaction::new()))
         }
 
-        fn with_transaction<F, R>(&self, f: F) -> Result<R, AppError>
+        fn with_transaction<F, R>(&self, f: F) -> DomainResult<R>
         where
-            F: FnOnce(&dyn Transaction) -> Result<R, AppError>,
+            F: FnOnce(&dyn Transaction) -> DomainResult<R>,
         {
             let transaction = self.begin_transaction()?;
             f(transaction.as_ref())
@@ -687,13 +687,13 @@ mod tests {
     }
 
     impl Transaction for MockTransaction {
-        fn commit(self: Box<Self>) -> Result<(), AppError> {
+        fn commit(self: Box<Self>) -> DomainResult<()> {
             let mut this = *self;
             this.committed = true;
             Ok(())
         }
 
-        fn rollback(self: Box<Self>) -> Result<(), AppError> {
+        fn rollback(self: Box<Self>) -> DomainResult<()> {
             let mut this = *self;
             this.rolled_back = true;
             Ok(())
@@ -716,7 +716,7 @@ mod tests {
     }
 
     impl Repository<MockEntity, String> for MockCachedRepository {
-        fn find_by_id(&self, id: &String) -> Result<Option<MockEntity>, AppError> {
+        fn find_by_id(&self, id: &String) -> DomainResult<Option<MockEntity>> {
             // Check cache first
             let cache_key = self.cache_key(id);
             let cached_entity = {
@@ -739,25 +739,25 @@ mod tests {
             Ok(entity)
         }
 
-        fn find_all(&self) -> Result<Vec<MockEntity>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<MockEntity>> {
             self.base_repository.find_all()
         }
 
-        fn save(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn save(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             let result = self.base_repository.save(entity.clone())?;
             // Invalidate cache for this entity
             self.invalidate_cache(&entity.id)?;
             Ok(result)
         }
 
-        fn update(&self, entity: MockEntity) -> Result<MockEntity, AppError> {
+        fn update(&self, entity: MockEntity) -> DomainResult<MockEntity> {
             let result = self.base_repository.update(entity.clone())?;
             // Invalidate cache for this entity
             self.invalidate_cache(&entity.id)?;
             Ok(result)
         }
 
-        fn delete(&self, id: &String) -> Result<bool, AppError> {
+        fn delete(&self, id: &String) -> DomainResult<bool> {
             let result = self.base_repository.delete(id)?;
             if result {
                 // Invalidate cache for this entity
@@ -766,11 +766,11 @@ mod tests {
             Ok(result)
         }
 
-        fn exists(&self, id: &String) -> Result<bool, AppError> {
+        fn exists(&self, id: &String) -> DomainResult<bool> {
             self.base_repository.exists(id)
         }
 
-        fn count(&self) -> Result<usize, AppError> {
+        fn count(&self) -> DomainResult<usize> {
             self.base_repository.count()
         }
     }
@@ -780,14 +780,14 @@ mod tests {
             format!("entity:{}", id)
         }
 
-        fn invalidate_cache(&self, id: &String) -> Result<(), AppError> {
+        fn invalidate_cache(&self, id: &String) -> DomainResult<()> {
             let cache_key = self.cache_key(id);
             let mut cache = self.cache.lock().unwrap();
             cache.remove(&cache_key);
             Ok(())
         }
 
-        fn clear_cache(&self) -> Result<(), AppError> {
+        fn clear_cache(&self) -> DomainResult<()> {
             let mut cache = self.cache.lock().unwrap();
             cache.clear();
             Ok(())
@@ -1105,7 +1105,7 @@ mod tests {
         let repo = MockTransactionalRepository::new();
 
         let result = repo
-            .with_transaction(|_transaction| Ok::<String, AppError>("transaction_result".to_string()))
+            .with_transaction(|_transaction| Ok::<String, DomainError>("transaction_result".to_string()))
             .unwrap();
 
         assert_eq!(result, "transaction_result");

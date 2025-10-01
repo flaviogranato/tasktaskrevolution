@@ -1,0 +1,26 @@
+id: null
+manager_name: Test Manager
+manager_email: test@example.com
+default_timezone: UTC
+company_name: Test Company
+work_hours_start: 09:00
+work_hours_end: 18:00
+work_days:
+- Monday
+- Tuesday
+- Wednesday
+- Thursday
+- Friday
+resource_types:
+- Developer
+- Designer
+- Manager
+- Database Administrator
+- DevOps Engineer
+- QA Engineer
+- Product Owner
+- Scrum Master
+- Business Analyst
+- Technical Writer
+created_at: 2025-10-01T16:16:25.356760682Z
+updated_at: 2025-10-01T16:16:25.356760682Z

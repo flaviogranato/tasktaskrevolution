@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use super::project::{Project, ProjectSettings, VacationRules, WorkHours};
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use chrono::{NaiveDate, Utc};
 use std::collections::HashMap;
 
@@ -109,24 +109,24 @@ impl ProjectBuilder {
     }
 
     /// Validates the project configuration and builds the `Project` instance.
-    pub fn build(self) -> Result<Project, AppError> {
+    pub fn build(self) -> DomainResult<Project> {
         // Validate required fields
-        let code = self.code.ok_or_else(|| AppError::ValidationError {
+        let code = self.code.ok_or_else(|| DomainError::ValidationError {
             field: "code".to_string(),
             message: "Project code is required".to_string(),
         })?;
 
-        let name = self.name.ok_or_else(|| AppError::ValidationError {
+        let name = self.name.ok_or_else(|| DomainError::ValidationError {
             field: "name".to_string(),
             message: "Project name is required".to_string(),
         })?;
 
-        let company_code = self.company_code.ok_or_else(|| AppError::ValidationError {
+        let company_code = self.company_code.ok_or_else(|| DomainError::ValidationError {
             field: "company_code".to_string(),
             message: "Company code is required".to_string(),
         })?;
 
-        let created_by = self.created_by.ok_or_else(|| AppError::ValidationError {
+        let created_by = self.created_by.ok_or_else(|| DomainError::ValidationError {
             field: "created_by".to_string(),
             message: "Creator is required".to_string(),
         })?;
@@ -135,7 +135,7 @@ impl ProjectBuilder {
         if let (Some(start), Some(end)) = (self.start_date, self.end_date)
             && start > end
         {
-            return Err(AppError::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "dates".to_string(),
                 message: "Start date must be before end date".to_string(),
             });

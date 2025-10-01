@@ -15,4 +15,4 @@ pub use any_task::AnyTask;
 pub use builder::TaskBuilder;
 pub use category::Category;
 pub use priority::Priority;
-pub use task::{AppError, DateRange, Task};
+pub use task::{DateRange, Task};

@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid7;
 
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::shared::query_engine::Queryable;
 use crate::domain::shared::query_parser::QueryValue;
 
@@ -85,19 +85,13 @@ impl std::fmt::Display for CompanyStatus {
 
 impl Company {
     /// Creates a new company instance.
-    pub fn new(code: String, name: String, created_by: String) -> Result<Self, AppError> {
+    pub fn new(code: String, name: String, created_by: String) -> DomainResult<Self> {
         if code.trim().is_empty() {
-            return Err(AppError::ValidationError {
-                field: "code".to_string(),
-                message: "Company code cannot be empty".to_string(),
-            });
+            return Err(DomainError::validation_error("code", "Company code cannot be empty"));
         }
 
         if name.trim().is_empty() {
-            return Err(AppError::ValidationError {
-                field: "name".to_string(),
-                message: "Company name cannot be empty".to_string(),
-            });
+            return Err(DomainError::validation_error("name", "Company name cannot be empty"));
         }
 
         let now = Utc::now();
@@ -122,12 +116,9 @@ impl Company {
     }
 
     /// Updates the company name.
-    pub fn update_name(&mut self, new_name: String) -> Result<(), AppError> {
+    pub fn update_name(&mut self, new_name: String) -> DomainResult<()> {
         if new_name.trim().is_empty() {
-            return Err(AppError::ValidationError {
-                field: "name".to_string(),
-                message: "Company name cannot be empty".to_string(),
-            });
+            return Err(DomainError::validation_error("name", "Company name cannot be empty"));
         }
 
         self.name = new_name;

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid7::Uuid;
 
-use crate::domain::shared::errors::{AppError, AppErrorKind};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 // ============================================================================
 // ENUMS
@@ -189,23 +189,23 @@ impl Resource {
         resource_type: ResourceType,
         company_code: String,
         created_by: String,
-    ) -> Result<Self, AppError> {
+    ) -> DomainResult<Self> {
         if code.trim().is_empty() {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "code".to_string(),
                 message: "Resource code cannot be empty".to_string(),
             }));
         }
 
         if name.trim().is_empty() {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "name".to_string(),
                 message: "Resource name cannot be empty".to_string(),
             }));
         }
 
         if company_code.trim().is_empty() {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "company_code".to_string(),
                 message: "Company code cannot be empty".to_string(),
             }));
@@ -229,9 +229,9 @@ impl Resource {
         })
     }
 
-    pub fn add_skill(&mut self, skill: Skill) -> Result<(), AppError> {
+    pub fn add_skill(&mut self, skill: Skill) -> DomainResult<()> {
         if self.skills.iter().any(|s| s.name == skill.name) {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "skill".to_string(),
                 message: "Skill already exists for this resource".to_string(),
             }));
@@ -243,12 +243,12 @@ impl Resource {
         Ok(())
     }
 
-    pub fn remove_skill(&mut self, skill_name: &str) -> Result<(), AppError> {
+    pub fn remove_skill(&mut self, skill_name: &str) -> DomainResult<()> {
         let initial_count = self.skills.len();
         self.skills.retain(|s| s.name != skill_name);
 
         if self.skills.len() == initial_count {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "skill".to_string(),
                 message: "Skill not found for this resource".to_string(),
             }));
@@ -327,16 +327,16 @@ impl ResourceAllocation {
         end_date: Option<NaiveDate>,
         role: String,
         created_by: String,
-    ) -> Result<Self, AppError> {
+    ) -> DomainResult<Self> {
         if allocation_percentage == 0 || allocation_percentage > 100 {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "allocation_percentage".to_string(),
                 message: "Allocation percentage must be between 1 and 100".to_string(),
             }));
         }
 
         if role.trim().is_empty() {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "role".to_string(),
                 message: "Role cannot be empty".to_string(),
             }));
@@ -362,9 +362,9 @@ impl ResourceAllocation {
         })
     }
 
-    pub fn activate(&mut self) -> Result<(), AppError> {
+    pub fn activate(&mut self) -> DomainResult<()> {
         if self.status != AllocationStatus::Planned {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "status".to_string(),
                 message: "Can only activate planned allocations".to_string(),
             }));
@@ -376,9 +376,9 @@ impl ResourceAllocation {
         Ok(())
     }
 
-    pub fn complete(&mut self) -> Result<(), AppError> {
+    pub fn complete(&mut self) -> DomainResult<()> {
         if self.status != AllocationStatus::Active {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "status".to_string(),
                 message: "Can only complete active allocations".to_string(),
             }));
@@ -390,9 +390,9 @@ impl ResourceAllocation {
         Ok(())
     }
 
-    pub fn cancel(&mut self) -> Result<(), AppError> {
+    pub fn cancel(&mut self) -> DomainResult<()> {
         if self.status == AllocationStatus::Completed {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "status".to_string(),
                 message: "Cannot cancel completed allocations".to_string(),
             }));
@@ -404,9 +404,9 @@ impl ResourceAllocation {
         Ok(())
     }
 
-    pub fn update_hours(&mut self, actual_hours: f64, estimated_hours: Option<f64>) -> Result<(), AppError> {
+    pub fn update_hours(&mut self, actual_hours: f64, estimated_hours: Option<f64>) -> DomainResult<()> {
         if actual_hours < 0.0 {
-            return Err(AppError::new(AppErrorKind::ValidationError {
+            return Err(DomainError::ValidationError {
                 field: "actual_hours".to_string(),
                 message: "Actual hours cannot be negative".to_string(),
             }));
@@ -414,7 +414,7 @@ impl ResourceAllocation {
 
         if let Some(est_hours) = estimated_hours {
             if est_hours < 0.0 {
-                return Err(AppError::new(AppErrorKind::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "estimated_hours".to_string(),
                     message: "Estimated hours cannot be negative".to_string(),
                 }));

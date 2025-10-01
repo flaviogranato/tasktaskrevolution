@@ -195,28 +195,6 @@ impl DateRange {
 }
 
 #[allow(dead_code)]
-#[derive(Debug)]
-pub enum AppError {
-    InvalidDateRange,
-    ResourceOnVacation(String),
-    MissingField(String), // Otimizado: removido &'static str desnecessário
-}
-
-impl std::fmt::Display for AppError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AppError::InvalidDateRange => write!(f, "Start date is after end date."),
-            AppError::ResourceOnVacation(res) => {
-                write!(f, "Resource {res} is on vacation during this period.")
-            }
-            AppError::MissingField(field) => {
-                write!(f, "Required field not provided: {field}")
-            }
-        }
-    }
-}
-
-impl std::error::Error for AppError {}
 
 // Common methods for all Task states
 impl<S: TaskState> Task<S> {
@@ -357,6 +335,7 @@ impl Transition for Task<InProgress> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::shared::errors::DomainError;
     use chrono::NaiveDate;
     use uuid7::uuid7;
 
@@ -423,10 +402,10 @@ mod tests {
 
     #[test]
     fn test_task_error_display_formatting() {
-        let invalid_date_err = AppError::InvalidDateRange;
+        let invalid_date_err = DomainError::validation_error("date_range", "Invalid date range");
         assert_eq!(format!("{invalid_date_err}"), "Start date is after end date.");
 
-        let vacation_err = AppError::ResourceOnVacation("RES-123".to_string());
+        let vacation_err = DomainError::business_rule_violation("resource_availability", "Resource RES-123 is on vacation");
         assert_eq!(
             format!("{vacation_err}"),
             "Resource RES-123 is on vacation during this period."

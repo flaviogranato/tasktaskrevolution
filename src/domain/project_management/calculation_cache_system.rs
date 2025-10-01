@@ -11,7 +11,7 @@ use std::hash::{Hash, Hasher};
 
 use super::advanced_dependencies::AdvancedDependency;
 use super::dependency_calculation_engine::CalculationResult;
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 // ============================================================================
 // ENUMS
@@ -291,7 +291,7 @@ impl CalculationCacheSystem {
         dependencies: &[AdvancedDependency],
         config: &super::dependency_calculation_engine::CalculationConfig,
         result: CalculationResult,
-    ) -> Result<(), AppError> {
+    ) -> DomainResult<()> {
         if !self.config.enabled {
             return Ok(());
         }
@@ -329,7 +329,7 @@ impl CalculationCacheSystem {
     }
 
     /// Invalida itens do cache baseado em uma dependência
-    pub fn invalidate_by_dependency(&mut self, dependency_id: &str) -> Result<usize, AppError> {
+    pub fn invalidate_by_dependency(&mut self, dependency_id: &str) -> DomainResult<usize> {
         if !self.config.enabled {
             return Ok(0);
         }
@@ -352,7 +352,7 @@ impl CalculationCacheSystem {
     }
 
     /// Invalida itens do cache baseado em uma tarefa
-    pub fn invalidate_by_task(&mut self, task_id: &str) -> Result<usize, AppError> {
+    pub fn invalidate_by_task(&mut self, task_id: &str) -> DomainResult<usize> {
         if !self.config.enabled {
             return Ok(0);
         }
@@ -376,7 +376,7 @@ impl CalculationCacheSystem {
     }
 
     /// Invalida todo o cache
-    pub fn invalidate_all(&mut self) -> Result<usize, AppError> {
+    pub fn invalidate_all(&mut self) -> DomainResult<usize> {
         if !self.config.enabled {
             return Ok(0);
         }
@@ -391,7 +391,7 @@ impl CalculationCacheSystem {
     }
 
     /// Limpa itens expirados e inválidos
-    pub fn cleanup(&mut self) -> Result<usize, AppError> {
+    pub fn cleanup(&mut self) -> DomainResult<usize> {
         if !self.config.enabled {
             return Ok(0);
         }
@@ -423,7 +423,7 @@ impl CalculationCacheSystem {
     }
 
     /// Remove itens mais antigos do cache
-    fn evict_oldest_items(&mut self, count: usize) -> Result<(), AppError> {
+    fn evict_oldest_items(&mut self, count: usize) -> DomainResult<()> {
         let mut items: Vec<(CacheKey, chrono::DateTime<chrono::Utc>)> = self
             .cache
             .iter()
@@ -441,7 +441,7 @@ impl CalculationCacheSystem {
     }
 
     /// Limpa itens expirados
-    fn cleanup_expired_items(&mut self) -> Result<usize, AppError> {
+    fn cleanup_expired_items(&mut self) -> DomainResult<usize> {
         let mut expired_keys = Vec::new();
 
         for (key, item) in &self.cache {

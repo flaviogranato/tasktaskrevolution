@@ -36,7 +36,6 @@ impl From<crate::domain::shared::errors::DomainError> for DescribeAppError {
     }
 }
 
-
 pub struct DescribeTaskUseCase<PR, CR>
 where
     PR: ProjectRepository + ProjectRepositoryWithId,

@@ -1,4 +1,4 @@
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
 use crate::domain::task_management::any_task::AnyTask;
 use crate::infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest};
@@ -49,20 +49,20 @@ impl FileProjectRepository {
     }
 
     /// Loads a single project from a specific project file path.
-    pub fn load_from_path(&self, project_file: &Path) -> Result<AnyProject, AppError> {
+    pub fn load_from_path(&self, project_file: &Path) -> DomainResult<AnyProject> {
         if !project_file.exists() {
-            return Err(AppError::ProjectNotFound {
+            return Err(DomainError::ProjectNotFound {
                 code: "unknown".to_string(),
             });
         }
         let manifest = self
             .load_manifest(project_file)
-            .map_err(|e| AppError::ValidationError {
+            .map_err(|e| DomainError::ValidationError {
                 field: "manifest".to_string(),
                 message: format!("Failed to load project file: {e}"),
             })?;
-        let mut project = AnyProject::try_from(manifest).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let mut project = AnyProject::try_from(manifest).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error converting project file: {e}"),
         })?;
         self.load_tasks_for_project(&mut project, project_file)?;
@@ -76,7 +76,7 @@ impl FileProjectRepository {
     }
 
     /// Loads tasks from the `tasks` subdirectory of a project and adds them.
-    fn load_tasks_for_project(&self, project: &mut AnyProject, project_path: &Path) -> Result<(), AppError> {
+    fn load_tasks_for_project(&self, project: &mut AnyProject, project_path: &Path) -> DomainResult<()> {
         // For ID-based format, tasks are stored in the same directory as the project file
         let tasks_dir = project_path.parent().unwrap().join("tasks");
         if !tasks_dir.exists() {
@@ -87,7 +87,7 @@ impl FileProjectRepository {
         let absolute_tasks_dir = std::fs::canonicalize(&tasks_dir).unwrap_or_else(|_| tasks_dir.clone());
         let pattern = absolute_tasks_dir.join("*.yaml");
         let pattern_str = pattern.to_str().unwrap();
-        let walker = glob(pattern_str).map_err(|e| AppError::ValidationError {
+        let walker = glob(pattern_str).map_err(|e| DomainError::ValidationError {
             field: "glob pattern".to_string(),
             message: e.to_string(),
         })?;
@@ -98,18 +98,18 @@ impl FileProjectRepository {
                 "Loading task from",
                 &task_path.to_string_lossy(),
             );
-            let yaml = fs::read_to_string(task_path).map_err(|e| AppError::IoErrorWithPath {
+            let yaml = fs::read_to_string(task_path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "file read".to_string(),
                 path: task_path.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
             let task_manifest: TaskManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
+                serde_yaml::from_str(&yaml).map_err(|e| DomainError::SerializationError {
+                    operation: "YAML serialization".to_string(),
                     details: format!("Error deserializing task: {e}"),
                 })?;
-            let task = AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
+            let task = AnyTask::try_from(task_manifest).map_err(|e| DomainError::SerializationError {
+                operation: "YAML serialization".to_string(),
                 details: format!("Error converting task manifest: {e}"),
             })?;
             crate::interface::cli::logging::Logger::debug_data_loaded("task", task.code(), task.name());
@@ -120,13 +120,13 @@ impl FileProjectRepository {
     }
 
     /// Save individual task files for a project
-    fn save_tasks_for_project(&self, project: &AnyProject) -> Result<(), AppError> {
+    fn save_tasks_for_project(&self, project: &AnyProject) -> DomainResult<()> {
         let project_id = project.id();
         let project_path = self.get_project_path_by_id(project_id);
         let tasks_dir = project_path.parent().unwrap().join("tasks");
 
         // Create tasks directory if it doesn't exist
-        fs::create_dir_all(&tasks_dir).map_err(|e| AppError::IoErrorWithPath {
+        fs::create_dir_all(&tasks_dir).map_err(|e| DomainError::IoErrorWithPath {
             operation: "create directory".to_string(),
             path: tasks_dir.to_string_lossy().to_string(),
             details: e.to_string(),
@@ -136,11 +136,11 @@ impl FileProjectRepository {
         for task in project.tasks().values() {
             let task_file_path = tasks_dir.join(format!("{}.yaml", task.code()));
             let task_manifest = TaskManifest::from(task.clone());
-            let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| AppError::SerializationError {
-                format: "YAML".to_string(),
+            let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::SerializationError {
+                operation: "YAML serialization".to_string(),
                 details: format!("Error serializing task: {e}"),
             })?;
-            fs::write(&task_file_path, yaml).map_err(|e| AppError::IoErrorWithPath {
+            fs::write(&task_file_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "file write".to_string(),
                 path: task_file_path.to_string_lossy().to_string(),
                 details: e.to_string(),
@@ -154,13 +154,13 @@ impl FileProjectRepository {
 impl ProjectRepository for FileProjectRepository {
     /// Salva um projeto.
     /// Salva um arquivo `{project_id}.yaml` no diretório projects.
-    fn save(&self, project: AnyProject) -> Result<(), AppError> {
+    fn save(&self, project: AnyProject) -> DomainResult<()> {
         let project_id = project.id();
         let _project_code = project.code();
 
         // Create projects directory if it doesn't exist
         let projects_dir = self.get_projects_path();
-        fs::create_dir_all(&projects_dir).map_err(|e| AppError::IoErrorWithPath {
+        fs::create_dir_all(&projects_dir).map_err(|e| DomainError::IoErrorWithPath {
             operation: "create directory".to_string(),
             path: projects_dir.to_string_lossy().to_string(),
             details: e.to_string(),
@@ -169,11 +169,11 @@ impl ProjectRepository for FileProjectRepository {
         // Save project file
         let project_path = self.get_project_path_by_id(project_id);
         let project_manifest = ProjectManifest::from(project.clone());
-        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| AppError::SerializationError {
-            format: "YAML".to_string(),
+        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
             details: format!("Error serializing project: {e}"),
         })?;
-        fs::write(&project_path, yaml).map_err(|e| AppError::IoErrorWithPath {
+        fs::write(&project_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: project_path.to_string_lossy().to_string(),
             details: e.to_string(),
@@ -187,10 +187,10 @@ impl ProjectRepository for FileProjectRepository {
 
     /// Carrega um projeto.
     /// Procura por arquivos YAML no diretório projects.
-    fn load(&self) -> Result<AnyProject, AppError> {
+    fn load(&self) -> DomainResult<AnyProject> {
         let projects_dir = self.get_projects_path();
         if !projects_dir.exists() {
-            return Err(AppError::ProjectNotFound {
+            return Err(DomainError::ProjectNotFound {
                 code: "unknown".to_string(),
             });
         }
@@ -205,12 +205,12 @@ impl ProjectRepository for FileProjectRepository {
             }
         }
 
-        Err(AppError::ProjectNotFound {
+        Err(DomainError::ProjectNotFound {
             code: "unknown".to_string(),
         })
     }
 
-    fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+    fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
         let mut projects = Vec::new();
         
         // 1. Look for ID-based projects in projects/ directory
@@ -259,7 +259,7 @@ impl ProjectRepository for FileProjectRepository {
         Ok(projects)
     }
 
-    fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+    fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
         // Simple search: iterate through all projects to find by code
         let projects_dir = self.get_projects_path();
         if !projects_dir.exists() {
@@ -292,7 +292,7 @@ impl ProjectRepository for FileProjectRepository {
         Ok(None)
     }
 
-    fn get_next_code(&self) -> Result<String, AppError> {
+    fn get_next_code(&self) -> DomainResult<String> {
         // Use timestamp-based approach for better uniqueness in concurrent scenarios
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -311,7 +311,7 @@ impl ProjectRepository for FileProjectRepository {
 }
 
 impl crate::domain::project_management::repository::ProjectRepositoryWithId for FileProjectRepository {
-    fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+    fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
         // Search for project by ID in ID-based format: projects/{id}.yaml
         let project_file = self.get_project_path_by_id(id);
         if project_file.exists() {

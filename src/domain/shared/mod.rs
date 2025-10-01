@@ -1,6 +1,8 @@
 pub mod command;
 pub mod convertable;
+pub mod errors;
 pub mod factory;
+pub mod logger;
 pub mod observer;
 pub mod query_engine;
 pub mod query_parser;

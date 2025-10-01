@@ -157,11 +157,11 @@ impl AnyProject {
         match self {
             AnyProject::Project(p) => {
                 // Insert the task directly using its code
-                crate::interface::cli::logging::Logger::debug_fmt(|| {
+                crate::domain::shared::logger::debug_fmt(|| {
                     format!("Adding task to project: {} - {}", task.code(), task.name())
                 });
                 p.tasks.insert(task.code().to_string(), task);
-                crate::interface::cli::logging::Logger::debug_fmt(|| {
+                crate::domain::shared::logger::debug_fmt(|| {
                     format!("Project now has {} tasks", p.tasks.len())
                 });
             }

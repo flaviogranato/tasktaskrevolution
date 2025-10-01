@@ -40,7 +40,6 @@ impl From<crate::domain::shared::errors::DomainError> for DeleteAppError {
     }
 }
 
-
 pub struct DeleteTaskUseCase<PR, CR>
 where
     PR: ProjectRepository + ProjectRepositoryWithId,

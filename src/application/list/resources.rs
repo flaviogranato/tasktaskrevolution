@@ -1,5 +1,6 @@
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 #[derive(Debug, Clone)]
 pub struct ResourceWithContext {
@@ -18,11 +19,11 @@ impl<R: ResourceRepository> ListResourcesUseCase<R> {
     }
 
     pub fn execute(&self) -> Result<Vec<AnyResource>, AppError> {
-        self.repository.find_all()
+        Ok(self.repository.find_all()?)
     }
 
     pub fn execute_by_company(&self, company_code: &str) -> Result<Vec<AnyResource>, AppError> {
-        self.repository.find_by_company(company_code)
+        Ok(self.repository.find_by_company(company_code)?)
     }
 
     pub fn execute_with_context(&self) -> Result<Vec<ResourceWithContext>, AppError> {
@@ -71,9 +72,9 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_all".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -81,9 +82,9 @@ mod tests {
             Ok(self.resources.clone())
         }
 
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_company".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -92,9 +93,9 @@ mod tests {
             Ok(self.resources.clone())
         }
 
-        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+        fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_all_with_context".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -106,9 +107,9 @@ mod tests {
                 .collect())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "find_by_code".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -121,9 +122,9 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save_in_hierarchy".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -131,9 +132,9 @@ mod tests {
             Ok(resource)
         }
 
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
+        fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -141,9 +142,9 @@ mod tests {
             Ok(resource)
         }
 
-        fn save_time_off(&self, _r: &str, _h: u32, _d: &str, _desc: Option<String>) -> Result<AnyResource, AppError> {
+        fn save_time_off(&self, _r: &str, _h: u32, _d: &str, _desc: Option<String>) -> DomainResult<AnyResource> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save_time_off".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -159,9 +160,9 @@ mod tests {
             _e: &str,
             _i: bool,
             _c: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "save_vacation".to_string(),
                     details: "Mock failure".to_string(),
                 });
@@ -178,9 +179,9 @@ mod tests {
             false // Mock implementation
         }
 
-        fn get_next_code(&self, resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, resource_type: &str) -> DomainResult<String> {
             if self.should_fail {
-                return Err(AppError::IoError {
+                return Err(DomainError::IoError {
                     operation: "get_next_code".to_string(),
                     details: "Mock failure".to_string(),
                 });

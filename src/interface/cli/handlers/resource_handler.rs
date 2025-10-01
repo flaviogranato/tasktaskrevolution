@@ -29,7 +29,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
             description: _,
         } => {
             let resource_repository = FileResourceRepository::new(".");
-            let config_repository = FileConfigRepository::new(".");
+            let config_repository = FileConfigRepository::new();
             let create_use_case = CreateResourceUseCase::new(resource_repository, config_repository);
 
             let params = CreateResourceParams {
@@ -142,7 +142,7 @@ pub fn handle_resource_command(command: ResourceCommand) -> Result<(), Box<dyn s
         } => {
             let resource_repository = FileResourceRepository::new(".");
             let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(".");
-            let config_repository = FileConfigRepository::new(".");
+            let config_repository = FileConfigRepository::new();
             let update_use_case = UpdateResourceUseCase::new(resource_repository, code_resolver, config_repository);
 
             let args = UpdateResourceArgs {

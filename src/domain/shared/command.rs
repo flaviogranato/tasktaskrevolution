@@ -1,13 +1,13 @@
 #![allow(dead_code)]
 
-use crate::application::errors::AppError;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 #[allow(unused_imports)]
 use std::collections::HashMap;
 
 /// A command that can be executed
 pub trait Command {
     /// Execute the command
-    fn execute(&self) -> Result<CommandResult, AppError>;
+    fn execute(&self) -> DomainResult<CommandResult>;
 
     /// Get the command name
     fn name(&self) -> &str;
@@ -21,7 +21,7 @@ pub trait Command {
     }
 
     /// Validate the command before execution
-    fn validate(&self) -> Result<(), AppError> {
+    fn validate(&self) -> DomainResult<()> {
         Ok(())
     }
 }
@@ -75,7 +75,7 @@ impl CommandResult {
 /// A command handler that processes commands
 pub trait CommandHandler<C: Command> {
     /// Handle the command
-    fn handle(&self, command: &C) -> Result<CommandResult, AppError>;
+    fn handle(&self, command: &C) -> DomainResult<CommandResult>;
 }
 
 /// A command bus that routes commands to handlers
@@ -105,7 +105,7 @@ impl CommandBus {
     }
 
     /// Execute a command
-    pub fn execute<C>(&self, command: &C) -> Result<CommandResult, AppError>
+    pub fn execute<C>(&self, command: &C) -> DomainResult<CommandResult>
     where
         C: Command,
     {
@@ -116,7 +116,7 @@ impl CommandBus {
             // In a real implementation, you might want to use a different approach
             command.execute()
         } else {
-            Err(AppError::ValidationError {
+            Err(DomainError::ValidationError {
                 field: "command".to_string(),
                 message: format!("No handler found for command: {}", type_name),
             })
@@ -133,7 +133,7 @@ impl Default for CommandBus {
 /// A command that can be undone
 pub trait UndoableCommand: Command {
     /// Undo the command
-    fn undo(&self) -> Result<CommandResult, AppError>;
+    fn undo(&self) -> DomainResult<CommandResult>;
 
     /// Check if the command can be undone
     fn can_undo(&self) -> bool {
@@ -144,13 +144,13 @@ pub trait UndoableCommand: Command {
 /// A command that can be redone
 pub trait RedoableCommand: UndoableCommand {
     /// Redo the command
-    fn redo(&self) -> Result<CommandResult, AppError>;
+    fn redo(&self) -> DomainResult<CommandResult>;
 }
 
 /// A command that can be validated
 pub trait ValidatableCommand: Command {
     /// Validate the command
-    fn validate(&self) -> Result<(), AppError>;
+    fn validate(&self) -> DomainResult<()>;
 
     /// Get validation errors
     fn validation_errors(&self) -> Vec<String>;
@@ -242,7 +242,7 @@ mod tests {
         name: String,
         description: String,
         can_execute: bool,
-        validation_result: Result<(), AppError>,
+        validation_result: DomainResult<()>,
     }
 
     impl MockCommand {
@@ -260,18 +260,18 @@ mod tests {
             self
         }
 
-        fn with_validation_result(mut self, result: Result<(), AppError>) -> Self {
+        fn with_validation_result(mut self, result: DomainResult<()>) -> Self {
             self.validation_result = result;
             self
         }
     }
 
     impl Command for MockCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             if self.can_execute {
                 Ok(CommandResult::success("Command executed successfully"))
             } else {
-                Err(AppError::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "command".to_string(),
                     message: "Command cannot be executed".to_string(),
                 })
@@ -290,10 +290,10 @@ mod tests {
             self.can_execute
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             match &self.validation_result {
                 Ok(()) => Ok(()),
-                Err(_) => Err(AppError::ValidationError {
+                Err(_) => Err(DomainError::ValidationError {
                     field: "test".to_string(),
                     message: "Validation failed".to_string(),
                 }),
@@ -322,7 +322,7 @@ mod tests {
     }
 
     impl Command for MockUndoableCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             self.base.execute()
         }
 
@@ -338,17 +338,17 @@ mod tests {
             self.base.can_execute()
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
     }
 
     impl UndoableCommand for MockUndoableCommand {
-        fn undo(&self) -> Result<CommandResult, AppError> {
+        fn undo(&self) -> DomainResult<CommandResult> {
             if self.can_undo {
                 Ok(CommandResult::success("Command undone successfully"))
             } else {
-                Err(AppError::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "command".to_string(),
                     message: "Command cannot be undone".to_string(),
                 })
@@ -388,7 +388,7 @@ mod tests {
     }
 
     impl Command for MockRetryableCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             self.base.execute()
         }
 
@@ -404,7 +404,7 @@ mod tests {
             self.base.can_execute()
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
     }
@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_mock_command_validation_failure() {
-        let command = MockCommand::new("test", "Test command").with_validation_result(Err(AppError::ValidationError {
+        let command = MockCommand::new("test", "Test command").with_validation_result(Err(DomainError::ValidationError {
             field: "test".to_string(),
             message: "Validation failed".to_string(),
         }));
@@ -725,7 +725,7 @@ mod tests {
     }
 
     impl Command for MockSchedulableCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             self.base.execute()
         }
 
@@ -741,7 +741,7 @@ mod tests {
             self.base.can_execute()
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
     }
@@ -766,7 +766,7 @@ mod tests {
     }
 
     impl Command for MockValidatableCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             self.base.execute()
         }
 
@@ -782,13 +782,13 @@ mod tests {
             self.base.can_execute()
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
     }
 
     impl ValidatableCommand for MockValidatableCommand {
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
 
@@ -814,7 +814,7 @@ mod tests {
     }
 
     impl Command for MockAuthorizableCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             self.base.execute()
         }
 
@@ -830,7 +830,7 @@ mod tests {
             self.base.can_execute()
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
     }
@@ -859,7 +859,7 @@ mod tests {
     }
 
     impl Command for MockLoggableCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             self.base.execute()
         }
 
@@ -875,7 +875,7 @@ mod tests {
             self.base.can_execute()
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
     }
@@ -927,7 +927,7 @@ mod tests {
     }
 
     impl Command for MockRedoableCommand {
-        fn execute(&self) -> Result<CommandResult, AppError> {
+        fn execute(&self) -> DomainResult<CommandResult> {
             self.base.execute()
         }
 
@@ -943,13 +943,13 @@ mod tests {
             self.base.can_execute()
         }
 
-        fn validate(&self) -> Result<(), AppError> {
+        fn validate(&self) -> DomainResult<()> {
             self.base.validate()
         }
     }
 
     impl UndoableCommand for MockRedoableCommand {
-        fn undo(&self) -> Result<CommandResult, AppError> {
+        fn undo(&self) -> DomainResult<CommandResult> {
             self.base.undo()
         }
 
@@ -959,11 +959,11 @@ mod tests {
     }
 
     impl RedoableCommand for MockRedoableCommand {
-        fn redo(&self) -> Result<CommandResult, AppError> {
+        fn redo(&self) -> DomainResult<CommandResult> {
             if self.can_redo {
                 Ok(CommandResult::success("Command redone successfully"))
             } else {
-                Err(AppError::ValidationError {
+                Err(DomainError::ValidationError {
                     field: "command".to_string(),
                     message: "Command cannot be redone".to_string(),
                 })
@@ -983,7 +983,7 @@ mod tests {
     struct MockCommandHandler;
 
     impl CommandHandler<MockCommand> for MockCommandHandler {
-        fn handle(&self, _command: &MockCommand) -> Result<CommandResult, AppError> {
+        fn handle(&self, _command: &MockCommand) -> DomainResult<CommandResult> {
             Ok(CommandResult::success("Handled by mock handler"))
         }
     }
@@ -1024,7 +1024,7 @@ mod tests {
         }
 
         impl Command for MetadataCommand {
-            fn execute(&self) -> Result<CommandResult, AppError> {
+            fn execute(&self) -> DomainResult<CommandResult> {
                 let metadata_yaml = serde_yaml::to_value(&self.metadata).unwrap();
                 Ok(CommandResult::success_with_data(
                     "Command executed with metadata",
@@ -1073,9 +1073,9 @@ mod tests {
         }
 
         impl Command for ValidatedCommand {
-            fn execute(&self) -> Result<CommandResult, AppError> {
+            fn execute(&self) -> DomainResult<CommandResult> {
                 if self.value > self.max_value {
-                    Err(AppError::ValidationError {
+                    Err(DomainError::ValidationError {
                         field: "value".to_string(),
                         message: format!("Value {} exceeds maximum {}", self.value, self.max_value),
                     })
@@ -1092,9 +1092,9 @@ mod tests {
                 &self.description
             }
 
-            fn validate(&self) -> Result<(), AppError> {
+            fn validate(&self) -> DomainResult<()> {
                 if self.value < 0 {
-                    Err(AppError::ValidationError {
+                    Err(DomainError::ValidationError {
                         field: "value".to_string(),
                         message: "Value cannot be negative".to_string(),
                     })
@@ -1156,16 +1156,16 @@ mod tests {
         }
 
         impl Command for ConditionalCommand {
-            fn execute(&self) -> Result<CommandResult, AppError> {
+            fn execute(&self) -> DomainResult<CommandResult> {
                 if !self.should_execute {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "command".to_string(),
                         message: "Command execution disabled".to_string(),
                     });
                 }
 
                 if !self.condition_met {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "command".to_string(),
                         message: "Condition not met".to_string(),
                     });
@@ -1242,9 +1242,9 @@ mod tests {
         }
 
         impl Command for RetryableCommand {
-            fn execute(&self) -> Result<CommandResult, AppError> {
+            fn execute(&self) -> DomainResult<CommandResult> {
                 if self.current_attempt >= self.max_attempts {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "command".to_string(),
                         message: "Max attempts exceeded".to_string(),
                     });
@@ -1253,7 +1253,7 @@ mod tests {
                 if self.current_attempt == self.success_on_attempt {
                     Ok(CommandResult::success("Command succeeded on retry"))
                 } else {
-                    Err(AppError::ValidationError {
+                    Err(DomainError::ValidationError {
                         field: "command".to_string(),
                         message: format!("Attempt {} failed", self.current_attempt),
                     })
@@ -1319,7 +1319,7 @@ mod tests {
         }
 
         impl Command for AsyncCommand {
-            fn execute(&self) -> Result<CommandResult, AppError> {
+            fn execute(&self) -> DomainResult<CommandResult> {
                 // Simulate async behavior with a small delay
                 std::thread::sleep(std::time::Duration::from_millis(self.delay_ms));
                 Ok(CommandResult::success("Async command completed"))
@@ -1356,9 +1356,9 @@ mod tests {
         }
 
         impl Command for ResourceCommand {
-            fn execute(&self) -> Result<CommandResult, AppError> {
+            fn execute(&self) -> DomainResult<CommandResult> {
                 if !self.resource_available {
-                    return Err(AppError::ValidationError {
+                    return Err(DomainError::ValidationError {
                         field: "resource".to_string(),
                         message: format!("Resource {} not available", self.resource_id),
                     });
