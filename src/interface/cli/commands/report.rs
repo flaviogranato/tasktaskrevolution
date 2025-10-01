@@ -7,6 +7,7 @@ use crate::application::shared::code_resolver::CodeResolver;
 use crate::infrastructure::persistence::company_repository::FileCompanyRepository;
 use crate::infrastructure::persistence::project_repository::FileProjectRepository;
 use crate::infrastructure::persistence::resource_repository::FileResourceRepository;
+use crate::infrastructure::persistence::task_repository::FileTaskRepository;
 use clap::{Args, Subcommand};
 use std::path::Path;
 
@@ -73,12 +74,14 @@ pub fn execute_report(args: ReportArgs) -> Result<(), AppError> {
     let project_repository = FileProjectRepository::new();
     let resource_repository = FileResourceRepository::new(base_path);
     let company_repository = FileCompanyRepository::new(base_path);
+    let task_repository = FileTaskRepository::new(base_path);
 
     let report_engine = ReportEngine::new(
         code_resolver,
         project_repository,
         resource_repository,
         company_repository,
+        task_repository,
     );
 
     let mut config = ReportConfig {

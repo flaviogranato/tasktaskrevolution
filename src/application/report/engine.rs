@@ -8,37 +8,41 @@ use crate::domain::project_management::any_project::AnyProject;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::any_resource::AnyResource;
 use crate::domain::resource_management::repository::ResourceRepository;
-use crate::domain::task_management::any_task::AnyTask;
+use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
 use chrono::Local;
 use std::collections::HashMap;
 
 /// Engine principal para geração de relatórios
-pub struct ReportEngine<CR, PR, RR, CoR>
+pub struct ReportEngine<CR, PR, RR, CoR, TR>
 where
     CR: CodeResolverTrait,
     PR: ProjectRepository,
     RR: ResourceRepository,
     CoR: CompanyRepository,
+    TR: TaskRepository,
 {
     _code_resolver: CR,
     project_repository: PR,
     resource_repository: RR,
     company_repository: CoR,
+    task_repository: TR,
 }
 
-impl<CR, PR, RR, CoR> ReportEngine<CR, PR, RR, CoR>
+impl<CR, PR, RR, CoR, TR> ReportEngine<CR, PR, RR, CoR, TR>
 where
     CR: CodeResolverTrait,
     PR: ProjectRepository,
     RR: ResourceRepository,
     CoR: CompanyRepository,
+    TR: TaskRepository,
 {
-    pub fn new(code_resolver: CR, project_repository: PR, resource_repository: RR, company_repository: CoR) -> Self {
+    pub fn new(code_resolver: CR, project_repository: PR, resource_repository: RR, company_repository: CoR, task_repository: TR) -> Self {
         Self {
             _code_resolver: code_resolver,
             project_repository,
             resource_repository,
             company_repository,
+            task_repository,
         }
     }
 
@@ -96,18 +100,16 @@ where
 
     /// Gera relatório de tarefas
     fn generate_task_report(&self, config: &ReportConfig) -> Result<ReportData, AppError> {
-        let projects = self.project_repository.find_all()?;
-        let mut all_tasks = Vec::new();
+        // Load all tasks from task repository (projects/tasks/*.yaml)
+        let all_tasks = self.task_repository.find_all()?;
+        let mut task_data = Vec::new();
 
-        for project in projects {
-            let p = project;
-            for task in p.tasks().values() {
-                let task_data = self.task_to_json(task)?;
-                all_tasks.push(task_data);
-            }
+        for task in all_tasks {
+            let task_json = self.task_to_json(&task)?;
+            task_data.push(task_json);
         }
 
-        let filtered_tasks = self.apply_filters(all_tasks, &config.filters)?;
+        let filtered_tasks = self.apply_filters(task_data, &config.filters)?;
         let sorted_tasks = self.apply_sorting(filtered_tasks, &config.sort_by, &config.sort_order)?;
         let grouped_tasks = self.apply_grouping(sorted_tasks, &config.group_by)?;
 
@@ -227,6 +229,14 @@ where
             "project_code".to_string(),
             serde_json::Value::String(task.project_code().to_string()),
         );
+        
+        // Resolve company_code from project_code
+        let company_code = self.resolve_company_code_for_project(task.project_code())?;
+        data.insert(
+            "company_code".to_string(),
+            serde_json::Value::String(company_code),
+        );
+        
         data.insert(
             "status".to_string(),
             serde_json::Value::String(task.status().to_string()),
@@ -245,6 +255,17 @@ where
             serde_json::Value::Number(serde_json::Number::from(task.assigned_resources().len())),
         );
         Ok(data)
+    }
+
+    /// Resolve company_code for a given project_code
+    fn resolve_company_code_for_project(&self, project_code: &str) -> Result<String, AppError> {
+        let projects = self.project_repository.find_all()?;
+        for project in projects {
+            if project.code() == project_code {
+                return Ok(project.company_code().to_string());
+            }
+        }
+        Err(AppError::validation_error("project", format!("Project {} not found", project_code)))
     }
 
     /// Converte um recurso para JSON
