@@ -221,7 +221,8 @@ impl SimplifiedExecutor {
 
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
-                let use_case = CreateResourceUseCase::new(resource_repo);
+                let config_repo = context_manager.create_config_repository();
+                let use_case = CreateResourceUseCase::new(resource_repo, config_repo);
 
                 // Parse dates if provided
                 let start_date_parsed = if let Some(start_date_str) = start_date {
@@ -746,7 +747,8 @@ impl SimplifiedExecutor {
                 let company_code = context_manager.resolve_company_code(company)?;
                 let resource_repo = context_manager.create_resource_repository();
                 let code_resolver = Self::create_code_resolver(&context_manager)?;
-                let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver);
+                let config_repo = context_manager.create_config_repository();
+                let use_case = UpdateResourceUseCase::new(resource_repo, code_resolver, config_repo);
 
                 let args = UpdateResourceArgs {
                     name,

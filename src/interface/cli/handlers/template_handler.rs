@@ -77,7 +77,8 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
             let _code_resolver_resource = crate::application::shared::code_resolver::CodeResolver::new(".");
             let code_resolver_task = crate::application::shared::code_resolver::CodeResolver::new(".");
             let create_project_use_case = CreateProjectUseCase::new(project_repository);
-            let create_resource_use_case = CreateResourceUseCase::new(resource_repository);
+            let config_repository = FileConfigRepository::new(".");
+            let create_resource_use_case = CreateResourceUseCase::new(resource_repository, config_repository);
             let create_task_use_case = CreateTaskUseCase::new(
                 FileProjectRepository::with_base_path(".".into()),
                 FileTaskRepository::new("."),
