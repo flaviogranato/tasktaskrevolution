@@ -8,6 +8,7 @@ use crate::domain::resource_management::{
     repository::{ResourceRepository, ResourceRepositoryWithId},
     resource::{ResourceScope, WipLimits},
 };
+use crate::domain::company_settings::repository::ConfigRepository;
 use std::fmt;
 
 #[derive(Debug)]
@@ -48,26 +49,30 @@ pub struct UpdateResourceArgs {
     pub resource_type: Option<String>,
 }
 
-pub struct UpdateResourceUseCase<RR, CR>
+pub struct UpdateResourceUseCase<RR, CR, C>
 where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
+    C: ConfigRepository,
 {
     resource_repository: RR,
     code_resolver: CR,
+    config_repository: C,
     type_validator: ResourceTypeValidator,
 }
 
-impl<RR, CR> UpdateResourceUseCase<RR, CR>
+impl<RR, CR, C> UpdateResourceUseCase<RR, CR, C>
 where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
+    C: ConfigRepository,
 {
-    pub fn new(resource_repository: RR, code_resolver: CR) -> Self {
+    pub fn new(resource_repository: RR, code_resolver: CR, config_repository: C) -> Self {
         Self {
             resource_repository,
             code_resolver,
-            type_validator: ResourceTypeValidator::new(),
+            config_repository,
+            type_validator: ResourceTypeValidator::new(Box::new(config_repository)),
         }
     }
 
