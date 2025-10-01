@@ -5,6 +5,7 @@ use crate::domain::resource_management::{
     resource::{Resource, ResourceScope},
 };
 use crate::domain::company_settings::repository::ConfigRepository;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct CreateResourceParams {
@@ -21,14 +22,17 @@ pub struct CreateResourceParams {
 
 pub struct CreateResourceUseCase<R: ResourceRepository> {
     repository: R,
+    config_repository: Arc<dyn ConfigRepository>,
     type_validator: ResourceTypeValidator,
 }
 
-impl<R: ResourceRepository, C: ConfigRepository> CreateResourceUseCase<R> {
-    pub fn new(repository: R, config_repository: C) -> Self {
+impl<R: ResourceRepository> CreateResourceUseCase<R> {
+    pub fn new<C: ConfigRepository + 'static>(repository: R, config_repository: C) -> Self {
+        let config_repo = Arc::new(config_repository);
         Self {
             repository,
-            type_validator: ResourceTypeValidator::new(Box::new(config_repository)),
+            config_repository: config_repo.clone(),
+            type_validator: ResourceTypeValidator::new(config_repo),
         }
     }
     pub fn execute(&self, params: CreateResourceParams) -> Result<(), AppError> {

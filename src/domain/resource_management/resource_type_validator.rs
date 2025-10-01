@@ -1,11 +1,12 @@
 use crate::domain::company_settings::repository::ConfigRepository;
+use std::sync::Arc;
 
 pub struct ResourceTypeValidator {
-    config_repository: Box<dyn ConfigRepository>,
+    config_repository: Arc<dyn ConfigRepository>,
 }
 
 impl ResourceTypeValidator {
-    pub fn new(config_repository: Box<dyn ConfigRepository>) -> Self {
+    pub fn new(config_repository: Arc<dyn ConfigRepository>) -> Self {
         Self {
             config_repository,
         }
