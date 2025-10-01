@@ -123,38 +123,37 @@ impl TaskRepository for FileTaskRepository {
     }
 
     fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
-        // Search in new hierarchical structure: companies/*/projects/*/tasks/*.yaml
-        let pattern = self.base_path.join("companies/*/projects/*/tasks/*.yaml");
-        let walker = glob(pattern.to_str().unwrap()).map_err(|e| AppError::ValidationError {
-            field: "glob pattern".to_string(),
-            message: e.to_string(),
-        })?;
         let mut tasks = Vec::new();
 
-        for entry in walker {
-            let entry = entry.map_err(|e| AppError::ValidationError {
-                field: "glob entry".to_string(),
-                message: e.to_string(),
-            })?;
-            let file_path = entry.as_path();
-            let yaml = fs::read_to_string(file_path).map_err(|e| AppError::IoErrorWithPath {
-                operation: "file read".to_string(),
-                path: file_path.to_string_lossy().to_string(),
-                details: e.to_string(),
-            })?;
+        // 1. Search in ID-based structure: projects/tasks/*.yaml
+        let id_based_pattern = self.base_path.join("projects/tasks/*.yaml");
+        if let Ok(walker) = glob(id_based_pattern.to_str().unwrap()) {
+            for entry in walker.flatten() {
+                let file_path = entry.as_path();
+                if let Ok(yaml) = fs::read_to_string(file_path)
+                    && let Ok(task_manifest) = serde_yaml::from_str::<TaskManifest>(&yaml)
+                    && let Ok(task) = AnyTask::try_from(task_manifest)
+                {
+                    tasks.push(task);
+                }
+            }
+        }
 
-            let task_manifest: TaskManifest =
-                serde_yaml::from_str(&yaml).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
-                    details: format!("Error deserializing task: {}", e),
-                })?;
-
-            tasks.push(
-                AnyTask::try_from(task_manifest).map_err(|e| AppError::SerializationError {
-                    format: "YAML".to_string(),
-                    details: format!("Error converting manifest: {}", e),
-                })?,
-            );
+        // 2. Search in hierarchical structure: companies/*/projects/*/tasks/*.yaml
+        let hierarchical_pattern = self.base_path.join("companies/*/projects/*/tasks/*.yaml");
+        if let Ok(walker) = glob(hierarchical_pattern.to_str().unwrap()) {
+            for entry in walker.flatten() {
+                let file_path = entry.as_path();
+                if let Ok(yaml) = fs::read_to_string(file_path)
+                    && let Ok(task_manifest) = serde_yaml::from_str::<TaskManifest>(&yaml)
+                    && let Ok(task) = AnyTask::try_from(task_manifest)
+                {
+                    // Check if task already exists to avoid duplicates
+                    if !tasks.iter().any(|existing| existing.code() == task.code()) {
+                        tasks.push(task);
+                    }
+                }
+            }
         }
 
         Ok(tasks)
