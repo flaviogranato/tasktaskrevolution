@@ -57,14 +57,14 @@ mod test {
                     message: "Erro mockado ao salvar".to_string(),
                 });
             }
-            *self.saved_config.borrow_mut() = Some(config.clone());
-            *self.created_path.borrow_mut() = Some(path.clone());
+            *self.saved_config.borrow_mut() = Some(<ConfigManifest as Convertible<Config>>::from(config));
+            *self.created_path.borrow_mut() = Some(path.to_path_buf());
 
             Ok(())
         }
 
         fn create_repository_dir(&self, path: &Path) -> DomainResult<()> {
-            *self.created_path.borrow_mut() = Some(path.clone());
+            *self.created_path.borrow_mut() = Some(path.to_path_buf());
             Ok(())
         }
 
