@@ -49,22 +49,20 @@ pub struct UpdateResourceArgs {
     pub resource_type: Option<String>,
 }
 
-pub struct UpdateResourceUseCase<RR, CR, C>
+pub struct UpdateResourceUseCase<RR, CR>
 where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
-    C: ConfigRepository,
 {
     resource_repository: RR,
     code_resolver: CR,
     type_validator: ResourceTypeValidator,
 }
 
-impl<RR, CR, C> UpdateResourceUseCase<RR, CR, C>
+impl<RR, CR> UpdateResourceUseCase<RR, CR>
 where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
-    C: ConfigRepository,
 {
     pub fn new(resource_repository: RR, code_resolver: CR, config_repository: C) -> Self {
         Self {
