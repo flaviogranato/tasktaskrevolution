@@ -231,7 +231,7 @@ mod test {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyTask>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyTask>> {
             Ok(self.tasks.borrow().get(code).cloned())
         }
 
@@ -240,7 +240,7 @@ mod test {
             task: AnyTask,
             _company_code: &str,
             _project_code: &str,
-        ) -> Result<AnyTask, AppError> {
+        ) -> DomainResult<AnyTask> {
             self.save(task)
         }
 
