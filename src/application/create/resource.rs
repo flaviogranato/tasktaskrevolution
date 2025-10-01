@@ -19,8 +19,9 @@ pub struct CreateResourceParams {
     pub scope: ResourceScope,
 }
 
-pub struct CreateResourceUseCase<R: ResourceRepository> {
+pub struct CreateResourceUseCase<R: ResourceRepository, C: ConfigRepository> {
     repository: R,
+    config_repository: C,
     type_validator: ResourceTypeValidator,
 }
 
@@ -28,6 +29,7 @@ impl<R: ResourceRepository, C: ConfigRepository> CreateResourceUseCase<R> {
     pub fn new(repository: R, config_repository: C) -> Self {
         Self {
             repository,
+            config_repository,
             type_validator: ResourceTypeValidator::new(Box::new(config_repository)),
         }
     }
