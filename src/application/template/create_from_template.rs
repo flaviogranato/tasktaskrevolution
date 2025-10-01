@@ -9,6 +9,7 @@ use crate::domain::project_management::{
 };
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::task_management::repository::TaskRepository;
+use crate::domain::company_settings::repository::ConfigRepository;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 
@@ -17,7 +18,6 @@ pub struct CreateFromTemplateUseCase<
     RR: ResourceRepository + ResourceRepositoryWithId,
     TR: TaskRepository,
     CR: CodeResolverTrait,
-    C: ConfigRepository,
 > {
     create_project_use_case: CreateProjectUseCase<PR>,
     create_resource_use_case: CreateResourceUseCase<RR, C>,
@@ -29,8 +29,7 @@ impl<
     RR: ResourceRepository + ResourceRepositoryWithId,
     TR: TaskRepository,
     CR: CodeResolverTrait,
-    C: ConfigRepository,
-> CreateFromTemplateUseCase<PR, RR, TR, CR, C>
+> CreateFromTemplateUseCase<PR, RR, TR, CR>
 {
     pub fn new(
         create_project_use_case: CreateProjectUseCase<PR>,
