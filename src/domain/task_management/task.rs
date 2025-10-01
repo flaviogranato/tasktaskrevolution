@@ -403,12 +403,12 @@ mod tests {
     #[test]
     fn test_task_error_display_formatting() {
         let invalid_date_err = DomainError::validation_error("date_range", "Invalid date range");
-        assert_eq!(format!("{invalid_date_err}"), "Start date is after end date.");
+        assert_eq!(format!("{invalid_date_err}"), "Validation error in field 'date_range': Invalid date range");
 
         let vacation_err = DomainError::business_rule_violation("resource_availability", "Resource RES-123 is on vacation");
         assert_eq!(
             format!("{vacation_err}"),
-            "Resource RES-123 is on vacation during this period."
+            "Business rule violation 'resource_availability': Resource RES-123 is on vacation"
         );
     }
 
