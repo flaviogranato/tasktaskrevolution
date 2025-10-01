@@ -38,6 +38,12 @@ impl From<AppError> for DeactivateAppError {
     }
 }
 
+impl From<crate::domain::shared::errors::DomainError> for DeactivateAppError {
+    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
+        DeactivateAppError::RepositoryError(err.into())
+    }
+}
+
 pub struct DeactivateResourceUseCase<RR, CR>
 where
     RR: ResourceRepository + ResourceRepositoryWithId,
