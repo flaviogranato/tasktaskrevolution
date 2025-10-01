@@ -61,7 +61,7 @@ where
     type_validator: ResourceTypeValidator,
 }
 
-impl<RR, CR, C> UpdateResourceUseCase<RR, CR, C>
+impl<RR, CR, C> UpdateResourceUseCase<RR, CR>
 where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
