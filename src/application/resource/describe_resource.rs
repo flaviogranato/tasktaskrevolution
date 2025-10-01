@@ -64,7 +64,7 @@ where
         let resource_id = self
             .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(DescribeAppError::RepositoryError)?;
+            .map_err(|e| DescribeAppError::RepositoryError(AppError::from(e)))?;
 
         // 2. Use ID for internal operation
         self.resource_repository
