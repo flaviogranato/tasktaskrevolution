@@ -195,11 +195,11 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             self.save(resource)
         }
 
-        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
+        fn save(&self, _resource: AnyResource) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
