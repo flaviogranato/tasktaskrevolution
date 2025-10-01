@@ -7,6 +7,7 @@ use crate::domain::resource_management::{
     resource::{TaskAssignment, TaskAssignmentStatus},
 };
 use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
+use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
 use chrono::Local;
 use std::fmt;
 
@@ -49,24 +50,28 @@ impl From<AppError> for AssignResourceToAppError {
     }
 }
 
-pub struct AssignResourceToTaskUseCase<TR, RR>
+pub struct AssignResourceToTaskUseCase<TR, RR, PR>
 where
     TR: TaskRepository,
     RR: ResourceRepository,
+    PR: ProjectRepository,
 {
     task_repository: TR,
     resource_repository: RR,
+    project_repository: PR,
 }
 
-impl<TR, RR> AssignResourceToTaskUseCase<TR, RR>
+impl<TR, RR, PR> AssignResourceToTaskUseCase<TR, RR, PR>
 where
     TR: TaskRepository,
     RR: ResourceRepository,
+    PR: ProjectRepository,
 {
-    pub fn new(task_repository: TR, resource_repository: RR) -> Self {
+    pub fn new(task_repository: TR, resource_repository: RR, project_repository: PR) -> Self {
         Self {
             task_repository,
             resource_repository,
+            project_repository,
         }
     }
 
@@ -88,6 +93,12 @@ where
             .resource_repository
             .find_by_code(resource_code)?
             .ok_or_else(|| AssignResourceToAppError::ResourceNotFound(resource_code.to_string()))?;
+
+        // 2.1 Find the project to resolve the company code for hierarchical save
+        let project: AnyProject = self
+            .project_repository
+            .find_by_code(project_code)?
+            .ok_or_else(|| AssignResourceToAppError::ProjectNotFound(project_code.to_string()))?;
 
         // 3. Validate resource availability
         if !self.is_resource_available(&resource) {
@@ -124,7 +135,7 @@ where
 
         // 9. Save the updated resource using save_in_hierarchy
         self.resource_repository
-            .save_in_hierarchy(updated_resource, project_code, None)
+            .save_in_hierarchy(updated_resource, project.company_code(), Some(project_code))
             .map_err(AssignResourceToAppError::RepositoryError)?;
 
         Ok(saved_task)
@@ -266,6 +277,32 @@ mod tests {
     use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
     use chrono::NaiveDate;
     use std::{cell::RefCell, collections::HashMap};
+    
+    // Minimal mock for ProjectRepository used by new constructor
+    struct MockProjectRepository {
+        projects: RefCell<HashMap<String, AnyProject>>,
+    }
+    
+    impl ProjectRepository for MockProjectRepository {
+        fn save(&self, _project: AnyProject) -> Result<(), AppError> { unimplemented!() }
+        fn load(&self) -> Result<AnyProject, AppError> { unimplemented!() }
+        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> { Ok(self.projects.borrow().values().cloned().collect()) }
+        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+            Ok(self.projects.borrow().get(code).cloned())
+        }
+        fn get_next_code(&self) -> Result<String, AppError> { unimplemented!() }
+    }
+    
+    fn create_test_project(code: &str) -> AnyProject {
+        crate::domain::project_management::builder::ProjectBuilder::new()
+            .code(code.to_string())
+            .name("Test Project".to_string())
+            .company_code("COMP-001".to_string())
+            .created_by("test".to_string())
+            .build()
+            .unwrap()
+            .into()
+    }
 
     // --- Mocks ---
     struct MockTaskRepository {
@@ -428,7 +465,10 @@ mod tests {
             resources: RefCell::new(HashMap::from([(resource.code().to_string(), resource.clone())])),
         };
 
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(task.project_code().to_string(), create_test_project("PROJ-001"))])),
+        };
+        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 
         // Act
         let result = use_case.execute("TASK-001", "RES-001", "PROJ-001", None);
@@ -451,7 +491,8 @@ mod tests {
             resources: RefCell::new(HashMap::from([(resource.code().to_string(), resource.clone())])),
         };
 
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+        let project_repo = MockProjectRepository { projects: RefCell::new(HashMap::new()) };
+        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 
         // Act
         let result = use_case.execute("NONEXISTENT-TASK", "RES-001", "PROJ-001", None);
@@ -472,7 +513,10 @@ mod tests {
             resources: RefCell::new(HashMap::new()),
         };
 
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(task.project_code().to_string(), create_test_project("PROJ-001"))])),
+        };
+        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 
         // Act
         let result = use_case.execute("TASK-001", "NONEXISTENT-RESOURCE", "PROJ-001", None);
@@ -620,7 +664,10 @@ mod tests {
             resources: RefCell::new(HashMap::from([(resource.code().to_string(), resource.clone())])),
         };
 
-        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo);
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::from([(task.project_code().to_string(), create_test_project("PROJ-001"))])),
+        };
+        let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 
         // Act
         let result = use_case.execute("TASK-001", "RES-001", "PROJ-001", None);

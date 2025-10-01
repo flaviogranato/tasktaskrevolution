@@ -581,12 +581,16 @@ impl TestDataCommand {
         let resource_repo = Arc::new(FileResourceRepository::new(base_path));
         let task_repo = Arc::new(FileTaskRepository::new(base_path));
 
+        // Create code resolver for code->ID validation using the same base path
+        let code_resolver = crate::application::shared::code_resolver::CodeResolver::new(base_path);
+
         // Create validation service
         Ok(DataValidationService::new(
             company_repo,
             project_repo,
             resource_repo,
             task_repo,
+            Some(code_resolver),
         ))
     }
 }

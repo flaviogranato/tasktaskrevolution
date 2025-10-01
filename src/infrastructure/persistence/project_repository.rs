@@ -212,14 +212,12 @@ impl ProjectRepository for FileProjectRepository {
 
     fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
         let mut projects = Vec::new();
+        
+        // 1. Look for ID-based projects in projects/ directory
         let projects_dir = self.get_projects_path();
-
-        if !projects_dir.exists() {
-            return Ok(projects);
-        }
-
-        // Look for YAML files in the projects directory
-        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+        if projects_dir.exists()
+            && let Ok(entries) = std::fs::read_dir(&projects_dir)
+        {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_file()
@@ -231,8 +229,32 @@ impl ProjectRepository for FileProjectRepository {
             }
         }
 
-        // Note: Removed current directory check as it was causing issues with project updates
-        // The current directory check was loading old project data and overwriting updated projects
+        // 2. Look for hierarchical projects in companies/*/projects/*/project.yaml
+        let companies_dir = self.base_path.join("companies");
+        if companies_dir.exists()
+            && let Ok(entries) = std::fs::read_dir(&companies_dir)
+        {
+            for company_entry in entries.flatten() {
+                let company_path = company_entry.path();
+                if company_path.is_dir() {
+                    let projects_dir = company_path.join("projects");
+                    if let Ok(project_entries) = std::fs::read_dir(projects_dir) {
+                        for proj_dir in project_entries.flatten() {
+                            let proj_path = proj_dir.path();
+                            let manifest = proj_path.join("project.yaml");
+                            if manifest.exists()
+                                && let Ok(project) = self.load_from_path(&manifest)
+                            {
+                                // Check if project already exists to avoid duplicates
+                                if !projects.iter().any(|existing| existing.code() == project.code()) {
+                                    projects.push(project);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(projects)
     }
