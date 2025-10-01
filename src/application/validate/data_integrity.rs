@@ -7,6 +7,7 @@ use crate::application::errors::AppError;
 use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::shared::errors::DomainResult;
 use crate::domain::shared::specification::{AndSpecification, Specification};
 
 pub struct ValidateDataIntegrityUseCase<'a, P, R, C>
@@ -242,43 +243,43 @@ mod tests {
     }
 
     impl CompanyRepository for MockCompanyRepository {
-        fn save(&self, _company: Company) -> Result<(), AppError> {
+        fn save(&self, _company: Company) -> DomainResult<()> {
             Ok(())
         }
 
-        fn find_all(&self) -> Result<Vec<Company>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<Company>> {
             Ok(self.companies.clone())
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<Company>, AppError> {
+        fn find_by_code(&self, _code: &str) -> DomainResult<Option<Company>> {
             Ok(None)
         }
 
-        fn find_by_id(&self, _id: &str) -> Result<Option<Company>, AppError> {
+        fn find_by_id(&self, _id: &str) -> DomainResult<Option<Company>> {
             Ok(None)
         }
 
-        fn find_by_name(&self, _name: &str) -> Result<Option<Company>, AppError> {
+        fn find_by_name(&self, _name: &str) -> DomainResult<Option<Company>> {
             Ok(None)
         }
 
-        fn update(&self, _company: Company) -> Result<(), AppError> {
+        fn update(&self, _company: Company) -> DomainResult<()> {
             Ok(())
         }
 
-        fn delete(&self, _id: &str) -> Result<(), AppError> {
+        fn delete(&self, _id: &str) -> DomainResult<()> {
             Ok(())
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             Ok("COMP-001".to_string())
         }
 
-        fn code_exists(&self, _code: &str) -> Result<bool, AppError> {
+        fn code_exists(&self, _code: &str) -> DomainResult<bool> {
             Ok(false)
         }
 
-        fn name_exists(&self, _name: &str) -> Result<bool, AppError> {
+        fn name_exists(&self, _name: &str) -> DomainResult<bool> {
             Ok(false)
         }
     }
