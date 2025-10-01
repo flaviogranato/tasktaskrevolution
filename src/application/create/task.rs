@@ -252,7 +252,7 @@ mod test {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn get_next_code(&self, _project_code: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, _project_code: &str) -> DomainResult<String> {
             Ok("TASK-001".to_string())
         }
     }
@@ -279,9 +279,9 @@ mod test {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, project: AnyProject) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
                 });
