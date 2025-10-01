@@ -447,11 +447,11 @@ impl From<crate::application::errors::AppError> for DomainError {
             crate::application::errors::AppError::IoErrorWithPath { operation, path, details } => {
                 DomainError::IoErrorWithPath { operation, path, details }
             }
-            crate::application::errors::AppError::SerializationError { operation, details } => {
-                DomainError::SerializationError { operation, details }
+            crate::application::errors::AppError::SerializationError { format, details } => {
+                DomainError::SerializationError { operation: format, details }
             }
-            crate::application::errors::AppError::ConfigurationError { details } => {
-                DomainError::ConfigurationError { details }
+            crate::application::errors::AppError::ConfigurationNotFound { path } => {
+                DomainError::ConfigurationError { details: format!("Configuration not found at path '{}'", path) }
             }
             crate::application::errors::AppError::ConfigurationInvalid { field, value, reason } => {
                 DomainError::ConfigurationInvalid { field, value, reason }
