@@ -7,6 +7,7 @@ use crate::domain::project_management::{
     any_project::AnyProject,
     repository::{ProjectRepository, ProjectRepositoryWithId},
 };
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::resource_management::resource::ResourceScope;
 use crate::domain::task_management::{Category, Priority};
@@ -141,12 +142,12 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, project: AnyProject) -> DomainResult<()> {
             self.projects.borrow_mut().insert(project.code().to_string(), project);
             Ok(())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().get(code).cloned())
         }
 
