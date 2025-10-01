@@ -1,5 +1,6 @@
 use crate::application::errors::AppError;
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use chrono::{DateTime, Local, NaiveDate, TimeZone};
 
 pub struct CreateTimeOffUseCase<R: ResourceRepository> {
@@ -91,7 +92,7 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
+        fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             let mut resources = self.resources.borrow_mut();
             if let Some(index) = resources.iter().position(|r| r.id() == resource.id()) {
                 resources[index] = resource.clone();
@@ -101,7 +102,7 @@ mod tests {
             Ok(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             Ok(self.resources.borrow().clone())
         }
 
