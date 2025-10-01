@@ -1,6 +1,7 @@
 use crate::application::errors::AppError;
 use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::project_management::{AnyProject, builder::ProjectBuilder, repository::ProjectRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 pub struct CreateProjectUseCase<R: ProjectRepository> {
@@ -101,9 +102,9 @@ mod test {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, project: AnyProject) -> DomainResult<()> {
             if self.should_fail {
-                return Err(AppError::ValidationError {
+                return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
                     message: "Erro mockado ao salvar".to_string(),
                 });
@@ -112,19 +113,19 @@ mod test {
             Ok(())
         }
 
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             Ok(self.project.clone())
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             Ok("proj-1".to_string()) // Always return a fixed code for tests
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             Ok(vec![self.project.clone()])
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             if self.project.code() == code {
                 Ok(Some(self.project.clone()))
             } else {
