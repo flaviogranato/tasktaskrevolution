@@ -113,11 +113,11 @@ mod tests {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_code(&self, _code: &str) -> DomainResult<Option<AnyResource>> {
             Ok(None)
         }
 
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
             Ok(vec![])
         }
         fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
