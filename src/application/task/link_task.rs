@@ -4,6 +4,7 @@ use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::task_management::any_task::AnyTask;
 use crate::domain::task_management::{Category, Priority};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use std::fmt;
 
 #[derive(Debug)]
@@ -154,33 +155,33 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, project: AnyProject) -> DomainResult<()> {
             if self.should_fail_save {
-                Err(AppError::ValidationError {
+                Err(DomainError::from(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Simulated save failure".to_string(),
-                })
+                }))
             } else {
                 self.projects.borrow_mut().insert(project.code().to_string(), project);
                 Ok(())
             }
         }
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn load(&self) -> Result<AnyProject, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
             unimplemented!()
         }
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             unimplemented!()
         }
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             unimplemented!()
         }
     }
 
     impl ProjectRepositoryWithId for MockProjectRepository {
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
             // For testing, map "project-id" to the first project
             if id == "project-id" {
                 Ok(self.projects.borrow().values().next().cloned())
@@ -195,42 +196,42 @@ mod tests {
     }
 
     impl CodeResolverTrait for MockCodeResolver {
-        fn resolve_project_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_project_code(&self, _code: &str) -> DomainResult<String> {
             if self.should_fail {
-                Err(AppError::ValidationError {
+                Err(DomainError::from(AppError::ValidationError {
                     field: "code_resolver".to_string(),
                     message: "Mock failure".to_string(),
-                })
+                }))
             } else {
                 Ok("project-id".to_string())
             }
         }
 
-        fn resolve_resource_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_resource_code(&self, _code: &str) -> DomainResult<String> {
             Ok("resource-id".to_string())
         }
 
-        fn resolve_task_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
             Ok("task-id".to_string())
         }
 
-        fn resolve_company_code(&self, _code: &str) -> Result<String, AppError> {
+        fn resolve_company_code(&self, _code: &str) -> DomainResult<String> {
             Ok("company-id".to_string())
         }
 
-        fn validate_company_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_company_code(&self, _code: &str) -> DomainResult<()> {
             Ok(())
         }
 
-        fn validate_project_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_project_code(&self, _code: &str) -> DomainResult<()> {
             Ok(())
         }
 
-        fn validate_resource_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_resource_code(&self, _code: &str) -> DomainResult<()> {
             Ok(())
         }
 
-        fn validate_task_code(&self, _code: &str) -> Result<(), AppError> {
+        fn validate_task_code(&self, _code: &str) -> DomainResult<()> {
             Ok(())
         }
     }
@@ -422,32 +423,32 @@ mod tests {
         }
 
         impl ProjectRepository for FailingMockProjectRepository {
-            fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
+            fn find_by_code(&self, _code: &str) -> DomainResult<Option<AnyProject>> {
                 Ok(Some(self.project.clone()))
             }
 
-            fn save(&self, _project: AnyProject) -> Result<(), AppError> {
-                Err(AppError::ValidationError {
+            fn save(&self, _project: AnyProject) -> DomainResult<()> {
+                Err(DomainError::from(AppError::ValidationError {
                     field: "repository".to_string(),
                     message: "Repository save failed".to_string(),
-                })
+                }))
             }
 
-            fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+            fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
                 Ok(vec![self.project.clone()])
             }
 
-            fn load(&self) -> Result<AnyProject, AppError> {
+            fn load(&self) -> DomainResult<AnyProject> {
                 Ok(self.project.clone())
             }
 
-            fn get_next_code(&self) -> Result<String, AppError> {
+            fn get_next_code(&self) -> DomainResult<String> {
                 Ok("PROJ-1".to_string())
             }
         }
 
         impl ProjectRepositoryWithId for FailingMockProjectRepository {
-            fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
+            fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
                 if id == "project-id" {
                     Ok(Some(self.project.clone()))
                 } else {
