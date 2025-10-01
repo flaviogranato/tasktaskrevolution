@@ -1,4 +1,5 @@
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
     repository: R,
@@ -104,11 +105,11 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
+        fn save(&self, _resource: AnyResource) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
