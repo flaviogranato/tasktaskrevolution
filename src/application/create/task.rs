@@ -244,11 +244,11 @@ mod test {
             self.save(task)
         }
 
-        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn find_by_project(&self, _project_code: &str) -> Result<Vec<AnyTask>, AppError> {
+        fn find_by_project(&self, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
