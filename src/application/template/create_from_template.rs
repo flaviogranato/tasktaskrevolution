@@ -21,7 +21,7 @@ pub struct CreateFromTemplateUseCase<
     C: ConfigRepository,
 > {
     create_project_use_case: CreateProjectUseCase<PR>,
-    create_resource_use_case: CreateResourceUseCase<RR, C>,
+    create_resource_use_case: CreateResourceUseCase<RR>,
     create_task_use_case: CreateTaskUseCase<PR, TR, CR>,
 }
 
@@ -35,7 +35,7 @@ impl<
 {
     pub fn new(
         create_project_use_case: CreateProjectUseCase<PR>,
-        create_resource_use_case: CreateResourceUseCase<RR, C>,
+        create_resource_use_case: CreateResourceUseCase<RR>,
         create_task_use_case: CreateTaskUseCase<PR, TR, CR>,
     ) -> Self {
         Self {
