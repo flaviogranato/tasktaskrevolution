@@ -35,6 +35,12 @@ impl From<AppError> for CancelAppError {
     }
 }
 
+impl From<crate::domain::shared::errors::DomainError> for CancelAppError {
+    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
+        CancelAppError::RepositoryError(err.into())
+    }
+}
+
 pub struct CancelProjectUseCase<PR, CR>
 where
     PR: ProjectRepository + ProjectRepositoryWithId,
