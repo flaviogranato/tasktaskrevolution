@@ -32,7 +32,8 @@ impl Default for FileConfigRepository {
 
 impl ConfigRepository for FileConfigRepository {
     fn save(&self, config: Config, path: &Path) -> DomainResult<()> {
-        let config_yaml = to_string(&config).map_err(|e| DomainError::SerializationError {
+        let manifest = <ConfigManifest as Convertible<Config>>::from(config);
+        let config_yaml = to_string(&manifest).map_err(|e| DomainError::SerializationError {
             operation: "YAML serialization".to_string(),
             details: e.to_string(),
         })?;
