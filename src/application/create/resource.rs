@@ -4,6 +4,7 @@ use crate::domain::resource_management::{
     repository::ResourceRepository,
     resource::{Resource, ResourceScope},
 };
+use crate::domain::company_settings::repository::ConfigRepository;
 
 #[derive(Debug, Clone)]
 pub struct CreateResourceParams {
@@ -18,16 +19,18 @@ pub struct CreateResourceParams {
     pub scope: ResourceScope,
 }
 
-pub struct CreateResourceUseCase<R: ResourceRepository> {
+pub struct CreateResourceUseCase<R: ResourceRepository, C: ConfigRepository> {
     repository: R,
+    config_repository: C,
     type_validator: ResourceTypeValidator,
 }
 
-impl<R: ResourceRepository> CreateResourceUseCase<R> {
-    pub fn new(repository: R) -> Self {
+impl<R: ResourceRepository, C: ConfigRepository> CreateResourceUseCase<R, C> {
+    pub fn new(repository: R, config_repository: C) -> Self {
         Self {
             repository,
-            type_validator: ResourceTypeValidator::new(),
+            config_repository,
+            type_validator: ResourceTypeValidator::new(Box::new(config_repository)),
         }
     }
     pub fn execute(&self, params: CreateResourceParams) -> Result<(), AppError> {
