@@ -161,7 +161,7 @@ mod tests {
                     AnyResource::Assigned(updated_r)
                 }
                 AnyResource::Inactive(_) => {
-                    return Err(AppError::ResourceInvalidState {
+                    return Err(DomainError::ResourceInvalidState {
                         current: "Inactive".to_string(),
                         expected: "Active".to_string(),
                     });
