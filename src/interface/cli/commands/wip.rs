@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{
     any_resource::AnyResource,
@@ -87,6 +88,13 @@ impl From<AppError> for WipAppError {
     }
 }
 
+impl From<DomainError> for WipAppError {
+    fn from(domain_error: DomainError) -> Self {
+        let app_error: AppError = domain_error.into();
+        app_error.into()
+    }
+}
+
 pub struct WipUseCase<RR>
 where
     RR: ResourceRepository,
@@ -142,7 +150,7 @@ where
         // Save the updated resource
         self.resource_repository
             .save(updated_resource)
-            .map_err(WipAppError::RepositoryError)?;
+            .map_err(|e: DomainError| WipAppError::RepositoryError(e.into()))?;
 
         Ok(())
     }
@@ -271,7 +279,7 @@ where
         // Save the updated resource
         self.resource_repository
             .save(updated_resource)
-            .map_err(WipAppError::RepositoryError)?;
+            .map_err(|e: DomainError| WipAppError::RepositoryError(e.into()))?;
 
         Ok(())
     }
@@ -343,24 +351,24 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
+        fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             self.resources
                 .borrow_mut()
                 .insert(resource.code().to_string(), resource.clone());
             Ok(resource)
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
             Ok(self.resources.borrow().get(code).cloned())
         }
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
             Ok(vec![])
         }
-        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+        fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
             Ok(vec![])
         }
 
@@ -369,8 +377,8 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, AppError> {
-            self.save(resource)
+        ) -> DomainResult<AnyResource> {
+            Ok(self.save(resource)?)
         }
 
         fn save_time_off(
@@ -379,7 +387,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
@@ -390,7 +398,7 @@ mod tests {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
 
@@ -402,7 +410,7 @@ mod tests {
             unimplemented!()
         }
 
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, _resource_type: &str) -> DomainResult<String> {
             unimplemented!()
         }
     }
