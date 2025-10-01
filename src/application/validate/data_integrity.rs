@@ -7,7 +7,7 @@ use crate::application::errors::AppError;
 use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
-use crate::domain::shared::errors::DomainResult;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::shared::specification::{AndSpecification, Specification};
 
 pub struct ValidateDataIntegrityUseCase<'a, P, R, C>
@@ -151,34 +151,34 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, _project: AnyProject) -> DomainResult<()> {
             Ok(())
         }
 
-        fn load(&self) -> Result<AnyProject, AppError> {
-            Err(AppError::ProjectNotFound {
+        fn load(&self) -> DomainResult<AnyProject> {
+            Err(DomainError::from(AppError::ProjectNotFound {
                 code: "test".to_string(),
-            })
+            }))
         }
 
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             Ok(self.projects.clone())
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyProject>, AppError> {
+        fn find_by_code(&self, _code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(None)
         }
 
-        fn get_next_code(&self) -> Result<String, AppError> {
+        fn get_next_code(&self) -> DomainResult<String> {
             Ok("PROJ-001".to_string())
         }
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, _resource: AnyResource) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        fn save(&self, _resource: AnyResource) -> DomainResult<AnyResource> {
+            Err(DomainError::from(AppError::ResourceNotFound {
                 code: "test".to_string(),
-            })
+            }))
         }
 
         fn save_in_hierarchy(
@@ -186,25 +186,25 @@ mod tests {
             _resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        ) -> DomainResult<AnyResource> {
+            Err(DomainError::from(AppError::ResourceNotFound {
                 code: "test".to_string(),
-            })
+            }))
         }
 
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             Ok(self.resources.clone())
         }
 
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
             Ok(vec![])
         }
 
-        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+        fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
             Ok(vec![])
         }
 
-        fn find_by_code(&self, _code: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_code(&self, _code: &str) -> DomainResult<Option<AnyResource>> {
             Ok(None)
         }
 
@@ -214,10 +214,10 @@ mod tests {
             _hours: u32,
             _date: &str,
             _description: Option<String>,
-        ) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        ) -> DomainResult<AnyResource> {
+            Err(DomainError::from(AppError::ResourceNotFound {
                 code: "test".to_string(),
-            })
+            }))
         }
 
         fn save_vacation(
@@ -227,17 +227,17 @@ mod tests {
             _end_date: &str,
             _is_time_off_compensation: bool,
             _compensated_hours: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
-            Err(AppError::ResourceNotFound {
+        ) -> DomainResult<AnyResource> {
+            Err(DomainError::from(AppError::ResourceNotFound {
                 code: "test".to_string(),
-            })
+            }))
         }
 
         fn check_if_layoff_period(&self, _start_date: &DateTime<Local>, _end_date: &DateTime<Local>) -> bool {
             false
         }
 
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, _resource_type: &str) -> DomainResult<String> {
             Ok("RES-001".to_string())
         }
     }
