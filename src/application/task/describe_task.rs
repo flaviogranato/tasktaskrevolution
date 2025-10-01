@@ -36,10 +36,6 @@ impl From<crate::domain::shared::errors::DomainError> for DescribeAppError {
     }
 }
 
-    fn from(err: crate::domain::shared::errors::DomainError) -> Self {
-        DescribeAppError::RepositoryError(err.into())
-    }
-}
 
 pub struct DescribeTaskUseCase<PR, CR>
 where
