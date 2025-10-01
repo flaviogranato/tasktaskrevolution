@@ -1,5 +1,6 @@
 use crate::application::errors::AppError;
 use crate::domain::company_management::repository::CompanyRepository;
+use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::AnyProject;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::AnyResource;
@@ -104,6 +105,8 @@ pub struct DataValidationService {
     project_repo: Arc<dyn ProjectRepository>,
     resource_repo: Arc<dyn ResourceRepository>,
     task_repo: Arc<dyn TaskRepository>,
+    /// Optional code resolver to resolve and validate codes against repositories
+    code_resolver: Option<crate::application::shared::code_resolver::CodeResolver>,
 }
 
 impl DataValidationService {
@@ -115,12 +118,14 @@ impl DataValidationService {
         project_repo: Arc<dyn ProjectRepository>,
         resource_repo: Arc<dyn ResourceRepository>,
         task_repo: Arc<dyn TaskRepository>,
+        code_resolver: Option<crate::application::shared::code_resolver::CodeResolver>,
     ) -> Self {
         Self {
             company_repo,
             project_repo,
             resource_repo,
             task_repo,
+            code_resolver,
         }
     }
 
@@ -438,7 +443,14 @@ impl DataValidationService {
 
             // Relationship: company exists for this resource
             let norm_company = self.normalize_code(&company_code);
-            let company_exists = company_code_set.contains(&norm_company);
+            let company_exists = if company_code_set.contains(&norm_company) {
+                true
+            } else if let Some(resolver) = &self.code_resolver {
+                // Fallback to resolver to honor repo semantics (code->ID mapping) and base_path
+                resolver.validate_company_code(&company_code).is_ok()
+            } else {
+                false
+            };
             if !company_exists && company_code != "UNKNOWN" {
                 errors.push(ValidationError {
                     field: "company_code".to_string(),

@@ -198,7 +198,8 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
             let task_repository = FileTaskRepository::new(".");
             let resource_repository =
                 crate::infrastructure::persistence::resource_repository::FileResourceRepository::new(".");
-            let assign_use_case = AssignResourceToTaskUseCase::new(task_repository, resource_repository);
+            let project_repository = FileProjectRepository::with_base_path(".".into());
+            let assign_use_case = AssignResourceToTaskUseCase::new(task_repository, resource_repository, project_repository);
 
             match assign_use_case.execute(&task, &resource, &project, None) {
                 Ok(_) => {

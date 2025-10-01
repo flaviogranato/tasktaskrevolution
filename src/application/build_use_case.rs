@@ -1,15 +1,16 @@
 use crate::application::{build_context::BuildContext, gantt_use_case::GanttUseCase};
 use crate::domain::{
     company_management::repository::CompanyRepository, company_settings::repository::ConfigRepository,
-    project_management::AnyProject, task_management::repository::TaskRepository,
+    project_management::AnyProject,
 };
 use crate::infrastructure::persistence::{
     config_repository::FileConfigRepository, project_repository::FileProjectRepository,
-    resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
+    resource_repository::FileResourceRepository,
 };
+use crate::domain::project_management::repository::ProjectRepository;
 use crate::interface::assets::TemplateAssets;
 
-use glob::glob;
+// glob no longer needed; using repository enumeration
 
 use std::error::Error;
 use std::fs;
@@ -71,35 +72,29 @@ impl BuildUseCase {
             crate::infrastructure::persistence::company_repository::FileCompanyRepository::new(self.base_path.clone());
         let companies = company_repo.find_all()?;
 
-        // 5. Find all projects and load their data.
+        // 5. Find all projects and load their data using repository (ID-based compatible).
         let mut all_projects_data = Vec::new();
-        let project_manifest_pattern = self.base_path.join("companies/*/projects/*/project.yaml");
+        let project_repo = FileProjectRepository::with_base_path(self.base_path.clone());
+        let resource_repo = FileResourceRepository::new(self.base_path.clone());
+        // Load projects from repository (now handles both ID-based and hierarchical)
+        let projects = project_repo.find_all().unwrap_or_default();
+        println!("[DEBUG] Found {} projects from repository", projects.len());
 
-        for entry in glob(project_manifest_pattern.to_str().unwrap())? {
-            let manifest_path = entry?;
-            let project_path = manifest_path.parent().unwrap().to_path_buf();
-            println!("[INFO] Loading project from: {}", project_path.display());
+        for project in projects {
+            let company_code = project.company_code().to_string();
+            let project_code = project.code().to_string();
 
-            let project_repo = FileProjectRepository::with_base_path(self.base_path.clone());
-            let resource_repo = FileResourceRepository::new(self.base_path.clone());
+            // Load resources using hierarchical method (company global + project-specific)
+            let resources = resource_repo.find_all_by_project(&company_code, &project_code)?;
 
-            let project = project_repo.load_from_path(&manifest_path)?;
-
-            // Extract company and project codes from the path
-            let path_components: Vec<_> = project_path.components().collect();
-            let company_code = path_components[path_components.len() - 3].as_os_str().to_str().unwrap();
-            let project_code = project.code();
-
-            // Load resources using the new hierarchical method
-            let resources = resource_repo.find_all_by_project(company_code, project_code)?;
-
-            // Load tasks from both project aggregate and hierarchical structure
+            // Tasks loaded from project aggregate (ID-based tasks under projects/ tasks directory)
             let mut tasks: Vec<_> = project.tasks().values().cloned().collect();
-
-            // Also load tasks from the hierarchical structure
-            let task_repo = FileTaskRepository::new(self.base_path.clone());
-            let hierarchical_tasks = task_repo.find_all_by_project(company_code, project_code)?;
-            tasks.extend(hierarchical_tasks);
+            // Dedupe tasks by code
+            {
+                use std::collections::HashSet;
+                let mut seen: HashSet<String> = HashSet::new();
+                tasks.retain(|t| seen.insert(t.code().to_string()));
+            }
 
             let project = if project.timezone().is_none() {
                 // Clone the project and update its timezone
@@ -111,11 +106,12 @@ impl BuildUseCase {
                 project
             };
 
-            all_projects_data.push((project, tasks, resources, company_code.to_string()));
+            all_projects_data.push((project, tasks, resources, company_code));
         }
 
         // 6. Group projects by company
         let mut companies_with_data = Vec::new();
+        println!("[DEBUG] Total projects loaded: {}", all_projects_data.len());
         for company in companies {
             let company_code = company.code();
             let company_projects: Vec<_> = all_projects_data
@@ -124,6 +120,7 @@ impl BuildUseCase {
                 .collect();
 
             let project_count = company_projects.len();
+            println!("[DEBUG] Company {} has {} projects", company_code, project_count);
             let resource_count = company_projects
                 .iter()
                 .map(|(_, _, resources, _)| resources.len())
