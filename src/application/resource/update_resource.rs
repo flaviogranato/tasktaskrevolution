@@ -190,20 +190,20 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: AnyResource) -> Result<AnyResource, AppError> {
+        fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             self.resources
                 .borrow_mut()
                 .insert(resource.id().to_string(), resource.clone());
             Ok(resource)
         }
 
-        fn find_by_code(&self, code: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
             Ok(self.resources.borrow().values().find(|r| r.code() == code).cloned())
         }
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
             Ok(vec![])
         }
-        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+        fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
             Ok(vec![])
         }
 
@@ -212,15 +212,15 @@ mod tests {
             resource: AnyResource,
             _company_code: &str,
             _project_code: Option<&str>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             self.save(resource)
         }
 
         // Other methods are not needed for this test.
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             unimplemented!()
         }
-        fn get_next_code(&self, _resource_type: &str) -> Result<String, AppError> {
+        fn get_next_code(&self, _resource_type: &str) -> DomainResult<String> {
             unimplemented!()
         }
         fn save_time_off(
@@ -229,7 +229,7 @@ mod tests {
             _hours: u32,
             _date: &str,
             _desc: Option<String>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
         fn save_vacation(
@@ -239,7 +239,7 @@ mod tests {
             _end: &str,
             _comp: bool,
             _hours: Option<u32>,
-        ) -> Result<AnyResource, AppError> {
+        ) -> DomainResult<AnyResource> {
             unimplemented!()
         }
         fn check_if_layoff_period(
@@ -252,7 +252,7 @@ mod tests {
     }
 
     impl ResourceRepositoryWithId for MockResourceRepository {
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError> {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyResource>> {
             Ok(self.resources.borrow().get(id).cloned())
         }
     }
