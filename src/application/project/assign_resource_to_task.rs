@@ -183,10 +183,10 @@ mod tests {
             Ok(self.resources.iter().find(|r| r.code() == code).cloned())
         }
 
-        fn find_by_company(&self, _company_code: &str) -> Result<Vec<AnyResource>, AppError> {
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
             Ok(vec![])
         }
-        fn find_all_with_context(&self) -> Result<Vec<(AnyResource, String, Vec<String>)>, AppError> {
+        fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
             Ok(vec![])
         }
 
