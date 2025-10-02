@@ -75,7 +75,7 @@ where
                             for period2 in vacations2 {
                                 if self.check_vacation_overlap(period1, period2) {
                                     results.push(
-                                        ValidationResult::warning("Vacation overlap detected".to_string())
+                                        ValidationResult::warning("VACATION_OVERLAP".to_string(), "Vacation overlap detected".to_string())
                                             .with_entity("Resource".to_string(), resource1.code().to_string())
                                             .with_details(format!(
                                                 "Resource '{}' and '{}' have overlapping vacations between {} and {}",
@@ -116,7 +116,7 @@ where
                 // Check if task has resources assigned
                 if assigned_resources.is_empty() {
                     results.push(
-                        ValidationResult::warning("Task has no assigned resources".to_string())
+                        ValidationResult::warning("TASK_NO_RESOURCES".to_string(), "Task has no assigned resources".to_string())
                             .with_entity("Task".to_string(), task.code().to_string())
                             .with_details("Task may not be completed without resource assignment".to_string()),
                     );
@@ -142,7 +142,7 @@ where
             if let (Some(start_date), Some(end_date)) = (project.start_date(), project.end_date()) {
                 if start_date >= end_date {
                     results.push(
-                        ValidationResult::error("Invalid project timeline".to_string())
+                        ValidationResult::error("INVALID_PROJECT_TIMELINE".to_string(), "Invalid project timeline".to_string())
                             .with_entity("Project".to_string(), project.code().to_string())
                             .with_details("Project start date must be before end date".to_string()),
                     );
@@ -154,14 +154,14 @@ where
                     let task_end = task.due_date();
                     if *task_start < start_date {
                         results.push(
-                            ValidationResult::error("Task starts before project".to_string())
+                            ValidationResult::error("TASK_STARTS_BEFORE_PROJECT".to_string(), "Task starts before project".to_string())
                                 .with_entity("Task".to_string(), task.code().to_string())
                                 .with_details("Task start date is before project start date".to_string()),
                         );
                     }
                     if *task_end > end_date {
                         results.push(
-                            ValidationResult::error("Task extends beyond project".to_string())
+                            ValidationResult::error("TASK_EXTENDS_BEYOND_PROJECT".to_string(), "Task extends beyond project".to_string())
                                 .with_entity("Task".to_string(), task.code().to_string())
                                 .with_details("Task due date is after project end date".to_string()),
                         );
@@ -661,12 +661,12 @@ mod tests {
 
     #[test]
     fn test_validation_result_builder_methods() {
-        let result = ValidationResult::error("Test error".to_string())
+        let result = ValidationResult::error("TEST_ERROR".to_string(), "Test error".to_string())
             .with_entity("Project".to_string(), "PROJ-001".to_string())
             .with_field("name".to_string())
             .with_details("Detailed error information".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Error);
+        assert_eq!(result.level, ValidationSeverity::Error);
         assert_eq!(result.message, "Test error");
         assert_eq!(result.entity_type, Some("Project".to_string()));
         assert_eq!(result.entity_code, Some("PROJ-001".to_string()));
@@ -676,11 +676,11 @@ mod tests {
 
     #[test]
     fn test_validation_result_warning_builder() {
-        let result = ValidationResult::warning("Test warning".to_string())
+        let result = ValidationResult::warning("TEST_WARNING".to_string(), "Test warning".to_string())
             .with_entity("Resource".to_string(), "RES-001".to_string())
             .with_details("Warning details".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Warning);
+        assert_eq!(result.level, ValidationSeverity::Warning);
         assert_eq!(result.message, "Test warning");
         assert_eq!(result.entity_type, Some("Resource".to_string()));
         assert_eq!(result.entity_code, Some("RES-001".to_string()));
@@ -690,9 +690,9 @@ mod tests {
     #[test]
     fn test_validation_result_info_builder() {
         let result =
-            ValidationResult::info("Test info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
+            ValidationResult::info("TEST_INFO".to_string(), "Test info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Info);
+        assert_eq!(result.level, ValidationSeverity::Info);
         assert_eq!(result.message, "Test info");
         assert_eq!(result.entity_type, Some("Task".to_string()));
         assert_eq!(result.entity_code, Some("TASK-001".to_string()));
@@ -702,9 +702,9 @@ mod tests {
 
     #[test]
     fn test_validation_result_minimal_creation() {
-        let result = ValidationResult::error("Simple error".to_string());
+        let result = ValidationResult::error("SIMPLE_ERROR".to_string(), "Simple error".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Error);
+        assert_eq!(result.level, ValidationSeverity::Error);
         assert_eq!(result.message, "Simple error");
         assert_eq!(result.entity_type, None);
         assert_eq!(result.entity_code, None);
@@ -714,7 +714,7 @@ mod tests {
 
     #[test]
     fn test_validation_result_display_formatting() {
-        let result = ValidationResult::error("Test error".to_string())
+        let result = ValidationResult::error("TEST_ERROR".to_string(), "Test error".to_string())
             .with_entity("Project".to_string(), "PROJ-001".to_string())
             .with_field("name".to_string())
             .with_details("Detailed info".to_string());
@@ -729,14 +729,14 @@ mod tests {
 
     #[test]
     fn test_validation_result_with_different_entity_types() {
-        let project_result = ValidationResult::error("Project error".to_string())
+        let project_result = ValidationResult::error("PROJECT_ERROR".to_string(), "Project error".to_string())
             .with_entity("Project".to_string(), "PROJ-001".to_string());
 
-        let resource_result = ValidationResult::warning("Resource warning".to_string())
+        let resource_result = ValidationResult::warning("RESOURCE_WARNING".to_string(), "Resource warning".to_string())
             .with_entity("Resource".to_string(), "RES-001".to_string());
 
         let task_result =
-            ValidationResult::info("Task info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
+            ValidationResult::info("TASK_INFO".to_string(), "Task info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
 
         assert_eq!(project_result.entity_type, Some("Project".to_string()));
         assert_eq!(resource_result.entity_type, Some("Resource".to_string()));
@@ -745,12 +745,12 @@ mod tests {
 
     #[test]
     fn test_validation_result_severity_levels() {
-        let error_result = ValidationResult::error("Error message".to_string());
-        let warning_result = ValidationResult::warning("Warning message".to_string());
-        let info_result = ValidationResult::info("Info message".to_string());
+        let error_result = ValidationResult::error("ERROR_MESSAGE".to_string(), "Error message".to_string());
+        let warning_result = ValidationResult::warning("WARNING_MESSAGE".to_string(), "Warning message".to_string());
+        let info_result = ValidationResult::info("INFO_MESSAGE".to_string(), "Info message".to_string());
 
-        assert_eq!(error_result.severity, ValidationSeverity::Error);
-        assert_eq!(warning_result.severity, ValidationSeverity::Warning);
-        assert_eq!(info_result.severity, ValidationSeverity::Info);
+        assert_eq!(error_result.level, ValidationSeverity::Error);
+        assert_eq!(warning_result.level, ValidationSeverity::Warning);
+        assert_eq!(info_result.level, ValidationSeverity::Info);
     }
 }

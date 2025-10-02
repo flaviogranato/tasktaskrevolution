@@ -342,14 +342,28 @@ fn test_project_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // Validar que o projeto foi criado com formato atual (ID-based format)
-    let projects_dir = temp.path().join("projects");
+    // Validar que o projeto foi criado com formato atual (hierarchical format)
+    let companies_dir = temp.path().join("companies");
     let mut project_file = None;
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+    if let Ok(entries) = std::fs::read_dir(&companies_dir) {
         for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                project_file = Some(path);
+            let company_path = entry.path();
+            if company_path.is_dir() {
+                let projects_dir = company_path.join("projects");
+                if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+                    for project_entry in project_entries.flatten() {
+                        let project_path = project_entry.path();
+                        if project_path.is_dir() {
+                            let project_yaml = project_path.join("project.yaml");
+                            if project_yaml.exists() {
+                                project_file = Some(project_yaml);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if project_file.is_some() {
                 break;
             }
         }
@@ -431,24 +445,37 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // Encontrar o código do projeto criado (ID-based format)
-    let projects_dir = temp.path().join("projects");
+    // Encontrar o código do projeto criado (hierarchical format)
+    let companies_dir = temp.path().join("companies");
     let mut project_code = None;
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+    if let Ok(entries) = std::fs::read_dir(&companies_dir) {
         for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                // Ler o código do projeto do YAML
-                if let Ok(content) = std::fs::read_to_string(&path)
-                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                    && let Some(code) = yaml
-                        .get("metadata")
-                        .and_then(|m| m.get("code"))
-                        .and_then(|c| c.as_str())
-                {
-                    project_code = Some(code.to_string());
-                    break;
+            let company_path = entry.path();
+            if company_path.is_dir() {
+                let projects_dir = company_path.join("projects");
+                if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+                    for project_entry in project_entries.flatten() {
+                        let project_path = project_entry.path();
+                        if project_path.is_dir() {
+                            let project_yaml = project_path.join("project.yaml");
+                            if project_yaml.exists() {
+                                if let Ok(content) = std::fs::read_to_string(&project_yaml)
+                                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                    && let Some(code) = yaml
+                                        .get("metadata")
+                                        .and_then(|m| m.get("code"))
+                                        .and_then(|c| c.as_str())
+                                {
+                                    project_code = Some(code.to_string());
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+            if project_code.is_some() {
+                break;
             }
         }
     }
@@ -662,14 +689,28 @@ fn test_api_version_handling() -> Result<(), Box<dyn std::error::Error>> {
 
     let resource_file_path = resource_file_path.expect("Resource file not found");
 
-    // Encontrar o arquivo do projeto criado
-    let projects_dir = temp.path().join("projects");
+    // Encontrar o arquivo do projeto criado (hierarchical format)
+    let companies_dir = temp.path().join("companies");
     let mut project_file = None;
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+    if let Ok(entries) = std::fs::read_dir(&companies_dir) {
         for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                project_file = Some(path);
+            let company_path = entry.path();
+            if company_path.is_dir() {
+                let projects_dir = company_path.join("projects");
+                if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+                    for project_entry in project_entries.flatten() {
+                        let project_path = project_entry.path();
+                        if project_path.is_dir() {
+                            let project_yaml = project_path.join("project.yaml");
+                            if project_yaml.exists() {
+                                project_file = Some(project_yaml);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if project_file.is_some() {
                 break;
             }
         }
@@ -845,26 +886,29 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
     ]);
     cmd.assert().success();
 
-    // Validar estrutura de diretórios atual
+    // Validar estrutura de diretórios atual (hierarchical format)
     let companies_dir = temp.child("companies");
     let tech_corp_dir = companies_dir.child("TECH-CORP");
     let resources_dir = tech_corp_dir.child("resources");
-    let projects_dir = temp.child("projects");
+    let projects_dir = tech_corp_dir.child("projects");
 
     companies_dir.assert(predicate::path::is_dir());
     tech_corp_dir.assert(predicate::path::is_dir());
     resources_dir.assert(predicate::path::is_dir());
     projects_dir.assert(predicate::path::is_dir());
 
-    // Verificar se existe pelo menos um projeto (ID-based format)
-    let projects_path = temp.path().join("projects");
+    // Verificar se existe pelo menos um projeto (hierarchical format)
+    let projects_path = temp.path().join("companies").join("TECH-CORP").join("projects");
     let mut project_found = false;
     if let Ok(entries) = std::fs::read_dir(&projects_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                project_found = true;
-                break;
+            if path.is_dir() {
+                let project_yaml = path.join("project.yaml");
+                if project_yaml.exists() {
+                    project_found = true;
+                    break;
+                }
             }
         }
     }
@@ -888,15 +932,17 @@ fn test_directory_structure_evolution() -> Result<(), Box<dyn std::error::Error>
 
     let resource_file_path = resource_file_path.expect("Resource file not found");
 
-    // Encontrar o arquivo do projeto criado
-    let projects_dir = temp.path().join("projects");
+    // Encontrar o arquivo do projeto criado (hierarchical format)
     let mut project_file = None;
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+    if let Ok(entries) = std::fs::read_dir(&projects_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                project_file = Some(path);
-                break;
+            if path.is_dir() {
+                let project_yaml = path.join("project.yaml");
+                if project_yaml.exists() {
+                    project_file = Some(project_yaml);
+                    break;
+                }
             }
         }
     }

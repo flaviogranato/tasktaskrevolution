@@ -87,15 +87,15 @@ where
     fn print_summary(&self, results: &[ValidationResult]) {
         let errors: Vec<_> = results
             .iter()
-            .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Error))
+            .filter(|r| matches!(r.level, super::types::ValidationSeverity::Error))
             .collect();
         let warnings: Vec<_> = results
             .iter()
-            .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Warning))
+            .filter(|r| matches!(r.level, super::types::ValidationSeverity::Warning))
             .collect();
         let info: Vec<_> = results
             .iter()
-            .filter(|r| matches!(r.severity, super::types::ValidationSeverity::Info))
+            .filter(|r| matches!(r.level, super::types::ValidationSeverity::Info))
             .collect();
 
         // Print detailed results
@@ -400,15 +400,15 @@ mod tests {
         // Categorize results
         let errors: Vec<_> = results
             .iter()
-            .filter(|r| r.severity == ValidationSeverity::Error)
+            .filter(|r| r.level == ValidationSeverity::Error)
             .collect();
         let warnings: Vec<_> = results
             .iter()
-            .filter(|r| r.severity == ValidationSeverity::Warning)
+            .filter(|r| r.level == ValidationSeverity::Warning)
             .collect();
         let info: Vec<_> = results
             .iter()
-            .filter(|r| r.severity == ValidationSeverity::Info)
+            .filter(|r| r.level == ValidationSeverity::Info)
             .collect();
 
         // Verify categorization
@@ -427,10 +427,12 @@ mod tests {
     #[test]
     fn test_validate_system_validation_result_structure() {
         let validation_result = ValidationResult {
+            code: "TEST_CODE".to_string(),
+            path: None,
             entity_type: Some("Project".to_string()),
             entity_code: Some("PROJ-001".to_string()),
             field: Some("name".to_string()),
-            severity: ValidationSeverity::Error,
+            level: ValidationSeverity::Error,
             message: "Test validation error".to_string(),
             details: Some("Detailed error information".to_string()),
         };
@@ -438,7 +440,7 @@ mod tests {
         assert_eq!(validation_result.entity_type, Some("Project".to_string()));
         assert_eq!(validation_result.entity_code, Some("PROJ-001".to_string()));
         assert_eq!(validation_result.field, Some("name".to_string()));
-        assert_eq!(validation_result.severity, ValidationSeverity::Error);
+        assert_eq!(validation_result.level, ValidationSeverity::Error);
         assert_eq!(validation_result.message, "Test validation error");
         assert_eq!(
             validation_result.details,
@@ -449,10 +451,12 @@ mod tests {
     #[test]
     fn test_validate_system_validation_result_with_minimal_fields() {
         let validation_result = ValidationResult {
+            code: "TEST_CODE".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Warning,
+            level: ValidationSeverity::Warning,
             message: "Simple warning".to_string(),
             details: None,
         };
@@ -460,7 +464,7 @@ mod tests {
         assert_eq!(validation_result.entity_type, None);
         assert_eq!(validation_result.entity_code, None);
         assert_eq!(validation_result.field, None);
-        assert_eq!(validation_result.severity, ValidationSeverity::Warning);
+        assert_eq!(validation_result.level, ValidationSeverity::Warning);
         assert_eq!(validation_result.message, "Simple warning");
         assert_eq!(validation_result.details, None);
     }
@@ -468,62 +472,74 @@ mod tests {
     #[test]
     fn test_validate_system_validation_result_severity_levels() {
         let error_result = ValidationResult {
+            code: "TEST_ERROR".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Error,
+            level: ValidationSeverity::Error,
             message: "Error message".to_string(),
             details: None,
         };
 
         let warning_result = ValidationResult {
+            code: "TEST_WARNING".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Warning,
+            level: ValidationSeverity::Warning,
             message: "Warning message".to_string(),
             details: None,
         };
 
         let info_result = ValidationResult {
+            code: "TEST_INFO".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Info,
+            level: ValidationSeverity::Info,
             message: "Info message".to_string(),
             details: None,
         };
 
-        assert_eq!(error_result.severity, ValidationSeverity::Error);
-        assert_eq!(warning_result.severity, ValidationSeverity::Warning);
-        assert_eq!(info_result.severity, ValidationSeverity::Info);
+        assert_eq!(error_result.level, ValidationSeverity::Error);
+        assert_eq!(warning_result.level, ValidationSeverity::Warning);
+        assert_eq!(info_result.level, ValidationSeverity::Info);
     }
 
     #[test]
     fn test_validate_system_validation_result_entity_types() {
         let project_result = ValidationResult {
+            code: "PROJECT_TEST".to_string(),
+            path: None,
             entity_type: Some("Project".to_string()),
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Error,
+            level: ValidationSeverity::Error,
             message: "Project error".to_string(),
             details: None,
         };
 
         let resource_result = ValidationResult {
+            code: "RESOURCE_TEST".to_string(),
+            path: None,
             entity_type: Some("Resource".to_string()),
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Error,
+            level: ValidationSeverity::Error,
             message: "Resource error".to_string(),
             details: None,
         };
 
         let company_result = ValidationResult {
+            code: "COMPANY_TEST".to_string(),
+            path: None,
             entity_type: Some("Company".to_string()),
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Error,
+            level: ValidationSeverity::Error,
             message: "Company error".to_string(),
             details: None,
         };
@@ -543,10 +559,12 @@ mod tests {
     #[test]
     fn test_validation_result_display() {
         let result = ValidationResult {
+            code: "TEST_RESULT".to_string(),
+            path: None,
             entity_type: Some("Project".to_string()),
             entity_code: Some("PROJ-001".to_string()),
             field: Some("name".to_string()),
-            severity: ValidationSeverity::Error,
+            level: ValidationSeverity::Error,
             message: "Test error".to_string(),
             details: Some("Detailed info".to_string()),
         };
@@ -561,12 +579,12 @@ mod tests {
 
     #[test]
     fn test_validation_result_builder_methods() {
-        let result = ValidationResult::error("Test error".to_string())
+        let result = ValidationResult::error("TEST_ERROR".to_string(), "Test error".to_string())
             .with_entity("Project".to_string(), "PROJ-001".to_string())
             .with_field("name".to_string())
             .with_details("Detailed info".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Error);
+        assert_eq!(result.level, ValidationSeverity::Error);
         assert_eq!(result.message, "Test error");
         assert_eq!(result.entity_type, Some("Project".to_string()));
         assert_eq!(result.entity_code, Some("PROJ-001".to_string()));

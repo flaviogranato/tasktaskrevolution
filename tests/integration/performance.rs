@@ -84,22 +84,35 @@ fn test_large_dataset_handling() -> Result<(), Box<dyn std::error::Error>> {
         cmd.assert().success();
     }
 
-    // Descobrir o primeiro projeto criado dinamicamente (ID-based format)
-    let projects_dir = temp.path().join("projects");
+    // Descobrir o primeiro projeto criado dinamicamente (hierarchical format)
+    let companies_dir = temp.path().join("companies");
     let mut project_code = None;
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file()
-                && path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                && let Ok(content) = std::fs::read_to_string(&path)
-                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                && let Some(code) = yaml
-                    .get("metadata")
-                    .and_then(|m| m.get("code"))
-                    .and_then(|c| c.as_str())
-            {
-                project_code = Some(code.to_string());
+    if let Ok(company_entries) = std::fs::read_dir(&companies_dir) {
+        for company_entry in company_entries.flatten() {
+            let company_path = company_entry.path();
+            if company_path.is_dir() {
+                let projects_dir = company_path.join("projects");
+                if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+                    for project_entry in project_entries.flatten() {
+                        let project_path = project_entry.path();
+                        if project_path.is_dir() {
+                            let project_yaml = project_path.join("project.yaml");
+                            if project_yaml.exists()
+                                && let Ok(content) = std::fs::read_to_string(&project_yaml)
+                                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                && let Some(code) = yaml
+                                    .get("metadata")
+                                    .and_then(|m| m.get("code"))
+                                    .and_then(|c| c.as_str())
+                            {
+                                project_code = Some(code.to_string());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            if project_code.is_some() {
                 break;
             }
         }

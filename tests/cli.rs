@@ -1079,24 +1079,37 @@ fn test_complete_workflow() -> Result<(), Box<dyn std::error::Error>> {
     ]);
     cmd.assert().success();
 
-    // 5. Encontrar o código do projeto criado (ID-based format)
-    let projects_dir = temp.path().join("projects");
+    // 5. Encontrar o código do projeto criado (new hierarchical format)
+    let companies_dir = temp.path().join("companies");
     let mut project_code = None;
-    if let Ok(entries) = std::fs::read_dir(&projects_dir) {
+    if let Ok(entries) = std::fs::read_dir(&companies_dir) {
         for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                // Ler o código do projeto do YAML
-                if let Ok(content) = std::fs::read_to_string(&path)
-                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                    && let Some(code) = yaml
-                        .get("metadata")
-                        .and_then(|m| m.get("code"))
-                        .and_then(|c| c.as_str())
-                {
-                    project_code = Some(code.to_string());
-                    break;
+            let company_path = entry.path();
+            if company_path.is_dir() {
+                let projects_dir = company_path.join("projects");
+                if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+                    for project_entry in project_entries.flatten() {
+                        let project_path = project_entry.path();
+                        if project_path.is_dir() {
+                            let project_yaml = project_path.join("project.yaml");
+                            if project_yaml.exists() {
+                                if let Ok(content) = std::fs::read_to_string(&project_yaml)
+                                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                    && let Some(code) = yaml
+                                        .get("metadata")
+                                        .and_then(|m| m.get("code"))
+                                        .and_then(|c| c.as_str())
+                                {
+                                    project_code = Some(code.to_string());
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
+            }
+            if project_code.is_some() {
+                break;
             }
         }
     }
@@ -1809,7 +1822,7 @@ fn test_template_create_command() -> Result<(), Box<dyn std::error::Error>> {
             "Task 'Project Setup & Planning' created successfully",
         ))
         .stdout(predicate::str::contains(
-            "✅ Project created from template successfully!",
+            "Project created from template successfully!",
         ));
 
     Ok(())
@@ -1880,7 +1893,7 @@ fn test_create_project_from_template() -> Result<(), Box<dyn std::error::Error>>
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
         .stdout(predicate::str::contains(
-            "✅ Project created from template successfully!",
+            "Project created from template successfully!",
         ));
 
     Ok(())
@@ -1916,7 +1929,7 @@ fn test_template_create_mobile_app() -> Result<(), Box<dyn std::error::Error>> {
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
         .stdout(predicate::str::contains(
-            "✅ Project created from template successfully!",
+            "Project created from template successfully!",
         ));
 
     Ok(())
@@ -1951,7 +1964,7 @@ fn test_template_create_microservice() -> Result<(), Box<dyn std::error::Error>>
         .stdout(predicate::str::contains("Resource Bob created"))
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains(
-            "✅ Project created from template successfully!",
+            "Project created from template successfully!",
         ));
 
     Ok(())
@@ -1987,7 +2000,7 @@ fn test_template_create_data_pipeline() -> Result<(), Box<dyn std::error::Error>
         .stdout(predicate::str::contains("Resource Charlie created"))
         .stdout(predicate::str::contains("Resource Diana created"))
         .stdout(predicate::str::contains(
-            "✅ Project created from template successfully!",
+            "Project created from template successfully!",
         ));
 
     Ok(())

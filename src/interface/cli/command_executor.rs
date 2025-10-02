@@ -139,7 +139,7 @@ pub fn execute_validate(command: commands::ValidateCommand) -> Result<(), Box<dy
     }
 }
 
-fn print_validation_results(results: &[crate::application::validate::types::ValidationResult], args: &crate::interface::cli::commands::ValidateArgs) {
+fn print_validation_results(results: &[crate::application::validate::types::ValidationResult], args: &crate::interface::cli::commands::validate::ValidateArgs) {
     use serde_json;
     use std::fs;
 
