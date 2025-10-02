@@ -654,3 +654,247 @@ mod convertable_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod yaml_parsing_tests {
+    use super::*;
+
+    #[test]
+    fn test_yaml_parsing_success() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Task
+            metadata:
+                id: "01996dev-0000-0000-0000-000000task"
+                code: "TASK-001"
+                name: "Test Task"
+                description: "A test task"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                projectCode: "PROJ-001"
+                assignee: "DEV-001"
+                status: "planned"
+                priority: "medium"
+                estimatedStartDate: "2024-01-01"
+                estimatedEndDate: "2024-01-15"
+                dependencies:
+                    - "TASK-000"
+                tags:
+                    - "development"
+                effort:
+                    estimatedHours: 40.0
+                acceptanceCriteria:
+                    - "Task completed successfully"
+        "#;
+
+        let manifest: TaskManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
+        assert_eq!(manifest.kind, "Task");
+        assert_eq!(manifest.metadata.code, "TASK-001");
+        assert_eq!(manifest.metadata.name, "Test Task");
+        assert_eq!(manifest.metadata.description, Some("A test task".to_string()));
+        assert_eq!(manifest.spec.project_code, "PROJ-001");
+        assert_eq!(manifest.spec.assignee, "DEV-001");
+        assert_eq!(manifest.spec.status, Status::Planned);
+        assert_eq!(manifest.spec.priority, Priority::Medium);
+        assert_eq!(manifest.spec.estimated_start_date, Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()));
+        assert_eq!(manifest.spec.estimated_end_date, Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
+        assert_eq!(manifest.spec.dependencies, vec!["TASK-000"]);
+        assert_eq!(manifest.spec.tags, vec!["development"]);
+        assert_eq!(manifest.spec.effort.estimated_hours, 40.0);
+        assert_eq!(manifest.spec.acceptance_criteria, vec!["Task completed successfully"]);
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_syntax() {
+        let yaml_str = "invalid: yaml: content: [";
+        let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_missing_required_field() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Task
+            metadata:
+                id: "01996dev-0000-0000-0000-000000task"
+                # Missing required fields: code, name
+            spec:
+                projectCode: "PROJ-001"
+                assignee: "DEV-001"
+                status: "planned"
+                priority: "medium"
+        "#;
+
+        let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_field_type() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Task
+            metadata:
+                id: "01996dev-0000-0000-0000-000000task"
+                code: "TASK-001"
+                name: "Test Task"
+                description: "A test task"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                projectCode: "PROJ-001"
+                assignee: "DEV-001"
+                status: "invalid_status"  # Invalid enum value
+                priority: "medium"
+                estimatedStartDate: "2024-01-01"
+                estimatedEndDate: "2024-01-15"
+        "#;
+
+        let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_date_format() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Task
+            metadata:
+                id: "01996dev-0000-0000-0000-000000task"
+                code: "TASK-001"
+                name: "Test Task"
+                description: "A test task"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                projectCode: "PROJ-001"
+                assignee: "DEV-001"
+                status: "planned"
+                priority: "medium"
+                estimatedStartDate: "invalid-date"  # Invalid date format
+                estimatedEndDate: "2024-01-15"
+        "#;
+
+        let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_success_with_optional_fields() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Task
+            metadata:
+                id: "01996dev-0000-0000-0000-000000task"
+                code: "TASK-001"
+                name: "Complex Test Task"
+                description: "A comprehensive test task with all fields"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                projectCode: "PROJ-001"
+                assignee: "DEV-001"
+                status: "in_progress"
+                priority: "high"
+                estimatedStartDate: "2024-01-01"
+                estimatedEndDate: "2024-01-15"
+                actualStartDate: "2024-01-01"
+                actualEndDate: "2024-01-14"
+                dependencies:
+                    - "TASK-000"
+                    - "TASK-002"
+                tags:
+                    - "testing"
+                    - "complex"
+                effort:
+                    estimatedHours: 80.0
+                    actualHours: 75.5
+                acceptanceCriteria:
+                    - "All tests pass"
+                    - "Code review completed"
+                comments:
+                    - text: "Started working on this task"
+                      author: "DEV-001"
+                      createdAt: "2024-01-01T09:00:00Z"
+        "#;
+
+        let manifest: TaskManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.metadata.description, Some("A comprehensive test task with all fields".to_string()));
+        assert_eq!(manifest.spec.status, Status::InProgress);
+        assert_eq!(manifest.spec.actual_end_date, Some(NaiveDate::from_ymd_opt(2024, 1, 14).unwrap()));
+        assert_eq!(manifest.spec.priority, Priority::High);
+        assert_eq!(manifest.spec.tags, vec!["testing", "complex"]);
+        assert_eq!(manifest.spec.dependencies, vec!["TASK-000", "TASK-002"]);
+        assert_eq!(manifest.spec.effort.estimated_hours, 80.0);
+        assert_eq!(manifest.spec.effort.actual_hours, Some(75.5));
+        assert_eq!(manifest.spec.acceptance_criteria, vec!["All tests pass", "Code review completed"]);
+        assert_eq!(manifest.spec.comments.len(), 1);
+    }
+
+    #[test]
+    fn test_yaml_parsing_success_minimal_task() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Task
+            metadata:
+                id: "01996dev-0000-0000-0000-000000task"
+                code: "TASK-001"
+                name: "Minimal Task"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                projectCode: "PROJ-001"
+                assignee: "DEV-001"
+                status: "planned"
+                priority: "medium"
+                effort:
+                    estimatedHours: 0.0
+        "#;
+
+        let manifest: TaskManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.metadata.name, "Minimal Task");
+        assert_eq!(manifest.spec.project_code, "PROJ-001");
+        assert_eq!(manifest.spec.assignee, "DEV-001");
+        assert_eq!(manifest.spec.status, Status::Planned);
+        assert_eq!(manifest.spec.priority, Priority::Medium);
+        assert!(manifest.spec.dependencies.is_empty());
+        assert!(manifest.spec.tags.is_empty());
+        assert!(manifest.spec.acceptance_criteria.is_empty());
+        assert!(manifest.spec.comments.is_empty());
+    }
+}

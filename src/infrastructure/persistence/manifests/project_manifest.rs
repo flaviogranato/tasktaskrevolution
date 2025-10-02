@@ -320,4 +320,167 @@ mod tests {
         let parsed = parse_date_opt(&none_date).unwrap();
         assert_eq!(parsed, None);
     }
+
+    #[test]
+    fn test_yaml_parsing_success() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Project
+            metadata:
+                id: "01996dev-0000-0000-0000-000000proj"
+                code: "PROJ-001"
+                name: "Test Project"
+                description: "A test project"
+                companyCode: "COMP-001"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                status: "planned"
+                startDate: "2024-01-01"
+                endDate: "2024-12-31"
+                timezone: "UTC"
+                vacationRules:
+                    allowedDaysPerYear: 25
+                    carryOverDays: 10
+        "#;
+
+        let manifest: ProjectManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
+        assert_eq!(manifest.kind, "Project");
+        assert_eq!(manifest.metadata.code, "PROJ-001");
+        assert_eq!(manifest.metadata.name, "Test Project");
+        assert_eq!(manifest.metadata.description, "A test project");
+        assert_eq!(manifest.metadata.company_code, "COMP-001");
+        assert_eq!(manifest.spec.status, ProjectStatusManifest::Planned);
+        assert_eq!(manifest.spec.start_date, Some("2024-01-01".to_string()));
+        assert_eq!(manifest.spec.end_date, Some("2024-12-31".to_string()));
+        assert_eq!(manifest.spec.timezone, Some("UTC".to_string()));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_syntax() {
+        let yaml_str = "invalid: yaml: content: [";
+        let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_missing_required_field() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Project
+            metadata:
+                id: "01996dev-0000-0000-0000-000000proj"
+                # Missing required fields: code, name, companyCode, createdAt, updatedAt, createdBy
+            spec:
+                status: "planned"
+        "#;
+
+        let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_field_type() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Project
+            metadata:
+                id: "01996dev-0000-0000-0000-000000proj"
+                code: "PROJ-001"
+                name: "Test Project"
+                description: "A test project"
+                companyCode: "COMP-001"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                status: "invalid_status"  # Invalid enum value
+        "#;
+
+        let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_date_format() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Project
+            metadata:
+                id: "01996dev-0000-0000-0000-000000proj"
+                code: "PROJ-001"
+                name: "Test Project"
+                description: "A test project"
+                companyCode: "COMP-001"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                status: "planned"
+                startDate: "invalid-date"  # Invalid date format
+        "#;
+
+        let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_success_with_optional_fields() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Project
+            metadata:
+                id: "01996dev-0000-0000-0000-000000proj"
+                code: "PROJ-001"
+                name: "Test Project"
+                description: "A comprehensive test project"
+                companyCode: "COMP-001"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                status: "in_progress"
+                startDate: "2024-01-01"
+                endDate: "2024-12-31"
+                timezone: "America/Sao_Paulo"
+                vacationRules:
+                    allowedDaysPerYear: 30
+                    carryOverDays: 5
+        "#;
+
+        let manifest: ProjectManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.metadata.description, "A comprehensive test project");
+        assert_eq!(manifest.spec.status, ProjectStatusManifest::InProgress);
+        assert_eq!(manifest.spec.timezone, Some("America/Sao_Paulo".to_string()));
+        assert_eq!(manifest.spec.vacation_rules.as_ref().unwrap().allowed_days_per_year, 30);
+        assert_eq!(manifest.spec.vacation_rules.as_ref().unwrap().carry_over_days, Some(5));
+    }
 }
