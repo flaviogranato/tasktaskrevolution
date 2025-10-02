@@ -31,7 +31,6 @@ impl BuildUseCase {
         // Detect build context
         let context = BuildContext::detect(&base_path).map_err(|e| format!("Failed to detect build context: {}", e))?;
 
-        println!("[INFO] Detected build context: {}", context.display_name());
 
         let mut tera = Tera::default();
         for filename in TemplateAssets::iter() {
@@ -78,7 +77,6 @@ impl BuildUseCase {
         let resource_repo = FileResourceRepository::new(self.base_path.clone());
         // Load projects from repository (now handles both ID-based and hierarchical)
         let projects = project_repo.find_all().unwrap_or_default();
-        println!("[DEBUG] Found {} projects from repository", projects.len());
 
         for project in projects {
             let company_code = project.company_code().to_string();
@@ -111,7 +109,6 @@ impl BuildUseCase {
 
         // 6. Group projects by company
         let mut companies_with_data = Vec::new();
-        println!("[DEBUG] Total projects loaded: {}", all_projects_data.len());
         for company in companies {
             let company_code = company.code();
             let company_projects: Vec<_> = all_projects_data
@@ -120,7 +117,6 @@ impl BuildUseCase {
                 .collect();
 
             let project_count = company_projects.len();
-            println!("[DEBUG] Company {} has {} projects", company_code, project_count);
             let resource_count = company_projects
                 .iter()
                 .map(|(_, _, resources, _)| resources.len())
@@ -130,7 +126,6 @@ impl BuildUseCase {
         }
 
         // 7. Render the global index page with companies overview
-        println!("[INFO] Generating global index page...");
         let mut context = Context::new();
 
         let company_values: Vec<_> = companies_with_data
@@ -184,53 +179,27 @@ impl BuildUseCase {
             .into();
         context.insert("project", &dummy_project);
 
-        println!("[INFO] About to render global index page...");
-        println!("[INFO] Context prepared, rendering global index page...");
-        println!("[INFO] Manager context: {:?}", manager_map);
-        println!("[INFO] Companies count: {}", company_values.len());
-        println!("[INFO] About to call tera.render...");
-        println!("[INFO] Calling tera.render now...");
-        println!("[INFO] Template name: index.html");
         // Context prepared for index.html
-        println!("[INFO] About to call tera.render with context...");
         let index_html = match self.tera.render("index.html", &context) {
             Ok(html) => html,
             Err(e) => {
-                eprintln!("Template render error: {:?}", e);
                 return Err(format!("Template error: {}", e).into());
             }
         };
         fs::write(self.output_dir.join("index.html"), index_html)?;
-        println!("✅ Global index page generated successfully.");
 
         // Generate companies.html page
         let companies_html = match self.tera.render("index.html", &context) {
             Ok(html) => html,
             Err(e) => {
-                eprintln!("Template render error for companies.html: {:?}", e);
                 return Err(format!("Template error: {}", e).into());
             }
         };
         fs::write(self.output_dir.join("companies.html"), companies_html)?;
-        println!("✅ Companies page generated successfully.");
-
-        println!("[INFO] About to start company pages generation...");
-        println!("[INFO] Companies with data count: {}", companies_with_data.len());
-        println!(
-            "[INFO] Companies with data: {:?}",
-            companies_with_data
-                .iter()
-                .map(|(c, _, _, _)| c.name())
-                .collect::<Vec<_>>()
-        );
-        println!("[INFO] About to enter the for loop...");
 
         // 8. Generate company pages
-        println!("[INFO] Starting company pages generation...");
         let companies_base_dir = self.output_dir.join("companies");
-        println!("[INFO] Companies base directory: {:?}", companies_base_dir);
         fs::create_dir_all(&companies_base_dir)?;
-        println!("[INFO] Companies base directory created successfully");
 
         // Gerar gráficos Gantt para cada empresa
         let _gantt_use_case = GanttUseCase::new(self.base_path.clone());
@@ -238,18 +207,11 @@ impl BuildUseCase {
         for (company, company_projects, project_count, resource_count) in &companies_with_data {
             let company_code = company.code();
             let company_name = company.name();
-            println!("[INFO] Generating page for company: {company_name} ({company_code})");
-            println!("[INFO] Company projects count: {}", company_projects.len());
-            println!("[INFO] Project count: {}", project_count);
-            println!("[INFO] Resource count: {}", resource_count);
 
             let company_output_dir = companies_base_dir.join(company_code);
-            println!("[INFO] Creating company output directory: {:?}", company_output_dir);
             fs::create_dir_all(&company_output_dir)?;
-            println!("[INFO] Company output directory created successfully");
 
             // Create company context
-            println!("[INFO] Creating company context for: {}", company_name);
             let mut company_context = Context::new();
             let mut company_map = tera::Map::new();
             company_map.insert("code".to_string(), tera::Value::String(company.code().to_string()));
@@ -274,7 +236,6 @@ impl BuildUseCase {
             );
 
             // Create project summaries for company page
-            println!("[INFO] Creating project summaries for company: {}", company_name);
             let project_summaries: Vec<_> = company_projects
                 .iter()
                 .map(|(project, tasks, _, _)| {
@@ -299,16 +260,10 @@ impl BuildUseCase {
                 .collect();
 
             // Load company resources (using hierarchical method)
-            println!("[INFO] Loading company resources for: {}", company_name);
             let resource_repo = FileResourceRepository::new(self.base_path.clone());
             let company_resources_filtered = resource_repo
                 .find_all_by_project(company_code, "")
                 .unwrap_or_else(|_| Vec::new());
-            println!(
-                "[INFO] Loaded {} resources for company: {}",
-                company_resources_filtered.len(),
-                company_name
-            );
 
             company_context.insert("company", &tera::Value::Object(company_map.clone()));
             company_context.insert("projects", &project_summaries);
@@ -317,19 +272,16 @@ impl BuildUseCase {
             company_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
 
             // Gerar página Gantt da empresa (company_gantt.html)
-            println!("[INFO] Generating company Gantt page for: {}", company_name);
             let company_gantt_page_path = company_output_dir.join("gantt.html");
             let company_gantt_context =
                 self.create_company_gantt_context(company, company_projects, &company_resources_filtered)?;
             let company_gantt_html = match self.tera.render("company_gantt.html", &company_gantt_context) {
                 Ok(html) => html,
                 Err(e) => {
-                    eprintln!("Template render error for company_gantt.html: {:?}", e);
                     return Err(format!("Template error: {}", e).into());
                 }
             };
             fs::write(company_gantt_page_path, company_gantt_html)?;
-            println!("✅ Company '{company_name}' Gantt page generated successfully.");
 
             // Create dummy project for base template
             let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
@@ -343,54 +295,36 @@ impl BuildUseCase {
             company_context.insert("project", &dummy_project);
 
             // Render company page
-            println!("[INFO] Rendering company page...");
-            println!("[INFO] About to render company.html for company: {}", company_name);
             // Company context prepared
-            println!("[INFO] Company resources count: {}", company_resources_filtered.len());
-            println!("[INFO] Projects count: {}", project_summaries.len());
             let company_html = match self.tera.render("company.html", &company_context) {
                 Ok(html) => {
-                    println!("[INFO] Company page rendered successfully for: {}", company_name);
                     html
                 }
                 Err(e) => {
-                    eprintln!("Template render error for company.html: {:?}", e);
                     return Err(format!("Template error: {}", e).into());
                 }
             };
             let company_page_path = company_output_dir.join("index.html");
             fs::write(company_page_path, company_html)?;
 
-            println!("✅ Company '{company_name}' page generated successfully.");
 
             // Generate company detail page
-            println!("[INFO] Rendering company detail page...");
             let company_detail_html = match self.tera.render("company_detail.html", &company_context) {
                 Ok(html) => html,
                 Err(e) => {
-                    eprintln!("Template render error for company_detail.html: {:?}", e);
                     return Err(format!("Template error: {}", e).into());
                 }
             };
             let company_detail_path = company_output_dir.join("detail.html");
             fs::write(company_detail_path, company_detail_html)?;
-            println!("✅ Company '{company_name}' detail page generated successfully.");
-            println!("[INFO] About to generate resource pages...");
 
             // 9. Generate resource pages within company
             let resources_base_dir = company_output_dir.join("resources");
             fs::create_dir_all(&resources_base_dir)?;
-            println!("[INFO] Generating resource pages for company: {company_name}");
 
             // Generate resource detail pages
-            println!(
-                "[INFO] Processing {} resources for company: {}",
-                company_resources_filtered.len(),
-                company_name
-            );
             for resource in &company_resources_filtered {
                 let resource_code = resource.code();
-                println!("[INFO] Processing resource: {} ({})", resource.name(), resource_code);
                 let resource_output_dir = resources_base_dir.join(resource_code);
                 fs::create_dir_all(&resource_output_dir)?;
 
@@ -477,29 +411,20 @@ impl BuildUseCase {
                 let resource_detail_html = match self.tera.render("resource_detail.html", &resource_context) {
                     Ok(html) => html,
                     Err(e) => {
-                        eprintln!("Template render error for resource_detail.html: {:?}", e);
                         return Err(format!("Template error: {}", e).into());
                     }
                 };
                 let resource_detail_path = resource_output_dir.join("detail.html");
                 fs::write(resource_detail_path, resource_detail_html)?;
-                println!("✅ Resource '{}' detail page generated successfully.", resource.name());
             }
 
             // 10. Generate project pages within company
-            println!("[INFO] About to generate project pages for company: {}", company_name);
             let projects_base_dir = company_output_dir.join("projects");
             fs::create_dir_all(&projects_base_dir)?;
-            println!(
-                "[INFO] Processing {} projects for company: {}",
-                company_projects.len(),
-                company_name
-            );
 
             for (project, tasks, resources, _) in company_projects {
                 let project_code = project.code();
                 let project_name = project.name();
-                println!("[INFO] Generating page for project: {project_name} ({project_code})");
 
                 let project_output_dir = projects_base_dir.join(project_code);
                 fs::create_dir_all(&project_output_dir)?;
@@ -542,47 +467,38 @@ impl BuildUseCase {
                 let project_html = match self.tera.render("project.html", &project_context) {
                     Ok(html) => html,
                     Err(e) => {
-                        eprintln!("Template render error for project.html: {:?}", e);
                         return Err(format!("Template error: {}", e).into());
                     }
                 };
                 let project_page_path = project_output_dir.join("index.html");
                 fs::write(project_page_path, project_html)?;
 
-                println!("✅ Project '{project_name}' page generated successfully.");
 
                 // Generate project detail page
                 let project_detail_html = match self.tera.render("project_detail.html", &project_context) {
                     Ok(html) => html,
                     Err(e) => {
-                        eprintln!("Template render error for project_detail.html: {:?}", e);
                         return Err(format!("Template error: {}", e).into());
                     }
                 };
                 let project_detail_path = project_output_dir.join("detail.html");
                 fs::write(project_detail_path, project_detail_html)?;
-                println!("✅ Project '{project_name}' detail page generated successfully.");
 
                 // Gerar página Gantt do projeto (project_gantt.html)
-                println!("[INFO] Generating project Gantt page for: {}", project_name);
                 let project_gantt_page_path = project_output_dir.join("gantt.html");
                 let project_gantt_context =
                     self.create_project_gantt_context(project, tasks, resources, &company_map)?;
                 let project_gantt_html = match self.tera.render("project_gantt.html", &project_gantt_context) {
                     Ok(html) => html,
                     Err(e) => {
-                        eprintln!("Template render error for project_gantt.html: {:?}", e);
                         return Err(format!("Template error: {}", e).into());
                     }
                 };
                 fs::write(project_gantt_page_path, project_gantt_html)?;
-                println!("✅ Project '{project_name}' Gantt page generated successfully.");
 
                 // Generate task detail pages
-                println!("[INFO] About to generate task pages for project: {}", project_name);
                 let tasks_base_dir = project_output_dir.join("tasks");
                 fs::create_dir_all(&tasks_base_dir)?;
-                println!("[INFO] Processing {} tasks for project: {}", tasks.len(), project_name);
 
                 for task in tasks {
                     let task_code = task.code();
@@ -614,18 +530,15 @@ impl BuildUseCase {
                     let task_detail_html = match self.tera.render("task_detail.html", &task_context) {
                         Ok(html) => html,
                         Err(e) => {
-                            eprintln!("Template render error for task_detail.html: {:?}", e);
                             return Err(format!("Template error: {}", e).into());
                         }
                     };
                     let task_detail_path = task_output_dir.join("detail.html");
                     fs::write(task_detail_path, task_detail_html)?;
-                    println!("✅ Task '{}' detail page generated successfully.", task.name());
                 }
             }
         }
 
-        println!("✅ Build completed successfully!");
         Ok(())
     }
 
@@ -964,7 +877,6 @@ spec:
         let result = use_case.execute();
         if let Err(e) = &result {
             // Provide more context on failure.
-            eprintln!("BuildUseCase::execute failed: {e}");
         }
         assert!(result.is_ok());
 

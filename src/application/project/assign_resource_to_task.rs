@@ -390,7 +390,6 @@ mod tests {
         let result = use_case.execute("PROJ-1", "TSK-1", "dev-res-2");
 
         if let Err(ref e) = result {
-            eprintln!("Error: {}", e);
         }
 
         assert!(result.is_ok());

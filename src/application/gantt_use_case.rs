@@ -24,7 +24,6 @@ impl GanttUseCase {
     /// Cria uma nova instância do use case
     pub fn new(base_path: PathBuf) -> Self {
         let tera = Tera::new("templates/**/*").unwrap_or_else(|e| {
-            eprintln!("Template parsing error(s): {}", e);
             std::process::exit(1);
         });
 
@@ -293,7 +292,6 @@ impl GanttUseCase {
         }
 
         std::fs::write(output_path, html)?;
-        println!("✅ Gráfico Gantt demo gerado: {}", output_path.display());
 
         Ok(())
     }
@@ -326,11 +324,6 @@ impl GanttUseCase {
         }
 
         std::fs::write(output_path, html)?;
-        println!(
-            "✅ Gráfico Gantt do projeto '{}' gerado: {}",
-            project_code,
-            output_path.display()
-        );
 
         Ok(())
     }
@@ -389,11 +382,6 @@ impl GanttUseCase {
         }
 
         std::fs::write(output_path, html)?;
-        println!(
-            "✅ Gráfico Gantt da empresa '{}' gerado: {}",
-            company_code,
-            output_path.display()
-        );
 
         Ok(())
     }

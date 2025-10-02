@@ -73,7 +73,6 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
             format!("company {}", params.company_code)
         };
 
-        println!("Resource {} created in {}.", name, location);
         Ok(())
     }
 }

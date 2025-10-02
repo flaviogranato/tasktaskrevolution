@@ -350,7 +350,6 @@ mod tests {
                 assert_eq!(message, "Mock failure");
             }
             AppError::IoError { operation, details } => {
-                println!("IoError: operation={}, details={}", operation, details);
                 assert_eq!(operation, "find_by_id");
                 assert_eq!(details, "Mock failure");
             }
