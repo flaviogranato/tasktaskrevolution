@@ -377,6 +377,31 @@ impl ProjectRepository for FileProjectRepository {
 
 impl crate::domain::project_management::repository::ProjectRepositoryWithId for FileProjectRepository {
     fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
+        // Search in hierarchical format: companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/project.yaml
+        let companies_dir = self.base_path.join("companies");
+        if companies_dir.exists() {
+            for company_entry in std::fs::read_dir(&companies_dir)? {
+                let company_entry = company_entry?;
+                let company_path = company_entry.path();
+                if company_path.is_dir() {
+                    let projects_dir = company_path.join("projects");
+                    if let Ok(project_entries) = std::fs::read_dir(projects_dir) {
+                        for proj_dir in project_entries.flatten() {
+                            if proj_dir.path().is_dir() {
+                                let project_file = proj_dir.path().join("project.yaml");
+                                if project_file.exists()
+                                    && let Ok(project) = self.load_from_path(&project_file)
+                                    && project.id() == id
+                                {
+                                    return Ok(Some(project));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         // Search for project by ID in ID-based format: projects/{id}.yaml
         let project_file = self.get_project_path_by_id(id);
         if project_file.exists() {

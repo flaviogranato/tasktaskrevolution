@@ -65,7 +65,7 @@ where
             let ref_company = project.company_code();
             if !company_codes.contains(ref_company) {
                 results.push(
-                    ValidationResult::error("Project references non-existent company".to_string())
+                    ValidationResult::error("PROJECT_INVALID_COMPANY".to_string(), "Project references non-existent company".to_string())
                         .with_entity("Project".to_string(), project.code().to_string())
                         .with_details(format!(
                             "Project '{}' references company '{}' which does not exist",
@@ -81,7 +81,7 @@ where
             let has_projects = projects.iter().any(|p| p.company_code() == company.code);
             if !has_projects {
                 results.push(
-                    ValidationResult::info("Company has no projects".to_string())
+                    ValidationResult::info("COMPANY_NO_PROJECTS".to_string(), "Company has no projects".to_string())
                         .with_entity("Company".to_string(), company.code.clone())
                         .with_details("Company exists but has no associated projects".to_string()),
                 );
@@ -94,7 +94,7 @@ where
                 for resource_code in task.assigned_resources() {
                     if !resource_codes.contains(&resource_code.as_str()) {
                         results.push(
-                            ValidationResult::error("Task references non-existent resource".to_string())
+                            ValidationResult::error("TASK_INVALID_RESOURCE".to_string(), "Task references non-existent resource".to_string())
                                 .with_entity("Task".to_string(), task.code().to_string())
                                 .with_details(format!(
                                     "Task '{}' references resource '{}' which does not exist",
@@ -126,7 +126,7 @@ where
                 && let Some(explanation) = project_completeness_spec.explain_why_not_satisfied(project)
             {
                 results.push(
-                    ValidationResult::warning("Project may be incomplete".to_string())
+                    ValidationResult::warning("PROJECT_INCOMPLETE".to_string(), "Project may be incomplete".to_string())
                         .with_entity("Project".to_string(), project.code().to_string())
                         .with_details(explanation),
                 );

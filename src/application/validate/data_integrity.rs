@@ -96,7 +96,7 @@ where
                 && let Some(explanation) = resource_spec.explain_why_not_satisfied(resource)
             {
                 results.push(
-                    ValidationResult::warning(resource_spec.description().to_string())
+                    ValidationResult::warning("RESOURCE_DATA_INTEGRITY".to_string(), resource_spec.description().to_string())
                         .with_entity("Resource".to_string(), resource.code().to_string())
                         .with_details(explanation),
                 );
@@ -119,7 +119,7 @@ where
                 && let Some(explanation) = company_spec.explain_why_not_satisfied(company)
             {
                 results.push(
-                    ValidationResult::warning(company_spec.description().to_string())
+                    ValidationResult::warning("COMPANY_DATA_INTEGRITY".to_string(), company_spec.description().to_string())
                         .with_entity("Company".to_string(), company.code().to_string())
                         .with_details(explanation),
                 );
@@ -345,18 +345,20 @@ mod tests {
     #[test]
     fn test_validate_data_integrity_validation_result_structure() {
         let validation_result = ValidationResult {
+            code: "DATA_INTEGRITY_WARNING".to_string(),
+            level: ValidationSeverity::Warning,
+            message: "Data integrity validation failed".to_string(),
+            path: None,
             entity_type: Some("Project".to_string()),
             entity_code: Some("PROJ-001".to_string()),
             field: Some("timeline".to_string()),
-            severity: ValidationSeverity::Warning,
-            message: "Data integrity validation failed".to_string(),
             details: Some("Project timeline is invalid".to_string()),
         };
 
         assert_eq!(validation_result.entity_type, Some("Project".to_string()));
         assert_eq!(validation_result.entity_code, Some("PROJ-001".to_string()));
         assert_eq!(validation_result.field, Some("timeline".to_string()));
-        assert_eq!(validation_result.severity, ValidationSeverity::Warning);
+        assert_eq!(validation_result.level, ValidationSeverity::Warning);
         assert_eq!(validation_result.message, "Data integrity validation failed");
         assert_eq!(
             validation_result.details,
@@ -367,10 +369,12 @@ mod tests {
     #[test]
     fn test_validate_data_integrity_validation_result_with_minimal_fields() {
         let validation_result = ValidationResult {
+            code: "TEST_CODE".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Info,
+            level: ValidationSeverity::Info,
             message: "Data integrity check completed".to_string(),
             details: None,
         };
@@ -378,7 +382,7 @@ mod tests {
         assert_eq!(validation_result.entity_type, None);
         assert_eq!(validation_result.entity_code, None);
         assert_eq!(validation_result.field, None);
-        assert_eq!(validation_result.severity, ValidationSeverity::Info);
+        assert_eq!(validation_result.level, ValidationSeverity::Info);
         assert_eq!(validation_result.message, "Data integrity check completed");
         assert_eq!(validation_result.details, None);
     }
@@ -386,62 +390,74 @@ mod tests {
     #[test]
     fn test_validate_data_integrity_validation_result_severity_levels() {
         let error_result = ValidationResult {
+            code: "TEST_ERROR".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Error,
+            level: ValidationSeverity::Error,
             message: "Critical data integrity error".to_string(),
             details: None,
         };
 
         let warning_result = ValidationResult {
+            code: "TEST_WARNING".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Warning,
+            level: ValidationSeverity::Warning,
             message: "Data integrity warning".to_string(),
             details: None,
         };
 
         let info_result = ValidationResult {
+            code: "TEST_INFO".to_string(),
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Info,
+            level: ValidationSeverity::Info,
             message: "Data integrity information".to_string(),
             details: None,
         };
 
-        assert_eq!(error_result.severity, ValidationSeverity::Error);
-        assert_eq!(warning_result.severity, ValidationSeverity::Warning);
-        assert_eq!(info_result.severity, ValidationSeverity::Info);
+        assert_eq!(error_result.level, ValidationSeverity::Error);
+        assert_eq!(warning_result.level, ValidationSeverity::Warning);
+        assert_eq!(info_result.level, ValidationSeverity::Info);
     }
 
     #[test]
     fn test_validate_data_integrity_validation_result_entity_types() {
         let project_result = ValidationResult {
+            code: "PROJECT_TEST".to_string(),
+            path: None,
             entity_type: Some("Project".to_string()),
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Warning,
+            level: ValidationSeverity::Warning,
             message: "Project validation".to_string(),
             details: None,
         };
 
         let resource_result = ValidationResult {
+            code: "RESOURCE_TEST".to_string(),
+            path: None,
             entity_type: Some("Resource".to_string()),
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Warning,
+            level: ValidationSeverity::Warning,
             message: "Resource validation".to_string(),
             details: None,
         };
 
         let company_result = ValidationResult {
+            code: "COMPANY_TEST".to_string(),
+            path: None,
             entity_type: Some("Company".to_string()),
             entity_code: None,
             field: None,
-            severity: ValidationSeverity::Warning,
+            level: ValidationSeverity::Warning,
             message: "Company validation".to_string(),
             details: None,
         };
@@ -453,7 +469,7 @@ mod tests {
 
     #[test]
     fn test_validate_data_integrity_validation_result_display_formatting() {
-        let result = ValidationResult::warning("Data integrity issue".to_string())
+        let result = ValidationResult::warning("DATA_INTEGRITY_ISSUE".to_string(), "Data integrity issue".to_string())
             .with_entity("Project".to_string(), "PROJ-001".to_string())
             .with_field("timeline".to_string())
             .with_details("Project timeline validation failed".to_string());
@@ -468,12 +484,12 @@ mod tests {
 
     #[test]
     fn test_validate_data_integrity_validation_result_builder_methods() {
-        let result = ValidationResult::warning("Test warning".to_string())
+        let result = ValidationResult::warning("TEST_WARNING".to_string(), "Test warning".to_string())
             .with_entity("Resource".to_string(), "RES-001".to_string())
             .with_field("vacation".to_string())
             .with_details("Vacation validation failed".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Warning);
+        assert_eq!(result.level, ValidationSeverity::Warning);
         assert_eq!(result.message, "Test warning");
         assert_eq!(result.entity_type, Some("Resource".to_string()));
         assert_eq!(result.entity_code, Some("RES-001".to_string()));
@@ -483,11 +499,11 @@ mod tests {
 
     #[test]
     fn test_validate_data_integrity_validation_result_error_builder() {
-        let result = ValidationResult::error("Critical error".to_string())
+        let result = ValidationResult::error("CRITICAL_ERROR".to_string(), "Critical error".to_string())
             .with_entity("Company".to_string(), "COMP-001".to_string())
             .with_details("Company settings validation failed".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Error);
+        assert_eq!(result.level, ValidationSeverity::Error);
         assert_eq!(result.message, "Critical error");
         assert_eq!(result.entity_type, Some("Company".to_string()));
         assert_eq!(result.entity_code, Some("COMP-001".to_string()));
@@ -496,10 +512,10 @@ mod tests {
 
     #[test]
     fn test_validate_data_integrity_validation_result_info_builder() {
-        let result = ValidationResult::info("Information message".to_string())
+        let result = ValidationResult::info("INFO_MESSAGE".to_string(), "Information message".to_string())
             .with_entity("Project".to_string(), "PROJ-001".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Info);
+        assert_eq!(result.level, ValidationSeverity::Info);
         assert_eq!(result.message, "Information message");
         assert_eq!(result.entity_type, Some("Project".to_string()));
         assert_eq!(result.entity_code, Some("PROJ-001".to_string()));
@@ -509,9 +525,9 @@ mod tests {
 
     #[test]
     fn test_validate_data_integrity_validation_result_minimal_creation() {
-        let result = ValidationResult::warning("Simple warning".to_string());
+        let result = ValidationResult::warning("SIMPLE_WARNING".to_string(), "Simple warning".to_string());
 
-        assert_eq!(result.severity, ValidationSeverity::Warning);
+        assert_eq!(result.level, ValidationSeverity::Warning);
         assert_eq!(result.message, "Simple warning");
         assert_eq!(result.entity_type, None);
         assert_eq!(result.entity_code, None);
