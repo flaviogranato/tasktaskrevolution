@@ -129,7 +129,7 @@ pub struct WorkHours {
     pub end: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct VacationRules {
     pub allowed_days_per_year: u32,
     pub carry_over_days: u32,

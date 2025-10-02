@@ -459,6 +459,7 @@ mod tests {
                 status: ProjectStatusManifest::Planned,
                 vacation_rules: Some(VacationRulesManifest {
                     max_concurrent_vacations: None,
+                    carry_over_days: None,
                     allow_layoff_vacations: None,
                     require_layoff_vacation_period: None,
                     layoff_periods: None,

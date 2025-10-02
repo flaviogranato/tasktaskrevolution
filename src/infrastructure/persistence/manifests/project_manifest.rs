@@ -1,10 +1,17 @@
-use crate::domain::project_management::{AnyProject, layoff_period::LayoffPeriod, vacation_rules::VacationRules};
+use crate::domain::project_management::{AnyProject, layoff_period::LayoffPeriod};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use uuid7::{Uuid, uuid7};
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
+
+/// Parse date from ISO format (YYYY-MM-DD)
+fn parse_date_opt(s: &Option<String>) -> Result<Option<chrono::NaiveDate>, String> {
+    s.as_ref()
+        .map(|v| chrono::NaiveDate::parse_from_str(v, "%Y-%m-%d").map_err(|e| e.to_string()))
+        .transpose()
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -53,6 +60,8 @@ pub struct ProjectSpec {
 pub struct VacationRulesManifest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_concurrent_vacations: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub carry_over_days: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_layoff_vacations: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -161,24 +170,50 @@ impl TryFrom<ProjectManifest> for AnyProject {
             Some(manifest.metadata.description)
         };
         let company_code = manifest.metadata.company_code.unwrap_or_else(|| "COMP-001".to_string());
-        let _start_date = manifest.spec.start_date;
-        let _end_date = manifest.spec.end_date;
-        let _vacation_rules = manifest.spec.vacation_rules.map(|vr| vr.to());
-        let _timezone = manifest.spec.timezone;
+        
+        // Parse dates from ISO format (YYYY-MM-DD)
+        let start_date = parse_date_opt(&manifest.spec.start_date)?;
+        let end_date = parse_date_opt(&manifest.spec.end_date)?;
+        
+        let vacation_rules = manifest.spec.vacation_rules;
+        let timezone = manifest.spec.timezone;
+        
+        // Convert status from manifest to domain
+        let status = match manifest.spec.status {
+            ProjectStatusManifest::Planned => crate::domain::project_management::project::ProjectStatus::Planned,
+            ProjectStatusManifest::InProgress => crate::domain::project_management::project::ProjectStatus::InProgress,
+            ProjectStatusManifest::OnHold => crate::domain::project_management::project::ProjectStatus::OnHold,
+            ProjectStatusManifest::Completed => crate::domain::project_management::project::ProjectStatus::Completed,
+            ProjectStatusManifest::Cancelled => crate::domain::project_management::project::ProjectStatus::Cancelled,
+        };
 
-        // TODO: Implement proper conversion from manifest to Project
-        // For now, we'll create a basic project
+        // Create project with all the data from manifest
         let mut project = crate::domain::project_management::project::Project::new(
             code,
             name,
             company_code,
-            "system".to_string(), // TODO: Get from manifest
+            manifest.metadata.created_by.unwrap_or_else(|| "system".to_string()),
         )
         .map_err(|e| e.to_string())?;
 
-        // Set the ID and description from the manifest to preserve them during conversion
+        // Set all fields from manifest
         project.id = id.to_string();
         project.description = description;
+        project.status = status;
+        project.start_date = start_date;
+        project.end_date = end_date;
+        
+        // Set timezone and vacation rules in settings
+        if let Some(tz) = timezone {
+            project.settings.timezone = Some(tz);
+        }
+        
+        if let Some(vr) = vacation_rules {
+            project.settings.vacation_rules = Some(crate::domain::project_management::project::VacationRules {
+                allowed_days_per_year: vr.max_concurrent_vacations.unwrap_or(20),
+                carry_over_days: vr.carry_over_days.unwrap_or(5),
+            });
+        }
 
         Ok(AnyProject::Project(project))
     }
@@ -188,6 +223,7 @@ impl From<&crate::domain::project_management::project::VacationRules> for Vacati
     fn from(source: &crate::domain::project_management::project::VacationRules) -> Self {
         VacationRulesManifest {
             max_concurrent_vacations: Some(source.allowed_days_per_year),
+            carry_over_days: Some(source.carry_over_days),
             allow_layoff_vacations: Some(true),          // Default value
             require_layoff_vacation_period: Some(false), // Default value
             layoff_periods: None,                        // Not implemented in the new VacationRules
@@ -196,17 +232,7 @@ impl From<&crate::domain::project_management::project::VacationRules> for Vacati
 }
 
 impl VacationRulesManifest {
-    pub fn to(&self) -> VacationRules {
-        VacationRules {
-            max_concurrent_vacations: self.max_concurrent_vacations,
-            allow_layoff_vacations: self.allow_layoff_vacations,
-            require_layoff_vacation_period: self.require_layoff_vacation_period,
-            layoff_periods: self
-                .layoff_periods
-                .as_ref()
-                .map(|periods| periods.iter().map(|period| period.to()).collect()),
-        }
-    }
+    // This method is no longer needed as we're using the project::VacationRules directly
 }
 
 impl From<LayoffPeriod> for LayoffPeriodManifest {
@@ -234,12 +260,22 @@ mod tests {
 
     #[test]
     fn test_bidirectional_conversion() {
-        // Create a Planned project
+        use chrono::NaiveDate;
+        
+        // Create a project with all fields
         let original_project = ProjectBuilder::new()
             .name("Test Project".to_string())
             .code("proj-1".to_string())
             .company_code("COMP-001".to_string())
             .created_by("system".to_string())
+            .description(Some("Test description".to_string()))
+            .start_date(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+            .end_date(NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+            .timezone("UTC".to_string())
+            .vacation_rules(crate::domain::project_management::project::VacationRules {
+                allowed_days_per_year: 25,
+                carry_over_days: 10,
+            })
             .build()
             .unwrap();
         let original_any = AnyProject::from(original_project.clone());
@@ -247,7 +283,11 @@ mod tests {
         // Convert to Manifest
         let manifest = ProjectManifest::from(original_any);
         assert_eq!(manifest.metadata.name, "Test Project");
+        assert_eq!(manifest.metadata.description, "Test description");
         assert_eq!(manifest.spec.status, ProjectStatusManifest::Planned);
+        assert_eq!(manifest.spec.start_date, Some("2024-01-01".to_string()));
+        assert_eq!(manifest.spec.end_date, Some("2024-12-31".to_string()));
+        assert_eq!(manifest.spec.timezone, Some("UTC".to_string()));
 
         // Convert back to AnyProject
         let converted_any = AnyProject::try_from(manifest).unwrap();
@@ -256,5 +296,28 @@ mod tests {
         let AnyProject::Project(converted) = converted_any;
         assert_eq!(original_project.name, converted.name);
         assert_eq!(original_project.id, converted.id);
+        assert_eq!(original_project.description, converted.description);
+        assert_eq!(original_project.start_date, converted.start_date);
+        assert_eq!(original_project.end_date, converted.end_date);
+        assert_eq!(original_project.settings.timezone, converted.settings.timezone);
+        assert_eq!(original_project.settings.vacation_rules, converted.settings.vacation_rules);
+    }
+    
+    #[test]
+    fn test_date_parsing() {
+        // Test valid ISO date
+        let valid_date = Some("2024-01-15".to_string());
+        let parsed = parse_date_opt(&valid_date).unwrap();
+        assert_eq!(parsed, Some(chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
+        
+        // Test invalid date
+        let invalid_date = Some("2024-13-45".to_string());
+        let result = parse_date_opt(&invalid_date);
+        assert!(result.is_err());
+        
+        // Test None
+        let none_date = None;
+        let parsed = parse_date_opt(&none_date).unwrap();
+        assert_eq!(parsed, None);
     }
 }
