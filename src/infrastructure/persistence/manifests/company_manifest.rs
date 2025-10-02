@@ -219,4 +219,184 @@ mod tests {
             assert_eq!(status, converted);
         }
     }
+
+    #[test]
+    fn test_yaml_parsing_success() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Company
+            metadata:
+                id: "01996dev-0000-0000-0000-000000techc"
+                code: "TECH-CORP"
+                name: "Tech Corp"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                description: "A technology company"
+                size: "medium"
+                status: "active"
+        "#;
+
+        let manifest: CompanyManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
+        assert_eq!(manifest.kind, "Company");
+        assert_eq!(manifest.metadata.code, "TECH-CORP");
+        assert_eq!(manifest.metadata.name, "Tech Corp");
+        assert_eq!(manifest.spec.description, Some("A technology company".to_string()));
+        assert_eq!(manifest.spec.size, CompanySizeManifest::Medium);
+        assert_eq!(manifest.spec.status, CompanyStatusManifest::Active);
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_syntax() {
+        let yaml_str = "invalid: yaml: content: [";
+        let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_missing_required_field() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Company
+            metadata:
+                id: "01996dev-0000-0000-0000-000000techc"
+                # Missing required fields: code, name, createdAt, updatedAt, createdBy
+            spec:
+                size: "medium"
+                status: "active"
+        "#;
+
+        let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_field_type() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Company
+            metadata:
+                id: "01996dev-0000-0000-0000-000000techc"
+                code: "TECH-CORP"
+                name: "Tech Corp"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                size: "invalid_size"  # Invalid enum value
+                status: "active"
+        "#;
+
+        let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_date_format() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Company
+            metadata:
+                id: "01996dev-0000-0000-0000-000000techc"
+                code: "TECH-CORP"
+                name: "Tech Corp"
+                createdAt: "invalid-date"  # Invalid date format
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                size: "medium"
+                status: "active"
+        "#;
+
+        let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_wrong_api_version() {
+        let yaml_str = r#"
+            apiVersion: wrong.api.version/v1
+            kind: Company
+            metadata:
+                id: "01996dev-0000-0000-0000-000000techc"
+                code: "TECH-CORP"
+                name: "Tech Corp"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                size: "medium"
+                status: "active"
+        "#;
+
+        let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        // This should still parse successfully as we don't validate API version
+        assert!(result.is_ok());
+        let manifest = result.unwrap();
+        assert_eq!(manifest.api_version, "wrong.api.version/v1");
+    }
+
+    #[test]
+    fn test_yaml_parsing_success_with_optional_fields() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Company
+            metadata:
+                id: "01996dev-0000-0000-0000-000000techc"
+                code: "TECH-CORP"
+                name: "Tech Corp"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                description: "A technology company"
+                taxId: "12.345.678/0001-90"
+                address: "123 Tech Street"
+                email: "contact@techcorp.com"
+                phone: "+55 11 99999-9999"
+                website: "https://techcorp.com"
+                industry: "Technology"
+                size: "large"
+                status: "active"
+        "#;
+
+        let manifest: CompanyManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.spec.description, Some("A technology company".to_string()));
+        assert_eq!(manifest.spec.tax_id, Some("12.345.678/0001-90".to_string()));
+        assert_eq!(manifest.spec.address, Some("123 Tech Street".to_string()));
+        assert_eq!(manifest.spec.email, Some("contact@techcorp.com".to_string()));
+        assert_eq!(manifest.spec.phone, Some("+55 11 99999-9999".to_string()));
+        assert_eq!(manifest.spec.website, Some("https://techcorp.com".to_string()));
+        assert_eq!(manifest.spec.industry, Some("Technology".to_string()));
+        assert_eq!(manifest.spec.size, CompanySizeManifest::Large);
+    }
 }

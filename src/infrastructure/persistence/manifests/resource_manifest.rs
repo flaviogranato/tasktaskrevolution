@@ -534,4 +534,171 @@ mod tests {
             panic!("Expected Available state");
         }
     }
+
+    #[test]
+    fn test_yaml_parsing_success() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                resourceType: "Developer"
+                scope: "company"
+                timeOffBalance: 25
+                state: "available"
+        "#;
+
+        let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
+        assert_eq!(manifest.kind, "Resource");
+        assert_eq!(manifest.metadata.code, "DEV-001");
+        assert_eq!(manifest.metadata.name, "John Doe");
+        assert_eq!(manifest.metadata.email, "john@example.com");
+        assert_eq!(manifest.spec.resource_type, "Developer");
+        assert_eq!(manifest.spec.scope, ResourceScopeManifest::Company);
+        assert_eq!(manifest.spec.time_off_balance, 25);
+        assert_eq!(manifest.spec.state, ResourceStateManifest::Available);
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_syntax() {
+        let yaml_str = "invalid: yaml: content: [";
+        let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_missing_required_field() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                # Missing required fields: code, name, createdAt, updatedAt, createdBy
+            spec:
+                resourceType: "Developer"
+                scope: "company"
+        "#;
+
+        let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_field_type() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                resourceType: "Developer"
+                scope: "invalid_scope"  # Invalid enum value
+                timeOffBalance: 25
+        "#;
+
+        let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_failure_invalid_date_format() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                createdAt: "invalid-date"  # Invalid date format
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                resourceType: "Developer"
+                scope: "company"
+                timeOffBalance: 25
+        "#;
+
+        let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let app_error: crate::application::errors::AppError = error.into();
+        
+        let error_message = format!("{}", app_error);
+        assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_yaml_parsing_success_with_optional_fields() {
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                resourceType: "Senior Developer"
+                scope: "project"
+                timeOffBalance: 30
+                state: "assigned"
+                projectAssignments:
+                    - projectCode: "PROJ-001"
+                      startDate: "2024-01-01"
+                      endDate: "2024-12-31"
+                vacations:
+                    - startDate: "2024-07-01"
+                      endDate: "2024-07-15"
+                      isPaid: true
+                      reason: "Summer vacation"
+        "#;
+
+        let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
+        
+        assert_eq!(manifest.spec.resource_type, "Senior Developer");
+        assert_eq!(manifest.spec.scope, ResourceScopeManifest::Project);
+        assert_eq!(manifest.spec.time_off_balance, 30);
+        assert_eq!(manifest.spec.state, ResourceStateManifest::Assigned);
+        assert!(manifest.spec.project_assignments.is_some());
+        assert!(manifest.spec.vacations.is_some());
+        assert_eq!(manifest.spec.vacations.as_ref().unwrap().len(), 1);
+    }
 }
