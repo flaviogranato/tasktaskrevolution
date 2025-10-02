@@ -43,9 +43,27 @@ impl FileProjectRepository {
         self.base_path.join("projects").join(format!("{}.yaml", project_id))
     }
 
+    /// Gets the path to a specific project file by company and project codes
+    fn get_project_path_by_codes(&self, company_code: &str, project_code: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("projects")
+            .join(project_code)
+            .join("project.yaml")
+    }
+
     /// Gets the path to the projects directory
     fn get_projects_path(&self) -> PathBuf {
         self.base_path.join("projects")
+    }
+
+    /// Gets the path to a company's projects directory
+    fn get_company_projects_path(&self, company_code: &str) -> PathBuf {
+        self.base_path
+            .join("companies")
+            .join(company_code)
+            .join("projects")
     }
 
     /// Loads a single project from a specific project file path.
@@ -149,15 +167,39 @@ impl FileProjectRepository {
 
         Ok(())
     }
-}
 
-impl ProjectRepository for FileProjectRepository {
-    /// Salva um projeto.
-    /// Salva um arquivo `{project_id}.yaml` no diretório projects.
-    fn save(&self, project: AnyProject) -> DomainResult<()> {
-        let project_id = project.id();
-        let _project_code = project.code();
+    /// Save individual task files for a project in the new hierarchy
+    fn save_tasks_for_project_in_hierarchy(&self, project: &AnyProject, company_code: &str, project_code: &str) -> DomainResult<()> {
+        let project_dir = self.get_company_projects_path(company_code).join(project_code);
+        let tasks_dir = project_dir.join("tasks");
 
+        // Create tasks directory if it doesn't exist
+        fs::create_dir_all(&tasks_dir).map_err(|e| DomainError::IoErrorWithPath {
+            operation: "create directory".to_string(),
+            path: tasks_dir.to_string_lossy().to_string(),
+            details: e.to_string(),
+        })?;
+
+        // Save each task as individual YAML file
+        for task in project.tasks().values() {
+            let task_file_path = tasks_dir.join(format!("{}.yaml", task.code()));
+            let task_manifest = TaskManifest::from(task.clone());
+            let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::SerializationError {
+                operation: "YAML serialization".to_string(),
+                details: format!("Error serializing task: {e}"),
+            })?;
+            fs::write(&task_file_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
+                operation: "file write".to_string(),
+                path: task_file_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
+        }
+
+        Ok(())
+    }
+
+    /// Save legacy ID-based project file for migration compatibility
+    fn save_legacy_project_file(&self, project: &AnyProject, project_id: &str) -> DomainResult<()> {
         // Create projects directory if it doesn't exist
         let projects_dir = self.get_projects_path();
         fs::create_dir_all(&projects_dir).map_err(|e| DomainError::IoErrorWithPath {
@@ -166,7 +208,7 @@ impl ProjectRepository for FileProjectRepository {
             details: e.to_string(),
         })?;
 
-        // Save project file
+        // Save legacy project file
         let project_path = self.get_project_path_by_id(project_id);
         let project_manifest = ProjectManifest::from(project.clone());
         let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| DomainError::SerializationError {
@@ -179,8 +221,47 @@ impl ProjectRepository for FileProjectRepository {
             details: e.to_string(),
         })?;
 
-        // Save individual task files
-        self.save_tasks_for_project(&project)?;
+        // Save individual task files in legacy format
+        self.save_tasks_for_project(project)?;
+
+        Ok(())
+    }
+}
+
+impl ProjectRepository for FileProjectRepository {
+    /// Salva um projeto.
+    /// Salva um arquivo `project.yaml` no diretório companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/.
+    fn save(&self, project: AnyProject) -> DomainResult<()> {
+        let project_id = project.id();
+        let project_code = project.code();
+        let company_code = project.company_code();
+
+        // Create project directory structure: companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/
+        let project_dir = self.get_company_projects_path(company_code).join(project_code);
+        fs::create_dir_all(&project_dir).map_err(|e| DomainError::IoErrorWithPath {
+            operation: "create directory".to_string(),
+            path: project_dir.to_string_lossy().to_string(),
+            details: e.to_string(),
+        })?;
+
+        // Save project file: companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/project.yaml
+        let project_path = self.get_project_path_by_codes(company_code, project_code);
+        let project_manifest = ProjectManifest::from(project.clone());
+        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| DomainError::SerializationError {
+            operation: "YAML serialization".to_string(),
+            details: format!("Error serializing project: {e}"),
+        })?;
+        fs::write(&project_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
+            operation: "file write".to_string(),
+            path: project_path.to_string_lossy().to_string(),
+            details: e.to_string(),
+        })?;
+
+        // Save individual task files in the project directory
+        self.save_tasks_for_project_in_hierarchy(&project, company_code, project_code)?;
+
+        // Also save old ID-based file for migration compatibility
+        self.save_legacy_project_file(&project, project_id)?;
 
         Ok(())
     }
