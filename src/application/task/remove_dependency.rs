@@ -4,8 +4,8 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
-use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 use std::fmt;
 
 #[derive(Debug)]

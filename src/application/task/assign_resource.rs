@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 
 use crate::application::errors::AppError;
+use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
 use crate::domain::resource_management::{
     any_resource::AnyResource,
     repository::ResourceRepository,
     resource::{TaskAssignment, TaskAssignmentStatus},
 };
-use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
-use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
 use chrono::Local;
 use std::fmt;
 
@@ -135,9 +135,7 @@ where
         let updated_resource = self.assign_resource_to_project_and_task(resource, project_code, task_assignment)?;
 
         // 8. Save the updated task
-        let saved_task = self
-            .task_repository
-            .save(updated_task)?;
+        let saved_task = self.task_repository.save(updated_task)?;
 
         // 9. Save the updated resource using save_in_hierarchy
         self.resource_repository
@@ -282,22 +280,30 @@ mod tests {
     use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
     use chrono::NaiveDate;
     use std::{cell::RefCell, collections::HashMap};
-    
+
     // Minimal mock for ProjectRepository used by new constructor
     struct MockProjectRepository {
         projects: RefCell<HashMap<String, AnyProject>>,
     }
-    
+
     impl ProjectRepository for MockProjectRepository {
-        fn save(&self, _project: AnyProject) -> DomainResult<()> { unimplemented!() }
-        fn load(&self) -> DomainResult<AnyProject> { unimplemented!() }
-        fn find_all(&self) -> DomainResult<Vec<AnyProject>> { Ok(self.projects.borrow().values().cloned().collect()) }
+        fn save(&self, _project: AnyProject) -> DomainResult<()> {
+            unimplemented!()
+        }
+        fn load(&self) -> DomainResult<AnyProject> {
+            unimplemented!()
+        }
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
+            Ok(self.projects.borrow().values().cloned().collect())
+        }
         fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
             Ok(self.projects.borrow().get(code).cloned())
         }
-        fn get_next_code(&self) -> DomainResult<String> { unimplemented!() }
+        fn get_next_code(&self) -> DomainResult<String> {
+            unimplemented!()
+        }
     }
-    
+
     fn create_test_project(code: &str) -> AnyProject {
         crate::domain::project_management::builder::ProjectBuilder::new()
             .code(code.to_string())
@@ -328,12 +334,7 @@ mod tests {
             Ok(self.tasks.borrow().get(code).cloned())
         }
 
-        fn save_in_hierarchy(
-            &self,
-            task: AnyTask,
-            _company_code: &str,
-            _project_code: &str,
-        ) -> DomainResult<AnyTask> {
+        fn save_in_hierarchy(&self, task: AnyTask, _company_code: &str, _project_code: &str) -> DomainResult<AnyTask> {
             self.save(task)
         }
 
@@ -471,7 +472,10 @@ mod tests {
         };
 
         let project_repo = MockProjectRepository {
-            projects: RefCell::new(HashMap::from([(task.project_code().to_string(), create_test_project("PROJ-001"))])),
+            projects: RefCell::new(HashMap::from([(
+                task.project_code().to_string(),
+                create_test_project("PROJ-001"),
+            )])),
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 
@@ -496,7 +500,9 @@ mod tests {
             resources: RefCell::new(HashMap::from([(resource.code().to_string(), resource.clone())])),
         };
 
-        let project_repo = MockProjectRepository { projects: RefCell::new(HashMap::new()) };
+        let project_repo = MockProjectRepository {
+            projects: RefCell::new(HashMap::new()),
+        };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 
         // Act
@@ -519,7 +525,10 @@ mod tests {
         };
 
         let project_repo = MockProjectRepository {
-            projects: RefCell::new(HashMap::from([(task.project_code().to_string(), create_test_project("PROJ-001"))])),
+            projects: RefCell::new(HashMap::from([(
+                task.project_code().to_string(),
+                create_test_project("PROJ-001"),
+            )])),
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 
@@ -670,7 +679,10 @@ mod tests {
         };
 
         let project_repo = MockProjectRepository {
-            projects: RefCell::new(HashMap::from([(task.project_code().to_string(), create_test_project("PROJ-001"))])),
+            projects: RefCell::new(HashMap::from([(
+                task.project_code().to_string(),
+                create_test_project("PROJ-001"),
+            )])),
         };
         let use_case = AssignResourceToTaskUseCase::new(task_repo, resource_repo, project_repo);
 

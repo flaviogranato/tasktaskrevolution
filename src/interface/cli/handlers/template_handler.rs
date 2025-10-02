@@ -8,9 +8,9 @@ use crate::{
         },
     },
     infrastructure::persistence::{
-        company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
-        resource_repository::FileResourceRepository, task_repository::FileTaskRepository,
-        config_repository::FileConfigRepository,
+        company_repository::FileCompanyRepository, config_repository::FileConfigRepository,
+        project_repository::FileProjectRepository, resource_repository::FileResourceRepository,
+        task_repository::FileTaskRepository,
     },
 };
 use std::collections::HashMap;

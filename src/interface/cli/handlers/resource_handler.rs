@@ -13,8 +13,7 @@ use crate::{
         },
     },
     infrastructure::persistence::{
-        resource_repository::FileResourceRepository,
-        config_repository::FileConfigRepository,
+        config_repository::FileConfigRepository, resource_repository::FileResourceRepository,
     },
 };
 use chrono::NaiveDate;

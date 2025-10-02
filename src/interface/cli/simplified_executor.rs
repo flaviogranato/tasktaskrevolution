@@ -24,6 +24,7 @@ use crate::application::{
         update_task::{UpdateTaskArgs, UpdateTaskUseCase},
     },
 };
+use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 use crate::interface::cli::{
     Cli,
     commands::{CreateCommand, DeleteCommand, ListCommand, UpdateCommand},
@@ -32,7 +33,6 @@ use crate::interface::cli::{
     table_formatter::TableFormatter,
 };
 use chrono::NaiveDate;
-use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 /// Simplified command executor that directly calls use cases
 pub struct SimplifiedExecutor;

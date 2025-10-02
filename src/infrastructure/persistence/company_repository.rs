@@ -3,8 +3,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::company_management::{Company, CompanyRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::infrastructure::persistence::manifests::company_manifest::CompanyManifest;
 
 /// File-based implementation of CompanyRepository.
@@ -233,9 +233,9 @@ impl CompanyRepository for FileCompanyRepository {
         self.load_companies_from_disk()?;
 
         // Find company by code
-        let company = self
-            .find_by_code(code)?
-            .ok_or_else(|| DomainError::validation_error("company", &format!("Company with code '{}' not found", code)))?;
+        let company = self.find_by_code(code)?.ok_or_else(|| {
+            DomainError::validation_error("company", &format!("Company with code '{}' not found", code))
+        })?;
         let company_id = company.id.clone();
 
         // Remove from disk (ID-based file)

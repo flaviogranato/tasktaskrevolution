@@ -1,8 +1,8 @@
 use crate::application::errors::AppError;
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::task_management::repository::TaskRepository;
 use crate::infrastructure::persistence::{
     company_repository::FileCompanyRepository, project_repository::FileProjectRepository,
@@ -31,34 +31,39 @@ pub struct CodeResolver {
 
 impl CodeResolverTrait for CodeResolver {
     fn resolve_company_code(&self, code: &str) -> DomainResult<String> {
-        let company = self
-            .company_repository
-            .find_by_code(code)?
-            .ok_or_else(|| DomainError::from(AppError::validation_error("company", format!("Company '{}' not found", code))))?;
+        let company = self.company_repository.find_by_code(code)?.ok_or_else(|| {
+            DomainError::from(AppError::validation_error(
+                "company",
+                format!("Company '{}' not found", code),
+            ))
+        })?;
         Ok(company.id)
     }
 
     fn resolve_project_code(&self, code: &str) -> DomainResult<String> {
-        let project = self
-            .project_repository
-            .find_by_code(code)?
-            .ok_or_else(|| DomainError::from(AppError::validation_error("project", format!("Project '{}' not found", code))))?;
+        let project = self.project_repository.find_by_code(code)?.ok_or_else(|| {
+            DomainError::from(AppError::validation_error(
+                "project",
+                format!("Project '{}' not found", code),
+            ))
+        })?;
         Ok(project.id().to_string())
     }
 
     fn resolve_resource_code(&self, code: &str) -> DomainResult<String> {
-        let resource = self
-            .resource_repository
-            .find_by_code(code)?
-            .ok_or_else(|| DomainError::from(AppError::validation_error("resource", format!("Resource '{}' not found", code))))?;
+        let resource = self.resource_repository.find_by_code(code)?.ok_or_else(|| {
+            DomainError::from(AppError::validation_error(
+                "resource",
+                format!("Resource '{}' not found", code),
+            ))
+        })?;
         Ok(resource.id().to_string())
     }
 
     fn resolve_task_code(&self, code: &str) -> DomainResult<String> {
-        let task = self
-            .task_repository
-            .find_by_code(code)?
-            .ok_or_else(|| DomainError::from(AppError::validation_error("task", format!("Task '{}' not found", code))))?;
+        let task = self.task_repository.find_by_code(code)?.ok_or_else(|| {
+            DomainError::from(AppError::validation_error("task", format!("Task '{}' not found", code)))
+        })?;
         Ok(task.id().to_string())
     }
 

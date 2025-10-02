@@ -14,80 +14,80 @@ pub enum DomainError {
         entity_type: String,
         identifier: String,
     },
-    
+
     // Entity Already Exists Errors
     EntityAlreadyExists {
         entity_type: String,
         identifier: String,
     },
-    
+
     // Validation Errors
     ValidationError {
         field: String,
         message: String,
     },
-    
+
     // Business Logic Errors
     BusinessRuleViolation {
         rule: String,
         details: String,
     },
-    
+
     // State Errors
     InvalidState {
         current: String,
         expected: String,
         entity: String,
     },
-    
+
     // Dependency Errors
     CircularDependency {
         entities: Vec<String>,
     },
-    
+
     // Constraint Errors
     ConstraintViolation {
         constraint: String,
         details: String,
     },
-    
+
     // I/O errors
     IoError {
         operation: String,
         details: String,
     },
-    
+
     // I/O errors with path information
     IoErrorWithPath {
         operation: String,
         path: String,
         details: String,
     },
-    
+
     // Serialization errors
     SerializationError {
         operation: String,
         details: String,
     },
-    
+
     // Configuration errors
     ConfigurationError {
         details: String,
     },
-    
+
     // Configuration invalid
     ConfigurationInvalid {
         field: String,
         value: String,
         reason: String,
     },
-    
+
     // Operation not allowed
     OperationNotAllowed {
         operation: String,
         reason: String,
     },
-    
+
     // Specific entity errors for backward compatibility
     ProjectNotFound {
         code: String,
@@ -139,7 +139,7 @@ impl DomainError {
             identifier: identifier.to_string(),
         }
     }
-    
+
     /// Create a new entity already exists error
     pub fn entity_already_exists(entity_type: &str, identifier: &str) -> Self {
         Self::EntityAlreadyExists {
@@ -147,7 +147,7 @@ impl DomainError {
             identifier: identifier.to_string(),
         }
     }
-    
+
     /// Create a new validation error
     pub fn validation_error(field: &str, message: &str) -> Self {
         Self::ValidationError {
@@ -155,7 +155,7 @@ impl DomainError {
             message: message.to_string(),
         }
     }
-    
+
     /// Create a new business rule violation error
     pub fn business_rule_violation(rule: &str, details: &str) -> Self {
         Self::BusinessRuleViolation {
@@ -163,7 +163,7 @@ impl DomainError {
             details: details.to_string(),
         }
     }
-    
+
     /// Create a new invalid state error
     pub fn invalid_state(current: &str, expected: &str, entity: &str) -> Self {
         Self::InvalidState {
@@ -172,12 +172,12 @@ impl DomainError {
             entity: entity.to_string(),
         }
     }
-    
+
     /// Create a new circular dependency error
     pub fn circular_dependency(entities: Vec<String>) -> Self {
         Self::CircularDependency { entities }
     }
-    
+
     /// Create a new constraint violation error
     pub fn constraint_violation(constraint: &str, details: &str) -> Self {
         Self::ConstraintViolation {
@@ -185,7 +185,7 @@ impl DomainError {
             details: details.to_string(),
         }
     }
-    
+
     /// Create a new I/O error
     pub fn io_error(operation: &str, details: &str) -> Self {
         Self::IoError {
@@ -193,7 +193,7 @@ impl DomainError {
             details: details.to_string(),
         }
     }
-    
+
     /// Create a new I/O error with path
     pub fn io_error_with_path(operation: &str, path: &str, details: &str) -> Self {
         Self::IoErrorWithPath {
@@ -202,7 +202,7 @@ impl DomainError {
             details: details.to_string(),
         }
     }
-    
+
     /// Create a new serialization error
     pub fn serialization_error(operation: &str, details: &str) -> Self {
         Self::SerializationError {
@@ -210,14 +210,14 @@ impl DomainError {
             details: details.to_string(),
         }
     }
-    
+
     /// Create a new configuration error
     pub fn configuration_error(details: &str) -> Self {
         Self::ConfigurationError {
             details: details.to_string(),
         }
     }
-    
+
     /// Create a new configuration invalid error
     pub fn configuration_invalid(field: &str, value: &str, reason: &str) -> Self {
         Self::ConfigurationInvalid {
@@ -226,7 +226,7 @@ impl DomainError {
             reason: reason.to_string(),
         }
     }
-    
+
     /// Create a new operation not allowed error
     pub fn operation_not_allowed(operation: &str, reason: &str) -> Self {
         Self::OperationNotAllowed {
@@ -234,63 +234,47 @@ impl DomainError {
             reason: reason.to_string(),
         }
     }
-    
+
     /// Create a new project not found error
     pub fn project_not_found(code: &str) -> Self {
-        Self::ProjectNotFound {
-            code: code.to_string(),
-        }
+        Self::ProjectNotFound { code: code.to_string() }
     }
-    
+
     /// Create a new resource not found error
     pub fn resource_not_found(code: &str) -> Self {
-        Self::ResourceNotFound {
-            code: code.to_string(),
-        }
+        Self::ResourceNotFound { code: code.to_string() }
     }
-    
+
     /// Create a new task not found error
     pub fn task_not_found(code: &str) -> Self {
-        Self::TaskNotFound {
-            code: code.to_string(),
-        }
+        Self::TaskNotFound { code: code.to_string() }
     }
-    
+
     /// Create a new company not found error
     pub fn company_not_found(code: &str) -> Self {
-        Self::CompanyNotFound {
-            code: code.to_string(),
-        }
+        Self::CompanyNotFound { code: code.to_string() }
     }
-    
+
     /// Create a new project already exists error
     pub fn project_already_exists(code: &str) -> Self {
-        Self::ProjectAlreadyExists {
-            code: code.to_string(),
-        }
+        Self::ProjectAlreadyExists { code: code.to_string() }
     }
-    
+
     /// Create a new resource already exists error
     pub fn resource_already_exists(code: &str) -> Self {
-        Self::ResourceAlreadyExists {
-            code: code.to_string(),
-        }
+        Self::ResourceAlreadyExists { code: code.to_string() }
     }
-    
+
     /// Create a new task already exists error
     pub fn task_already_exists(code: &str) -> Self {
-        Self::TaskAlreadyExists {
-            code: code.to_string(),
-        }
+        Self::TaskAlreadyExists { code: code.to_string() }
     }
-    
+
     /// Create a new company already exists error
     pub fn company_already_exists(code: &str) -> Self {
-        Self::CompanyAlreadyExists {
-            code: code.to_string(),
-        }
+        Self::CompanyAlreadyExists { code: code.to_string() }
     }
-    
+
     /// Create a new project invalid state error
     pub fn project_invalid_state(current: &str, expected: &str) -> Self {
         Self::ProjectInvalidState {
@@ -298,7 +282,7 @@ impl DomainError {
             expected: expected.to_string(),
         }
     }
-    
+
     /// Create a new resource invalid state error
     pub fn resource_invalid_state(current: &str, expected: &str) -> Self {
         Self::ResourceInvalidState {
@@ -306,7 +290,7 @@ impl DomainError {
             expected: expected.to_string(),
         }
     }
-    
+
     /// Create a new task invalid state error
     pub fn task_invalid_state(current: &str, expected: &str) -> Self {
         Self::TaskInvalidState {
@@ -314,7 +298,7 @@ impl DomainError {
             expected: expected.to_string(),
         }
     }
-    
+
     /// Create a new generic domain error
     pub fn domain_error(message: &str) -> Self {
         Self::DomainError {
@@ -326,10 +310,16 @@ impl DomainError {
 impl fmt::Display for DomainError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DomainError::EntityNotFound { entity_type, identifier } => {
+            DomainError::EntityNotFound {
+                entity_type,
+                identifier,
+            } => {
                 write!(f, "{} with identifier '{}' not found", entity_type, identifier)
             }
-            DomainError::EntityAlreadyExists { entity_type, identifier } => {
+            DomainError::EntityAlreadyExists {
+                entity_type,
+                identifier,
+            } => {
                 write!(f, "{} with identifier '{}' already exists", entity_type, identifier)
             }
             DomainError::ValidationError { field, message } => {
@@ -338,8 +328,16 @@ impl fmt::Display for DomainError {
             DomainError::BusinessRuleViolation { rule, details } => {
                 write!(f, "Business rule violation '{}': {}", rule, details)
             }
-            DomainError::InvalidState { current, expected, entity } => {
-                write!(f, "Invalid state for {}: current '{}', expected '{}'", entity, current, expected)
+            DomainError::InvalidState {
+                current,
+                expected,
+                entity,
+            } => {
+                write!(
+                    f,
+                    "Invalid state for {}: current '{}', expected '{}'",
+                    entity, current, expected
+                )
             }
             DomainError::CircularDependency { entities } => {
                 write!(f, "Circular dependency detected: {}", entities.join(" -> "))
@@ -350,7 +348,11 @@ impl fmt::Display for DomainError {
             DomainError::IoError { operation, details } => {
                 write!(f, "I/O error during {}: {}", operation, details)
             }
-            DomainError::IoErrorWithPath { operation, path, details } => {
+            DomainError::IoErrorWithPath {
+                operation,
+                path,
+                details,
+            } => {
                 write!(f, "I/O error during {} on path '{}': {}", operation, path, details)
             }
             DomainError::SerializationError { operation, details } => {
@@ -360,7 +362,11 @@ impl fmt::Display for DomainError {
                 write!(f, "Configuration error: {}", details)
             }
             DomainError::ConfigurationInvalid { field, value, reason } => {
-                write!(f, "Configuration invalid for field '{}' with value '{}': {}", field, value, reason)
+                write!(
+                    f,
+                    "Configuration invalid for field '{}' with value '{}': {}",
+                    field, value, reason
+                )
             }
             DomainError::OperationNotAllowed { operation, reason } => {
                 write!(f, "Operation '{}' not allowed: {}", operation, reason)
@@ -390,10 +396,18 @@ impl fmt::Display for DomainError {
                 write!(f, "Company with code '{}' already exists", code)
             }
             DomainError::ProjectInvalidState { current, expected } => {
-                write!(f, "Project invalid state: current '{}', expected '{}'", current, expected)
+                write!(
+                    f,
+                    "Project invalid state: current '{}', expected '{}'",
+                    current, expected
+                )
             }
             DomainError::ResourceInvalidState { current, expected } => {
-                write!(f, "Resource invalid state: current '{}', expected '{}'", current, expected)
+                write!(
+                    f,
+                    "Resource invalid state: current '{}', expected '{}'",
+                    current, expected
+                )
             }
             DomainError::TaskInvalidState { current, expected } => {
                 write!(f, "Task invalid state: current '{}', expected '{}'", current, expected)
@@ -423,18 +437,10 @@ pub type DomainResult<T> = Result<T, DomainError>;
 impl From<crate::application::errors::AppError> for DomainError {
     fn from(err: crate::application::errors::AppError) -> Self {
         match err {
-            crate::application::errors::AppError::ProjectNotFound { code } => {
-                DomainError::ProjectNotFound { code }
-            }
-            crate::application::errors::AppError::ResourceNotFound { code } => {
-                DomainError::ResourceNotFound { code }
-            }
-            crate::application::errors::AppError::TaskNotFound { code } => {
-                DomainError::TaskNotFound { code }
-            }
-            crate::application::errors::AppError::CompanyNotFound { code } => {
-                DomainError::CompanyNotFound { code }
-            }
+            crate::application::errors::AppError::ProjectNotFound { code } => DomainError::ProjectNotFound { code },
+            crate::application::errors::AppError::ResourceNotFound { code } => DomainError::ResourceNotFound { code },
+            crate::application::errors::AppError::TaskNotFound { code } => DomainError::TaskNotFound { code },
+            crate::application::errors::AppError::CompanyNotFound { code } => DomainError::CompanyNotFound { code },
             crate::application::errors::AppError::ValidationError { field, message } => {
                 DomainError::ValidationError { field, message }
             }
@@ -444,19 +450,30 @@ impl From<crate::application::errors::AppError> for DomainError {
             crate::application::errors::AppError::IoError { operation, details } => {
                 DomainError::IoError { operation, details }
             }
-            crate::application::errors::AppError::IoErrorWithPath { operation, path, details } => {
-                DomainError::IoErrorWithPath { operation, path, details }
-            }
+            crate::application::errors::AppError::IoErrorWithPath {
+                operation,
+                path,
+                details,
+            } => DomainError::IoErrorWithPath {
+                operation,
+                path,
+                details,
+            },
             crate::application::errors::AppError::SerializationError { format, details } => {
-                DomainError::SerializationError { operation: format, details }
+                DomainError::SerializationError {
+                    operation: format,
+                    details,
+                }
             }
-            crate::application::errors::AppError::ConfigurationNotFound { path } => {
-                DomainError::ConfigurationError { details: format!("Configuration not found at path '{}'", path) }
-            }
+            crate::application::errors::AppError::ConfigurationNotFound { path } => DomainError::ConfigurationError {
+                details: format!("Configuration not found at path '{}'", path),
+            },
             crate::application::errors::AppError::ConfigurationInvalid { field, value, reason } => {
                 DomainError::ConfigurationInvalid { field, value, reason }
             }
-            _ => DomainError::DomainError { message: err.to_string() }
+            _ => DomainError::DomainError {
+                message: err.to_string(),
+            },
         }
     }
 }
@@ -468,10 +485,7 @@ mod tests {
     #[test]
     fn test_entity_not_found_error() {
         let error = DomainError::entity_not_found("Project", "PROJ-001");
-        assert_eq!(
-            error.to_string(),
-            "Project with identifier 'PROJ-001' not found"
-        );
+        assert_eq!(error.to_string(), "Project with identifier 'PROJ-001' not found");
     }
 
     #[test]
@@ -485,7 +499,10 @@ mod tests {
 
     #[test]
     fn test_business_rule_violation() {
-        let error = DomainError::business_rule_violation("no_circular_deps", "Task A depends on Task B which depends on Task A");
+        let error = DomainError::business_rule_violation(
+            "no_circular_deps",
+            "Task A depends on Task B which depends on Task A",
+        );
         assert_eq!(
             error.to_string(),
             "Business rule violation 'no_circular_deps': Task A depends on Task B which depends on Task A"
@@ -494,7 +511,8 @@ mod tests {
 
     #[test]
     fn test_circular_dependency_error() {
-        let error = DomainError::circular_dependency(vec!["Task A".to_string(), "Task B".to_string(), "Task A".to_string()]);
+        let error =
+            DomainError::circular_dependency(vec!["Task A".to_string(), "Task B".to_string(), "Task A".to_string()]);
         assert_eq!(
             error.to_string(),
             "Circular dependency detected: Task A -> Task B -> Task A"

@@ -7,13 +7,13 @@
 pub trait DomainLogger {
     /// Log a debug message
     fn debug(&self, message: &str);
-    
+
     /// Log an info message
     fn info(&self, message: &str);
-    
+
     /// Log a warning message
     fn warn(&self, message: &str);
-    
+
     /// Log an error message
     fn error(&self, message: &str);
 }
@@ -52,9 +52,9 @@ pub fn error(message: &str) {
 }
 
 /// Debug formatting helper
-pub fn debug_fmt<F>(f: F) 
-where 
-    F: FnOnce() -> String 
+pub fn debug_fmt<F>(f: F)
+where
+    F: FnOnce() -> String,
 {
     let message = f();
     debug(&message);
@@ -63,8 +63,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::{Arc, Mutex};
     use std::collections::VecDeque;
+    use std::sync::{Arc, Mutex};
 
     /// Test logger that captures messages
     struct TestLogger {
@@ -118,10 +118,10 @@ mod tests {
         info("info message");
         warn("warn message");
         error("error message");
-        
+
         // Test debug_fmt
         debug_fmt(|| "formatted message".to_string());
-        
+
         // These tests just verify the functions don't panic
         // In a real implementation, we'd capture the output
     }

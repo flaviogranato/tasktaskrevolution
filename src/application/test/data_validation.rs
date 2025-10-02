@@ -1,6 +1,6 @@
 use crate::application::errors::AppError;
-use crate::domain::company_management::repository::CompanyRepository;
 use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::AnyProject;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::AnyResource;

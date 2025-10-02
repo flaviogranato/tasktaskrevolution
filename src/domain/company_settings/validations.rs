@@ -146,11 +146,7 @@ impl CompanySettingsValidator {
     }
 
     /// Valida todas as configurações da empresa
-    pub fn validate_all_config(
-        manager_name: &str,
-        manager_email: &str,
-        default_timezone: &str,
-    ) -> DomainResult<()> {
+    pub fn validate_all_config(manager_name: &str, manager_email: &str, default_timezone: &str) -> DomainResult<()> {
         Self::validate_manager_name(manager_name)?;
         Self::validate_manager_email(manager_email)?;
         Self::validate_default_timezone(default_timezone)?;

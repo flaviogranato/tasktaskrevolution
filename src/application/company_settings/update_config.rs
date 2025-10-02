@@ -343,10 +343,10 @@ impl CompanyConfigUpdates {
 mod tests {
     use super::*;
     use crate::domain::company_settings::config::Config;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::{Path, PathBuf};
-    use crate::domain::shared::errors::{DomainError, DomainResult};
 
     // Mock repository for testing
     struct MockConfigRepository {
@@ -363,12 +363,14 @@ mod tests {
         }
 
         fn load(&self) -> DomainResult<(Config, PathBuf)> {
-            self.config.borrow().clone().map(|c| (c, PathBuf::from("/tmp"))).ok_or(
-                DomainError::ValidationError {
+            self.config
+                .borrow()
+                .clone()
+                .map(|c| (c, PathBuf::from("/tmp")))
+                .ok_or(DomainError::ValidationError {
                     field: "configuration".to_string(),
                     message: "Configuration field missing: config".to_string(),
-                },
-            )
+                })
         }
     }
 

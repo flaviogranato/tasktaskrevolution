@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::company_settings::config::Config;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use std::path::{Path, PathBuf};
 
 pub trait ConfigRepository {
