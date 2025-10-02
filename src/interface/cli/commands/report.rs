@@ -131,14 +131,14 @@ pub fn execute_report(args: ReportArgs) -> Result<(), AppError> {
 
     if result.success {
         if let Some(data) = result.data {
-            println!("✅ Report generated successfully!");
-            println!("📊 Title: {}", data.title);
-            println!("📅 Generated at: {}", data.generated_at.format("%Y-%m-%d %H:%M:%S"));
-            println!("📈 Total records: {}", data.total_records);
-            println!("⏱️  Execution time: {}ms", result.execution_time_ms);
+            println!("Report generated successfully!");
+            println!("Title: {}", data.title);
+            println!("Generated at: {}", data.generated_at.format("%Y-%m-%d %H:%M:%S"));
+            println!("Total records: {}", data.total_records);
+            println!(" Execution time: {}ms", result.execution_time_ms);
 
             if let Some(summary) = data.summary {
-                println!("\n📋 Summary:");
+                println!("\nSummary:");
                 println!("  Total count: {}", summary.total_count);
                 for (field, stats) in summary.field_stats {
                     println!("  {}: {} records, {} unique", field, stats.count, stats.unique_count);
@@ -146,11 +146,11 @@ pub fn execute_report(args: ReportArgs) -> Result<(), AppError> {
             }
 
             if args.output.is_none() {
-                println!("\n💡 Use --output to save report to file");
+                println!("\nUse --output to save report to file");
             }
         }
     } else {
-        eprintln!("❌ Failed to generate report: {}", result.error.unwrap_or_default());
+        eprintln!("Failed to generate report: {}", result.error.unwrap_or_default());
         return Err(AppError::validation_error("report", "Report generation failed"));
     }
 

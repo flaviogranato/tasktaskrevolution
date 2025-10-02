@@ -16,7 +16,7 @@ pub fn handle_migrate_command(command: MigrateCommand) -> Result<(), Box<dyn std
     match command {
         MigrateCommand::ToIdBased { dry_run, force, backup } => {
             if dry_run {
-                println!("🔍 Dry run mode - no changes will be made");
+                println!("Dry run mode - no changes will be made");
             }
 
             if backup {
@@ -53,7 +53,7 @@ fn create_backup() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    println!("✅ Backup created in {}", backup_dir);
+    println!("Backup created in {}", backup_dir);
     Ok(())
 }
 
@@ -76,7 +76,7 @@ fn copy_dir_recursive(src: &str, dst: &str) -> Result<(), Box<dyn std::error::Er
 }
 
 fn migrate_to_id_based(dry_run: bool, force: bool) -> Result<(), Box<dyn std::error::Error>> {
-    println!("🚀 Starting migration to ID-based format...");
+    println!("Starting migration to ID-based format...");
 
     // Check if ID-based data already exists
     if !force && has_id_based_data()? {
@@ -96,9 +96,9 @@ fn migrate_to_id_based(dry_run: bool, force: bool) -> Result<(), Box<dyn std::er
     migrate_resources(dry_run)?;
 
     if dry_run {
-        println!("✅ Dry run completed - no changes were made");
+        println!("Dry run completed - no changes were made");
     } else {
-        println!("✅ Migration completed successfully!");
+        println!("Migration completed successfully!");
     }
 
     Ok(())
@@ -233,7 +233,7 @@ fn migrate_resources(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn show_migration_status() -> Result<(), Box<dyn std::error::Error>> {
-    println!("📊 Migration Status Report");
+    println!("Migration Status Report");
     println!("=========================");
 
     // Check companies
@@ -357,6 +357,6 @@ fn rollback_migration(backup_dir: Option<String>) -> Result<(), Box<dyn std::err
         }
     }
 
-    println!("✅ Rollback completed successfully!");
+    println!("Rollback completed successfully!");
     Ok(())
 }

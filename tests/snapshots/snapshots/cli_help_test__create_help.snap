@@ -1,0 +1,20 @@
+---
+source: tests/snapshots/cli_help_test.rs
+expression: help_output
+---
+Create new entities
+
+Usage: ttr create [OPTIONS] <COMMAND>
+
+Commands:
+  company   Create a new company
+  project   Create a new project
+  task      Create a new task
+  resource  Create a new resource
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -v, --verbose  Enable verbose output (alias for --debug)
+      --debug    Enable debug output (alias for --verbose)
+  -q, --quiet    Enable quiet output (minimal information)
+  -h, --help     Print help

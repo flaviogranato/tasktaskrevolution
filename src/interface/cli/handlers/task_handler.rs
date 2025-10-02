@@ -52,13 +52,13 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             match create_use_case.execute(args) {
                 Ok(_) => {
-                    println!("✅ Task created successfully!");
+                    println!("Task created successfully!");
                     println!("   Name: {}", name);
                     println!("   Project: {}", project);
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to create task: {}", e);
+                    eprintln!("Failed to create task: {}", e);
                     Err(e.into())
                 }
             }
@@ -78,7 +78,7 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to describe task: {}", e);
+                    eprintln!("Failed to describe task: {}", e);
                     Err(e.into())
                 }
             }
@@ -115,11 +115,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             match update_use_case.execute(&code, &project, args) {
                 Ok(_) => {
-                    println!("✅ Task updated successfully!");
+                    println!("Task updated successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to update task: {}", e);
+                    eprintln!("Failed to update task: {}", e);
                     Err(e.into())
                 }
             }
@@ -135,11 +135,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             match delete_use_case.execute(&code, &project) {
                 Ok(_) => {
-                    println!("✅ Task cancelled successfully!");
+                    println!("Task cancelled successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to cancel task: {}", e);
+                    eprintln!("Failed to cancel task: {}", e);
                     Err(e.into())
                 }
             }
@@ -156,11 +156,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             match link_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
-                    println!("✅ Tasks linked successfully!");
+                    println!("Tasks linked successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to link tasks: {}", e);
+                    eprintln!("Failed to link tasks: {}", e);
                     Err(e.into())
                 }
             }
@@ -180,11 +180,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             match unlink_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
-                    println!("✅ Task link removed successfully!");
+                    println!("Task link removed successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to remove task link: {}", e);
+                    eprintln!("Failed to remove task link: {}", e);
                     Err(e.into())
                 }
             }
@@ -204,11 +204,11 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
 
             match assign_use_case.execute(&task, &resource, &project, None) {
                 Ok(_) => {
-                    println!("✅ Resource assigned to task successfully!");
+                    println!("Resource assigned to task successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to assign resource to task: {}", e);
+                    eprintln!("Failed to assign resource to task: {}", e);
                     Err(e.into())
                 }
             }

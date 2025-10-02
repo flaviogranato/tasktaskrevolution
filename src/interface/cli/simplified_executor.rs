@@ -352,7 +352,7 @@ impl SimplifiedExecutor {
                                 Ok(())
                             }
                             Err(e) => {
-                                eprintln!("❌ Failed to list companies: {}", e);
+                                eprintln!("Failed to list companies: {}", e);
                                 Err(e.into())
                             }
                         }
@@ -422,7 +422,7 @@ impl SimplifiedExecutor {
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to list projects: {}", e);
+                        eprintln!("Failed to list projects: {}", e);
                         Err(e.into())
                     }
                 }
@@ -467,7 +467,7 @@ impl SimplifiedExecutor {
                             Ok(())
                         }
                         Err(e) => {
-                            eprintln!("❌ Failed to list tasks: {}", e);
+                            eprintln!("Failed to list tasks: {}", e);
                             Err(e.into())
                         }
                     }
@@ -516,7 +516,7 @@ impl SimplifiedExecutor {
                                     Ok(())
                                 }
                                 Err(e) => {
-                                    eprintln!("❌ Failed to list tasks: {}", e);
+                                    eprintln!("Failed to list tasks: {}", e);
                                     Err(e.into())
                                 }
                             }
@@ -558,7 +558,7 @@ impl SimplifiedExecutor {
                                     Ok(())
                                 }
                                 Err(e) => {
-                                    eprintln!("❌ Failed to list tasks: {}", e);
+                                    eprintln!("Failed to list tasks: {}", e);
                                     Err(e.into())
                                 }
                             }
@@ -613,7 +613,7 @@ impl SimplifiedExecutor {
                             Ok(())
                         }
                         Err(e) => {
-                            eprintln!("❌ Failed to list resources: {}", e);
+                            eprintln!("Failed to list resources: {}", e);
                             Err(e.into())
                         }
                     }
@@ -646,7 +646,7 @@ impl SimplifiedExecutor {
                             Ok(())
                         }
                         Err(e) => {
-                            eprintln!("❌ Failed to list resources: {}", e);
+                            eprintln!("Failed to list resources: {}", e);
                             Err(e.into())
                         }
                     }
@@ -682,11 +682,11 @@ impl SimplifiedExecutor {
 
                 match use_case.execute(&code, args) {
                     Ok(_) => {
-                        println!("✅ Project updated successfully!");
+                        println!("Project updated successfully!");
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to update project: {}", e);
+                        eprintln!("Failed to update project: {}", e);
                         Err(Box::new(e))
                     }
                 }
@@ -726,11 +726,11 @@ impl SimplifiedExecutor {
 
                 match use_case.execute(&project_code, &code, args) {
                     Ok(_) => {
-                        println!("✅ Task updated successfully!");
+                        println!("Task updated successfully!");
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to update task: {}", e);
+                        eprintln!("Failed to update task: {}", e);
                         Err(Box::new(e))
                     }
                 }
@@ -759,11 +759,11 @@ impl SimplifiedExecutor {
 
                 match use_case.execute(&code, &company_code, args) {
                     Ok(_) => {
-                        println!("✅ Resource updated successfully!");
+                        println!("Resource updated successfully!");
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to update resource: {}", e);
+                        eprintln!("Failed to update resource: {}", e);
                         Err(Box::new(e))
                     }
                 }
@@ -789,11 +789,11 @@ impl SimplifiedExecutor {
 
                 match use_case.execute(&code) {
                     Ok(_) => {
-                        println!("✅ Project cancelled successfully!");
+                        println!("Project cancelled successfully!");
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to cancel project: {}", e);
+                        eprintln!("Failed to cancel project: {}", e);
                         Err(e.into())
                     }
                 }
@@ -808,11 +808,11 @@ impl SimplifiedExecutor {
 
                 match use_case.execute(&project_code, &code) {
                     Ok(_) => {
-                        println!("✅ Task cancelled successfully!");
+                        println!("Task cancelled successfully!");
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to cancel task: {}", e);
+                        eprintln!("Failed to cancel task: {}", e);
                         Err(e.into())
                     }
                 }
@@ -827,11 +827,11 @@ impl SimplifiedExecutor {
 
                 match use_case.execute(&code, &company_code) {
                     Ok(_) => {
-                        println!("✅ Resource deactivated successfully!");
+                        println!("Resource deactivated successfully!");
                         Ok(())
                     }
                     Err(e) => {
-                        eprintln!("❌ Failed to deactivate resource: {}", e);
+                        eprintln!("Failed to deactivate resource: {}", e);
                         Err(e.into())
                     }
                 }

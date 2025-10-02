@@ -18,11 +18,11 @@ pub fn handle_link_command(command: LinkCommand) -> Result<(), Box<dyn std::erro
 
             match link_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
-                    println!("✅ Tasks linked successfully!");
+                    println!("Tasks linked successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to link tasks: {}", e);
+                    eprintln!("Failed to link tasks: {}", e);
                     Err(e.into())
                 }
             }

@@ -138,8 +138,8 @@ impl TestE2ECommand {
 
     /// Run E2E tests
     async fn run_tests(args: &RunE2ETestsArgs, _base_path: &str) -> Result<(), AppError> {
-        println!("🚀 Starting E2E tests...");
-        println!("📊 Configuration:");
+        println!("Starting E2E tests...");
+        println!("Configuration:");
         println!("  Suite: {}", args.suite);
         println!("  Browser: {}", args.browser);
         println!("  Headless: {}", args.headless);
@@ -185,7 +185,7 @@ impl TestE2ECommand {
 
     /// Generate E2E test report
     async fn generate_report(args: &ReportE2EArgs, _base_path: &str) -> Result<(), AppError> {
-        println!("📊 Generating E2E test report...");
+        println!("Generating E2E test report...");
         println!("  Input: {:?}", args.input);
         println!("  Output: {:?}", args.output);
         println!("  Format: {}", args.format);
@@ -206,13 +206,13 @@ impl TestE2ECommand {
             }
         }
 
-        println!("✅ Report generated successfully!");
+        println!("Report generated successfully!");
         Ok(())
     }
 
     /// Validate HTML files
     async fn validate_html(args: &ValidateHTMLArgs, _base_path: &str) -> Result<(), AppError> {
-        println!("🔍 Validating HTML files...");
+        println!("Validating HTML files...");
         println!("  Input: {:?}", args.input);
         println!("  Output: {:?}", args.output);
         println!("  Strict: {}", args.strict);
@@ -242,7 +242,7 @@ impl TestE2ECommand {
         // Print summary
         let passed = all_results.iter().filter(|r| r.passed).count();
         let failed = all_results.len() - passed;
-        println!("✅ Validation complete!");
+        println!("Validation complete!");
         println!("  Passed: {}", passed);
         println!("  Failed: {}", failed);
 
@@ -258,7 +258,7 @@ impl TestE2ECommand {
 
     /// Create E2E test template
     async fn create_test_template(args: &CreateE2ETestArgs, _base_path: &str) -> Result<(), AppError> {
-        println!("📝 Creating E2E test template...");
+        println!("Creating E2E test template...");
         println!("  Name: {}", args.name);
         println!("  Description: {}", args.description);
         println!("  Type: {}", args.test_type);
@@ -295,7 +295,7 @@ impl TestE2ECommand {
         let yaml_content = serde_yaml::to_string(&test)?;
         std::fs::write(&args.output, yaml_content)?;
 
-        println!("✅ Test template created successfully!");
+        println!("Test template created successfully!");
         Ok(())
     }
 
@@ -532,19 +532,19 @@ impl TestE2ECommand {
 
     /// Print test summary to console
     fn print_test_summary(report: &E2ETestReport) {
-        println!("\n📊 Test Summary:");
+        println!("\nTest Summary:");
         println!("  Total Tests: {}", report.summary.total_tests);
-        println!("  ✅ Passed: {}", report.summary.passed_tests);
-        println!("  ❌ Failed: {}", report.summary.failed_tests);
-        println!("  ⏭️  Skipped: {}", report.summary.skipped_tests);
-        println!("  📈 Success Rate: {:.1}%", report.summary.success_rate);
+        println!("  Passed: {}", report.summary.passed_tests);
+        println!("  Failed: {}", report.summary.failed_tests);
+        println!("   Skipped: {}", report.summary.skipped_tests);
+        println!("  Success Rate: {:.1}%", report.summary.success_rate);
         println!(
-            "  ⏱️  Total Duration: {:.2}s",
+            "   Total Duration: {:.2}s",
             report.summary.total_duration.as_secs_f64()
         );
 
         if report.summary.failed_tests > 0 {
-            println!("\n❌ Failed Tests:");
+            println!("\nFailed Tests:");
             for result in &report.results {
                 if matches!(result.status, TestStatus::Failed) {
                     println!(

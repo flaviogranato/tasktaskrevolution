@@ -1,0 +1,21 @@
+---
+source: tests/snapshots/cli_help_test.rs
+expression: help_output
+---
+Create a new project
+
+Usage: ttr create project [OPTIONS] --name <NAME> --start-date <START_DATE> --end-date <END_DATE>
+
+Options:
+  -n, --name <NAME>                    Project name
+  -v, --verbose                        Enable verbose output (alias for --debug)
+      --code <CODE>                    Project code (optional, will be auto-generated if not provided)
+      --debug                          Enable debug output (alias for --verbose)
+      --company <COMPANY>              Company code (optional if in company context)
+  -q, --quiet                          Enable quiet output (minimal information)
+  -d, --description <DESCRIPTION>      Project description
+      --start-date <START_DATE>        Start date (YYYY-MM-DD)
+      --end-date <END_DATE>            End date (YYYY-MM-DD)
+      --template <TEMPLATE>            Template name (optional)
+      --template-vars <TEMPLATE_VARS>  Template variables (comma-separated key=value pairs)
+  -h, --help                           Print help
