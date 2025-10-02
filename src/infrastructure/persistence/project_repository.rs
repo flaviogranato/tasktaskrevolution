@@ -228,19 +228,32 @@ impl ProjectRepository for FileProjectRepository {
     /// Carrega um projeto.
     /// Procura por arquivos YAML no diretório projects.
     fn load(&self) -> DomainResult<AnyProject> {
-        let projects_dir = self.get_projects_path();
-        if !projects_dir.exists() {
+        let companies_dir = self.base_path.join("companies");
+        if !companies_dir.exists() {
             return Err(DomainError::ProjectNotFound {
                 code: "unknown".to_string(),
             });
         }
 
-        // Look for YAML files in the projects directory
-        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    return self.load_from_path(&path);
+        // Look for projects in the companies directory structure
+        if let Ok(entries) = std::fs::read_dir(&companies_dir) {
+            for company_entry in entries.flatten() {
+                let company_path = company_entry.path();
+                if company_path.is_dir() {
+                    let projects_dir = company_path.join("projects");
+                    if projects_dir.exists() {
+                        if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+                            for project_entry in project_entries.flatten() {
+                                let project_path = project_entry.path();
+                                if project_path.is_dir() {
+                                    let project_file = project_path.join("project.yaml");
+                                    if project_file.exists() {
+                                        return self.load_from_path(&project_file);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

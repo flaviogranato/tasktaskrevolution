@@ -2,7 +2,7 @@ use assert_fs::TempDir;
 use chrono::Local;
 
 use task_task_revolution::domain::resource_management::{
-    AnyResource, Resource, ResourceRepository, ResourceRepositoryWithId, ResourceScope, state::Available
+    AnyResource, resource::Resource, repository::{ResourceRepository, ResourceRepositoryWithId}, resource::ResourceScope, state::Available
 };
 use task_task_revolution::infrastructure::persistence::resource_repository::FileResourceRepository;
 
@@ -69,7 +69,7 @@ mod tests {
         let saved_resource = fixture.repository.save(resource).unwrap();
 
         // Find by ID
-        let found = fixture.repository.find_by_id(saved_resource.id()).unwrap();
+        let found = fixture.repository.find_by_id(&saved_resource.id().to_string()).unwrap();
         assert!(found.is_some());
         let found_resource = found.unwrap();
         assert_eq!(found_resource.id(), saved_resource.id());

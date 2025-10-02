@@ -125,9 +125,9 @@ impl TaskRepository for FileTaskRepository {
     fn find_all(&self) -> DomainResult<Vec<AnyTask>> {
         let mut tasks = Vec::new();
 
-        // 1. Search in ID-based structure: projects/tasks/*.yaml
-        let id_based_pattern = self.base_path.join("projects/tasks/*.yaml");
-        if let Ok(walker) = glob(id_based_pattern.to_str().unwrap()) {
+        // 1. Search in legacy structure: tasks/*.yaml
+        let legacy_pattern = self.base_path.join("tasks/*.yaml");
+        if let Ok(walker) = glob(legacy_pattern.to_str().unwrap()) {
             for entry in walker.flatten() {
                 let file_path = entry.as_path();
                 if let Ok(yaml) = fs::read_to_string(file_path)
@@ -139,7 +139,24 @@ impl TaskRepository for FileTaskRepository {
             }
         }
 
-        // 2. Search in hierarchical structure: companies/*/projects/*/tasks/*.yaml
+        // 2. Search in ID-based structure: projects/tasks/*.yaml
+        let id_based_pattern = self.base_path.join("projects/tasks/*.yaml");
+        if let Ok(walker) = glob(id_based_pattern.to_str().unwrap()) {
+            for entry in walker.flatten() {
+                let file_path = entry.as_path();
+                if let Ok(yaml) = fs::read_to_string(file_path)
+                    && let Ok(task_manifest) = serde_yaml::from_str::<TaskManifest>(&yaml)
+                    && let Ok(task) = AnyTask::try_from(task_manifest)
+                {
+                    // Check if task already exists to avoid duplicates
+                    if !tasks.iter().any(|existing| existing.code() == task.code()) {
+                        tasks.push(task);
+                    }
+                }
+            }
+        }
+
+        // 3. Search in hierarchical structure: companies/*/projects/*/tasks/*.yaml
         let hierarchical_pattern = self.base_path.join("companies/*/projects/*/tasks/*.yaml");
         if let Ok(walker) = glob(hierarchical_pattern.to_str().unwrap()) {
             for entry in walker.flatten() {

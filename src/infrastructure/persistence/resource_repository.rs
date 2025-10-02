@@ -313,7 +313,7 @@ impl ResourceRepository for FileResourceRepository {
             details: e.to_string(),
         })?;
 
-        // Save resource file
+        // Save resource file using legacy ID-based path
         let file_path = self.get_resource_file_path_by_id(&resource_id.to_string());
         let resource_manifest = ResourceManifest::from(resource.clone());
         let yaml = serde_yaml::to_string(&resource_manifest).map_err(|e| DomainError::SerializationError {
@@ -369,28 +369,42 @@ impl ResourceRepository for FileResourceRepository {
 
     fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
         let mut resources = Vec::new();
-        let companies_dir = self.base_path.join("companies");
-
-        if !companies_dir.exists() {
-            return Ok(resources);
+        
+        // Look in legacy resources directory
+        let resources_dir = self.get_resources_path();
+        if resources_dir.exists() {
+            if let Ok(entries) = std::fs::read_dir(&resources_dir) {
+                for entry in entries.flatten() {
+                    let resource_path = entry.path();
+                    if resource_path.is_file()
+                        && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                        && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                    {
+                        resources.push(resource);
+                    }
+                }
+            }
         }
 
-        // Look for company directories
-        if let Ok(entries) = std::fs::read_dir(&companies_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    let resources_dir = path.join("resources");
-                    if resources_dir.exists() {
-                        // Look for YAML files in the company's resources directory
-                        if let Ok(resource_entries) = std::fs::read_dir(&resources_dir) {
-                            for resource_entry in resource_entries.flatten() {
-                                let resource_path = resource_entry.path();
-                                if resource_path.is_file()
-                                    && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                                    && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
-                                {
-                                    resources.push(resource);
+        // Look for company directories in hierarchical structure
+        let companies_dir = self.base_path.join("companies");
+        if companies_dir.exists() {
+            if let Ok(entries) = std::fs::read_dir(&companies_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        let resources_dir = path.join("resources");
+                        if resources_dir.exists() {
+                            // Look for YAML files in the company's resources directory
+                            if let Ok(resource_entries) = std::fs::read_dir(&resources_dir) {
+                                for resource_entry in resource_entries.flatten() {
+                                    let resource_path = resource_entry.path();
+                                    if resource_path.is_file()
+                                        && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                                        && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                                    {
+                                        resources.push(resource);
+                                    }
                                 }
                             }
                         }
@@ -485,6 +499,22 @@ impl ResourceRepository for FileResourceRepository {
     /// Find all resources with their context information (company and project codes)
     fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
         let mut resources_with_context = Vec::new();
+
+        // Search in legacy resources directory: resources/*.yaml
+        let legacy_pattern = self.base_path.join("resources/*.yaml");
+        if let Ok(legacy_walker) = glob(legacy_pattern.to_str().unwrap()) {
+            for entry in legacy_walker {
+                if let Ok(file_path) = entry {
+                    if let Ok(yaml) = fs::read_to_string(&file_path) {
+                        if let Ok(resource_manifest) = serde_yaml::from_str::<ResourceManifest>(&yaml) {
+                            if let Ok(resource) = AnyResource::try_from(resource_manifest) {
+                                resources_with_context.push((resource, "UNKNOWN".to_string(), vec![]));
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Search in company resources: companies/*/resources/*.yaml
         let absolute_base = std::fs::canonicalize(&self.base_path).unwrap_or_else(|_| self.base_path.clone());
