@@ -68,9 +68,14 @@ where
                 && let Some(explanation) = project_spec.explain_why_not_satisfied(project)
             {
                 results.push(
-                    ValidationResult::warning(project_spec.description().to_string())
-                        .with_entity("Project".to_string(), project.code().to_string())
-                        .with_details(explanation),
+                    ValidationResult::warning(
+                        "PROJECT_DATA_INTEGRITY".to_string(),
+                        project_spec.description().to_string()
+                    )
+                    .with_entity("Project".to_string(), project.code().to_string())
+                    .with_details(explanation)
+                    .with_path(format!("companies/{}/projects/{}/project.yaml", 
+                        project.company_code(), project.code())),
                 );
             }
         }

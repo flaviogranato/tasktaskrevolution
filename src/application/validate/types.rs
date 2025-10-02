@@ -21,8 +21,10 @@ impl std::fmt::Display for ValidationSeverity {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ValidationResult {
-    pub severity: ValidationSeverity,
+    pub code: String,
+    pub level: ValidationSeverity,
     pub message: String,
+    pub path: Option<String>,
     pub entity_type: Option<String>,
     pub entity_code: Option<String>,
     pub field: Option<String>,
@@ -30,10 +32,12 @@ pub struct ValidationResult {
 }
 
 impl ValidationResult {
-    pub fn info(message: String) -> Self {
+    pub fn info(code: String, message: String) -> Self {
         Self {
-            severity: ValidationSeverity::Info,
+            code,
+            level: ValidationSeverity::Info,
             message,
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
@@ -41,10 +45,12 @@ impl ValidationResult {
         }
     }
 
-    pub fn warning(message: String) -> Self {
+    pub fn warning(code: String, message: String) -> Self {
         Self {
-            severity: ValidationSeverity::Warning,
+            code,
+            level: ValidationSeverity::Warning,
             message,
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
@@ -52,10 +58,12 @@ impl ValidationResult {
         }
     }
 
-    pub fn error(message: String) -> Self {
+    pub fn error(code: String, message: String) -> Self {
         Self {
-            severity: ValidationSeverity::Error,
+            code,
+            level: ValidationSeverity::Error,
             message,
+            path: None,
             entity_type: None,
             entity_code: None,
             field: None,
@@ -78,17 +86,26 @@ impl ValidationResult {
         self.details = Some(details);
         self
     }
+
+    pub fn with_path(mut self, path: String) -> Self {
+        self.path = Some(path);
+        self
+    }
 }
 
 impl std::fmt::Display for ValidationResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let severity_str = match self.severity {
+        let level_str = match self.level {
             ValidationSeverity::Info => "[INFO]",
             ValidationSeverity::Warning => "[WARNING]",
             ValidationSeverity::Error => "[ERROR]",
         };
 
-        let mut output = format!("{} {}", severity_str, self.message);
+        let mut output = format!("{} [{}] {}", level_str, self.code, self.message);
+
+        if let Some(path) = &self.path {
+            output.push_str(&format!(" (Path: {})", path));
+        }
 
         if let (Some(entity_type), Some(entity_code)) = (&self.entity_type, &self.entity_code) {
             output.push_str(&format!(" ({}: {})", entity_type, entity_code));
