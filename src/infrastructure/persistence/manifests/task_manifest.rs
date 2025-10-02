@@ -675,8 +675,8 @@ mod yaml_parsing_tests {
             spec:
                 projectCode: "PROJ-001"
                 assignee: "DEV-001"
-                status: "planned"
-                priority: "medium"
+                status: "Planned"
+                priority: "Medium"
                 estimatedStartDate: "2024-01-01"
                 estimatedEndDate: "2024-01-15"
                 dependencies:
@@ -732,8 +732,8 @@ mod yaml_parsing_tests {
             spec:
                 projectCode: "PROJ-001"
                 assignee: "DEV-001"
-                status: "planned"
-                priority: "medium"
+                status: "Planned"
+                priority: "Medium"
         "#;
 
         let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
@@ -763,7 +763,7 @@ mod yaml_parsing_tests {
                 projectCode: "PROJ-001"
                 assignee: "DEV-001"
                 status: "invalid_status"  # Invalid enum value
-                priority: "medium"
+                priority: "Medium"
                 estimatedStartDate: "2024-01-01"
                 estimatedEndDate: "2024-01-15"
         "#;
@@ -794,8 +794,8 @@ mod yaml_parsing_tests {
             spec:
                 projectCode: "PROJ-001"
                 assignee: "DEV-001"
-                status: "planned"
-                priority: "medium"
+                status: "Planned"
+                priority: "Medium"
                 estimatedStartDate: "invalid-date"  # Invalid date format
                 estimatedEndDate: "2024-01-15"
         "#;
@@ -826,8 +826,8 @@ mod yaml_parsing_tests {
             spec:
                 projectCode: "PROJ-001"
                 assignee: "DEV-001"
-                status: "in_progress"
-                priority: "high"
+                status: "InProgress"
+                priority: "High"
                 estimatedStartDate: "2024-01-01"
                 estimatedEndDate: "2024-01-15"
                 actualStartDate: "2024-01-01"
@@ -845,9 +845,9 @@ mod yaml_parsing_tests {
                     - "All tests pass"
                     - "Code review completed"
                 comments:
-                    - text: "Started working on this task"
+                    - message: "Started working on this task"
                       author: "DEV-001"
-                      createdAt: "2024-01-01T09:00:00Z"
+                      timestamp: "2024-01-01"
         "#;
 
         let manifest: TaskManifest = serde_yaml::from_str(yaml_str).unwrap();
@@ -879,8 +879,8 @@ mod yaml_parsing_tests {
             spec:
                 projectCode: "PROJ-001"
                 assignee: "DEV-001"
-                status: "planned"
-                priority: "medium"
+                status: "Planned"
+                priority: "Medium"
                 effort:
                     estimatedHours: 0.0
         "#;

@@ -545,14 +545,14 @@ mod tests {
                 code: "DEV-001"
                 name: "John Doe"
                 email: "john@example.com"
+                resourceType: "Developer"
+                status: "Available"
                 createdAt: "2024-01-01T00:00:00Z"
                 updatedAt: "2024-01-01T00:00:00Z"
                 createdBy: "system"
             spec:
-                resourceType: "Developer"
-                scope: "company"
+                scope: "Company"
                 timeOffBalance: 25
-                state: "available"
         "#;
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
@@ -562,10 +562,10 @@ mod tests {
         assert_eq!(manifest.metadata.code, "DEV-001");
         assert_eq!(manifest.metadata.name, "John Doe");
         assert_eq!(manifest.metadata.email, "john@example.com");
-        assert_eq!(manifest.spec.resource_type, "Developer");
-        assert_eq!(manifest.spec.scope, ResourceScopeManifest::Company);
+        assert_eq!(manifest.metadata.resource_type, "Developer");
+        assert_eq!(manifest.spec.scope, ResourceScope::Company);
         assert_eq!(manifest.spec.time_off_balance, 25);
-        assert_eq!(manifest.spec.state, ResourceStateManifest::Available);
+        assert_eq!(manifest.metadata.status, "Available");
     }
 
     #[test]
@@ -591,7 +591,7 @@ mod tests {
                 # Missing required fields: code, name, createdAt, updatedAt, createdBy
             spec:
                 resourceType: "Developer"
-                scope: "company"
+                scope: "Company"
         "#;
 
         let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
@@ -648,7 +648,7 @@ mod tests {
                 createdBy: "system"
             spec:
                 resourceType: "Developer"
-                scope: "company"
+                scope: "Company"
                 timeOffBalance: 25
         "#;
 
@@ -672,31 +672,35 @@ mod tests {
                 code: "DEV-001"
                 name: "John Doe"
                 email: "john@example.com"
+                resourceType: "Senior Developer"
+                status: "Assigned"
                 createdAt: "2024-01-01T00:00:00Z"
                 updatedAt: "2024-01-01T00:00:00Z"
                 createdBy: "system"
             spec:
-                resourceType: "Senior Developer"
-                scope: "project"
+                scope: "Project"
                 timeOffBalance: 30
-                state: "assigned"
                 projectAssignments:
-                    - projectCode: "PROJ-001"
-                      startDate: "2024-01-01"
-                      endDate: "2024-12-31"
+                    - projectId: "PROJ-001"
+                      startDate: "2024-01-01T00:00:00+00:00"
+                      endDate: "2024-12-31T23:59:59+00:00"
+                      allocationPercentage: 100
                 vacations:
-                    - startDate: "2024-07-01"
-                      endDate: "2024-07-15"
-                      isPaid: true
-                      reason: "Summer vacation"
+                    - startDate: "2024-07-01T00:00:00+00:00"
+                      endDate: "2024-07-15T23:59:59+00:00"
+                      approved: true
+                      periodType: "vacation"
+                      isTimeOffCompensation: false
+                      compensatedHours: null
+                      isLayoff: false
         "#;
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
         
-        assert_eq!(manifest.spec.resource_type, "Senior Developer");
-        assert_eq!(manifest.spec.scope, ResourceScopeManifest::Project);
+        assert_eq!(manifest.metadata.resource_type, "Senior Developer");
+        assert_eq!(manifest.spec.scope, ResourceScope::Project);
         assert_eq!(manifest.spec.time_off_balance, 30);
-        assert_eq!(manifest.spec.state, ResourceStateManifest::Assigned);
+        assert_eq!(manifest.metadata.status, "Assigned");
         assert!(manifest.spec.project_assignments.is_some());
         assert!(manifest.spec.vacations.is_some());
         assert_eq!(manifest.spec.vacations.as_ref().unwrap().len(), 1);

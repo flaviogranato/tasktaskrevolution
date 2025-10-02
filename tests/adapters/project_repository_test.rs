@@ -2,7 +2,7 @@ use assert_fs::TempDir;
 use chrono::NaiveDate;
 
 use task_task_revolution::domain::project_management::{
-    AnyProject, Project, ProjectRepository, ProjectRepositoryWithId, ProjectStatus
+    AnyProject, project::Project, repository::{ProjectRepository, ProjectRepositoryWithId}, project::ProjectStatus
 };
 use task_task_revolution::infrastructure::persistence::project_repository::FileProjectRepository;
 

@@ -336,7 +336,7 @@ mod tests {
                 updatedAt: "2024-01-01T00:00:00Z"
                 createdBy: "system"
             spec:
-                status: "planned"
+                status: "Planned"
                 startDate: "2024-01-01"
                 endDate: "2024-12-31"
                 timezone: "UTC"
@@ -349,10 +349,10 @@ mod tests {
         
         assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
         assert_eq!(manifest.kind, "Project");
-        assert_eq!(manifest.metadata.code, "PROJ-001");
+        assert_eq!(manifest.metadata.code, Some("PROJ-001".to_string()));
         assert_eq!(manifest.metadata.name, "Test Project");
         assert_eq!(manifest.metadata.description, "A test project");
-        assert_eq!(manifest.metadata.company_code, "COMP-001");
+        assert_eq!(manifest.metadata.company_code, Some("COMP-001".to_string()));
         assert_eq!(manifest.spec.status, ProjectStatusManifest::Planned);
         assert_eq!(manifest.spec.start_date, Some("2024-01-01".to_string()));
         assert_eq!(manifest.spec.end_date, Some("2024-12-31".to_string()));
@@ -381,7 +381,7 @@ mod tests {
                 id: "01996dev-0000-0000-0000-000000proj"
                 # Missing required fields: code, name, companyCode, createdAt, updatedAt, createdBy
             spec:
-                status: "planned"
+                status: "Planned"
         "#;
 
         let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
@@ -437,7 +437,7 @@ mod tests {
                 updatedAt: "2024-01-01T00:00:00Z"
                 createdBy: "system"
             spec:
-                status: "planned"
+                status: "InvalidStatus"  # Invalid status
                 startDate: "invalid-date"  # Invalid date format
         "#;
 
@@ -466,12 +466,12 @@ mod tests {
                 updatedAt: "2024-01-01T00:00:00Z"
                 createdBy: "system"
             spec:
-                status: "in_progress"
+                status: "InProgress"
                 startDate: "2024-01-01"
                 endDate: "2024-12-31"
                 timezone: "America/Sao_Paulo"
                 vacationRules:
-                    allowedDaysPerYear: 30
+                    maxConcurrentVacations: 30
                     carryOverDays: 5
         "#;
 
@@ -480,7 +480,7 @@ mod tests {
         assert_eq!(manifest.metadata.description, "A comprehensive test project");
         assert_eq!(manifest.spec.status, ProjectStatusManifest::InProgress);
         assert_eq!(manifest.spec.timezone, Some("America/Sao_Paulo".to_string()));
-        assert_eq!(manifest.spec.vacation_rules.as_ref().unwrap().allowed_days_per_year, 30);
+        assert_eq!(manifest.spec.vacation_rules.as_ref().unwrap().max_concurrent_vacations, Some(30));
         assert_eq!(manifest.spec.vacation_rules.as_ref().unwrap().carry_over_days, Some(5));
     }
 }
