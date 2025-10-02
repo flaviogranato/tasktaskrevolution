@@ -59,7 +59,6 @@ impl<R: ProjectRepository> CreateProjectUseCase<R> {
         let any_project: AnyProject = project.into();
 
         self.repository.save(any_project.clone())?;
-        println!("Project {name} created");
         Ok(any_project)
     }
 

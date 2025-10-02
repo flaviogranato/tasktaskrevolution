@@ -129,11 +129,6 @@ where
         // 5. Save the task individually in the project's tasks directory
         self.task_repository
             .save_in_hierarchy(task_any, project.company_code(), &project_code_for_save)?;
-
-        println!(
-            "Task '{}' created successfully with code '{}'",
-            name, task_code_for_output
-        );
         Ok(())
     }
 }
@@ -358,7 +353,6 @@ mod test {
         // Get the actual project ID from the mock repository
         let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
         let project = use_case.project_repository.find_by_id(&project_id).unwrap().unwrap();
-        println!("Project tasks count: {}", project.tasks().len());
         assert_eq!(project.tasks().len(), 1);
 
         // Find the task by iterating through all tasks since we don't know the exact code
@@ -445,7 +439,6 @@ mod test {
         let result = use_case.execute(args);
 
         if let Err(e) = &result {
-            eprintln!("Error creating task with same dates: {}", e);
         }
 
         assert!(result.is_ok(), "Expected Ok, but got Err: {:?}", result);

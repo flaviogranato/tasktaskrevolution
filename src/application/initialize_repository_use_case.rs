@@ -20,7 +20,6 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
         let config = Config::new(manager_name.clone(), manager_email.clone(), "UTC".to_string());
         self.repository.create_repository_dir(&path)?;
         self.repository.save(config, &path)?;
-        println!("Configuração iniciada em: {}", path.display());
 
         Ok(())
     }

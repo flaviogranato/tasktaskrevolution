@@ -32,7 +32,9 @@ impl ListTemplatesUseCase {
             if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
                 match self.load_template_info(&path) {
                     Ok(template_info) => templates.push(template_info),
-                    Err(e) => eprintln!("Warning: Failed to load template {:?}: {}", path, e),
+                    Err(_) => {
+                        // Skip invalid templates silently
+                    }
                 }
             }
         }

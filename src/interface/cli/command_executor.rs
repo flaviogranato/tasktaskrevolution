@@ -30,10 +30,14 @@ pub fn execute_init(
 
     match init_use_case.execute(init_data) {
         Ok(_config) => {
-            println!("Manager/Consultant configured successfully");
-            println!("Name: {}", name);
-            println!("Email: {}", email);
-            println!("Company: {}", company_name);
+            if !crate::interface::cli::Cli::is_quiet() {
+                println!("Manager/Consultant configured successfully");
+                if crate::interface::cli::Cli::is_verbose() {
+                    println!("Name: {}", name);
+                    println!("Email: {}", email);
+                    println!("Company: {}", company_name);
+                }
+            }
             Ok(())
         }
         Err(e) => {
@@ -46,12 +50,18 @@ pub fn execute_init(
 pub fn execute_build(output: PathBuf, _base_url: String) -> Result<(), Box<dyn std::error::Error>> {
     use crate::application::build_use_case::BuildUseCase;
 
+    if crate::interface::cli::Cli::is_verbose() {
+        eprintln!("Building static site...");
+    }
+
     let current_dir = std::env::current_dir()?;
     let build_use_case = BuildUseCase::new(current_dir, output.to_str().unwrap_or("dist"))?;
 
     match build_use_case.execute() {
         Ok(_) => {
-            println!("Static site built successfully!");
+            if !crate::interface::cli::Cli::is_quiet() {
+                println!("Static site built successfully!");
+            }
             Ok(())
         }
         Err(e) => {
@@ -77,11 +87,16 @@ pub fn execute_validate(command: commands::ValidateCommand) -> Result<(), Box<dy
 
     match command {
         commands::ValidateCommand::BusinessRules(args) => {
+            if crate::interface::cli::Cli::is_verbose() {
+                eprintln!("Running business rules validation...");
+            }
             let validate_use_case =
                 ValidateBusinessRulesUseCase::new(&project_repository, &resource_repository, &company_repository);
             match validate_use_case.execute() {
                 Ok(results) => {
-                    println!("Business rules validation completed");
+                    if !crate::interface::cli::Cli::is_quiet() {
+                        println!("Business rules validation completed");
+                    }
                     print_validation_results(&results, &args);
                     Ok(())
                 }
@@ -92,11 +107,16 @@ pub fn execute_validate(command: commands::ValidateCommand) -> Result<(), Box<dy
             }
         }
         commands::ValidateCommand::DataIntegrity(args) => {
+            if crate::interface::cli::Cli::is_verbose() {
+                eprintln!("Running data integrity validation...");
+            }
             let validate_use_case =
                 ValidateDataIntegrityUseCase::new(&project_repository, &resource_repository, &company_repository);
             match validate_use_case.execute() {
                 Ok(results) => {
-                    println!("Data integrity validation completed");
+                    if !crate::interface::cli::Cli::is_quiet() {
+                        println!("Data integrity validation completed");
+                    }
                     print_validation_results(&results, &args);
                     Ok(())
                 }
@@ -107,11 +127,16 @@ pub fn execute_validate(command: commands::ValidateCommand) -> Result<(), Box<dy
             }
         }
         commands::ValidateCommand::Entities(args) => {
+            if crate::interface::cli::Cli::is_verbose() {
+                eprintln!("Running entities validation...");
+            }
             let validate_use_case =
                 ValidateEntitiesUseCase::new(&project_repository, &resource_repository, &company_repository);
             match validate_use_case.execute() {
                 Ok(results) => {
-                    println!("Entities validation completed");
+                    if !crate::interface::cli::Cli::is_quiet() {
+                        println!("Entities validation completed");
+                    }
                     print_validation_results(&results, &args);
                     Ok(())
                 }
@@ -122,11 +147,16 @@ pub fn execute_validate(command: commands::ValidateCommand) -> Result<(), Box<dy
             }
         }
         commands::ValidateCommand::System(args) => {
+            if crate::interface::cli::Cli::is_verbose() {
+                eprintln!("Running system validation...");
+            }
             let validate_use_case =
                 ValidateSystemUseCase::new(project_repository, resource_repository, company_repository);
             match validate_use_case.execute() {
                 Ok(results) => {
-                    println!("System validation completed");
+                    if !crate::interface::cli::Cli::is_quiet() {
+                        println!("System validation completed");
+                    }
                     print_validation_results(&results, &args);
                     Ok(())
                 }

@@ -209,7 +209,6 @@ where
         let report = self.generate_wip_report()?;
 
         if report.resource_details.is_empty() {
-            println!("No resources found.");
             return Ok(());
         }
 
@@ -237,7 +236,6 @@ where
             ]);
         }
 
-        println!("{}", table);
         Ok(())
     }
 

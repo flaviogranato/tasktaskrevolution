@@ -692,8 +692,6 @@ mod tests {
         // Assert
         assert!(result.is_err());
         if let Err(e) = result {
-            eprintln!("Error: {}", e);
-            eprintln!("Error type: {:?}", e);
             // Check if it's a RepositoryError and contains the expected message
             match e {
                 AssignResourceToAppError::RepositoryError(domain_error) => {
