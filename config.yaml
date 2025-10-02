@@ -1,0 +1,28 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Config
+metadata:
+  createdAt: 2025-10-02T12:26:33.165038325Z
+spec:
+  managerName: Test User
+  managerEmail: test@example.com
+  defaultTimezone: UTC
+  companyName: Default Company
+  workHoursStart: 09:00
+  workHoursEnd: 18:00
+  workDaysPerWeek:
+  - Monday
+  - Tuesday
+  - Wednesday
+  - Thursday
+  - Friday
+  resourceTypes:
+  - Developer
+  - Designer
+  - Manager
+  - Database Administrator
+  - DevOps Engineer
+  - QA Engineer
+  - Product Owner
+  - Scrum Master
+  - Business Analyst
+  - Technical Writer

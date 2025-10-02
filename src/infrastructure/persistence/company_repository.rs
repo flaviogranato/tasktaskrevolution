@@ -25,6 +25,10 @@ impl FileCompanyRepository {
         self.base_path.join("companies").join(format!("{}.yaml", id))
     }
 
+    fn get_company_path_by_code(&self, code: &str) -> PathBuf {
+        self.base_path.join("companies").join(code).join("company.yaml")
+    }
+
     fn get_companies_dir(&self) -> PathBuf {
         self.base_path.join("companies")
     }
@@ -114,11 +118,11 @@ impl FileCompanyRepository {
     }
 
     fn save_company_to_disk(&self, company: &Company) -> DomainResult<()> {
-        let companies_dir = self.get_companies_dir();
+        let company_dir = self.get_company_dir_by_code(&company.code);
 
-        // Create companies directory if it doesn't exist
-        if !companies_dir.exists() {
-            fs::create_dir_all(&companies_dir).map_err(|e| DomainError::IoError {
+        // Create company directory if it doesn't exist
+        if !company_dir.exists() {
+            fs::create_dir_all(&company_dir).map_err(|e| DomainError::IoError {
                 operation: "create directory".to_string(),
                 details: e.to_string(),
             })?;
@@ -130,8 +134,8 @@ impl FileCompanyRepository {
             details: format!("Failed to serialize company to YAML: {}", e),
         })?;
 
-        // Use ID-based file naming
-        let file_path = self.get_company_path_by_id(&company.id);
+        // Use code-based file naming: companies/<CODE>/company.yaml
+        let file_path = self.get_company_path_by_code(&company.code);
         fs::write(&file_path, yaml_content).map_err(|e| DomainError::IoErrorWithPath {
             operation: "file write".to_string(),
             path: file_path.to_string_lossy().to_string(),
@@ -238,14 +242,20 @@ impl CompanyRepository for FileCompanyRepository {
         })?;
         let company_id = company.id.clone();
 
-        // Remove from disk (ID-based file)
-        let file_path = self.get_company_path_by_id(&company_id);
+        // Remove from disk (code-based file)
+        let file_path = self.get_company_path_by_code(code);
         if file_path.exists() {
             fs::remove_file(&file_path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "delete file".to_string(),
                 path: file_path.to_string_lossy().to_string(),
                 details: e.to_string(),
             })?;
+        }
+
+        // Also try to remove old ID-based file for migration compatibility
+        let old_file_path = self.get_company_path_by_id(&company_id);
+        if old_file_path.exists() {
+            let _ = fs::remove_file(&old_file_path); // Ignore errors for old files
         }
 
         // Remove from in-memory cache
