@@ -292,13 +292,25 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     // Verificar se o diretório companies foi criado
     companies_dir.assert(predicate::path::is_dir());
 
-    // With ID-based naming, we need to find the actual file
-    // Check if there's at least one .yaml file in the companies directory
+    // With code-based naming, we need to find the actual file
+    // Check if there's at least one .yaml file in the companies directory (recursively)
     let companies_path = companies_dir.path();
-    let yaml_files = std::fs::read_dir(companies_path)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
-        .collect::<Vec<_>>();
+    let mut yaml_files = Vec::new();
+    
+    // Look for company.yaml files in subdirectories
+    for entry in std::fs::read_dir(companies_path)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            let company_yaml = path.join("company.yaml");
+            if company_yaml.exists() {
+                yaml_files.push(company_yaml);
+            }
+        } else if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+            // Legacy format: direct YAML files
+            yaml_files.push(path);
+        }
+    }
 
     assert!(
         !yaml_files.is_empty(),
@@ -306,7 +318,7 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Use the first YAML file found for validation
-    let company_file_path = yaml_files[0].path();
+    let company_file_path = &yaml_files[0];
     let validator = YamlValidator::new(&company_file_path)?;
 
     // Validar estrutura básica
@@ -1183,12 +1195,24 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     cmd.assert().success();
     companies_dir.assert(predicate::path::is_dir());
 
-    // With ID-based naming, find the actual company file
+    // With code-based naming, find the actual company file
     let companies_path = companies_dir.path();
-    let yaml_files = std::fs::read_dir(companies_path)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
-        .collect::<Vec<_>>();
+    let mut yaml_files = Vec::new();
+    
+    // Look for company.yaml files in subdirectories
+    for entry in std::fs::read_dir(companies_path)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            let company_yaml = path.join("company.yaml");
+            if company_yaml.exists() {
+                yaml_files.push(company_yaml);
+            }
+        } else if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+            // Legacy format: direct YAML files
+            yaml_files.push(path);
+        }
+    }
 
     assert!(
         !yaml_files.is_empty(),
@@ -1196,7 +1220,7 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Use the first YAML file found for validation
-    let company_file_path = yaml_files[0].path();
+    let company_file_path = &yaml_files[0];
 
     // Validar company.yaml com validador robusto
     let validator = YamlValidator::new(&company_file_path)?;

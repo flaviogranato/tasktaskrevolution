@@ -429,17 +429,29 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
     let companies_dir = temp.child("companies");
     companies_dir.assert(predicate::path::is_dir());
 
-    // Check if there's at least one .yaml file in the companies directory
+    // Check if there's at least one .yaml file in the companies directory (recursively)
     let companies_path = companies_dir.path();
-    let yaml_files = std::fs::read_dir(companies_path)?
-        .filter_map(|entry| entry.ok())
-        .filter(|entry| entry.path().extension().and_then(|s| s.to_str()) == Some("yaml"))
-        .collect::<Vec<_>>();
+    let mut yaml_files = Vec::new();
+    
+    // Look for company.yaml files in subdirectories
+    for entry in std::fs::read_dir(companies_path)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            let company_yaml = path.join("company.yaml");
+            if company_yaml.exists() {
+                yaml_files.push(company_yaml);
+            }
+        } else if path.extension().and_then(|s| s.to_str()) == Some("yaml") {
+            // Legacy format: direct YAML files
+            yaml_files.push(path);
+        }
+    }
 
     assert_eq!(yaml_files.len(), 1, "Only one company should exist");
 
     // Use the first YAML file found for validation
-    let company_file_path = yaml_files[0].path();
+    let company_file_path = &yaml_files[0];
     let validator1 = YamlValidator::new(&company_file_path)?;
     assert!(validator1.field_equals("metadata.code", "TECH-CORP"));
 
