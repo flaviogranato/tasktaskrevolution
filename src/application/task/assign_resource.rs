@@ -134,8 +134,8 @@ where
         // 7. Update resource with project assignment and task assignment
         let updated_resource = self.assign_resource_to_project_and_task(resource, project_code, task_assignment)?;
 
-        // 8. Save the updated task
-        let saved_task = self.task_repository.save(updated_task)?;
+        // 8. Save the updated task using hierarchical structure
+        let saved_task = self.task_repository.save_in_hierarchy(updated_task, project.company_code(), project_code)?;
 
         // 9. Save the updated resource using save_in_hierarchy
         self.resource_repository

@@ -138,33 +138,13 @@ impl FileProjectRepository {
     }
 
     /// Save individual task files for a project
-    fn save_tasks_for_project(&self, project: &AnyProject) -> DomainResult<()> {
-        let project_id = project.id();
-        let project_path = self.get_project_path_by_id(project_id);
-        let tasks_dir = project_path.parent().unwrap().join("tasks");
-
-        // Create tasks directory if it doesn't exist
-        fs::create_dir_all(&tasks_dir).map_err(|e| DomainError::IoErrorWithPath {
-            operation: "create directory".to_string(),
-            path: tasks_dir.to_string_lossy().to_string(),
-            details: e.to_string(),
-        })?;
-
-        // Save each task as individual YAML file
-        for task in project.tasks().values() {
-            let task_file_path = tasks_dir.join(format!("{}.yaml", task.code()));
-            let task_manifest = TaskManifest::from(task.clone());
-            let yaml = serde_yaml::to_string(&task_manifest).map_err(|e| DomainError::SerializationError {
-                operation: "YAML serialization".to_string(),
-                details: format!("Error serializing task: {e}"),
-            })?;
-            fs::write(&task_file_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
-                operation: "file write".to_string(),
-                path: task_file_path.to_string_lossy().to_string(),
-                details: e.to_string(),
-            })?;
-        }
-
+    /// NOTE: This method is deprecated and should not be used in new code.
+    /// It creates top-level tasks/ directory which violates the filesystem layout specification.
+    #[allow(dead_code)]
+    fn save_tasks_for_project(&self, _project: &AnyProject) -> DomainResult<()> {
+        // Legacy method disabled to prevent creation of top-level tasks/ directory
+        // All tasks must now be saved under companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/tasks/
+        // This maintains compliance with the filesystem layout specification.
         Ok(())
     }
 
@@ -199,31 +179,13 @@ impl FileProjectRepository {
     }
 
     /// Save legacy ID-based project file for migration compatibility
-    fn save_legacy_project_file(&self, project: &AnyProject, project_id: &str) -> DomainResult<()> {
-        // Create projects directory if it doesn't exist
-        let projects_dir = self.get_projects_path();
-        fs::create_dir_all(&projects_dir).map_err(|e| DomainError::IoErrorWithPath {
-            operation: "create directory".to_string(),
-            path: projects_dir.to_string_lossy().to_string(),
-            details: e.to_string(),
-        })?;
-
-        // Save legacy project file
-        let project_path = self.get_project_path_by_id(project_id);
-        let project_manifest = ProjectManifest::from(project.clone());
-        let yaml = serde_yaml::to_string(&project_manifest).map_err(|e| DomainError::SerializationError {
-            operation: "YAML serialization".to_string(),
-            details: format!("Error serializing project: {e}"),
-        })?;
-        fs::write(&project_path, yaml).map_err(|e| DomainError::IoErrorWithPath {
-            operation: "file write".to_string(),
-            path: project_path.to_string_lossy().to_string(),
-            details: e.to_string(),
-        })?;
-
-        // Save individual task files in legacy format
-        self.save_tasks_for_project(project)?;
-
+    /// NOTE: This method is deprecated and should not be used in new code.
+    /// It creates top-level projects/ directory which violates the filesystem layout specification.
+    #[allow(dead_code)]
+    fn save_legacy_project_file(&self, _project: &AnyProject, _project_id: &str) -> DomainResult<()> {
+        // Legacy method disabled to prevent creation of top-level projects/ directory
+        // All projects must now be saved under companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/
+        // This maintains compliance with the filesystem layout specification.
         Ok(())
     }
 }
@@ -259,9 +221,6 @@ impl ProjectRepository for FileProjectRepository {
 
         // Save individual task files in the project directory
         self.save_tasks_for_project_in_hierarchy(&project, company_code, project_code)?;
-
-        // Also save old ID-based file for migration compatibility
-        self.save_legacy_project_file(&project, project_id)?;
 
         Ok(())
     }
@@ -341,7 +300,32 @@ impl ProjectRepository for FileProjectRepository {
     }
 
     fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
-        // Simple search: iterate through all projects to find by code
+        // Search in hierarchical format: companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/project.yaml
+        let companies_dir = self.base_path.join("companies");
+        if companies_dir.exists() {
+            for company_entry in std::fs::read_dir(&companies_dir)? {
+                let company_entry = company_entry?;
+                let company_path = company_entry.path();
+                if company_path.is_dir() {
+                    let projects_dir = company_path.join("projects");
+                    if let Ok(project_entries) = std::fs::read_dir(projects_dir) {
+                        for proj_dir in project_entries.flatten() {
+                            if proj_dir.path().is_dir() {
+                                let project_file = proj_dir.path().join("project.yaml");
+                                if project_file.exists()
+                                    && let Ok(project) = self.load_from_path(&project_file)
+                                    && project.code() == code
+                                {
+                                    return Ok(Some(project));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Also search in legacy ID-based format for backwards compatibility
         let projects_dir = self.get_projects_path();
         if !projects_dir.exists() {
             return Ok(None);
@@ -520,9 +504,15 @@ mod tests {
         let save_result = repository.save(project.clone().into());
         assert!(save_result.is_ok(), "Failed to save project: {:?}", save_result);
 
-        // Test that the project was saved by checking the file exists (ID-based format)
-        let project_id = &project.id;
-        let project_file = repo_path.join("projects").join(format!("{}.yaml", project_id));
+        // Test that the project was saved by checking the file exists (code-based format)
+        let project_code = project.code.clone();
+        let company_code = project.company_code.clone();
+        let project_file = repo_path
+            .join("companies")
+            .join(&company_code)
+            .join("projects")
+            .join(&project_code)
+            .join("project.yaml");
         assert!(project_file.exists(), "Project file should exist after save");
     }
 
@@ -559,9 +549,22 @@ mod tests {
             .save(project2.clone().into())
             .expect("Failed to save project 2");
 
-        // Verify both projects were saved by checking files exist (ID-based format)
-        let project1_file = repo_path.join("projects").join(format!("{}.yaml", project1.id));
-        let project2_file = repo_path.join("projects").join(format!("{}.yaml", project2.id));
+        // Verify both projects were saved by checking files exist (code-based format)
+        let project1_code = project1.code.clone();
+        let project2_code = project2.code.clone();
+        let company_code = project1.company_code.clone();
+        let project1_file = repo_path
+            .join("companies")
+            .join(&company_code)
+            .join("projects")
+            .join(&project1_code)
+            .join("project.yaml");
+        let project2_file = repo_path
+            .join("companies")
+            .join(&company_code)
+            .join("projects")
+            .join(&project2_code)
+            .join("project.yaml");
 
         assert!(project1_file.exists(), "Project 1 file should exist");
         assert!(project2_file.exists(), "Project 2 file should exist");
@@ -584,10 +587,15 @@ mod tests {
             .save(in_progress_project.clone().into())
             .expect("Failed to update project");
 
-        // Verify update by checking file exists (ID-based format)
+        // Verify update by checking file exists (code-based format)
+        let project_code = in_progress_project.code.clone();
+        let company_code = in_progress_project.company_code.clone();
         let project_file = repo_path
+            .join("companies")
+            .join(&company_code)
             .join("projects")
-            .join(format!("{}.yaml", in_progress_project.id));
+            .join(&project_code)
+            .join("project.yaml");
         assert!(project_file.exists(), "Updated project file should exist");
     }
 
@@ -603,19 +611,17 @@ mod tests {
         // Save project
         repository.save(project.clone().into()).expect("Failed to save project");
 
-        // Verify project exists (ID-based format)
-        let projects_dir = repo_path.join("projects");
-        let mut project_file = None;
-        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    project_file = Some(path);
-                    break;
-                }
-            }
-        }
-        assert!(project_file.is_some(), "Project file should exist after save");
+        // Verify project exists (code-based format)
+        let project_code = project.code.clone();
+        let company_code = project.company_code.clone();
+        let project_file = repo_path
+            .join("companies")
+            .join(&company_code)
+            .join("projects")
+            .join(&project_code)
+            .join("project.yaml");
+
+        assert!(project_file.exists(), "Project file should exist after save");
 
         // Note: Tasks are no longer saved in the project directory
         // They are saved separately in individual task files
@@ -647,20 +653,17 @@ mod tests {
         // Save project
         repository.save(project.clone().into()).expect("Failed to save project");
 
-        // Find the project file dynamically and corrupt it
-        let projects_dir = repo_path.join("projects");
-        let mut project_file = None;
-        if let Ok(entries) = std::fs::read_dir(&projects_dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_file() && path.extension().and_then(|s| s.to_str()) == Some("yaml") {
-                    project_file = Some(path);
-                    break;
-                }
-            }
-        }
+        // Find the project file in the code-based format and corrupt it
+        let project_code = project.code.clone();
+        let company_code = project.company_code.clone();
+        let project_file = repo_path
+            .join("companies")
+            .join(&company_code)
+            .join("projects")
+            .join(&project_code)
+            .join("project.yaml");
 
-        let project_file = project_file.expect("Project file should exist after save");
+        assert!(project_file.exists(), "Project file should exist after save");
         fs::write(&project_file, "invalid: yaml: content: [").expect("Failed to corrupt file");
 
         // Note: We can't test loading corrupted files yet since find_by_code is not fully implemented
