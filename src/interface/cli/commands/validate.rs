@@ -15,7 +15,7 @@ pub enum ValidateCommand {
 
 #[derive(Args)]
 pub struct ValidateArgs {
-    /// Output format (json, html, table)
+    /// Output format (json, table, csv)
     #[clap(long, default_value = "table")]
     pub format: String,
 
