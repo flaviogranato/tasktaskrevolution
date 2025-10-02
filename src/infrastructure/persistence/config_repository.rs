@@ -5,7 +5,10 @@ use crate::domain::{
 };
 use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
 use serde_yaml::to_string;
-use std::{fs, path::{Path, PathBuf}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 #[derive(Clone)]
 pub struct FileConfigRepository {
@@ -59,11 +62,14 @@ impl ConfigRepository for FileConfigRepository {
     }
 
     fn load(&self) -> DomainResult<(Config, PathBuf)> {
-        let mut current_path = self.base_path.canonicalize().map_err(|e| DomainError::IoErrorWithPath {
-            operation: "canonicalize path".to_string(),
-            path: self.base_path.to_string_lossy().to_string(),
-            details: e.to_string(),
-        })?;
+        let mut current_path = self
+            .base_path
+            .canonicalize()
+            .map_err(|e| DomainError::IoErrorWithPath {
+                operation: "canonicalize path".to_string(),
+                path: self.base_path.to_string_lossy().to_string(),
+                details: e.to_string(),
+            })?;
 
         loop {
             let config_path = current_path.join("config.yaml");

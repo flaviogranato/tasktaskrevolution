@@ -2,8 +2,8 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
-use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask};
 
 pub struct ListTasksUseCase<R: ProjectRepository + ProjectRepositoryWithId, CR: CodeResolverTrait> {
     repository: R,
@@ -131,7 +131,10 @@ mod tests {
 
         fn resolve_resource_code(&self, _code: &str) -> DomainResult<String> {
             if self.should_fail {
-                Err(DomainError::from(AppError::validation_error("resource", "Mock failure")))
+                Err(DomainError::from(AppError::validation_error(
+                    "resource",
+                    "Mock failure",
+                )))
             } else {
                 Ok("resource-id".to_string())
             }
@@ -163,7 +166,10 @@ mod tests {
 
         fn validate_resource_code(&self, _code: &str) -> DomainResult<()> {
             if self.should_fail {
-                Err(DomainError::from(AppError::validation_error("resource", "Mock failure")))
+                Err(DomainError::from(AppError::validation_error(
+                    "resource",
+                    "Mock failure",
+                )))
             } else {
                 Ok(())
             }

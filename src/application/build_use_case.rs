@@ -1,4 +1,5 @@
 use crate::application::{build_context::BuildContext, gantt_use_case::GanttUseCase};
+use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::{
     company_management::repository::CompanyRepository, company_settings::repository::ConfigRepository,
     project_management::AnyProject,
@@ -7,7 +8,6 @@ use crate::infrastructure::persistence::{
     config_repository::FileConfigRepository, project_repository::FileProjectRepository,
     resource_repository::FileResourceRepository,
 };
-use crate::domain::project_management::repository::ProjectRepository;
 use crate::interface::assets::TemplateAssets;
 
 // glob no longer needed; using repository enumeration

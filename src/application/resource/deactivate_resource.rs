@@ -117,11 +117,17 @@ mod tests {
 
     impl CodeResolverTrait for MockCodeResolver {
         fn resolve_company_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "company",
+                "Not implemented in mock",
+            )))
         }
 
         fn resolve_project_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("project", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "project",
+                "Not implemented in mock",
+            )))
         }
 
         fn resolve_resource_code(&self, _code: &str) -> DomainResult<String> {
@@ -129,15 +135,24 @@ mod tests {
         }
 
         fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "task",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_company_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "company",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_project_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("project", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "project",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_resource_code(&self, _code: &str) -> DomainResult<()> {
@@ -145,7 +160,10 @@ mod tests {
         }
 
         fn validate_task_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "task",
+                "Not implemented in mock",
+            )))
         }
     }
 

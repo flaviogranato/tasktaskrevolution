@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::company_settings::config::Config;
 use crate::domain::company_settings::validations::CompanySettingsValidator;
+use crate::domain::shared::errors::{DomainError, DomainResult};
 
 /// Regras de negócio para configurações da empresa
 pub struct CompanySettingsBusinessRules;

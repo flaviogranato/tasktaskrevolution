@@ -1,12 +1,12 @@
 use crate::application::errors::AppError;
+use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::resource_management::{
     ResourceTypeValidator,
     repository::ResourceRepository,
     resource::{Resource, ResourceScope},
 };
-use crate::domain::company_settings::repository::ConfigRepository;
-use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 #[derive(Debug, Clone)]
 pub struct CreateResourceParams {
@@ -176,7 +176,11 @@ mod test {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: crate::domain::company_settings::config::Config, _path: &std::path::Path) -> DomainResult<()> {
+        fn save(
+            &self,
+            _config: crate::domain::company_settings::config::Config,
+            _path: &std::path::Path,
+        ) -> DomainResult<()> {
             Ok(())
         }
 

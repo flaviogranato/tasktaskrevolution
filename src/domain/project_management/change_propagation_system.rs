@@ -216,11 +216,7 @@ impl ChangePropagationSystem {
     }
 
     /// Aplica uma mudança ao grafo de dependências
-    fn apply_change_to_graph(
-        &self,
-        change_type: &ChangeType,
-        graph: &mut AdvancedDependencyGraph,
-    ) -> DomainResult<()> {
+    fn apply_change_to_graph(&self, change_type: &ChangeType, graph: &mut AdvancedDependencyGraph) -> DomainResult<()> {
         match change_type {
             ChangeType::StartDateChanged(_, _new_date, _) => {
                 // Atualizar data de início de uma tarefa específica

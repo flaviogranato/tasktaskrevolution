@@ -119,7 +119,10 @@ impl TaskBuilder<WithName> {
     /// Sets the start and due dates for the task, validating that the range is valid.
     pub fn dates(self, start: NaiveDate, due: NaiveDate) -> DomainResult<TaskBuilder<WithDates>> {
         if start > due {
-            return Err(DomainError::validation_error("dates", "Start date must be before or equal to due date"));
+            return Err(DomainError::validation_error(
+                "dates",
+                "Start date must be before or equal to due date",
+            ));
         }
 
         Ok(TaskBuilder {
@@ -157,7 +160,10 @@ impl TaskBuilder<WithDates> {
         for res in &self.assigned_resources {
             for (vac_res, vac_start, vac_end) in resource_vacations {
                 if res == vac_res && start <= *vac_end && due >= *vac_start {
-                    return Err(DomainError::business_rule_violation("resource_availability", &format!("Resource {} is on vacation during the specified period", res)));
+                    return Err(DomainError::business_rule_violation(
+                        "resource_availability",
+                        &format!("Resource {} is on vacation during the specified period", res),
+                    ));
                 }
             }
         }
@@ -186,8 +192,12 @@ impl TaskBuilder<Ready> {
             project_code: self
                 .project_code
                 .ok_or_else(|| DomainError::validation_error("project_code", "Project code is required"))?,
-            code: self.code.ok_or_else(|| DomainError::validation_error("code", "Task code is required"))?,
-            name: self.name.ok_or_else(|| DomainError::validation_error("name", "Task name is required"))?,
+            code: self
+                .code
+                .ok_or_else(|| DomainError::validation_error("code", "Task code is required"))?,
+            name: self
+                .name
+                .ok_or_else(|| DomainError::validation_error("name", "Task name is required"))?,
             description: None,
             state: Planned, // The task starts in the 'Planned' state.
             start_date: self.start_date.unwrap(),
@@ -266,7 +276,9 @@ mod tests {
             .assign_resource("RES-002")
             .validate_vacations(&vacations);
 
-        assert!(matches!(result, Err(DomainError::BusinessRuleViolation { rule, details: _ }) if rule == "resource_availability"));
+        assert!(
+            matches!(result, Err(DomainError::BusinessRuleViolation { rule, details: _ }) if rule == "resource_availability")
+        );
     }
 
     #[test]

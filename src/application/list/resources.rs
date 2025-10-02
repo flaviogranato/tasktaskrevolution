@@ -153,14 +153,7 @@ mod tests {
             Ok(create_test_resource("Test", "test-1", "Developer"))
         }
 
-        fn save_vacation(
-            &self,
-            _r: &str,
-            _s: &str,
-            _e: &str,
-            _i: bool,
-            _c: Option<u32>,
-        ) -> DomainResult<AnyResource> {
+        fn save_vacation(&self, _r: &str, _s: &str, _e: &str, _i: bool, _c: Option<u32>) -> DomainResult<AnyResource> {
             if self.should_fail {
                 return Err(DomainError::IoError {
                     operation: "save_vacation".to_string(),

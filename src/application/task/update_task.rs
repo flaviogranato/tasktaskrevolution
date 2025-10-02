@@ -4,8 +4,8 @@
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
-use crate::domain::task_management::{Category, Priority, any_task::AnyTask, repository::TaskRepository};
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::task_management::{Category, Priority, any_task::AnyTask, repository::TaskRepository};
 use chrono::NaiveDate;
 use std::fmt;
 
@@ -148,7 +148,10 @@ mod tests {
 
     impl CodeResolverTrait for MockCodeResolver {
         fn resolve_company_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "company",
+                "Not implemented in mock",
+            )))
         }
 
         fn resolve_project_code(&self, _code: &str) -> DomainResult<String> {
@@ -156,15 +159,24 @@ mod tests {
         }
 
         fn resolve_resource_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("resource", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "resource",
+                "Not implemented in mock",
+            )))
         }
 
         fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "task",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_company_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "company",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_project_code(&self, _code: &str) -> DomainResult<()> {
@@ -172,11 +184,17 @@ mod tests {
         }
 
         fn validate_resource_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("resource", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "resource",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_task_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "task",
+                "Not implemented in mock",
+            )))
         }
     }
 
@@ -202,12 +220,7 @@ mod tests {
             Ok(self.tasks.borrow().get(code).cloned())
         }
 
-        fn save_in_hierarchy(
-            &self,
-            task: AnyTask,
-            _company_code: &str,
-            _project_code: &str,
-        ) -> DomainResult<AnyTask> {
+        fn save_in_hierarchy(&self, task: AnyTask, _company_code: &str, _project_code: &str) -> DomainResult<AnyTask> {
             self.save(task)
         }
 

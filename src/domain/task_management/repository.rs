@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::domain::task_management::AnyTask;
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::task_management::AnyTask;
 
 pub trait TaskRepository {
     fn save(&self, task: AnyTask) -> DomainResult<AnyTask>;

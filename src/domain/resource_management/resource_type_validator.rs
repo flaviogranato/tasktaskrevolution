@@ -8,7 +8,11 @@ impl ResourceTypeValidator {
         Self
     }
 
-    pub fn validate_resource_type(&self, resource_type: &str, config_repository: &dyn ConfigRepository) -> Result<(), String> {
+    pub fn validate_resource_type(
+        &self,
+        resource_type: &str,
+        config_repository: &dyn ConfigRepository,
+    ) -> Result<(), String> {
         match config_repository.load() {
             Ok((config, _)) => {
                 if config.resource_types.is_empty() {
@@ -45,8 +49,8 @@ impl ResourceTypeValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::domain::company_settings::config::Config;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use std::path::PathBuf;
 
     // Mock config repository for testing
@@ -97,11 +101,7 @@ mod tests {
             }
         }
 
-        fn save(
-            &self,
-            _config: crate::domain::company_settings::config::Config,
-            _path: &Path,
-        ) -> DomainResult<()> {
+        fn save(&self, _config: crate::domain::company_settings::config::Config, _path: &Path) -> DomainResult<()> {
             Ok(())
         }
 

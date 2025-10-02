@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{
     any_resource::AnyResource,
     repository::ResourceRepository,
     resource::{WipLimits, WipStatus},
 };
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::interface::cli::table_formatter::TableFormatter;
 use clap::{Args, Subcommand};
 use std::fmt;

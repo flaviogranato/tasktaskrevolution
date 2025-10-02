@@ -257,11 +257,13 @@ mod tests {
 
         fn find_all_with_context(
             &self,
-        ) -> DomainResult<Vec<(
+        ) -> DomainResult<
+            Vec<(
                 crate::domain::resource_management::any_resource::AnyResource,
                 String,
                 Vec<String>,
-            )>> {
+            )>,
+        > {
             Ok(vec![])
         }
 
@@ -322,10 +324,7 @@ mod tests {
             Ok(None)
         }
 
-        fn find_by_id(
-            &self,
-            _id: &str,
-        ) -> DomainResult<Option<crate::domain::company_management::company::Company>> {
+        fn find_by_id(&self, _id: &str) -> DomainResult<Option<crate::domain::company_management::company::Company>> {
             Ok(None)
         }
 

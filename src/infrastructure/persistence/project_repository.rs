@@ -1,5 +1,5 @@
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::task_management::any_task::AnyTask;
 use crate::infrastructure::persistence::manifests::{project_manifest::ProjectManifest, task_manifest::TaskManifest};
 use globwalk::glob;
@@ -212,7 +212,7 @@ impl ProjectRepository for FileProjectRepository {
 
     fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
         let mut projects = Vec::new();
-        
+
         // 1. Look for ID-based projects in projects/ directory
         let projects_dir = self.get_projects_path();
         if projects_dir.exists()

@@ -2,13 +2,13 @@
 
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::resource_management::{
     ResourceTypeValidator,
     any_resource::AnyResource,
     repository::{ResourceRepository, ResourceRepositoryWithId},
     resource::{ResourceScope, WipLimits},
 };
-use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 use std::fmt;
@@ -66,7 +66,11 @@ where
     RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
 {
-    pub fn new<C: ConfigRepository + 'static>(resource_repository: RR, code_resolver: CR, _config_repository: C) -> Self {
+    pub fn new<C: ConfigRepository + 'static>(
+        resource_repository: RR,
+        code_resolver: CR,
+        _config_repository: C,
+    ) -> Self {
         Self {
             resource_repository,
             code_resolver,
@@ -152,31 +156,47 @@ mod tests {
 
     impl CodeResolverTrait for MockCodeResolver {
         fn resolve_company_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "company",
+                "Not implemented in mock",
+            )))
         }
 
         fn resolve_project_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("project", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "project",
+                "Not implemented in mock",
+            )))
         }
 
         fn resolve_resource_code(&self, code: &str) -> DomainResult<String> {
-            self.resource_codes
-                .borrow()
-                .get(code)
-                .cloned()
-                .ok_or_else(|| DomainError::from(AppError::validation_error("resource", format!("Resource '{}' not found", code))))
+            self.resource_codes.borrow().get(code).cloned().ok_or_else(|| {
+                DomainError::from(AppError::validation_error(
+                    "resource",
+                    format!("Resource '{}' not found", code),
+                ))
+            })
         }
 
         fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "task",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_company_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("company", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "company",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_project_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("project", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "project",
+                "Not implemented in mock",
+            )))
         }
 
         fn validate_resource_code(&self, code: &str) -> DomainResult<()> {
@@ -185,7 +205,10 @@ mod tests {
         }
 
         fn validate_task_code(&self, _code: &str) -> DomainResult<()> {
-            Err(DomainError::from(AppError::validation_error("task", "Not implemented in mock")))
+            Err(DomainError::from(AppError::validation_error(
+                "task",
+                "Not implemented in mock",
+            )))
         }
     }
 
@@ -266,7 +289,11 @@ mod tests {
     }
 
     impl ConfigRepository for MockConfigRepository {
-        fn save(&self, _config: crate::domain::company_settings::config::Config, _path: &std::path::Path) -> DomainResult<()> {
+        fn save(
+            &self,
+            _config: crate::domain::company_settings::config::Config,
+            _path: &std::path::Path,
+        ) -> DomainResult<()> {
             Ok(())
         }
 

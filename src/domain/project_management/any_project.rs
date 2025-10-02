@@ -161,9 +161,7 @@ impl AnyProject {
                     format!("Adding task to project: {} - {}", task.code(), task.name())
                 });
                 p.tasks.insert(task.code().to_string(), task);
-                crate::domain::shared::logger::debug_fmt(|| {
-                    format!("Project now has {} tasks", p.tasks.len())
-                });
+                crate::domain::shared::logger::debug_fmt(|| format!("Project now has {} tasks", p.tasks.len()));
             }
         }
     }

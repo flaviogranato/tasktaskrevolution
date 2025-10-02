@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::{AnyResource, Period, PeriodType, repository::ResourceRepository};
+use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::infrastructure::persistence::{
     manifests::resource_manifest::ResourceManifest, project_repository::FileProjectRepository,
 };
@@ -128,12 +128,12 @@ impl FileResourceRepository {
                         details: format!("Error deserializing resource: {}", e),
                     })?;
 
-                resources.push(
-                    AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                resources.push(AnyResource::try_from(resource_manifest).map_err(|e| {
+                    DomainError::SerializationError {
                         operation: "YAML serialization".to_string(),
                         details: format!("Error converting manifest: {}", e),
-                    })?,
-                );
+                    }
+                })?);
             }
         }
 
@@ -164,12 +164,12 @@ impl FileResourceRepository {
                         details: format!("Error deserializing resource: {}", e),
                     })?;
 
-                resources.push(
-                    AnyResource::try_from(resource_manifest).map_err(|e| DomainError::SerializationError {
+                resources.push(AnyResource::try_from(resource_manifest).map_err(|e| {
+                    DomainError::SerializationError {
                         operation: "YAML serialization".to_string(),
                         details: format!("Error converting manifest: {}", e),
-                    })?,
-                );
+                    }
+                })?);
             }
         }
 

@@ -36,7 +36,13 @@ where
     CoR: CompanyRepository,
     TR: TaskRepository,
 {
-    pub fn new(code_resolver: CR, project_repository: PR, resource_repository: RR, company_repository: CoR, task_repository: TR) -> Self {
+    pub fn new(
+        code_resolver: CR,
+        project_repository: PR,
+        resource_repository: RR,
+        company_repository: CoR,
+        task_repository: TR,
+    ) -> Self {
         Self {
             _code_resolver: code_resolver,
             project_repository,
@@ -229,14 +235,11 @@ where
             "project_code".to_string(),
             serde_json::Value::String(task.project_code().to_string()),
         );
-        
+
         // Resolve company_code from project_code
         let company_code = self.resolve_company_code_for_project(task.project_code())?;
-        data.insert(
-            "company_code".to_string(),
-            serde_json::Value::String(company_code),
-        );
-        
+        data.insert("company_code".to_string(), serde_json::Value::String(company_code));
+
         data.insert(
             "status".to_string(),
             serde_json::Value::String(task.status().to_string()),
@@ -265,7 +268,10 @@ where
                 return Ok(project.company_code().to_string());
             }
         }
-        Err(AppError::validation_error("project", format!("Project {} not found", project_code)))
+        Err(AppError::validation_error(
+            "project",
+            format!("Project {} not found", project_code),
+        ))
     }
 
     /// Converte um recurso para JSON

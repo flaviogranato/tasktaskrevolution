@@ -3,13 +3,13 @@ use crate::application::create::resource::{CreateResourceParams, CreateResourceU
 use crate::application::create::task::CreateTaskUseCase;
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
+use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::project_management::{
     ProjectTemplate,
     repository::{ProjectRepository, ProjectRepositoryWithId},
 };
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::task_management::repository::TaskRepository;
-use crate::domain::company_settings::repository::ConfigRepository;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 

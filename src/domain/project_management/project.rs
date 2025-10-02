@@ -215,7 +215,10 @@ impl Project {
 
     pub fn change_status(&mut self, new_status: ProjectStatus) -> DomainResult<()> {
         if !self.status.can_transition_to(&new_status) {
-            return Err(DomainError::validation_error("status", &format!("Cannot transition from {:?} to {:?}", self.status, new_status)));
+            return Err(DomainError::validation_error(
+                "status",
+                &format!("Cannot transition from {:?} to {:?}", self.status, new_status),
+            ));
         }
 
         // Validações específicas por status
@@ -239,7 +242,10 @@ impl Project {
 
     fn validate_can_start(&self) -> DomainResult<()> {
         if self.tasks.is_empty() {
-            return Err(DomainError::validation_error("tasks", "Project must have at least one task to start"));
+            return Err(DomainError::validation_error(
+                "tasks",
+                "Project must have at least one task to start",
+            ));
         }
         Ok(())
     }
@@ -248,7 +254,10 @@ impl Project {
         let all_tasks_completed = self.tasks.values().all(|task| task.status() == "Completed");
 
         if !all_tasks_completed {
-            return Err(DomainError::validation_error("tasks", "All tasks must be completed before marking project as complete"));
+            return Err(DomainError::validation_error(
+                "tasks",
+                "All tasks must be completed before marking project as complete",
+            ));
         }
         Ok(())
     }
@@ -258,7 +267,10 @@ impl Project {
         let task_id = task.code().to_string();
 
         if self.tasks.contains_key(&task_id) {
-            return Err(DomainError::validation_error("task_id", "Task with this ID already exists"));
+            return Err(DomainError::validation_error(
+                "task_id",
+                "Task with this ID already exists",
+            ));
         }
 
         self.tasks.insert(task_id, task);
@@ -283,7 +295,10 @@ impl Project {
         let key = format!("{}_{}", assignment.resource_id, assignment.task_id);
 
         if self.resources.contains_key(&key) {
-            return Err(DomainError::validation_error("resource_assignment", "Resource is already assigned to this task"));
+            return Err(DomainError::validation_error(
+                "resource_assignment",
+                "Resource is already assigned to this task",
+            ));
         }
 
         self.resources.insert(key, assignment);
