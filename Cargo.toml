@@ -105,6 +105,22 @@ path = "tests/integration/verbose_test.rs"
 name = "cli_help_test"
 path = "tests/snapshots/cli_help_test.rs"
 
+[[test]]
+name = "company_repository_test"
+path = "tests/adapters/company_repository_test.rs"
+
+[[test]]
+name = "project_repository_test"
+path = "tests/adapters/project_repository_test.rs"
+
+[[test]]
+name = "resource_repository_test"
+path = "tests/adapters/resource_repository_test.rs"
+
+[[test]]
+name = "task_repository_test"
+path = "tests/adapters/task_repository_test.rs"
+
 [profile.release]
 opt-level = 3
 lto = true

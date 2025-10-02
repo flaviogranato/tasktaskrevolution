@@ -4,7 +4,7 @@ use crate::domain::company_management::Company;
 use crate::domain::shared::errors::{DomainError, DomainResult};
 
 /// Repository trait for Company entity operations.
-pub trait CompanyRepository: Send + Sync {
+pub trait CompanyRepository {
     /// Saves a company to the repository.
     fn save(&self, company: Company) -> DomainResult<()>;
 
