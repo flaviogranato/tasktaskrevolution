@@ -122,3 +122,70 @@ impl std::fmt::Display for ValidationResult {
         write!(f, "{}", output)
     }
 }
+
+/// Structured finding for validation results with standardized format
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Finding {
+    pub level: String,
+    pub code: String,
+    pub message: String,
+    pub path: String,
+    pub entity_ref: String,
+}
+
+impl From<&ValidationResult> for Finding {
+    fn from(result: &ValidationResult) -> Self {
+        let level = match result.level {
+            ValidationSeverity::Info => "info",
+            ValidationSeverity::Warning => "warning",
+            ValidationSeverity::Error => "error",
+        }.to_string();
+
+        let path = result.path.clone().unwrap_or_else(|| "N/A".to_string());
+        
+        let entity_ref = if let (Some(entity_type), Some(entity_code)) = (&result.entity_type, &result.entity_code) {
+            format!("{}:{}", entity_type, entity_code)
+        } else {
+            "N/A".to_string()
+        };
+
+        Self {
+            level,
+            code: result.code.clone(),
+            message: result.message.clone(),
+            path,
+            entity_ref,
+        }
+    }
+}
+
+/// Supported output formats for validation results
+#[derive(Debug, Clone, PartialEq)]
+pub enum OutputFormat {
+    Json,
+    Table,
+    Csv,
+}
+
+impl std::str::FromStr for OutputFormat {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "json" => Ok(OutputFormat::Json),
+            "table" => Ok(OutputFormat::Table),
+            "csv" => Ok(OutputFormat::Csv),
+            _ => Err(format!("Unsupported format: {}. Supported formats: json, table, csv", s)),
+        }
+    }
+}
+
+impl std::fmt::Display for OutputFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OutputFormat::Json => write!(f, "json"),
+            OutputFormat::Table => write!(f, "table"),
+            OutputFormat::Csv => write!(f, "csv"),
+        }
+    }
+}

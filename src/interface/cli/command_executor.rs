@@ -170,7 +170,8 @@ pub fn execute_validate(command: commands::ValidateCommand) -> Result<(), Box<dy
 }
 
 fn print_validation_results(results: &[crate::application::validate::types::ValidationResult], args: &crate::interface::cli::commands::validate::ValidateArgs) {
-    use serde_json;
+    use crate::application::validate::serializer::ValidationSerializer;
+    use crate::application::validate::types::OutputFormat;
     use std::fs;
 
     // Filter results based on include_warnings flag
@@ -193,134 +194,35 @@ fn print_validation_results(results: &[crate::application::validate::types::Vali
         }
     }
 
-    // Output results based on format
-    match args.format.as_str() {
-        "json" => {
-            let json_output = serde_json::to_string_pretty(&filtered_results).unwrap_or_else(|_| "[]".to_string());
-            if let Some(output_path) = &args.output {
-                if let Err(e) = fs::write(output_path, &json_output) {
-                    eprintln!("Failed to write to file: {}", e);
-                } else {
-                    println!("Validation results written to file");
-                }
-            } else {
-                println!("{}", json_output);
-            }
-        }
-        "html" => {
-            let html_output = generate_html_report(&filtered_results);
-            if let Some(output_path) = &args.output {
-                if let Err(e) = fs::write(output_path, &html_output) {
-                    eprintln!("Failed to write to file: {}", e);
-                } else {
-                    println!("Validation report written to file");
-                }
-            } else {
-                println!("{}", html_output);
-            }
-        }
-        "table" => {
-            print_table_output(&filtered_results);
-        }
-        _ => {
-            eprintln!("Unknown format: {}", args.format);
+    // Parse output format
+    let format = match args.format.parse::<OutputFormat>() {
+        Ok(f) => f,
+        Err(e) => {
+            eprintln!("{}", e);
             std::process::exit(1);
         }
-    }
-}
+    };
 
-fn generate_html_report(results: &[crate::application::validate::types::ValidationResult]) -> String {
-    let mut html = String::from(r#"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Validation Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .error { color: #d32f2f; }
-        .warning { color: #f57c00; }
-        .info { color: #1976d2; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
-</head>
-<body>
-    <h1>Validation Report</h1>
-    <table>
-        <tr>
-            <th>Level</th>
-            <th>Code</th>
-            <th>Message</th>
-            <th>Path</th>
-            <th>Entity</th>
-        </tr>
-"#);
+    // Serialize results using the new serializer
+    let output = match ValidationSerializer::serialize(&filtered_results, format) {
+        Ok(output) => output,
+        Err(e) => {
+            eprintln!("Failed to serialize results: {}", e);
+            std::process::exit(1);
+        }
+    };
 
-    for result in results {
-        let level_class = match result.level {
-            crate::application::validate::types::ValidationSeverity::Error => "error",
-            crate::application::validate::types::ValidationSeverity::Warning => "warning",
-            crate::application::validate::types::ValidationSeverity::Info => "info",
-        };
-
-        let entity_info = if let (Some(entity_type), Some(entity_code)) = (&result.entity_type, &result.entity_code) {
-            format!("{}: {}", entity_type, entity_code)
+    // Output results
+    if let Some(output_path) = &args.output {
+        if let Err(e) = fs::write(output_path, &output) {
+            eprintln!("Failed to write to file: {}", e);
         } else {
-            String::from("-")
-        };
-
-        html.push_str(&format!(
-            r#"        <tr>
-            <td class="{}">{}</td>
-            <td>{}</td>
-            <td>{}</td>
-            <td>{}</td>
-            <td>{}</td>
-        </tr>
-"#,
-            level_class,
-            result.level,
-            result.code,
-            result.message,
-            result.path.as_deref().unwrap_or("-"),
-            entity_info
-        ));
-    }
-
-    html.push_str(r#"
-    </table>
-</body>
-</html>
-"#);
-
-    html
-}
-
-fn print_table_output(results: &[crate::application::validate::types::ValidationResult]) {
-    if results.is_empty() {
-        println!("No validation issues found");
-        return;
-    }
-
-    println!("\nValidation Results:");
-    println!("{:<10} {:<15} {:<50} {:<30} {:<20}", "Level", "Code", "Message", "Path", "Entity");
-    println!("{}", "-".repeat(125));
-
-    for result in results {
-        let entity_info = if let (Some(entity_type), Some(entity_code)) = (&result.entity_type, &result.entity_code) {
-            format!("{}: {}", entity_type, entity_code)
-        } else {
-            String::from("-")
-        };
-
-        println!(
-            "{:<10} {:<15} {:<50} {:<30} {:<20}",
-            result.level,
-            result.code,
-            result.message,
-            result.path.as_deref().unwrap_or("-"),
-            entity_info
-        );
+            if !crate::interface::cli::Cli::is_quiet() {
+                println!("Validation results written to file");
+            }
+        }
+    } else {
+        println!("{}", output);
     }
 }
+

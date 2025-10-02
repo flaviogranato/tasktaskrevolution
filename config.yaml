@@ -1,7 +1,7 @@
 apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Config
 metadata:
-  createdAt: 2025-10-02T12:26:33.165038325Z
+  createdAt: 2025-10-02T18:35:53.187211264Z
 spec:
   managerName: Test User
   managerEmail: test@example.com
