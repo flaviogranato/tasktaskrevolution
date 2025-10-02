@@ -43,14 +43,14 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
                 Some(end),
             ) {
                 Ok(_) => {
-                    println!("✅ Project created successfully!");
+                    println!("Project created successfully!");
                     println!("   Name: {}", name);
                     println!("   Code: {}", code);
                     println!("   Company: {}", company);
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to create project: {}", e);
+                    eprintln!("Failed to create project: {}", e);
                     Err(e.into())
                 }
             }
@@ -76,7 +76,7 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to describe project: {}", e);
+                    eprintln!("Failed to describe project: {}", e);
                     Err(e.into())
                 }
             }
@@ -106,11 +106,11 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
 
             match update_use_case.execute(&code, args) {
                 Ok(_) => {
-                    println!("✅ Project updated successfully!");
+                    println!("Project updated successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to update project: {}", e);
+                    eprintln!("Failed to update project: {}", e);
                     Err(e.into())
                 }
             }
@@ -122,11 +122,11 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
 
             match cancel_use_case.execute(&code) {
                 Ok(_) => {
-                    println!("✅ Project cancelled successfully!");
+                    println!("Project cancelled successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to cancel project: {}", e);
+                    eprintln!("Failed to cancel project: {}", e);
                     Err(e.into())
                 }
             }
@@ -146,11 +146,11 @@ pub fn handle_project_command(command: ProjectCommand) -> Result<(), Box<dyn std
 
             match assign_use_case.execute(&project, &task, &resource) {
                 Ok(_) => {
-                    println!("✅ Resource assigned to task successfully!");
+                    println!("Resource assigned to task successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to assign resource to task: {}", e);
+                    eprintln!("Failed to assign resource to task: {}", e);
                     Err(e.into())
                 }
             }

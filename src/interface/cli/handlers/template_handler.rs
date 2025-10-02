@@ -34,7 +34,7 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to list templates: {}", e);
+                    eprintln!("Failed to list templates: {}", e);
                     Err(e.into())
                 }
             }
@@ -57,7 +57,7 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to show template: {}", e);
+                    eprintln!("Failed to show template: {}", e);
                     Err(e.into())
                 }
             }
@@ -110,12 +110,12 @@ pub fn handle_template_command(command: TemplateCommand) -> Result<(), Box<dyn s
 
             match create_use_case.execute(&template_data, &template_params, company) {
                 Ok(_project) => {
-                    println!("✅ Project created from template successfully!");
+                    println!("Project created from template successfully!");
                     println!("   Project created from template successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to create project from template: {}", e);
+                    eprintln!("Failed to create project from template: {}", e);
                     Err(e.into())
                 }
             }

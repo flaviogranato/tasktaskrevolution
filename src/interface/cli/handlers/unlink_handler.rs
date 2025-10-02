@@ -18,11 +18,11 @@ pub fn handle_unlink_command(command: UnlinkCommand) -> Result<(), Box<dyn std::
 
             match unlink_use_case.execute(&project, &from, &to) {
                 Ok(_) => {
-                    println!("✅ Task link removed successfully!");
+                    println!("Task link removed successfully!");
                     Ok(())
                 }
                 Err(e) => {
-                    eprintln!("❌ Failed to remove task link: {}", e);
+                    eprintln!("Failed to remove task link: {}", e);
                     Err(e.into())
                 }
             }

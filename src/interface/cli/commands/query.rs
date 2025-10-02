@@ -27,17 +27,17 @@ pub fn execute_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> 
         }
     };
 
-    println!("✅ Query Parser Demo");
+    println!("Query Parser Demo");
     println!("===================");
     println!("Query string: {}", args.query);
     println!("Parsed query: {}", query);
     println!("Entity type: {}", args.entity_type);
     println!("Output format: {}", args.format);
 
-    println!("\n📋 Query Structure:");
+    println!("\nQuery Structure:");
     println!("- Expression: {:?}", query.expression);
 
-    println!("\n🎯 Supported Query Syntax:");
+    println!("\nSupported Query Syntax:");
     println!("- Simple filters: status:active");
     println!("- Comparisons: priority > high");
     println!("- String contains: name ~ 'developer'");
@@ -45,7 +45,7 @@ pub fn execute_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> 
     println!("- Negation: NOT status:cancelled");
     println!("- Parentheses: (status:active OR status:pending) AND priority:high");
 
-    println!("\n📊 Example Queries:");
+    println!("\nExample Queries:");
     println!("- ttr query --query \"status:active\" --entity-type project");
     println!("- ttr query --query \"priority > medium\" --entity-type task");
     println!("- ttr query --query \"name ~ 'developer'\" --entity-type resource");

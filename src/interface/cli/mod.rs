@@ -131,12 +131,6 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::MigrateCommand,
     },
-    /// Data validation testing
-    #[clap(subcommand)]
-    TestData(commands::TestDataCommand),
-    /// E2E testing framework
-    #[clap(subcommand)]
-    TestE2E(commands::TestE2ECommand),
     /// Serve HTML files locally
     Serve {
         /// Port to serve on
@@ -247,8 +241,6 @@ impl Cli {
                 })
             }
             Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),
-            Commands::TestData(command) => Self::execute_test_data(command),
-            Commands::TestE2E(command) => Self::execute_test_e2e(command),
             Commands::Serve {
                 port,
                 host,
@@ -269,27 +261,4 @@ impl Cli {
         }
     }
 
-    /// Execute test data command
-    fn execute_test_data(command: commands::TestDataCommand) -> Result<(), Box<dyn std::error::Error>> {
-        let context_manager = context_manager::ContextManager::new()?;
-        let base_path = context_manager.get_base_path().to_string();
-
-        tokio::runtime::Runtime::new()
-            .unwrap()
-            .block_on(async { command.execute(&base_path).await })?;
-
-        Ok(())
-    }
-
-    /// Execute E2E test command
-    fn execute_test_e2e(command: commands::TestE2ECommand) -> Result<(), Box<dyn std::error::Error>> {
-        let context_manager = context_manager::ContextManager::new()?;
-        let base_path = context_manager.get_base_path().to_string();
-
-        tokio::runtime::Runtime::new()
-            .unwrap()
-            .block_on(async { command.execute(&base_path).await })?;
-
-        Ok(())
-    }
 }
