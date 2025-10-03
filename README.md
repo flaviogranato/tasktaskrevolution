@@ -1,156 +1,85 @@
-# TaskTaskRevolution 🚀
+# TaskTaskRevolution Workspace
 
-**A powerful, flexible, and transparent project management tool that puts you in control.**
+Welcome to your TaskTaskRevolution workspace! This directory contains your project management data.
 
-TaskTaskRevolution is a CLI-first project management system that combines the power of TaskJuggler with the flexibility of Hugo's template system. Built with Rust for performance and reliability, it stores everything in human-readable files while providing beautiful HTML outputs.
+## Quick Start
 
-## ✨ Key Features
-
-- **CLI-First Design**: Complete command-line interface for maximum efficiency
-- **Human-Readable Storage**: All data stored in YAML/Markdown files
-- **Beautiful HTML Output**: Hugo-inspired template system for stunning visualizations
-- **Gantt Charts**: Comprehensive project timeline visualization
-- **Multi-Project Support**: Manage multiple companies, projects, and teams
-- **Resource Management**: Track team members, skills, and availability
-- **Task Management**: Full lifecycle task tracking with dependencies
-- **Transparent & Open**: No vendor lock-in, your data stays yours
-
-## 🎯 Vision
-
-TaskTaskRevolution aims to be the most flexible and transparent project management tool available, combining:
-
-- **TaskJuggler's** robust project management capabilities
-- **Hugo's** beautiful and flexible template system
-- **Modern CLI** efficiency and power
-- **Open Source** transparency and community
-
-## 🚀 Quick Start
-
-### Installation
-
+### View your data
 ```bash
-# Clone the repository
-git clone https://github.com/flaviogranato/tasktaskrevolution.git
-cd tasktaskrevolution
+# List all companies
+ttr ls companies
 
-# Build the project
-cargo build --release
+# List projects for a company
+ttr ls projects --company TECH-001
 
-# Run the binary
-./target/release/ttr --help
+# List tasks for a project
+ttr ls tasks --project WEB-APP --company TECH-001
+
+# List resources
+ttr ls resources --company TECH-001
 ```
 
-### Basic Usage
-
+### Create new entities
 ```bash
 # Create a new company
-ttr create company "My Company"
+ttr new company --name "New Company" --code "NEW-001"
 
-# Create a project
-ttr create project "My Project" --company "My Company"
+# Create a new project
+ttr new project --name "New Project" --company NEW-001 --start-date 2024-01-01 --end-date 2024-12-31
 
-# Add tasks
-ttr create task "Design UI" --project "My Project" --duration "2d"
+# Create a new task
+ttr new task --name "New Task" --project NEW-PROJ --company NEW-001 --start-date 2024-01-01 --due-date 2024-01-15
 
-# Generate HTML output
-ttr build
+# Create a new resource
+ttr new resource --name "Jane Doe" --type "Designer" --email "jane@example.com" --company NEW-001
 ```
 
-## 📁 Project Structure
-
-```
-tasktaskrevolution/
-├── src/                    # Rust source code
-├── templates/              # HTML templates
-├── dist/                   # Generated HTML output
-├── data/                   # Project data (YAML files)
-└── themes/                 # Custom themes
-```
-
-## 🛠️ Development
-
-### Prerequisites
-
-- Rust 1.70+
-- Git
-
-### Building
-
+### Generate reports
 ```bash
-# Development build
-cargo build
+# Generate HTML reports
+ttr build --output dist
 
-# Release build
-cargo build --release
-
-# Run tests
-cargo test
-
-# Run with debug output
-RUST_LOG=debug cargo run
+# Generate task reports
+ttr report generate --type task --format csv --output tasks.csv
 ```
 
-## 📋 Roadmap
+### Validate your data
+```bash
+# Validate entire system
+ttr check system
 
-### Phase 1: Core Foundation
-- [x] Basic CLI interface
-- [x] Company and project management
-- [x] Task management with dependencies
-- [x] Resource management
-- [x] HTML generation
-- [x] Gantt chart visualization
+# Validate with warnings
+ttr check system --include-warnings
+```
 
-### Phase 2: Advanced Features
-- [ ] ID-based refactoring for scalability
-- [ ] Advanced query engine
-- [ ] Hybrid YAML+Markdown document system
-- [ ] Custom themes and templates
-- [ ] Advanced reporting and analytics
+## Directory Structure
 
-### Phase 3: Enterprise Features
-- [ ] Integration with Jira, MS Project, Kanbanize
-- [ ] Advanced automation
-- [ ] Team collaboration features
-- [ ] Compliance and audit tools
+```
+.
+├── config.yaml              # Workspace configuration
+├── companies/               # Company data
+│   └── TECH-001/                 # Company directory
+│       ├── company.yaml    # Company manifest
+│       ├── projects/       # Project data
+│       │   └── web-app/   # Project directory
+│       │       ├── project.yaml
+│       │       └── tasks/ # Task data
+│       │           └── task.yaml
+│       └── resources/      # Resource data
+└── README.md               # This file
+```
 
-## 🤝 Contributing
+## Next Steps
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+1. **Explore the examples**: Check out the generated company, project, task, and resource
+2. **Create your own data**: Use the commands above to create your entities
+3. **Generate reports**: Run `ttr build` to create HTML reports
+4. **Validate data**: Use `ttr check system` to ensure data integrity
 
-### Development Workflow
+## Getting Help
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+- Run `ttr --help` for general help
+- Run `ttr <command> --help` for command-specific help
+- Check the documentation at: https://github.com/your-org/tasktaskrevolution
 
-## 📄 License
-
-License information will be added soon. Please check back for updates.
-
-## 💡 Commercial License
-
-For commercial use and integrations, please contact us for licensing options.
-
-## 🙏 Acknowledgments
-
-- [TaskJuggler](http://www.taskjuggler.org/) for project management inspiration
-- [Hugo](https://gohugo.io/) for template system inspiration
-- [Rust](https://www.rust-lang.org/) for the amazing language and ecosystem
-
-## 📞 Support
-
-- **Issues**: [GitHub Issues](https://github.com/flaviogranato/tasktaskrevolution/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/flaviogranato/tasktaskrevolution/discussions)
-- **Email**: [Your Email]
-
-## 🌟 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=flaviogranato/tasktaskrevolution&type=Date)](https://star-history.com/#flaviogranato/tasktaskrevolution&Date)
-
----
-
-**Made with ❤️ by [Your Name]**
-
-*TaskTaskRevolution - Revolutionizing project management, one task at a time.*
+Happy project managing! 🚀

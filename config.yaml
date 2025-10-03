@@ -1,28 +1,11 @@
 apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Config
 metadata:
-  createdAt: 2025-10-02T18:35:53.187211264Z
+  name: "Project Manager"
+  email: "manager@example.com"
 spec:
-  managerName: Test User
-  managerEmail: test@example.com
-  defaultTimezone: UTC
-  companyName: Default Company
-  workHoursStart: 09:00
-  workHoursEnd: 18:00
-  workDaysPerWeek:
-  - Monday
-  - Tuesday
-  - Wednesday
-  - Thursday
-  - Friday
-  resourceTypes:
-  - Developer
-  - Designer
-  - Manager
-  - Database Administrator
-  - DevOps Engineer
-  - QA Engineer
-  - Product Owner
-  - Scrum Master
-  - Business Analyst
-  - Technical Writer
+  timezone: "UTC"
+  workHours:
+    start: "09:00"
+    end: "18:00"
+  workDays: ["monday", "tuesday", "wednesday", "thursday", "friday"]

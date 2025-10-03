@@ -55,6 +55,11 @@ pub enum Commands {
         #[clap(long, default_value = "monday,tuesday,wednesday,thursday,friday")]
         work_days: String,
     },
+    /// Initialize workspace with examples (onboarding)
+    Workspace {
+        #[clap(subcommand)]
+        command: commands::WorkspaceCommand,
+    },
     /// Create new entities
     #[clap(alias = "new")]
     Create {
@@ -223,6 +228,7 @@ impl Cli {
                 work_hours_end,
                 work_days,
             ),
+            Commands::Workspace { command } => handlers::workspace_handler::handle_workspace_command(command),
             Commands::Create { command } => simplified_executor::SimplifiedExecutor::execute_create(command),
             Commands::List { command } => simplified_executor::SimplifiedExecutor::execute_list(command),
             Commands::Update { command } => simplified_executor::SimplifiedExecutor::execute_update(command),
