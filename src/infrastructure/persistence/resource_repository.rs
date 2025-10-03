@@ -14,6 +14,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[derive(Clone)]
 pub struct FileResourceRepository {
     base_path: PathBuf,
 }

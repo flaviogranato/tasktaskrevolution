@@ -85,7 +85,7 @@ impl DetectResourceConflictsUseCase {
         // Load resource
         let resource = self
             .resource_repository
-            .find_by_id(&resource_id)?
+            .find_by_code(resource_code)?
             .ok_or_else(|| AppError::validation_error("resource", "Resource not found"))?;
 
         // Check vacation conflicts
@@ -231,7 +231,7 @@ impl DetectResourceConflictsUseCase {
                 let task_end = task.due_date();
 
                 // Check for date overlap
-                if start_date <= task_end && end_date >= task_start {
+                if start_date <= *task_end && end_date >= *task_start {
                     conflicting_tasks.push(task.code().to_string());
                 }
             }
@@ -242,13 +242,10 @@ impl DetectResourceConflictsUseCase {
         }
 
         // Resolve resource ID back to code for the conflict message
-        let resource_code = self
-            .code_resolver
-            .resolve_resource_id(resource_id)
-            .unwrap_or_else(|_| resource_id.to_string());
+        let resource_code = resource_id.to_string();
 
         Ok(Some(vec![ResourceConflict {
-            resource_code,
+            resource_code: resource_code.clone(),
             conflict_type: ConflictType::DoubleBooking,
             severity: ConflictSeverity::Critical,
             message: format!(
@@ -276,7 +273,8 @@ impl DetectResourceConflictsUseCase {
         // This is a simplified check - in a real implementation,
         // you would check current allocations and calculate total percentage
         // For now, we'll just check if the resource can handle 100% allocation
-        if !resource.can_allocate_percentage(100) {
+        let max_allocation = resource.max_allocation_percentage();
+        if max_allocation < 100 {
             return Some(ResourceConflict {
                 resource_code: resource.code().to_string(),
                 conflict_type: ConflictType::CapacityExceeded,
@@ -284,7 +282,7 @@ impl DetectResourceConflictsUseCase {
                 message: format!(
                     "Resource {} cannot be allocated at 100% capacity (max: {}%)",
                     resource.code(),
-                    resource.availability().max_allocation_percentage
+                    max_allocation
                 ),
                 conflicting_tasks: vec![],
                 suggested_resolutions: vec![
@@ -307,7 +305,7 @@ mod tests {
     use crate::domain::resource_management::resource::ResourceScope;
     use crate::domain::task_management::any_task::AnyTask;
     use crate::domain::task_management::task::Task;
-    use crate::domain::task_management::task_state::Planned;
+    use crate::domain::task_management::state::Planned;
     use crate::domain::task_management::{Category, Priority};
     use chrono::NaiveDate;
     use std::cell::RefCell;
@@ -327,26 +325,33 @@ mod tests {
     }
 
     impl ProjectRepository for MockProjectRepository {
-        fn find_all(&self) -> Result<Vec<AnyProject>, AppError> {
+        fn load(&self) -> DomainResult<AnyProject> {
+            Err(DomainError::validation_error("project", "Not implemented in mock"))
+        }
+
+        fn find_all(&self) -> DomainResult<Vec<AnyProject>> {
             Ok(self.projects.borrow().values().cloned().collect())
         }
 
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyProject>, AppError> {
-            Ok(self.projects.borrow().get(id).cloned())
-        }
-
-        fn save(&self, project: AnyProject) -> Result<(), AppError> {
+        fn save(&self, project: AnyProject) -> DomainResult<()> {
             self.projects.borrow_mut().insert(project.id().to_string(), project);
             Ok(())
         }
 
-        fn delete(&self, id: &str) -> Result<(), AppError> {
-            self.projects.borrow_mut().remove(id);
-            Ok(())
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyProject>> {
+            Ok(self.projects.borrow().values().find(|p| p.code() == code).cloned())
+        }
+
+        fn get_next_code(&self) -> DomainResult<String> {
+            Ok("PROJ-001".to_string())
         }
     }
 
-    impl ProjectRepositoryWithId for MockProjectRepository {}
+    impl ProjectRepositoryWithId for MockProjectRepository {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyProject>> {
+            Ok(self.projects.borrow().get(id).cloned())
+        }
+    }
 
     struct MockResourceRepository {
         resources: RefCell<HashMap<String, AnyResource>>,
@@ -365,26 +370,72 @@ mod tests {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn find_all(&self) -> Result<Vec<AnyResource>, AppError> {
+        fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
+            let resource_id = resource.id().to_string();
+            self.resources.borrow_mut().insert(resource_id.clone(), resource.clone());
+            Ok(resource)
+        }
+
+        fn save_in_hierarchy(
+            &self,
+            resource: AnyResource,
+            _company_code: &str,
+            _project_code: Option<&str>,
+        ) -> DomainResult<AnyResource> {
+            self.save(resource)
+        }
+
+        fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyResource>, AppError> {
-            Ok(self.resources.borrow().get(id).cloned())
+        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<AnyResource>> {
+            Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn save(&self, resource: AnyResource) -> Result<(), AppError> {
-            self.resources.borrow_mut().insert(resource.id().to_string(), resource);
-            Ok(())
+        fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
+            Ok(self.resources.borrow().values().cloned().map(|r| (r, "company".to_string(), vec![])).collect())
         }
 
-        fn delete(&self, id: &str) -> Result<(), AppError> {
-            self.resources.borrow_mut().remove(id);
-            Ok(())
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
+            Ok(self.resources.borrow().values().find(|r| r.code() == code).cloned())
+        }
+
+        fn save_time_off(
+            &self,
+            _resource_name: &str,
+            _hours: u32,
+            _date: &str,
+            _description: Option<String>,
+        ) -> DomainResult<AnyResource> {
+            Err(DomainError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn save_vacation(
+            &self,
+            _resource_name: &str,
+            _start_date: &str,
+            _end_date: &str,
+            _is_time_off_compensation: bool,
+            _compensated_hours: Option<u32>,
+        ) -> DomainResult<AnyResource> {
+            Err(DomainError::validation_error("resource", "Not implemented in mock"))
+        }
+
+        fn check_if_layoff_period(&self, _start_date: &chrono::DateTime<chrono::Local>, _end_date: &chrono::DateTime<chrono::Local>) -> bool {
+            false
+        }
+
+        fn get_next_code(&self, _resource_type: &str) -> DomainResult<String> {
+            Ok("RES-001".to_string())
         }
     }
 
-    impl ResourceRepositoryWithId for MockResourceRepository {}
+    impl ResourceRepositoryWithId for MockResourceRepository {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyResource>> {
+            Ok(self.resources.borrow().get(id).cloned())
+        }
+    }
 
     struct MockTaskRepository {
         tasks: RefCell<HashMap<String, AnyTask>>,
@@ -403,26 +454,41 @@ mod tests {
     }
 
     impl TaskRepository for MockTaskRepository {
-        fn find_all(&self) -> Result<Vec<AnyTask>, AppError> {
+        fn save(&self, task: AnyTask) -> DomainResult<AnyTask> {
+            self.tasks.borrow_mut().insert(task.code().to_string(), task.clone());
+            Ok(task)
+        }
+
+        fn save_in_hierarchy(&self, task: AnyTask, _company_code: &str, _project_code: &str) -> DomainResult<AnyTask> {
+            self.save(task)
+        }
+
+        fn find_all(&self) -> DomainResult<Vec<AnyTask>> {
             Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn find_by_id(&self, id: &str) -> Result<Option<AnyTask>, AppError> {
-            Ok(self.tasks.borrow().get(id).cloned())
+        fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyTask>> {
+            Ok(self.tasks.borrow().values().find(|t| t.code() == code).cloned())
         }
 
-        fn save(&self, task: AnyTask) -> Result<(), AppError> {
-            self.tasks.borrow_mut().insert(task.id().to_string(), task);
-            Ok(())
+        fn find_by_project(&self, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
+            Ok(self.tasks.borrow().values().cloned().collect())
         }
 
-        fn delete(&self, id: &str) -> Result<(), AppError> {
-            self.tasks.borrow_mut().remove(id);
-            Ok(())
+        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> DomainResult<Vec<AnyTask>> {
+            Ok(self.tasks.borrow().values().cloned().collect())
+        }
+
+        fn get_next_code(&self, _project_code: &str) -> DomainResult<String> {
+            Ok("TASK-001".to_string())
         }
     }
 
-    impl TaskRepositoryWithId for MockTaskRepository {}
+    impl TaskRepositoryWithId for MockTaskRepository {
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyTask>> {
+            Ok(self.tasks.borrow().get(id).cloned())
+        }
+    }
 
     struct MockCodeResolver {
         resource_codes: RefCell<HashMap<String, String>>, // code -> id
@@ -500,14 +566,6 @@ mod tests {
             )))
         }
 
-        fn resolve_resource_id(&self, id: &str) -> DomainResult<String> {
-            self.resource_ids.borrow().get(id).cloned().ok_or_else(|| {
-                DomainError::from(AppError::validation_error(
-                    "resource",
-                    format!("Resource ID '{}' not found", id),
-                ))
-            })
-        }
     }
 
     fn create_test_resource(code: &str) -> AnyResource {
@@ -528,7 +586,7 @@ mod tests {
 
     fn create_test_task(code: &str, resource_id: &str, start_date: NaiveDate, end_date: NaiveDate) -> AnyTask {
         Task::<Planned> {
-            id: Uuid::new_v7().to_string(),
+            id: Uuid::from_fields_v7(chrono::Utc::now().timestamp_millis() as u64, 0, 0),
             project_code: "PROJ-1".to_string(),
             code: code.to_string(),
             name: format!("Test {}", code),
@@ -554,7 +612,7 @@ mod tests {
 
         let resource = create_test_resource("DEV-001");
         resource_repo.add_resource(resource.clone());
-        code_resolver.add_resource("DEV-001", resource.id());
+        code_resolver.add_resource("DEV-001", &resource.id().to_string());
 
         let use_case = DetectResourceConflictsUseCase::new(
             project_repo,
@@ -563,8 +621,9 @@ mod tests {
             code_resolver,
         );
 
-        let start_date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
-        let end_date = NaiveDate::from_ymd_opt(2025, 1, 10).unwrap();
+        // Use only weekdays to avoid weekend conflicts
+        let start_date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(); // Wednesday
+        let end_date = NaiveDate::from_ymd_opt(2025, 1, 3).unwrap(); // Friday
 
         let conflicts = use_case
             .detect_conflicts_for_resource("DEV-001", start_date, end_date, None)
@@ -583,12 +642,12 @@ mod tests {
 
         let resource = create_test_resource("DEV-001");
         resource_repo.add_resource(resource.clone());
-        code_resolver.add_resource("DEV-001", resource.id());
+        code_resolver.add_resource("DEV-001", &resource.id().to_string());
 
         // Add an existing task that uses the same resource
         let existing_task = create_test_task(
             "TASK-001",
-            resource.id(),
+            &resource.id().to_string(),
             NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(),
             NaiveDate::from_ymd_opt(2025, 1, 15).unwrap(),
         );

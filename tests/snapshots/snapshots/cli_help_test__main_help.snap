@@ -7,26 +7,28 @@ A powerful, flexible, and transparent project management tool that puts you in c
 Usage: ttr [OPTIONS] <COMMAND>
 
 Commands:
-  init      Initialize the project management system
-  create    Create new entities
-  list      List entities
-  update    Update entities
-  delete    Delete entities
-  link      Link entities
-  unlink    Remove links
-  report    Generate reports
-  validate  Validate system
-  build     Build static site
-  template  Template management
-  task      Task management
-  query     Query entities with filtering
-  migrate   Migration tools
-  serve     Serve HTML files locally
-  help      Print this message or the help of the given subcommand(s)
+  init       Initialize the project management system
+  workspace  Initialize workspace with examples (onboarding)
+  create     Create new entities
+  list       List entities
+  update     Update entities
+  delete     Delete entities
+  link       Link entities
+  unlink     Remove links
+  report     Generate reports
+  validate   Validate system
+  build      Build static site
+  template   Template management
+  task       Task management
+  query      Query entities with filtering
+  migrate    Migration tools
+  serve      Serve HTML files locally
+  help       Print this message or the help of the given subcommand(s)
 
 Options:
-  -v, --verbose  Enable verbose output (alias for --debug)
-      --debug    Enable debug output (alias for --verbose)
-  -q, --quiet    Enable quiet output (minimal information)
-  -h, --help     Print help
-  -V, --version  Print version
+  -v, --verbose    Enable verbose output (alias for --debug)
+      --debug      Enable debug output (alias for --verbose)
+  -q, --quiet      Enable quiet output (minimal information)
+      --json-logs  Output logs in JSON format
+  -h, --help       Print help
+  -V, --version    Print version

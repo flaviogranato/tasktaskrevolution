@@ -4,46 +4,193 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>
-            {% block title %}{{ project.name | default(value="TaskTaskRevolution") }}{%
+            {% block title %}{{ title | default(value="TaskTaskRevolution") }}{%
             endblock title %}
         </title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+            /* Focus styles for accessibility */
+            .focus-visible:focus {
+                outline: 2px solid #3b82f6;
+                outline-offset: 2px;
+            }
+            
+            /* Skip to content link */
+            .skip-link {
+                position: absolute;
+                top: -40px;
+                left: 6px;
+                background: #3b82f6;
+                color: white;
+                padding: 8px;
+                text-decoration: none;
+                border-radius: 4px;
+                z-index: 1000;
+            }
+            
+            .skip-link:focus {
+                top: 6px;
+            }
+            
+            /* Loading spinner */
+            .loading-spinner {
+                border: 2px solid #f3f4f6;
+                border-top: 2px solid #3b82f6;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            /* High contrast mode support */
+            @media (prefers-contrast: high) {
+                .text-slate-600 {
+                    color: #000000;
+                }
+                .text-slate-500 {
+                    color: #000000;
+                }
+            }
+            
+            /* Reduced motion support */
+            @media (prefers-reduced-motion: reduce) {
+                .loading-spinner {
+                    animation: none;
+                }
+                * {
+                    transition: none !important;
+                    animation: none !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-50 text-slate-800 font-sans">
-        <header class="bg-white shadow-sm border-b border-slate-200">
+        <!-- Skip to content link for screen readers -->
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        
+        <header class="bg-white shadow-sm border-b border-slate-200" role="banner">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between items-center py-4">
                     <div class="flex items-center space-x-4">
                         <h1 class="text-2xl font-bold text-slate-900">
-                            <a href="/index.html" class="hover:text-blue-600 transition-colors">
-                                {% if company_name %}{{ company_name }}{% else %}TaskTaskRevolution{% endif %}
+                            <a href="{{ relative_path_prefix | safe }}index.html" 
+                               class="hover:text-blue-600 transition-colors focus-visible:focus"
+                               aria-label="TaskTaskRevolution - Home">
+                                TaskTaskRevolution
                             </a>
                         </h1>
                         {% if manager %}
-                        <div class="text-sm text-slate-600">
+                        <div class="text-sm text-slate-600" aria-label="Manager information">
                             <span class="font-medium">Manager:</span> {{ manager.name }}
                         </div>
                         {% endif %}
                     </div>
-                    <nav class="hidden md:flex space-x-6">
+                    <nav class="hidden md:flex space-x-6" role="navigation" aria-label="Main navigation">
                         <a
                             href="{{ relative_path_prefix | safe }}index.html"
-                            class="text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                            class="text-slate-600 hover:text-slate-900 font-medium transition-colors focus-visible:focus"
+                            aria-current="{% if current_page == 'dashboard' %}page{% endif %}"
                             >Dashboard</a
                         >
                         {% if companies %}
                         <a
                             href="{{ relative_path_prefix | safe }}companies.html"
-                            class="text-slate-600 hover:text-slate-900 font-medium transition-colors"
+                            class="text-slate-600 hover:text-slate-900 font-medium transition-colors focus-visible:focus"
+                            aria-current="{% if current_page == 'companies' %}page{% endif %}"
                             >Companies</a
                         >
                         {% endif %}
+                               <!-- Gantt navigation -->
+                               {% if gantt_available %}
+                               <div class="relative group">
+                                   <button 
+                                       class="text-slate-600 hover:text-slate-900 font-medium transition-colors focus-visible:focus flex items-center"
+                                       aria-expanded="false"
+                                       aria-haspopup="true"
+                                       id="gantt-menu-button"
+                                   >
+                                       Gantt Charts
+                                       <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                       </svg>
+                                   </button>
+                                   <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block group-focus-within:block" 
+                                        role="menu" 
+                                        aria-labelledby="gantt-menu-button">
+                                       {% if company_gantt_url %}
+                                       <a href="{{ company_gantt_url }}" 
+                                          class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 focus-visible:focus"
+                                          role="menuitem">Company Overview</a>
+                                       {% endif %}
+                                       {% if project_gantt_url %}
+                                       <a href="{{ project_gantt_url }}" 
+                                          class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 focus-visible:focus"
+                                          role="menuitem">Project Timeline</a>
+                                       {% endif %}
+                                       {% if all_projects_gantt_url %}
+                                       <a href="{{ all_projects_gantt_url }}" 
+                                          class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 focus-visible:focus"
+                                          role="menuitem">All Projects</a>
+                                       {% endif %}
+                                   </div>
+                               </div>
+                               {% endif %}
                     </nav>
+                    
+                    <!-- Mobile menu button -->
+                    <button class="md:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 focus-visible:focus" 
+                            aria-expanded="false" 
+                            aria-controls="mobile-menu"
+                            id="mobile-menu-button">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <span class="sr-only">Open main menu</span>
+                    </button>
+                </div>
+                
+                <!-- Mobile menu -->
+                <div class="md:hidden hidden" id="mobile-menu" role="menu">
+                    <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                        <a href="{{ relative_path_prefix | safe }}index.html" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-slate-900 focus-visible:focus"
+                           role="menuitem">Dashboard</a>
+                        {% if companies %}
+                        <a href="{{ relative_path_prefix | safe }}companies.html" 
+                           class="block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-slate-900 focus-visible:focus"
+                           role="menuitem">Companies</a>
+                        {% endif %}
+                               {% if gantt_available %}
+                               <div class="px-3 py-2">
+                                   <div class="text-sm font-medium text-slate-500 mb-2">Gantt Charts</div>
+                                   {% if company_gantt_url %}
+                                   <a href="{{ company_gantt_url }}" 
+                                      class="block px-3 py-2 rounded-md text-sm text-slate-600 hover:text-slate-900 focus-visible:focus"
+                                      role="menuitem">Company Overview</a>
+                                   {% endif %}
+                                   {% if project_gantt_url %}
+                                   <a href="{{ project_gantt_url }}" 
+                                      class="block px-3 py-2 rounded-md text-sm text-slate-600 hover:text-slate-900 focus-visible:focus"
+                                      role="menuitem">Project Timeline</a>
+                                   {% endif %}
+                                   {% if all_projects_gantt_url %}
+                                   <a href="{{ all_projects_gantt_url }}" 
+                                      class="block px-3 py-2 rounded-md text-sm text-slate-600 hover:text-slate-900 focus-visible:focus"
+                                      role="menuitem">All Projects</a>
+                                   {% endif %}
+                               </div>
+                               {% endif %}
+                    </div>
                 </div>
             </div>
         </header>
 
-        <main class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+        <main id="main-content" class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto" role="main">
             {% block content %}{% endblock content %}
         </main>
 
@@ -54,5 +201,74 @@
         </footer>
 
         {% block scripts %}{% endblock scripts %}
+        
+        <!-- Accessibility and navigation JavaScript -->
+        <script>
+            // Mobile menu toggle
+            document.addEventListener('DOMContentLoaded', function() {
+                const mobileMenuButton = document.getElementById('mobile-menu-button');
+                const mobileMenu = document.getElementById('mobile-menu');
+                
+                if (mobileMenuButton && mobileMenu) {
+                    mobileMenuButton.addEventListener('click', function() {
+                        const isExpanded = mobileMenuButton.getAttribute('aria-expanded') === 'true';
+                        mobileMenuButton.setAttribute('aria-expanded', !isExpanded);
+                        mobileMenu.classList.toggle('hidden');
+                    });
+                }
+                
+                // Keyboard navigation for dropdown menus
+                const ganttMenuButton = document.getElementById('gantt-menu-button');
+                const ganttMenu = ganttMenuButton?.nextElementSibling;
+                
+                if (ganttMenuButton && ganttMenu) {
+                    ganttMenuButton.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const isExpanded = ganttMenuButton.getAttribute('aria-expanded') === 'true';
+                            ganttMenuButton.setAttribute('aria-expanded', !isExpanded);
+                            ganttMenu.classList.toggle('hidden');
+                        }
+                    });
+                }
+                
+                // Close mobile menu when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (mobileMenu && !mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenuButton.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                
+                // Announce page changes to screen readers
+                const mainContent = document.getElementById('main-content');
+                if (mainContent) {
+                    mainContent.setAttribute('aria-live', 'polite');
+                }
+            });
+            
+            // Loading state management
+            function showLoading(element) {
+                if (element) {
+                    element.innerHTML = '<div class="loading-spinner mx-auto"></div>';
+                    element.setAttribute('aria-busy', 'true');
+                }
+            }
+            
+            function hideLoading(element, content) {
+                if (element) {
+                    element.innerHTML = content;
+                    element.setAttribute('aria-busy', 'false');
+                }
+            }
+            
+            // Performance monitoring
+            if ('performance' in window) {
+                window.addEventListener('load', function() {
+                    const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                    console.log('Page load time:', loadTime + 'ms');
+                });
+            }
+        </script>
     </body>
 </html>

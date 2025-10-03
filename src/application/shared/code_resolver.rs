@@ -22,6 +22,7 @@ pub trait CodeResolverTrait {
 }
 
 /// Service responsible for resolving entity codes to IDs for internal operations
+#[derive(Clone)]
 pub struct CodeResolver {
     company_repository: FileCompanyRepository,
     project_repository: FileProjectRepository,
