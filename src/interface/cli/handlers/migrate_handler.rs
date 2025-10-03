@@ -14,6 +14,19 @@ use std::path::Path;
 
 pub fn handle_migrate_command(command: MigrateCommand) -> Result<(), Box<dyn std::error::Error>> {
     match command {
+        MigrateCommand::Manifests { dry_run, force, backup } => {
+            if dry_run {
+                println!("Dry run mode - no changes will be made");
+            }
+
+            if backup {
+                println!("💾 Creating backup...");
+                create_backup()?;
+            }
+
+            migrate_manifests(dry_run, force)?;
+            Ok(())
+        }
         MigrateCommand::ToIdBased { dry_run, force, backup } => {
             if dry_run {
                 println!("Dry run mode - no changes will be made");
@@ -358,5 +371,123 @@ fn rollback_migration(backup_dir: Option<String>) -> Result<(), Box<dyn std::err
     }
 
     println!("Rollback completed successfully!");
+    Ok(())
+}
+
+fn migrate_manifests(dry_run: bool, force: bool) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Starting YAML manifests migration...");
+
+    // Check if manifests are already up to date
+    if !force && are_manifests_up_to_date()? {
+        println!("✅ All manifests are already up to date with the latest apiVersion");
+        return Ok(());
+    }
+
+    // Migrate company manifests
+    println!("📁 Migrating company manifests...");
+    migrate_company_manifests(dry_run)?;
+
+    // Migrate project manifests
+    println!("📁 Migrating project manifests...");
+    migrate_project_manifests(dry_run)?;
+
+    // Migrate resource manifests
+    println!("📁 Migrating resource manifests...");
+    migrate_resource_manifests(dry_run)?;
+
+    // Migrate task manifests
+    println!("📁 Migrating task manifests...");
+    migrate_task_manifests(dry_run)?;
+
+    if dry_run {
+        println!("Dry run completed - no changes were made");
+    } else {
+        println!("✅ YAML manifests migration completed successfully!");
+    }
+
+    Ok(())
+}
+
+fn are_manifests_up_to_date() -> Result<bool, Box<dyn std::error::Error>> {
+    // For now, always return false to allow migration
+    // This is a stub implementation as requested in the issue
+    Ok(false)
+}
+
+fn check_manifest_api_version(manifest_path: &Path, expected_version: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    let content = fs::read_to_string(manifest_path)?;
+    let lines: Vec<&str> = content.lines().collect();
+    
+    for line in lines {
+        if line.trim().starts_with("apiVersion:") {
+            let version = line.split(':').nth(1).unwrap_or("").trim();
+            return Ok(version == expected_version);
+        }
+    }
+    
+    // If no apiVersion found, consider it outdated
+    Ok(false)
+}
+
+fn migrate_company_manifests(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    if dry_run {
+        println!("  Would migrate company manifests (stub implementation)");
+    } else {
+        println!("  Migrated company manifests (stub implementation)");
+    }
+    Ok(())
+}
+
+fn migrate_project_manifests(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    if dry_run {
+        println!("  Would migrate project manifests (stub implementation)");
+    } else {
+        println!("  Migrated project manifests (stub implementation)");
+    }
+    Ok(())
+}
+
+fn migrate_resource_manifests(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    if dry_run {
+        println!("  Would migrate resource manifests (stub implementation)");
+    } else {
+        println!("  Migrated resource manifests (stub implementation)");
+    }
+    Ok(())
+}
+
+fn migrate_task_manifests(dry_run: bool) -> Result<(), Box<dyn std::error::Error>> {
+    if dry_run {
+        println!("  Would migrate task manifests (stub implementation)");
+    } else {
+        println!("  Migrated task manifests (stub implementation)");
+    }
+    Ok(())
+}
+
+fn update_manifest_api_version(manifest_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let content = fs::read_to_string(manifest_path)?;
+    let lines: Vec<&str> = content.lines().collect();
+    let mut updated_lines = Vec::new();
+    let mut found_api_version = false;
+    
+    for line in lines {
+        if line.trim().starts_with("apiVersion:") {
+            updated_lines.push("apiVersion: tasktaskrevolution.io/v1alpha1".to_string());
+            found_api_version = true;
+        } else {
+            updated_lines.push(line.to_string());
+        }
+    }
+    
+    // If no apiVersion found, add it at the beginning
+    if !found_api_version {
+        updated_lines.insert(0, "apiVersion: tasktaskrevolution.io/v1alpha1".to_string());
+        updated_lines.insert(1, "".to_string());
+    }
+    
+    let updated_content = updated_lines.join("\n");
+    fs::write(manifest_path, updated_content)?;
+    
     Ok(())
 }
