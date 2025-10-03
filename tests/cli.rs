@@ -1998,3 +1998,152 @@ fn test_template_help_commands() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_cli_aliases_functionality() -> Result<(), Box<dyn std::error::Error>> {
+    // Test 'new' alias for create command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["new", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Create new entities"));
+
+    // Test 'ls' alias for list command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["ls", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("List entities"));
+
+    // Test 'rm' alias for delete command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["rm", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Delete entities"));
+
+    // Test 'edit' alias for update command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["edit", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Update entities"));
+
+    // Test 'check' alias for validate command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["check", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Validate system"));
+
+    // Test 'q' alias for query command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["q", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Query entities with filtering"));
+
+    // Test 'tmpl' alias for template command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["tmpl", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Template management"));
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_aliases_with_subcommands() -> Result<(), Box<dyn std::error::Error>> {
+    // Test 'new' alias with subcommands
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["new", "company", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Create a new company"));
+
+    // Test 'ls' alias with subcommands
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["ls", "projects", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("List all projects"));
+
+    // Test 'rm' alias with subcommands
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["rm", "task", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Delete a task"));
+
+    // Test 'edit' alias with subcommands
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["edit", "project", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Update a project"));
+
+    // Test 'check' alias with subcommands
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["check", "system", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Validate system"));
+
+    // Test 'tmpl' alias with subcommands
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["tmpl", "list", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("List available templates"));
+
+    Ok(())
+}
+
+#[test]
+fn test_cli_aliases_backward_compatibility() -> Result<(), Box<dyn std::error::Error>> {
+    // Test that original commands still work
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["create", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Create new entities"));
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["list", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("List entities"));
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["delete", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Delete entities"));
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["update", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Update entities"));
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["validate", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Validate system"));
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["query", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Query entities with filtering"));
+
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["template", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Template management"));
+
+    Ok(())
+}

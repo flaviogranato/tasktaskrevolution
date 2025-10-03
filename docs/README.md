@@ -7,6 +7,7 @@ Welcome to the TaskTaskRevolution documentation. This directory contains compreh
 ### Core Documentation
 - **[API Version Policy](./api-version-policy.md)** - Versioning policy and compatibility guidelines
 - **[Migration Guide](./migration-guide.md)** - Step-by-step migration instructions
+- **[CLI Aliases](./cli-aliases.md)** - Convenient command aliases for faster workflow
 - **[Schema Documentation](./schemas/)** - Complete schema reference for all manifest types
 
 ### Schema Documentation
