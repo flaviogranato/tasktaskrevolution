@@ -1,7 +1,9 @@
 // Priority and Category are used in Task initializations
 use crate::application::errors::AppError;
+use crate::application::project::detect_resource_conflicts::DetectResourceConflictsUseCase;
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
+use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::task_management::{AnyTask, TaskBuilder, repository::TaskRepository};
 use chrono::NaiveDate;
@@ -16,27 +18,31 @@ pub struct CreateTaskArgs {
     pub assigned_resources: Vec<String>,
 }
 
-pub struct CreateTaskUseCase<PR, TR, CR>
+pub struct CreateTaskUseCase<PR, TR, RR, CR>
 where
     PR: ProjectRepository + ProjectRepositoryWithId,
     TR: TaskRepository,
+    RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
 {
     project_repository: PR,
     task_repository: TR,
+    resource_repository: RR,
     code_resolver: CR,
 }
 
-impl<PR, TR, CR> CreateTaskUseCase<PR, TR, CR>
+impl<PR, TR, RR, CR> CreateTaskUseCase<PR, TR, RR, CR>
 where
     PR: ProjectRepository + ProjectRepositoryWithId,
     TR: TaskRepository,
+    RR: ResourceRepository + ResourceRepositoryWithId,
     CR: CodeResolverTrait,
 {
-    pub fn new(project_repository: PR, task_repository: TR, code_resolver: CR) -> Self {
+    pub fn new(project_repository: PR, task_repository: TR, resource_repository: RR, code_resolver: CR) -> Self {
         Self {
             project_repository,
             task_repository,
+            resource_repository,
             code_resolver,
         }
     }
@@ -68,13 +74,47 @@ where
                     code: project_code.clone(),
                 })?;
 
-        // 3. Delegate task creation to the project aggregate.
+        // 3. Validate resource conflicts if resources are assigned
+        if !assigned_resources.is_empty() {
+            let conflict_detector = DetectResourceConflictsUseCase::new(
+                Box::new(self.project_repository.clone()),
+                Box::new(self.resource_repository.clone()),
+                Box::new(self.task_repository.clone()),
+                Box::new(self.code_resolver.clone()),
+            );
+
+            let conflicts = conflict_detector
+                .detect_conflicts_for_resources(&assigned_resources, start_date, due_date, None)?;
+
+            if !conflicts.is_empty() {
+                let mut conflict_messages = Vec::new();
+                for (resource_code, resource_conflicts) in conflicts {
+                    for conflict in resource_conflicts {
+                        conflict_messages.push(format!(
+                            "Resource {}: {}",
+                            resource_code,
+                            conflict.message
+                        ));
+                    }
+                }
+
+                return Err(AppError::ValidationError {
+                    field: "assigned_resources".to_string(),
+                    message: format!(
+                        "Resource conflicts detected:\n{}",
+                        conflict_messages.join("\n")
+                    ),
+                });
+            }
+        }
+
+        // 4. Delegate task creation to the project aggregate.
         // This is a placeholder for the future implementation of `project.add_task(...)`
         // For now, we'll keep the builder logic here.
         if start_date > due_date {
             return Err(AppError::ValidationError {
                 field: "dates".to_string(),
-                message: "Data de início não pode ser posterior à data de vencimento".to_string(),
+                message: "Start date cannot be after due date".to_string(),
             });
         }
 
@@ -123,10 +163,10 @@ where
         let task_any: AnyTask = task.into();
         project.add_task(task_any.clone());
 
-        // 4. Save the entire project aggregate.
+        // 5. Save the entire project aggregate.
         self.project_repository.save(project.clone())?;
 
-        // 5. Save the task individually in the project's tasks directory
+        // 6. Save the task individually in the project's tasks directory
         self.task_repository
             .save_in_hierarchy(task_any, project.company_code(), &project_code_for_save)?;
         Ok(())
@@ -235,6 +275,40 @@ mod test {
         }
     }
 
+    struct MockResourceRepository {
+        resources: RefCell<HashMap<String, crate::domain::resource_management::any_resource::AnyResource>>,
+    }
+
+    impl MockResourceRepository {
+        fn new() -> Self {
+            Self {
+                resources: RefCell::new(HashMap::new()),
+            }
+        }
+    }
+
+    impl ResourceRepository for MockResourceRepository {
+        fn find_all(&self) -> DomainResult<Vec<crate::domain::resource_management::any_resource::AnyResource>> {
+            Ok(self.resources.borrow().values().cloned().collect())
+        }
+
+        fn find_by_id(&self, id: &str) -> DomainResult<Option<crate::domain::resource_management::any_resource::AnyResource>> {
+            Ok(self.resources.borrow().get(id).cloned())
+        }
+
+        fn save(&self, resource: crate::domain::resource_management::any_resource::AnyResource) -> DomainResult<()> {
+            self.resources.borrow_mut().insert(resource.id().to_string(), resource);
+            Ok(())
+        }
+
+        fn delete(&self, id: &str) -> DomainResult<()> {
+            self.resources.borrow_mut().remove(id);
+            Ok(())
+        }
+    }
+
+    impl ResourceRepositoryWithId for MockResourceRepository {}
+
     impl TaskRepository for MockTaskRepository {
         fn save(&self, task: AnyTask) -> DomainResult<AnyTask> {
             self.tasks.borrow_mut().insert(task.code().to_string(), task.clone());
@@ -292,7 +366,7 @@ mod test {
             if self.should_fail {
                 return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
-                    message: "Erro mockado ao salvar".to_string(),
+                    message: "Mocked save error".to_string(),
                 });
             }
             self.projects.borrow_mut().insert(project.id().to_string(), project);
@@ -331,11 +405,12 @@ mod test {
     fn test_create_task_success() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
+        let mock_resource_repo = MockResourceRepository::new();
         let code_resolver = MockCodeResolver::new();
         // Get the actual project ID from the mock repository
         let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
         code_resolver.add_project("PROJ-1", &project_id);
-        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, mock_resource_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -364,8 +439,9 @@ mod test {
     fn test_create_task_fails_if_project_not_found() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
+        let mock_resource_repo = MockResourceRepository::new();
         let code_resolver = MockCodeResolver::new();
-        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, mock_resource_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -386,11 +462,12 @@ mod test {
     fn test_create_task_fails_if_start_date_after_due_date() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
+        let mock_resource_repo = MockResourceRepository::new();
         let code_resolver = MockCodeResolver::new();
         // Get the actual project ID from the mock repository
         let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
         code_resolver.add_project("PROJ-1", &project_id);
-        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, mock_resource_repo, code_resolver);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -410,7 +487,7 @@ mod test {
         if let Err(e) = result {
             assert!(
                 e.to_string()
-                    .contains("Data de início não pode ser posterior à data de vencimento")
+                    .contains("Start date cannot be after due date")
             );
         }
     }
@@ -419,11 +496,12 @@ mod test {
     fn test_create_task_with_same_start_and_due_date() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
+        let mock_resource_repo = MockResourceRepository::new();
         let code_resolver = MockCodeResolver::new();
         // Get the actual project ID from the mock repository
         let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
         code_resolver.add_project("PROJ-1", &project_id);
-        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, mock_resource_repo, code_resolver);
         #[allow(unused_variables)]
         let (start_date, due_date) = create_test_dates();
 
@@ -448,11 +526,12 @@ mod test {
     fn test_create_task_without_assigned_resources() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
+        let mock_resource_repo = MockResourceRepository::new();
         let code_resolver = MockCodeResolver::new();
         // Get the actual project ID from the mock repository
         let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
         code_resolver.add_project("PROJ-1", &project_id);
-        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, mock_resource_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -480,11 +559,12 @@ mod test {
     fn test_create_task_with_multiple_assigned_resources() {
         let mock_repo = MockProjectRepository::new(false);
         let mock_task_repo = MockTaskRepository::new();
+        let mock_resource_repo = MockResourceRepository::new();
         let code_resolver = MockCodeResolver::new();
         // Get the actual project ID from the mock repository
         let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
         code_resolver.add_project("PROJ-1", &project_id);
-        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, mock_resource_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -512,11 +592,12 @@ mod test {
     fn test_create_task_repository_save_failure() {
         let mock_repo = MockProjectRepository::new(true); // This will make save() fail
         let mock_task_repo = MockTaskRepository::new();
+        let mock_resource_repo = MockResourceRepository::new();
         let code_resolver = MockCodeResolver::new();
         // Get the actual project ID from the mock repository
         let project_id = mock_repo.projects.borrow().values().next().unwrap().id().to_string();
         code_resolver.add_project("PROJ-1", &project_id);
-        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, code_resolver);
+        let use_case = CreateTaskUseCase::new(mock_repo.clone(), mock_task_repo, mock_resource_repo, code_resolver);
         let (start_date, due_date) = create_test_dates();
 
         let args = CreateTaskArgs {
@@ -532,7 +613,7 @@ mod test {
 
         assert!(result.is_err());
         if let Err(e) = result {
-            assert!(e.to_string().contains("Erro mockado ao salvar"));
+            assert!(e.to_string().contains("Mocked save error"));
         }
     }
 }
