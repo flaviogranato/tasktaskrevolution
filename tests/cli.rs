@@ -2262,3 +2262,57 @@ fn test_workspace_init_help() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_migrate_manifests_command() -> Result<(), Box<dyn std::error::Error>> {
+    // Test migrate manifests command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["migrate", "manifests", "--dry-run"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Starting YAML manifests migration"))
+        .stdout(predicate::str::contains("Dry run mode - no changes will be made"))
+        .stdout(predicate::str::contains("Would migrate company manifests"))
+        .stdout(predicate::str::contains("Dry run completed - no changes were made"));
+
+    Ok(())
+}
+
+#[test]
+fn test_migrate_manifests_with_force() -> Result<(), Box<dyn std::error::Error>> {
+    // Test migrate manifests with --force flag
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["migrate", "manifests", "--force"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Starting YAML manifests migration"))
+        .stdout(predicate::str::contains("Migrated company manifests"))
+        .stdout(predicate::str::contains("YAML manifests migration completed successfully"));
+
+    Ok(())
+}
+
+#[test]
+fn test_migrate_manifests_help() -> Result<(), Box<dyn std::error::Error>> {
+    // Test migrate help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["migrate", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Migration tools"))
+        .stdout(predicate::str::contains("manifests"));
+
+    // Test migrate manifests help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["migrate", "manifests", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Migrate YAML manifests to new apiVersion format"))
+        .stdout(predicate::str::contains("--dry-run"))
+        .stdout(predicate::str::contains("--force"))
+        .stdout(predicate::str::contains("--backup"));
+
+    Ok(())
+}
