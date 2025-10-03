@@ -166,6 +166,15 @@ impl BuildUseCase {
         context.insert("company_name", &config.company_name);
         context.insert("relative_path_prefix", "/");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+        
+        // Add Gantt chart variables
+        context.insert("gantt_available", &true);
+        context.insert("company_gantt_url", &"companies/gantt.html");
+        context.insert("project_gantt_url", &"projects/gantt.html");
+        context.insert("all_projects_gantt_url", &"gantt.html");
+        
+        // Add current page variable
+        context.insert("current_page", &"dashboard");
 
         // Create a dummy project for the base template header, which expects a `project` object.
         let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
@@ -270,6 +279,15 @@ impl BuildUseCase {
             company_context.insert("resources", &company_resources_filtered);
             company_context.insert("relative_path_prefix", "../");
             company_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+            
+            // Add Gantt chart variables
+            company_context.insert("gantt_available", &true);
+            company_context.insert("company_gantt_url", &"gantt.html");
+            company_context.insert("project_gantt_url", &"projects/gantt.html");
+            company_context.insert("all_projects_gantt_url", &"../gantt.html");
+            
+            // Add current page variable
+            company_context.insert("current_page", &"companies");
 
             // Gerar página Gantt da empresa (company_gantt.html)
             let company_gantt_page_path = company_output_dir.join("gantt.html");
@@ -333,6 +351,15 @@ impl BuildUseCase {
                 resource_context.insert("company", &tera::Value::Object(company_map.clone()));
                 resource_context.insert("relative_path_prefix", "../../");
                 resource_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+                
+                // Add Gantt chart variables
+                resource_context.insert("gantt_available", &true);
+                resource_context.insert("company_gantt_url", &"../gantt.html");
+                resource_context.insert("project_gantt_url", &"../../gantt.html");
+                resource_context.insert("all_projects_gantt_url", &"../../../gantt.html");
+                
+                // Add current page variable
+                resource_context.insert("current_page", &"resources");
 
                 // Add projects where this resource is assigned
                 let resource_projects: Vec<_> = company_projects
@@ -462,6 +489,15 @@ impl BuildUseCase {
                 project_context.insert("resources", resources);
                 project_context.insert("relative_path_prefix", "../../../");
                 project_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+                
+                // Add Gantt chart variables
+                project_context.insert("gantt_available", &true);
+                project_context.insert("company_gantt_url", &"../gantt.html");
+                project_context.insert("project_gantt_url", &"gantt.html");
+                project_context.insert("all_projects_gantt_url", &"../../gantt.html");
+                
+                // Add current page variable
+                project_context.insert("current_page", &"projects");
 
                 // Render project detail page (e.g., project.html)
                 let project_html = match self.tera.render("project.html", &project_context) {
@@ -491,6 +527,7 @@ impl BuildUseCase {
                 let project_gantt_html = match self.tera.render("project_gantt.html", &project_gantt_context) {
                     Ok(html) => html,
                     Err(e) => {
+                        println!("Project Gantt template error: {:?}", e);
                         return Err(format!("Template error: {}", e).into());
                     }
                 };
@@ -511,6 +548,15 @@ impl BuildUseCase {
                     task_context.insert("company", &tera::Value::Object(company_map.clone()));
                     task_context.insert("relative_path_prefix", "../../../../");
                     task_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+                    
+                    // Add Gantt chart variables
+                    task_context.insert("gantt_available", &true);
+                    task_context.insert("company_gantt_url", &"../../gantt.html");
+                    task_context.insert("project_gantt_url", &"../gantt.html");
+                    task_context.insert("all_projects_gantt_url", &"../../../gantt.html");
+                    
+                    // Add current page variable
+                    task_context.insert("current_page", &"tasks");
 
                     // Create dummy project for base template (used only for the base template)
                     let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
@@ -639,6 +685,15 @@ impl BuildUseCase {
         context.insert("company_end_date", &company_end_date);
         context.insert("relative_path_prefix", "../");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+        
+        // Add Gantt chart variables
+        context.insert("gantt_available", &true);
+        context.insert("company_gantt_url", &"gantt.html");
+        context.insert("project_gantt_url", &"projects/gantt.html");
+        context.insert("all_projects_gantt_url", &"../gantt.html");
+        
+        // Add current page variable
+        context.insert("current_page", &"companies");
 
         // Create dummy project for base template
         let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
@@ -666,8 +721,10 @@ impl BuildUseCase {
 
         // Project data
         let mut project_map = tera::Map::new();
+        project_map.insert("id".to_string(), tera::Value::String(project.id().to_string()));
         project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
         project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
+        project_map.insert("company_code".to_string(), tera::Value::String(project.company_code().to_string()));
         project_map.insert(
             "description".to_string(),
             tera::Value::String(
@@ -708,12 +765,51 @@ impl BuildUseCase {
             resource_maps.push(tera::Value::Object(resource_map));
         }
 
+        // Convert tasks to a format that Tera can handle
+        let mut task_maps = Vec::new();
+        for task in tasks {
+            let mut task_map = tera::Map::new();
+            task_map.insert("id".to_string(), tera::Value::String(task.id().to_string()));
+            task_map.insert("code".to_string(), tera::Value::String(task.code().to_string()));
+            task_map.insert("name".to_string(), tera::Value::String(task.name().to_string()));
+            task_map.insert("status".to_string(), tera::Value::String(task.status().to_string()));
+            task_map.insert(
+                "description".to_string(),
+                tera::Value::String(
+                    task.description()
+                        .map_or("No description available.".to_string(), |d| d.to_string()),
+                ),
+            );
+            task_map.insert(
+                "start_date".to_string(),
+                tera::Value::String("2024-01-01".to_string()),
+            );
+            task_map.insert(
+                "end_date".to_string(),
+                tera::Value::String("2024-12-31".to_string()),
+            );
+            task_map.insert("progress".to_string(), tera::Value::Number(0.into()));
+            task_map.insert("assigned_resources".to_string(), tera::Value::Array(vec![]));
+            task_map.insert("dependencies".to_string(), tera::Value::Array(vec![]));
+            task_map.insert("is_milestone".to_string(), tera::Value::Bool(false));
+            task_maps.push(tera::Value::Object(task_map));
+        }
+
         context.insert("project", &tera::Value::Object(project_map.clone()));
         context.insert("company", &tera::Value::Object(company_map.clone()));
-        context.insert("tasks", tasks);
+        context.insert("tasks", &task_maps);
         context.insert("resources", &resource_maps);
         context.insert("relative_path_prefix", "../../../");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
+        
+        // Add Gantt chart variables
+        context.insert("gantt_available", &true);
+        context.insert("company_gantt_url", &"../gantt.html");
+        context.insert("project_gantt_url", &"gantt.html");
+        context.insert("all_projects_gantt_url", &"../../gantt.html");
+        
+        // Add current page variable
+        context.insert("current_page", &"projects");
 
         // Create dummy project for base template
         let dummy_project: AnyProject = crate::domain::project_management::builder::ProjectBuilder::new()
@@ -876,7 +972,12 @@ spec:
         let use_case = BuildUseCase::new(temp_root, output_dir.to_str().unwrap()).unwrap();
         let result = use_case.execute();
         if let Err(e) = &result {
-            // Provide more context on failure.
+            println!("Build error: {:?}", e);
+            // Try to extract the specific error message
+            let error_msg = format!("{:?}", e);
+            if error_msg.contains("Template error") {
+                println!("Template error detected: {}", error_msg);
+            }
         }
         assert!(result.is_ok());
 

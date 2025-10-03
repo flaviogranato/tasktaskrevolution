@@ -13,6 +13,7 @@ use std::path::{Path, PathBuf};
 ///
 /// A estrutura de diretórios esperada é:
 /// /<base_path>/projects/<project_id>.yaml (ID-based format)
+#[derive(Clone)]
 pub struct FileProjectRepository {
     base_path: PathBuf,
 }

@@ -78,3 +78,20 @@ pub trait TaskRepository {
     /// * `Err(DomainError)` if an error occurred during code generation
     fn get_next_code(&self, project_code: &str) -> DomainResult<String>;
 }
+
+/// Extension trait for repositories that support ID-based operations.
+/// 
+/// This trait extends the base TaskRepository with ID-based lookup capabilities,
+/// which is useful for CQRS patterns and advanced querying scenarios.
+pub trait TaskRepositoryWithId: TaskRepository {
+    /// Finds a task by its unique identifier.
+    /// 
+    /// # Arguments
+    /// * `id` - The task ID to search for
+    /// 
+    /// # Returns
+    /// * `Ok(Some(task))` if the task was found
+    /// * `Ok(None)` if no task was found
+    /// * `Err(DomainError)` if an error occurred during search
+    fn find_by_id(&self, id: &str) -> DomainResult<Option<AnyTask>>;
+}

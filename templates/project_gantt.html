@@ -1,93 +1,81 @@
-{% extends "base.html" %} 
-{% block title %}{{ project.name }} - Gantt View - {{ super() }}{% endblock title %} 
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - Project Timeline{% endblock title %}
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Breadcrumb Navigation -->
-    <nav class="flex" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-            <li class="inline-flex items-center">
-                <a href="{{ relative_path_prefix | safe }}index.html" class="inline-flex items-center text-sm font-medium text-slate-700 hover:text-blue-600">
-                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
-                    </svg>
-                    Dashboard
-                </a>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <a href="../../index.html" class="ml-1 text-sm font-medium text-slate-700 hover:text-blue-600 md:ml-2">{{ company.name }}</a>
-                </div>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <svg class="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="ml-1 text-sm font-medium text-slate-500 md:ml-2">{{ project.name }}</span>
-                </div>
-            </li>
-        </ol>
-    </nav>
-
-    <!-- Project Header (Compact) -->
-    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+    <!-- Project Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6" role="region" aria-labelledby="project-header">
         <div class="flex justify-between items-start">
             <div>
-                <h2 class="text-2xl font-bold tracking-tight text-slate-900">
+                <h1 id="project-header" class="text-2xl font-bold text-slate-900 flex items-center">
+                    <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
                     {{ project.name }}
-                </h2>
-                <p class="mt-1 text-slate-600">
-                    {{ project.description | default(value="No description provided.") }}
-                </p>
-                <div class="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
-                    <span><strong>Company:</strong> {{ company.name }} ({{ company.code }})</span>
-                    <span><strong>Status:</strong> {{ project.status }}</span>
-                    <span><strong>Start:</strong> {% if project.start_date %}{{ project.start_date | date(format="%Y-%m-%d") }}{% else %}N/A{% endif %}</span>
-                    <span><strong>End:</strong> {% if project.end_date %}{{ project.end_date | date(format="%Y-%m-%d") }}{% else %}N/A{% endif %}</span>
+                </h1>
+                <p class="text-slate-600 mt-2">{{ project.description | default(value="Project timeline and task management") }}</p>
+                <div class="flex items-center space-x-4 mt-4 text-sm text-slate-500">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>Start: {{ project.start_date | default(value="TBD") }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>End: {{ project.end_date | default(value="TBD") }}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Status: {{ project.status | default(value="Planning") }}</span>
+                    </div>
                 </div>
             </div>
             <div class="flex space-x-2">
-                <a href="index.html" 
-                   class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                <a href="{{ relative_path_prefix | safe }}companies/{{ project.company_code }}/projects/{{ project.code }}/project.html" 
+                   class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-sm text-sm leading-4 font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus-visible:focus">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
-                    List View
+                    View Details
                 </a>
-                <a href="detail.html" 
-                   class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <button id="export-gantt" 
+                        class="inline-flex items-center px-3 py-2 border border-slate-300 shadow-sm text-sm leading-4 font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus-visible:focus">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
-                    Details
-                </a>
+                    Export
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 🎯 CENTRAL GANTT CHART - PROJECT TASKS -->
-    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+    <!-- Project Gantt Chart -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden" role="region" aria-labelledby="gantt-title">
         <!-- Gantt Header -->
-        <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-slate-200">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-slate-200">
             <div class="flex justify-between items-center">
                 <div>
-                    <h3 class="text-xl font-semibold text-slate-900 flex items-center">
-                        <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                    <h3 id="gantt-title" class="text-xl font-semibold text-slate-900 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                         Project Tasks Timeline
                     </h3>
-                    <p class="text-sm text-slate-600 mt-1">Timeline view of all project tasks and dependencies</p>
+                    <p class="text-sm text-slate-600 mt-1">Detailed view of all project tasks and their dependencies</p>
                 </div>
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-3" role="toolbar" aria-label="Gantt chart controls">
                     <!-- View Controls -->
                     <div class="flex items-center space-x-2">
-                        <label class="text-sm font-medium text-slate-700">View:</label>
-                        <select id="gantt-view" class="text-sm border border-slate-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        <label for="gantt-view" class="text-sm font-medium text-slate-700">View:</label>
+                        <select id="gantt-view" 
+                                class="text-sm border border-slate-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                aria-label="Select timeline view">
                             <option value="days">Days</option>
                             <option value="weeks" selected>Weeks</option>
                             <option value="months">Months</option>
@@ -95,27 +83,53 @@
                     </div>
                     
                     <!-- Zoom Controls -->
-                    <div class="flex items-center space-x-1">
-                        <button id="gantt-zoom-out" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors" title="Zoom Out">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center space-x-1" role="group" aria-label="Zoom controls">
+                        <button id="gantt-zoom-out" 
+                                class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors focus-visible:focus" 
+                                title="Zoom Out"
+                                aria-label="Zoom out timeline">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
                             </svg>
                         </button>
-                        <button id="gantt-zoom-in" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors" title="Zoom In">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button id="gantt-zoom-in" 
+                                class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors focus-visible:focus" 
+                                title="Zoom In"
+                                aria-label="Zoom in timeline">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
                         </button>
-                        <button id="gantt-reset" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors" title="Reset View">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button id="gantt-reset" 
+                                class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors focus-visible:focus" 
+                                title="Reset View"
+                                aria-label="Reset timeline view">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
                         </button>
                     </div>
                     
+                    <!-- Filter Controls -->
+                    <div class="flex items-center space-x-2">
+                        <label for="gantt-filter" class="text-sm font-medium text-slate-700">Filter:</label>
+                        <select id="gantt-filter" 
+                                class="text-sm border border-slate-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                aria-label="Filter tasks by status">
+                            <option value="all">All Tasks</option>
+                            <option value="not-started">Not Started</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="blocked">Blocked</option>
+                        </select>
+                    </div>
+                    
                     <!-- Fullscreen Toggle -->
-                    <button id="gantt-fullscreen" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors" title="Toggle Fullscreen">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button id="gantt-fullscreen" 
+                            class="p-2 text-slate-600 hover:text-slate-900 hover:bg-white rounded-md transition-colors focus-visible:focus" 
+                            title="Toggle Fullscreen"
+                            aria-label="Toggle fullscreen view">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
                         </svg>
                     </button>
@@ -123,39 +137,75 @@
             </div>
             
             <!-- Legend -->
-            <div class="mt-4 flex flex-wrap items-center gap-4 text-sm">
+            <div class="mt-4 flex flex-wrap items-center gap-4 text-sm" role="legend" aria-label="Task status legend">
                 <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-green-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-green-500 rounded-sm" aria-hidden="true"></div>
                     <span class="text-slate-700">Completed</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-blue-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-blue-500 rounded-sm" aria-hidden="true"></div>
                     <span class="text-slate-700">In Progress</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-yellow-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-yellow-500 rounded-sm" aria-hidden="true"></div>
                     <span class="text-slate-700">Planned</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-red-500 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-red-500 rounded-sm" aria-hidden="true"></div>
                     <span class="text-slate-700">Blocked</span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <div class="w-3 h-3 bg-gray-400 rounded-sm"></div>
+                    <div class="w-3 h-3 bg-gray-400 rounded-sm" aria-hidden="true"></div>
                     <span class="text-slate-700">Not Started</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-3 h-3 bg-purple-500 rounded-sm" aria-hidden="true"></div>
+                    <span class="text-slate-700">Milestone</span>
                 </div>
             </div>
         </div>
         
         <!-- Gantt Chart Area -->
-        <div id="gantt-chart-area" class="relative overflow-auto" style="max-height: 600px;">
-            <svg id="gantt-svg" class="gantt-chart w-full"></svg>
+        <div id="gantt-chart-area" 
+             class="relative overflow-auto" 
+             style="max-height: 600px;"
+             role="img"
+             aria-label="Interactive Gantt chart showing project task timelines"
+             tabindex="0">
+            <svg id="gantt-svg" 
+                 class="gantt-chart w-full" 
+                 role="img" 
+                 aria-label="Project task timeline chart"
+                 focusable="false">
+            </svg>
             
             <!-- Loading Overlay -->
-            <div id="gantt-loading" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center hidden">
+            <div id="gantt-loading" 
+                 class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center hidden"
+                 role="status"
+                 aria-live="polite"
+                 aria-label="Loading chart">
                 <div class="flex items-center space-x-2">
-                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+                    <div class="loading-spinner"></div>
                     <span class="text-slate-600">Loading chart...</span>
+                </div>
+            </div>
+            
+            <!-- Error State -->
+            <div id="gantt-error" 
+                 class="absolute inset-0 bg-red-50 flex items-center justify-center hidden"
+                 role="alert"
+                 aria-live="assertive">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-red-800">Error loading chart</h3>
+                    <p class="mt-1 text-sm text-red-600">There was a problem loading the Gantt chart. Please try refreshing the page.</p>
+                    <button id="gantt-retry" 
+                            class="mt-3 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Try Again
+                    </button>
                 </div>
             </div>
         </div>
@@ -164,325 +214,67 @@
         <div class="bg-slate-50 px-6 py-3 border-t border-slate-200">
             <div class="flex justify-between items-center text-sm text-slate-600">
                 <div class="flex items-center space-x-4">
-                    <span>Total Tasks: <span id="gantt-item-count" class="font-semibold">{{ tasks | length }}</span></span>
-                    <span>Date Range: <span id="gantt-date-range" class="font-semibold">-</span></span>
+                    <span>Tasks: <span id="gantt-item-count" class="font-medium">0</span></span>
+                    <span>Date Range: <span id="gantt-date-range" class="font-medium">-</span></span>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <span>Generated: {{ current_date }}</span>
-                    <button id="gantt-export" class="text-green-600 hover:text-green-800 font-medium">
-                        Export
+                    <button id="gantt-export-png" 
+                            class="text-blue-600 hover:text-blue-800 focus-visible:focus"
+                            aria-label="Export as PNG">
+                        PNG
+                    </button>
+                    <span class="text-slate-300">|</span>
+                    <button id="gantt-export-svg" 
+                            class="text-blue-600 hover:text-blue-800 focus-visible:focus"
+                            aria-label="Export as SVG">
+                        SVG
+                    </button>
+                    <span class="text-slate-300">|</span>
+                    <button id="gantt-export-pdf" 
+                            class="text-blue-600 hover:text-blue-800 focus-visible:focus"
+                            aria-label="Export as PDF">
+                        PDF
                     </button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Task Details & Resources -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Task Details Table -->
-        <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <div class="flex justify-between items-center">
-                    <h4 class="text-lg font-semibold text-slate-800">Task Details</h4>
-                    <a href="index.html" class="text-sm text-green-600 hover:text-green-800 font-medium">
-                        View All →
-                    </a>
-                </div>
-            </div>
-            {% if tasks %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Task
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Progress
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Due Date
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-200">
-                        {% for task in tasks %}
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-slate-900">
-                                    {{ task.name }}
-                                </div>
-                                <div class="text-sm text-slate-500">
-                                    {{ task.code }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {% if task.status == "InProgress" %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
-                                    In Progress
-                                </span>
-                                {% elif task.status == "Blocked" %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 text-xs font-medium">
-                                    Blocked
-                                </span>
-                                {% elif task.status == "Planned" %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800 text-xs font-medium">
-                                    Planned
-                                </span>
-                                {% elif task.status == "Completed" %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-                                    Completed
-                                </span>
-                                {% else %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 text-xs font-medium">
-                                    {{ task.status }}
-                                </span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                {% if task.status == "InProgress" %}{{ task.progress }}%{% else %}N/A{% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                {{ task.due_date | date(format="%m/%d/%Y") }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="p-8 text-center">
-                <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-slate-900">No tasks</h3>
-                <p class="mt-1 text-sm text-slate-500">Get started by creating a new task.</p>
-            </div>
-            {% endif %}
-        </div>
-        
-        <!-- Resources Table -->
-        <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <div class="flex justify-between items-center">
-                    <h4 class="text-lg font-semibold text-slate-800">Project Resources</h4>
-                    <a href="../../index.html" class="text-sm text-green-600 hover:text-green-800 font-medium">
-                        View All →
-                    </a>
-                </div>
-            </div>
-            {% if resources %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Name
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Type
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Status
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-200">
-                        {% for resource in resources %}
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                                {{ resource.name }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    {% if resource.resource_type == "Human" %}bg-blue-100 text-blue-800
-                                    {% elif resource.resource_type == "Equipment" %}bg-green-100 text-green-800
-                                    {% elif resource.resource_type == "Material" %}bg-yellow-100 text-yellow-800
-                                    {% else %}bg-slate-100 text-slate-800{% endif %}">
-                                    {{ resource.resource_type }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    {% if resource.status == "Available" %}bg-green-100 text-green-800
-                                    {% elif resource.status == "Assigned" %}bg-blue-100 text-blue-800
-                                    {% elif resource.status == "Inactive" %}bg-gray-100 text-gray-800
-                                    {% else %}bg-slate-100 text-slate-800{% endif %}">
-                                    {{ resource.status }}
-                                </span>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="p-8 text-center">
-                <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-slate-900">No resources</h3>
-                <p class="mt-1 text-sm text-slate-500">No resources are assigned to this project.</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
 </div>
 
-<!-- Gantt Chart Styles -->
-<style>
-.gantt-chart {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    min-height: 400px;
-}
-
-.gantt-task {
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.gantt-task:hover {
-    filter: brightness(1.1);
-    stroke-width: 2;
-}
-
-.gantt-task.completed {
-    fill: #10b981;
-    stroke: #059669;
-}
-
-.gantt-task.in-progress {
-    fill: #3b82f6;
-    stroke: #2563eb;
-}
-
-.gantt-task.planned {
-    fill: #f59e0b;
-    stroke: #d97706;
-}
-
-.gantt-task.blocked {
-    fill: #ef4444;
-    stroke: #dc2626;
-}
-
-.gantt-task.not-started {
-    fill: #6b7280;
-    stroke: #4b5563;
-}
-
-.gantt-dependency {
-    stroke: #374151;
-    stroke-width: 2;
-    fill: none;
-    marker-end: url(#arrowhead);
-    opacity: 0.7;
-}
-
-.gantt-dependency:hover {
-    stroke-width: 3;
-    opacity: 1;
-}
-
-.gantt-axis {
-    stroke: #e5e7eb;
-    stroke-width: 1;
-}
-
-.gantt-axis text {
-    font-size: 11px;
-    fill: #6b7280;
-}
-
-.gantt-tooltip {
-    position: absolute;
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    pointer-events: none;
-    z-index: 1000;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    max-width: 300px;
-}
-
-.gantt-tooltip h4 {
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: #f3f4f6;
-}
-
-.gantt-tooltip p {
-    margin: 2px 0;
-    color: #d1d5db;
-}
-
-.gantt-today-line {
-    stroke: #ef4444;
-    stroke-width: 2;
-    stroke-dasharray: 5,5;
-    opacity: 0.8;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .gantt-header {
-        padding: 1rem;
-    }
-    
-    .gantt-header .flex {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-    
-    .gantt-chart-area {
-        max-height: 400px;
-    }
-}
-</style>
-
-<!-- Gantt Chart JavaScript -->
+<!-- Project Gantt Chart JavaScript -->
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script>
-// Gantt Chart Data for Project Tasks
-const ganttData = {
-    config: {
-        title: "{{ project.name }} - Tasks Timeline",
-        startDate: "{{ project.start_date | default(value='2024-01-01') }}",
-        endDate: "{{ project.end_date | default(value='2024-12-31') }}",
-        viewType: "weeks",
-        dependencies: true,
-        resources: true,
-        progress: true,
-        width: 1200,
-        height: 600
+// Project Gantt Data
+const projectGanttData = {
+    project: {
+        id: "{{ project.id }}",
+        name: "{{ project.name }}",
+        code: "{{ project.code }}",
+        description: "{{ project.description | default(value='') }}",
+        startDate: "{{ project.start_date | default(value='') }}",
+        endDate: "{{ project.end_date | default(value='') }}",
+        status: "{{ project.status | default(value='Planning') }}"
     },
     tasks: [
         {% for task in tasks %}
         {
-            id: "{{ task.code }}",
+            id: "{{ task.id }}",
             name: "{{ task.name }}",
-            startDate: "{{ task.start_date }}",
-            endDate: "{{ task.due_date }}",
-            status: "{{ task.status }}",
-            progress: {% if task.status == "Completed" %}1.0{% elif task.status == "InProgress" %}0.5{% else %}0.0{% endif %},
+            code: "{{ task.code }}",
             description: "{{ task.description | default(value='') }}",
-            dependencies: [
-                {% for dep in task.dependencies %}
-                "{{ dep }}"{% if not loop.last %},{% endif %}
-                {% endfor %}
-            ]
+            startDate: "{{ task.start_date }}",
+            endDate: "{{ task.end_date }}",
+            status: "{{ task.status | default(value='Not Started') }}",
+            progress: {{ task.progress | default(value=0) }},
+            assignedResources: [],
+            dependencies: [],
+            isMilestone: {{ task.is_milestone | default(value=false) }}
         }{% if not loop.last %},{% endif %}
         {% endfor %}
     ]
 };
 
-class GanttChart {
+class ProjectGanttChart {
     constructor(containerId, data, options = {}) {
         this.container = document.getElementById(containerId);
         this.data = data;
@@ -494,19 +286,76 @@ class GanttChart {
             showDependencies: true,
             showProgress: true,
             showMilestones: true,
+            virtualScrolling: true,
+            lazyLoading: true,
             ...options
         };
         
         this.zoom = 1;
         this.panX = 0;
         this.panY = 0;
+        this.isLoading = false;
+        this.visibleItems = new Set();
+        this.renderedItems = new Set();
+        this.filteredTasks = [...this.data.tasks];
         
         this.init();
     }
     
     init() {
         this.setupEventListeners();
+        this.setupIntersectionObserver();
         this.render();
+    }
+    
+    setupIntersectionObserver() {
+        if (!this.options.virtualScrolling) return;
+        
+        this.observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const itemId = entry.target.dataset.itemId;
+                if (entry.isIntersecting) {
+                    this.visibleItems.add(itemId);
+                    if (!this.renderedItems.has(itemId)) {
+                        this.renderItem(itemId);
+                    }
+                } else {
+                    this.visibleItems.delete(itemId);
+                    if (this.options.lazyLoading) {
+                        this.unrenderItem(itemId);
+                    }
+                }
+            });
+        }, {
+            root: this.container,
+            rootMargin: '50px',
+            threshold: 0.1
+        });
+    }
+    
+    renderItem(itemId) {
+        if (this.renderedItems.has(itemId)) return;
+        
+        const item = this.data.tasks.find(t => t.id === itemId);
+        if (!item) return;
+        
+        this.renderedItems.add(itemId);
+        this.updateItemVisibility(itemId, true);
+    }
+    
+    unrenderItem(itemId) {
+        if (!this.renderedItems.has(itemId)) return;
+        
+        this.renderedItems.delete(itemId);
+        this.updateItemVisibility(itemId, false);
+    }
+    
+    updateItemVisibility(itemId, visible) {
+        const element = this.container.querySelector(`[data-item-id="${itemId}"]`);
+        if (element) {
+            element.style.display = visible ? 'block' : 'none';
+            element.setAttribute('aria-hidden', !visible);
+        }
     }
     
     setupEventListeners() {
@@ -519,36 +368,124 @@ class GanttChart {
             });
         }
         
-        // Zoom controls
-        const zoomIn = document.getElementById('gantt-zoom-in');
-        const zoomOut = document.getElementById('gantt-zoom-out');
-        const reset = document.getElementById('gantt-reset');
-        
-        if (zoomIn) zoomIn.addEventListener('click', () => this.zoomIn());
-        if (zoomOut) zoomOut.addEventListener('click', () => this.zoomOut());
-        if (reset) reset.addEventListener('click', () => this.resetView());
-        
-        // Fullscreen toggle
-        const fullscreen = document.getElementById('gantt-fullscreen');
-        if (fullscreen) {
-            fullscreen.addEventListener('click', () => this.toggleFullscreen());
+        // Filter change
+        const filterSelect = document.getElementById('gantt-filter');
+        if (filterSelect) {
+            filterSelect.addEventListener('change', (e) => {
+                this.filterTasks(e.target.value);
+            });
         }
         
-        // Export functionality
-        const exportBtn = document.getElementById('gantt-export');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportChart());
+        // Zoom controls
+        const zoomInBtn = document.getElementById('gantt-zoom-in');
+        const zoomOutBtn = document.getElementById('gantt-zoom-out');
+        const resetBtn = document.getElementById('gantt-reset');
+        
+        if (zoomInBtn) {
+            zoomInBtn.addEventListener('click', () => this.zoomIn());
+        }
+        if (zoomOutBtn) {
+            zoomOutBtn.addEventListener('click', () => this.zoomOut());
+        }
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.resetZoom());
+        }
+        
+        // Fullscreen toggle
+        const fullscreenBtn = document.getElementById('gantt-fullscreen');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
+        }
+        
+        // Export buttons
+        const exportPngBtn = document.getElementById('gantt-export-png');
+        const exportSvgBtn = document.getElementById('gantt-export-svg');
+        const exportPdfBtn = document.getElementById('gantt-export-pdf');
+        
+        if (exportPngBtn) {
+            exportPngBtn.addEventListener('click', () => this.exportChart('png'));
+        }
+        if (exportSvgBtn) {
+            exportSvgBtn.addEventListener('click', () => this.exportChart('svg'));
+        }
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', () => this.exportChart('pdf'));
         }
     }
     
-    render() {
+    filterTasks(filter) {
+        if (filter === 'all') {
+            this.filteredTasks = [...this.data.tasks];
+        } else {
+            this.filteredTasks = this.data.tasks.filter(task => {
+                const status = task.status.toLowerCase().replace(' ', '-');
+                return status === filter;
+            });
+        }
+        this.render();
+    }
+    
+    zoomIn() {
+        this.zoom = Math.min(this.zoom * 1.2, 3);
+        this.applyZoom();
+    }
+    
+    zoomOut() {
+        this.zoom = Math.max(this.zoom / 1.2, 0.5);
+        this.applyZoom();
+    }
+    
+    resetZoom() {
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.applyZoom();
+    }
+    
+    applyZoom() {
+        const svg = d3.select('#gantt-svg');
+        svg.select('g').attr('transform', `translate(${this.panX},${this.panY}) scale(${this.zoom})`);
+    }
+    
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            this.container.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+    
+    exportChart(format) {
+        const svg = d3.select('#gantt-svg');
+        const svgData = new XMLSerializer().serializeToString(svg.node());
+        
+        if (format === 'svg') {
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${this.data.project.name}-gantt.svg`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } else {
+            // For PNG and PDF, we'd need additional libraries like html2canvas or jsPDF
+            console.log(`Export to ${format} not implemented yet`);
+        }
+    }
+    
+    async render() {
         this.showLoading();
         
-        setTimeout(() => {
+        try {
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
             this.createChart();
             this.hideLoading();
             this.updateStats();
-        }, 100);
+        } catch (error) {
+            console.error('Error rendering Gantt chart:', error);
+            this.showError('Failed to render chart. Please try again.');
+        }
     }
     
     createChart() {
@@ -564,7 +501,7 @@ class GanttChart {
         svg.attr('width', containerWidth).attr('height', containerHeight);
         
         // Parse dates and calculate timeline
-        const allDates = this.data.tasks.flatMap(task => [
+        const allDates = this.filteredTasks.flatMap(task => [
             new Date(task.startDate),
             new Date(task.endDate)
         ]);
@@ -577,7 +514,7 @@ class GanttChart {
             .range([0, width]);
         
         const yScale = d3.scaleBand()
-            .domain(this.data.tasks.map(d => d.id))
+            .domain(this.filteredTasks.map(d => d.id))
             .range([0, height])
             .padding(0.1);
         
@@ -593,188 +530,201 @@ class GanttChart {
                 .attr('x1', xScale(today))
                 .attr('x2', xScale(today))
                 .attr('y1', 0)
-                .attr('y2', height);
+                .attr('y2', height)
+                .attr('stroke', '#ef4444')
+                .attr('stroke-width', 2)
+                .attr('stroke-dasharray', '5,5');
         }
         
-        // Add tasks
-        const tasks = g.selectAll('.gantt-task')
-            .data(this.data.tasks)
-            .enter()
-            .append('g')
-            .attr('class', 'gantt-task-group');
+        // Render tasks
+        this.renderTasks(g, xScale, yScale);
+        
+        // Render dependencies
+        if (this.options.showDependencies) {
+            this.renderDependencies(g, xScale, yScale);
+        }
+        
+        // Render timeline
+        this.renderTimeline(g, xScale, width, height);
+        
+        // Apply zoom and pan
+        this.applyZoom();
+    }
+    
+    renderTasks(g, xScale, yScale) {
+        const taskHeight = yScale.bandwidth();
         
         // Task bars
+        const tasks = g.selectAll('.gantt-task')
+            .data(this.filteredTasks)
+            .enter()
+            .append('g')
+            .attr('class', 'gantt-task')
+            .attr('data-item-id', d => d.id);
+        
+        // Task rectangles
         tasks.append('rect')
-            .attr('class', d => `gantt-task ${d.status.toLowerCase().replace(' ', '-')}`)
             .attr('x', d => xScale(new Date(d.startDate)))
             .attr('y', d => yScale(d.id))
-            .attr('width', d => {
-                const start = new Date(d.startDate);
-                const end = new Date(d.endDate);
-                return Math.max(xScale(end) - xScale(start), 4);
-            })
-            .attr('height', yScale.bandwidth())
-            .attr('rx', 3)
-            .attr('ry', 3)
-            .on('mouseover', (event, d) => this.showTooltip(event, d))
-            .on('mouseout', () => this.hideTooltip())
-            .on('click', (event, d) => this.onTaskClick(d));
+            .attr('width', d => xScale(new Date(d.endDate)) - xScale(new Date(d.startDate)))
+            .attr('height', taskHeight * 0.8)
+            .attr('rx', 4)
+            .attr('fill', d => this.getTaskColor(d.status))
+            .attr('stroke', '#374151')
+            .attr('stroke-width', 1);
         
         // Progress bars
         if (this.options.showProgress) {
             tasks.append('rect')
-                .attr('class', 'gantt-progress')
                 .attr('x', d => xScale(new Date(d.startDate)))
-                .attr('y', d => yScale(d.id) + 2)
-                .attr('width', d => {
-                    const start = new Date(d.startDate);
-                    const end = new Date(d.endDate);
-                    const totalWidth = Math.max(xScale(end) - xScale(start), 4);
-                    return totalWidth * (d.progress || 0);
-                })
-                .attr('height', yScale.bandwidth() - 4)
-                .attr('rx', 2)
-                .attr('ry', 2)
-                .style('fill', 'rgba(255, 255, 255, 0.3)');
+                .attr('y', d => yScale(d.id) + taskHeight * 0.1)
+                .attr('width', d => (xScale(new Date(d.endDate)) - xScale(new Date(d.startDate))) * (d.progress / 100))
+                .attr('height', taskHeight * 0.6)
+                .attr('rx', 4)
+                .attr('fill', 'rgba(255, 255, 255, 0.3)');
         }
         
-        // Add axes
-        g.append('g')
-            .attr('class', 'gantt-axis')
-            .attr('transform', `translate(0,${height})`)
-            .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat('%m/%d')));
+        // Task labels
+        tasks.append('text')
+            .attr('x', d => xScale(new Date(d.startDate)) + 5)
+            .attr('y', d => yScale(d.id) + taskHeight / 2)
+            .attr('dy', '0.35em')
+            .attr('fill', '#1f2937')
+            .attr('font-size', '12px')
+            .attr('font-weight', '500')
+            .text(d => d.name)
+            .call(this.wrapText, 150);
         
-        g.append('g')
-            .attr('class', 'gantt-axis')
-            .call(d3.axisLeft(yScale).tickFormat(d => {
-                const task = this.data.tasks.find(t => t.id === d);
-                return task ? task.name : d;
-            }));
-        
-        // Add dependencies
-        if (this.options.showDependencies) {
-            this.addDependencies(g, xScale, yScale);
+        // Milestone markers
+        const milestones = this.filteredTasks.filter(d => d.isMilestone);
+        if (milestones.length > 0) {
+            g.selectAll('.gantt-milestone')
+                .data(milestones)
+                .enter()
+                .append('polygon')
+                .attr('class', 'gantt-milestone')
+                .attr('points', d => {
+                    const x = xScale(new Date(d.endDate));
+                    const y = yScale(d.id) + taskHeight / 2;
+                    return `${x},${y - 8} ${x + 8},${y} ${x},${y + 8}`;
+                })
+                .attr('fill', '#8b5cf6')
+                .attr('stroke', '#6d28d9')
+                .attr('stroke-width', 1);
         }
     }
     
-    addDependencies(g, xScale, yScale) {
-        // Add arrow marker
-        g.append('defs').append('marker')
-            .attr('id', 'arrowhead')
-            .attr('viewBox', '0 0 10 10')
-            .attr('refX', 9)
-            .attr('refY', 3)
-            .attr('markerWidth', 6)
-            .attr('markerHeight', 6)
-            .attr('orient', 'auto')
-            .append('path')
-            .attr('d', 'M 0 0 L 10 3 L 0 6 z')
-            .attr('fill', '#374151');
+    renderDependencies(g, xScale, yScale) {
+        const dependencies = [];
         
-        // Draw dependencies
-        this.data.tasks.forEach(task => {
+        this.filteredTasks.forEach(task => {
             if (task.dependencies && task.dependencies.length > 0) {
                 task.dependencies.forEach(depId => {
-                    const depTask = this.data.tasks.find(t => t.id === depId);
+                    const depTask = this.filteredTasks.find(t => t.id === depId);
                     if (depTask) {
-                        const startX = xScale(new Date(depTask.endDate));
-                        const startY = yScale(depId) + yScale.bandwidth() / 2;
-                        const endX = xScale(new Date(task.startDate));
-                        const endY = yScale(task.id) + yScale.bandwidth() / 2;
-                        
-                        g.append('path')
-                            .attr('class', 'gantt-dependency')
-                            .attr('d', `M ${startX} ${startY} L ${endX} ${endY}`)
-                            .attr('marker-end', 'url(#arrowhead)');
+                        dependencies.push({
+                            source: depTask,
+                            target: task
+                        });
                     }
                 });
             }
         });
-    }
-    
-    showTooltip(event, data) {
-        const tooltip = d3.select('body').append('div')
-            .attr('class', 'gantt-tooltip')
-            .style('left', (event.pageX + 10) + 'px')
-            .style('top', (event.pageY - 10) + 'px')
-            .html(`
-                <h4>${data.name}</h4>
-                <p><strong>Status:</strong> ${data.status}</p>
-                <p><strong>Progress:</strong> ${Math.round((data.progress || 0) * 100)}%</p>
-                <p><strong>Start:</strong> ${new Date(data.startDate).toLocaleDateString()}</p>
-                <p><strong>End:</strong> ${new Date(data.endDate).toLocaleDateString()}</p>
-                ${data.description ? `<p><strong>Description:</strong> ${data.description}</p>` : ''}
-            `);
-    }
-    
-    hideTooltip() {
-        d3.selectAll('.gantt-tooltip').remove();
-    }
-    
-    onTaskClick(data) {
-        // Navigate to task detail page
-        window.location.href = `tasks/${data.id}/detail.html`;
-    }
-    
-    zoomIn() {
-        this.zoom = Math.min(this.zoom * 1.2, 3);
-        this.applyTransform();
-    }
-    
-    zoomOut() {
-        this.zoom = Math.max(this.zoom / 1.2, 0.5);
-        this.applyTransform();
-    }
-    
-    resetView() {
-        this.zoom = 1;
-        this.panX = 0;
-        this.panY = 0;
-        this.applyTransform();
-    }
-    
-    applyTransform() {
-        const g = d3.select('#gantt-svg g');
-        g.attr('transform', `translate(${this.options.margin.left + this.panX},${this.options.margin.top + this.panY}) scale(${this.zoom})`);
-    }
-    
-    toggleFullscreen() {
-        if (!document.fullscreenElement) {
-            this.container.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
-    }
-    
-    exportChart() {
-        const svg = document.getElementById('gantt-svg');
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
         
-        img.onload = () => {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
+        if (dependencies.length === 0) return;
+        
+        const taskHeight = yScale.bandwidth();
+        
+        dependencies.forEach(dep => {
+            const sourceX = xScale(new Date(dep.source.endDate));
+            const sourceY = yScale(dep.source.id) + taskHeight / 2;
+            const targetX = xScale(new Date(dep.target.startDate));
+            const targetY = yScale(dep.target.id) + taskHeight / 2;
             
-            const link = document.createElement('a');
-            link.download = 'project-gantt-chart.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        };
+            // Arrow line
+            g.append('line')
+                .attr('x1', sourceX)
+                .attr('y1', sourceY)
+                .attr('x2', targetX - 10)
+                .attr('y2', targetY)
+                .attr('stroke', '#6b7280')
+                .attr('stroke-width', 2)
+                .attr('marker-end', 'url(#arrowhead)');
+        });
         
-        img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+        // Arrow marker definition
+        g.append('defs')
+            .append('marker')
+            .attr('id', 'arrowhead')
+            .attr('viewBox', '0 0 10 10')
+            .attr('refX', 10)
+            .attr('refY', 5)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M 0 0 L 10 5 L 0 10 z')
+            .attr('fill', '#6b7280');
     }
     
-    showLoading() {
-        const loading = document.getElementById('gantt-loading');
-        if (loading) loading.classList.remove('hidden');
+    renderTimeline(g, xScale, width, height) {
+        const timelineHeight = 30;
+        
+        // Timeline background
+        g.append('rect')
+            .attr('x', 0)
+            .attr('y', height)
+            .attr('width', width)
+            .attr('height', timelineHeight)
+            .attr('fill', '#f8fafc')
+            .attr('stroke', '#e2e8f0')
+            .attr('stroke-width', 1);
+        
+        // Timeline axis
+        const axis = d3.axisBottom(xScale)
+            .tickFormat(d3.timeFormat('%b %d'))
+            .tickSize(timelineHeight);
+        
+        g.append('g')
+            .attr('class', 'gantt-timeline')
+            .attr('transform', `translate(0,${height})`)
+            .call(axis);
     }
     
-    hideLoading() {
-        const loading = document.getElementById('gantt-loading');
-        if (loading) loading.classList.add('hidden');
+    getTaskColor(status) {
+        const colors = {
+            'completed': '#10b981',
+            'in-progress': '#3b82f6',
+            'planned': '#f59e0b',
+            'blocked': '#ef4444',
+            'not-started': '#9ca3af'
+        };
+        return colors[status.toLowerCase().replace(' ', '-')] || '#9ca3af';
+    }
+    
+    wrapText(text, width) {
+        text.each(function() {
+            const text = d3.select(this);
+            const words = text.text().split(/\s+/).reverse();
+            let word;
+            let line = [];
+            let lineNumber = 0;
+            const lineHeight = 1.1;
+            const y = text.attr('y');
+            const dy = parseFloat(text.attr('dy'));
+            let tspan = text.text(null).append('tspan').attr('x', text.attr('x')).attr('y', y).attr('dy', dy + 'em');
+            
+            while (word = words.pop()) {
+                line.push(word);
+                tspan.text(line.join(' '));
+                if (tspan.node().getComputedTextLength() > width) {
+                    line.pop();
+                    tspan.text(line.join(' '));
+                    line = [word];
+                    tspan = text.append('tspan').attr('x', text.attr('x')).attr('y', y).attr('dy', ++lineNumber * lineHeight + dy + 'em').text(word);
+                }
+            }
+        });
     }
     
     updateStats() {
@@ -782,11 +732,11 @@ class GanttChart {
         const dateRange = document.getElementById('gantt-date-range');
         
         if (itemCount) {
-            itemCount.textContent = this.data.tasks.length;
+            itemCount.textContent = this.filteredTasks.length;
         }
         
-        if (dateRange && this.data.tasks.length > 0) {
-            const dates = this.data.tasks.flatMap(task => [
+        if (dateRange && this.filteredTasks.length > 0) {
+            const dates = this.filteredTasks.flatMap(task => [
                 new Date(task.startDate),
                 new Date(task.endDate)
             ]);
@@ -795,12 +745,58 @@ class GanttChart {
             dateRange.textContent = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
         }
     }
+    
+    showLoading() {
+        this.isLoading = true;
+        const loadingElement = document.getElementById('gantt-loading');
+        if (loadingElement) {
+            loadingElement.classList.remove('hidden');
+            loadingElement.setAttribute('aria-busy', 'true');
+        }
+    }
+    
+    hideLoading() {
+        this.isLoading = false;
+        const loadingElement = document.getElementById('gantt-loading');
+        if (loadingElement) {
+            loadingElement.classList.add('hidden');
+            loadingElement.setAttribute('aria-busy', 'false');
+        }
+    }
+    
+    showError(message) {
+        const errorElement = document.getElementById('gantt-error');
+        if (errorElement) {
+            errorElement.classList.remove('hidden');
+            const errorText = errorElement.querySelector('p');
+            if (errorText) {
+                errorText.textContent = message;
+            }
+            errorElement.setAttribute('aria-live', 'assertive');
+        }
+    }
+    
+    hideError() {
+        const errorElement = document.getElementById('gantt-error');
+        if (errorElement) {
+            errorElement.classList.add('hidden');
+        }
+    }
 }
 
-// Initialize Gantt Chart when DOM is loaded
+// Initialize Project Gantt Chart when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof ganttData !== 'undefined') {
-        new GanttChart('gantt-chart-area', ganttData);
+    if (typeof projectGanttData !== 'undefined') {
+        const ganttChart = new ProjectGanttChart('gantt-chart-area', projectGanttData);
+        
+        // Add retry functionality
+        const retryBtn = document.getElementById('gantt-retry');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                ganttChart.hideError();
+                ganttChart.render();
+            });
+        }
     }
 });
 </script>

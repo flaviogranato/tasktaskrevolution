@@ -65,14 +65,23 @@ spec:
         r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Company
 metadata:
+  id: "{}"
   code: "{}"
   name: "{}"
+  createdAt: "{}"
+  updatedAt: "{}"
+  createdBy: "workspace-init"
 spec:
   timezone: "{}"
   size: "small"
   status: "active"
 "#,
-        company_code, company_name, timezone
+        uuid7::uuid7(),
+        company_code, 
+        company_name, 
+        chrono::Utc::now().to_rfc3339(),
+        chrono::Utc::now().to_rfc3339(),
+        timezone
     );
     std::fs::write(format!("{}/company.yaml", company_dir), company_manifest)?;
 

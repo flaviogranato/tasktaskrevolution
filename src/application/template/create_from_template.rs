@@ -17,7 +17,7 @@ pub struct CreateFromTemplateUseCase<
     PR: ProjectRepository + ProjectRepositoryWithId,
     RR: ResourceRepository + ResourceRepositoryWithId,
     TR: TaskRepository,
-    CR: CodeResolverTrait + ResourceRepositoryWithId,
+    CR: CodeResolverTrait,
 > {
     create_project_use_case: CreateProjectUseCase<PR>,
     create_resource_use_case: CreateResourceUseCase<RR>,
@@ -25,10 +25,10 @@ pub struct CreateFromTemplateUseCase<
 }
 
 impl<
-    PR: ProjectRepository + ProjectRepositoryWithId,
-    RR: ResourceRepository + ResourceRepositoryWithId,
-    TR: TaskRepository,
-    CR: CodeResolverTrait + ResourceRepositoryWithId,
+    PR: ProjectRepository + ProjectRepositoryWithId + Clone + 'static,
+    RR: ResourceRepository + ResourceRepositoryWithId + Clone + 'static,
+    TR: TaskRepository + Clone + 'static,
+    CR: CodeResolverTrait + Clone + 'static,
 > CreateFromTemplateUseCase<PR, RR, TR, CR>
 {
     pub fn new(
