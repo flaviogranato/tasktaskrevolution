@@ -375,6 +375,7 @@ fn rollback_migration(backup_dir: Option<String>) -> Result<(), Box<dyn std::err
 }
 
 fn migrate_manifests(dry_run: bool, force: bool) -> Result<(), Box<dyn std::error::Error>> {
+    tracing::info!("Starting YAML manifests migration...");
     println!("Starting YAML manifests migration...");
 
     // Check if manifests are already up to date
