@@ -56,21 +56,25 @@ pub enum Commands {
         work_days: String,
     },
     /// Create new entities
+    #[clap(alias = "new")]
     Create {
         #[clap(subcommand)]
         command: commands::CreateCommand,
     },
     /// List entities
+    #[clap(alias = "ls")]
     List {
         #[clap(subcommand)]
         command: commands::ListCommand,
     },
     /// Update entities
+    #[clap(alias = "edit")]
     Update {
         #[clap(subcommand)]
         command: commands::UpdateCommand,
     },
     /// Delete entities
+    #[clap(alias = "rm")]
     Delete {
         #[clap(subcommand)]
         command: commands::DeleteCommand,
@@ -91,6 +95,7 @@ pub enum Commands {
         command: commands::ReportCommand,
     },
     /// Validate system
+    #[clap(alias = "check")]
     Validate {
         #[clap(subcommand)]
         command: commands::ValidateCommand,
@@ -105,6 +110,7 @@ pub enum Commands {
         base_url: String,
     },
     /// Template management
+    #[clap(alias = "tmpl")]
     Template {
         #[clap(subcommand)]
         command: commands::TemplateCommand,
@@ -115,6 +121,7 @@ pub enum Commands {
         command: commands::TaskCommand,
     },
     /// Query entities with filtering
+    #[clap(alias = "q")]
     Query {
         /// Query string to parse and execute
         #[clap(long)]
