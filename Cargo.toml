@@ -125,6 +125,10 @@ path = "tests/adapters/task_repository_test.rs"
 name = "build_test"
 path = "tests/integration/build_test.rs"
 
+[[test]]
+name = "task_report_test"
+path = "tests/integration/task_report_test.rs"
+
 [profile.release]
 opt-level = 3
 lto = true

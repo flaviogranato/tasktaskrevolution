@@ -122,7 +122,6 @@ impl BuildUseCase {
                 .map(|(_, _, resources, _)| resources.len())
                 .sum::<usize>();
 
-            eprintln!("Build: Company {} has {} projects", company_code, project_count);
             companies_with_data.push((company, company_projects, project_count, resource_count));
         }
 
