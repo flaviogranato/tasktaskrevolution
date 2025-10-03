@@ -295,10 +295,15 @@ impl TryFrom<ResourceManifest> for AnyResource {
 
         match status {
             "Assigned" => {
+                // Validate that Assigned status requires project_assignments
+                if manifest.spec.project_assignments.is_none() || manifest.spec.project_assignments.as_ref().unwrap().is_empty() {
+                    return Err("Assigned status requires project_assignments to be present and non-empty".to_string());
+                }
+                
                 let project_assignments = manifest
                     .spec
                     .project_assignments
-                    .unwrap_or_default()
+                    .unwrap()
                     .into_iter()
                     .map(|a| a.to())
                     .collect();
@@ -337,8 +342,32 @@ impl TryFrom<ResourceManifest> for AnyResource {
                 task_assignments: Some(Vec::new()),
                 state: crate::domain::resource_management::state::Inactive,
             })),
+            "Available" => {
+                // Validate that Available status should not have project_assignments
+                if manifest.spec.project_assignments.is_some() && !manifest.spec.project_assignments.as_ref().unwrap().is_empty() {
+                    return Err("Available status should not have project_assignments".to_string());
+                }
+                
+                Ok(AnyResource::Available(Resource {
+                    id,
+                    code,
+                    name,
+                    email,
+                    resource_type,
+                    scope: manifest.spec.scope,
+                    project_id: manifest.spec.project_id,
+                    start_date,
+                    end_date,
+                    vacations,
+                    time_off_balance,
+                    time_off_history,
+                    wip_limits: Some(WipLimits::new(5, 3, 100)),
+                    task_assignments: Some(Vec::new()),
+                    state: Available,
+                }))
+            }
             _ => {
-                // Default to Available
+                // Default to Available for unknown statuses
                 Ok(AnyResource::Available(Resource {
                     id,
                     code,
@@ -660,6 +689,103 @@ mod tests {
         
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
+    }
+
+    #[test]
+    fn test_status_consistency_validation() {
+        // Test that Assigned status requires project_assignments
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                resourceType: "Developer"
+                status: "Assigned"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                scope: "Company"
+                timeOffBalance: 25
+                # Missing project_assignments for Assigned status
+        "#;
+
+        let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
+        let result = AnyResource::try_from(manifest);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let error_message = format!("{}", error);
+        assert!(error_message.contains("Assigned status requires project_assignments"));
+    }
+
+    #[test]
+    fn test_status_consistency_validation_available_with_assignments() {
+        // Test that Available status should not have project_assignments
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                resourceType: "Developer"
+                status: "Available"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                scope: "Company"
+                timeOffBalance: 25
+                projectAssignments:
+                  - projectId: "PROJ-001"
+                    startDate: "2024-01-01T00:00:00Z"
+                    endDate: "2024-12-31T23:59:59Z"
+                    allocationPercentage: 100
+        "#;
+
+        let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
+        let result = AnyResource::try_from(manifest);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let error_message = format!("{}", error);
+        assert!(error_message.contains("Available status should not have project_assignments"));
+    }
+
+    #[test]
+    fn test_status_consistency_validation_assigned_with_empty_assignments() {
+        // Test that Assigned status requires non-empty project_assignments
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                resourceType: "Developer"
+                status: "Assigned"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                scope: "Company"
+                timeOffBalance: 25
+                projectAssignments: []  # Empty assignments for Assigned status
+        "#;
+
+        let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
+        let result = AnyResource::try_from(manifest);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let error_message = format!("{}", error);
+        assert!(error_message.contains("Assigned status requires project_assignments"));
     }
 
     #[test]
