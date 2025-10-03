@@ -40,6 +40,9 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
             .validate_resource_type(&params.resource_type, &config_repo)
             .map_err(|e| AppError::validation_error("resource_type", e))?;
 
+        // Basic scope validation
+        self.validate_resource_scope(&params)?;
+
         let code = match params.code {
             Some(c) => c,
             None => self.repository.get_next_code(&params.resource_type)?,
@@ -74,6 +77,51 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         };
 
         Ok(())
+    }
+
+    /// Validates resource scope constraints
+    fn validate_resource_scope(&self, params: &CreateResourceParams) -> Result<(), AppError> {
+        match params.scope {
+            ResourceScope::Company => {
+                // Company-scoped resources don't need project validation
+                Ok(())
+            }
+            ResourceScope::Project => {
+                // Project-scoped resources must have a valid project
+                if params.project_code.is_none() {
+                    return Err(AppError::validation_error(
+                        "project_code",
+                        "Project-scoped resources must specify a project",
+                    ));
+                }
+
+                // Validate business rules for project-scoped resources
+                self.validate_scope_business_rules(params)?;
+                Ok(())
+            }
+        }
+    }
+
+    /// Validates resource scope against business rules
+    fn validate_scope_business_rules(&self, params: &CreateResourceParams) -> Result<(), AppError> {
+        match params.scope {
+            ResourceScope::Company => {
+                // Company-scoped resources can be any type
+                Ok(())
+            }
+            ResourceScope::Project => {
+                // Some resource types might be restricted to company scope
+                match params.resource_type.to_lowercase().as_str() {
+                    "manager" | "director" | "executive" => {
+                        Err(AppError::validation_error(
+                            "resource_scope",
+                            format!("Resource type '{}' should be company-scoped, not project-scoped", params.resource_type),
+                        ))
+                    }
+                    _ => Ok(()),
+                }
+            }
+        }
     }
 }
 
@@ -488,8 +536,8 @@ mod test {
         let config_repo = MockConfigRepository::new();
         let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
         let name = "Complete Resource";
-        let resource_type = "Manager";
-        let custom_code = "MGR-001".to_string();
+        let resource_type = "Developer";
+        let custom_code = "DEV-001".to_string();
         let email = "manager@example.com".to_string();
         let project_code = "PROJ-001".to_string();
         let start_date = chrono::NaiveDate::from_ymd_opt(2024, 6, 1).unwrap();
@@ -522,5 +570,107 @@ mod test {
         } else {
             panic!("Expected Available resource");
         }
+    }
+
+    #[test]
+    fn test_validate_resource_scope_project_without_project_code() {
+        let mock_repo = MockResourceRepository::new(false);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
+
+        let params = CreateResourceParams {
+            name: "Test Resource".to_string(),
+            resource_type: "Developer".to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None, // No project code for project-scoped resource
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+            scope: ResourceScope::Project,
+        };
+
+        let result = use_case.execute(params);
+        assert!(result.is_err());
+        
+        if let Err(AppError::ValidationError { field, message }) = result {
+            assert_eq!(field, "project_code");
+            assert!(message.contains("must specify a project"));
+        } else {
+            panic!("Expected ValidationError");
+        }
+    }
+
+    #[test]
+    fn test_validate_resource_scope_manager_project_scope() {
+        let mock_repo = MockResourceRepository::new(false);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
+
+        let params = CreateResourceParams {
+            name: "Test Manager".to_string(),
+            resource_type: "Manager".to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: Some("PROJ-001".to_string()),
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+            scope: ResourceScope::Project, // Manager should be company-scoped
+        };
+
+        let result = use_case.execute(params);
+        assert!(result.is_err());
+        
+        if let Err(AppError::ValidationError { field, message }) = result {
+            assert_eq!(field, "resource_scope");
+            assert!(message.contains("should be company-scoped"));
+        } else {
+            panic!("Expected ValidationError");
+        }
+    }
+
+    #[test]
+    fn test_validate_resource_scope_company_scope_success() {
+        let mock_repo = MockResourceRepository::new(false);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
+
+        let params = CreateResourceParams {
+            name: "Test Manager".to_string(),
+            resource_type: "Manager".to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: None,
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+            scope: ResourceScope::Company, // Manager should be company-scoped
+        };
+
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_resource_scope_developer_project_scope_success() {
+        let mock_repo = MockResourceRepository::new(false);
+        let config_repo = MockConfigRepository::new();
+        let use_case = CreateResourceUseCase::new(mock_repo, config_repo);
+
+        let params = CreateResourceParams {
+            name: "Test Developer".to_string(),
+            resource_type: "Developer".to_string(),
+            company_code: "TEST_COMPANY".to_string(),
+            project_code: Some("PROJ-001".to_string()),
+            code: None,
+            email: None,
+            start_date: None,
+            end_date: None,
+            scope: ResourceScope::Project, // Developer can be project-scoped
+        };
+
+        let result = use_case.execute(params);
+        assert!(result.is_ok());
     }
 }
