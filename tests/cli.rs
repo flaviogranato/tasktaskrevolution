@@ -8,6 +8,7 @@
 
 use assert_cmd::prelude::*;
 use assert_fs::prelude::*;
+use assert_fs::TempDir;
 use predicates::prelude::*;
 use serde_yaml::Value;
 use std::fs;
@@ -2144,6 +2145,120 @@ fn test_cli_aliases_backward_compatibility() -> Result<(), Box<dyn std::error::E
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("Template management"));
+
+    Ok(())
+}
+
+#[test]
+fn test_workspace_init_command() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = TempDir::new().unwrap();
+    let temp_path = temp_dir.path();
+
+    // Test workspace init command
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args([
+        "workspace", "init",
+        "--name", "Test Manager",
+        "--email", "test@example.com",
+        "--company-name", "Test Corp",
+        "--company-code", "TEST-001",
+        "--timezone", "UTC",
+        "--yes"
+    ]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Initializing TaskTaskRevolution workspace"))
+        .stdout(predicate::str::contains("Workspace initialized successfully"));
+
+    // Verify files were created
+    assert!(temp_path.join("config.yaml").exists());
+    assert!(temp_path.join("companies").exists());
+    assert!(temp_path.join("companies/test-001").exists());
+    assert!(temp_path.join("companies/test-001/company.yaml").exists());
+    assert!(temp_path.join("companies/test-001/projects").exists());
+    assert!(temp_path.join("companies/test-001/projects/web-app").exists());
+    assert!(temp_path.join("companies/test-001/projects/web-app/project.yaml").exists());
+    assert!(temp_path.join("companies/test-001/projects/web-app/tasks").exists());
+    assert!(temp_path.join("companies/test-001/projects/web-app/tasks/task.yaml").exists());
+    assert!(temp_path.join("README.md").exists());
+
+    Ok(())
+}
+
+#[test]
+fn test_workspace_init_with_defaults() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = TempDir::new().unwrap();
+    let temp_path = temp_dir.path();
+
+    // Test workspace init with default values
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(["workspace", "init", "--yes"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Initializing TaskTaskRevolution workspace"))
+        .stdout(predicate::str::contains("Workspace initialized successfully"));
+
+    // Verify default values were used
+    let config_content = std::fs::read_to_string(temp_path.join("config.yaml"))?;
+    assert!(config_content.contains("Project Manager"));
+    assert!(config_content.contains("manager@example.com"));
+
+    let company_content = std::fs::read_to_string(temp_path.join("companies/tech-001/company.yaml"))?;
+    assert!(company_content.contains("TECH-001"));
+    assert!(company_content.contains("Tech Corp"));
+
+    Ok(())
+}
+
+#[test]
+fn test_workspace_init_idempotent() -> Result<(), Box<dyn std::error::Error>> {
+    let temp_dir = TempDir::new().unwrap();
+    let temp_path = temp_dir.path();
+
+    // First initialization
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(["workspace", "init", "--yes"]);
+    cmd.assert().success();
+
+    // Second initialization without --yes should warn
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(["workspace", "init"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Workspace already initialized"));
+
+    // Second initialization with --yes should reinitialize
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp_path);
+    cmd.args(["workspace", "init", "--yes"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Reinitializing workspace"));
+
+    Ok(())
+}
+
+#[test]
+fn test_workspace_init_help() -> Result<(), Box<dyn std::error::Error>> {
+    // Test workspace help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["workspace", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Initialize workspace with examples"));
+
+    // Test workspace init help
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["workspace", "init", "--help"]);
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Initialize workspace with examples for onboarding"));
 
     Ok(())
 }

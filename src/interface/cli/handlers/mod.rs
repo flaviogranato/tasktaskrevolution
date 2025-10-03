@@ -8,5 +8,6 @@ pub mod serve_handler;
 pub mod task_handler;
 pub mod template_handler;
 pub mod unlink_handler;
+pub mod workspace_handler;
 
 pub use app_handler::*;
