@@ -17,24 +17,24 @@ pub struct CreateFromTemplateUseCase<
     PR: ProjectRepository + ProjectRepositoryWithId,
     RR: ResourceRepository + ResourceRepositoryWithId,
     TR: TaskRepository,
-    CR: CodeResolverTrait,
+    CR: CodeResolverTrait + ResourceRepositoryWithId,
 > {
     create_project_use_case: CreateProjectUseCase<PR>,
     create_resource_use_case: CreateResourceUseCase<RR>,
-    create_task_use_case: CreateTaskUseCase<PR, TR, CR>,
+    create_task_use_case: CreateTaskUseCase<PR, TR, RR, CR>,
 }
 
 impl<
     PR: ProjectRepository + ProjectRepositoryWithId,
     RR: ResourceRepository + ResourceRepositoryWithId,
     TR: TaskRepository,
-    CR: CodeResolverTrait,
+    CR: CodeResolverTrait + ResourceRepositoryWithId,
 > CreateFromTemplateUseCase<PR, RR, TR, CR>
 {
     pub fn new(
         create_project_use_case: CreateProjectUseCase<PR>,
         create_resource_use_case: CreateResourceUseCase<RR>,
-        create_task_use_case: CreateTaskUseCase<PR, TR, CR>,
+        create_task_use_case: CreateTaskUseCase<PR, TR, RR, CR>,
     ) -> Self {
         Self {
             create_project_use_case,

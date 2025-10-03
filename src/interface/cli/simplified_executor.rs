@@ -193,8 +193,9 @@ impl SimplifiedExecutor {
                 };
 
                 let task_repo = context_manager.create_task_repository();
+                let resource_repo = context_manager.create_resource_repository();
                 let code_resolver = Self::create_code_resolver(&context_manager)?;
-                let use_case = CreateTaskUseCase::new(project_repo, task_repo, code_resolver);
+                let use_case = CreateTaskUseCase::new(project_repo, task_repo, resource_repo, code_resolver);
                 match use_case.execute(args) {
                     Ok(_) => {
                         println!("Task created successfully!");

@@ -53,7 +53,7 @@ mod test {
             if self.should_fail {
                 return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
-                    message: "Erro mockado ao salvar".to_string(),
+                    message: "Mocked save error".to_string(),
                 });
             }
             *self.saved_config.borrow_mut() = Some(<ConfigManifest as Convertible<Config>>::from(config));
@@ -71,7 +71,7 @@ mod test {
             if self.should_fail {
                 return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
-                    message: "Erro mockado ao carregar".to_string(),
+                    message: "Mocked load error".to_string(),
                 });
             }
             let config = Config::new("mock".to_string(), "mock@email.com".to_string(), "UTC".to_string());

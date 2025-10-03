@@ -104,7 +104,7 @@ mod test {
             if self.should_fail {
                 return Err(DomainError::ValidationError {
                     field: "repository".to_string(),
-                    message: "Erro mockado ao salvar".to_string(),
+                    message: "Mocked save error".to_string(),
                 });
             }
             *self.saved_config.borrow_mut() = Some(resource.clone());
@@ -443,7 +443,7 @@ mod test {
         match result.unwrap_err() {
             AppError::ValidationError { field, message } => {
                 assert_eq!(field, "repository");
-                assert_eq!(message, "Erro mockado ao salvar");
+                assert_eq!(message, "Mocked save error");
             }
             _ => panic!("Expected ValidationError"),
         }
