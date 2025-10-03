@@ -2316,3 +2316,46 @@ fn test_migrate_manifests_help() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[test]
+fn test_tracing_logging_verbose() -> Result<(), Box<dyn std::error::Error>> {
+    // Test verbose logging with tracing
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["--verbose", "migrate", "manifests", "--dry-run"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Starting YAML manifests migration"))
+        .stdout(predicate::str::contains("INFO Starting YAML manifests migration"));
+
+    Ok(())
+}
+
+#[test]
+fn test_tracing_logging_json() -> Result<(), Box<dyn std::error::Error>> {
+    // Test JSON logging format
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["--verbose", "--json-logs", "migrate", "manifests", "--dry-run"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Starting YAML manifests migration"))
+        .stdout(predicate::str::contains("\"level\":\"INFO\""))
+        .stdout(predicate::str::contains("\"message\":\"Starting YAML manifests migration...\""));
+
+    Ok(())
+}
+
+#[test]
+fn test_tracing_logging_help() -> Result<(), Box<dyn std::error::Error>> {
+    // Test that --json-logs flag is available
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.args(["--help"]);
+
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("--json-logs"))
+        .stdout(predicate::str::contains("Output logs in JSON format"));
+
+    Ok(())
+}

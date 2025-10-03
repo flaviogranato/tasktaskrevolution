@@ -25,6 +25,9 @@ pub struct Cli {
     /// Enable quiet output (minimal information)
     #[clap(short, long, global = true)]
     pub quiet: bool,
+    /// Output logs in JSON format
+    #[clap(long, global = true)]
+    pub json_logs: bool,
     #[clap(subcommand)]
     pub command: Commands,
 }
@@ -181,6 +184,7 @@ impl Cli {
     fn init_logging(&self) {
         let verbose = self.verbose || self.debug;
         let quiet = self.quiet;
+        let json_format = self.json_logs;
 
         // Set environment variables for backward compatibility
         unsafe {
@@ -188,22 +192,10 @@ impl Cli {
             std::env::set_var("TTR_QUIET", if quiet { "1" } else { "0" });
         }
 
-        // Initialize logging
-        if verbose {
-            unsafe {
-                std::env::set_var("RUST_LOG", "debug");
-            }
-        } else if quiet {
-            unsafe {
-                std::env::set_var("RUST_LOG", "error");
-            }
-        } else {
-            unsafe {
-                std::env::set_var("RUST_LOG", "info");
-            }
+        // Initialize tracing-based logging
+        if let Err(e) = logging::Logger::init(verbose, quiet, json_format) {
+            eprintln!("Failed to initialize logging: {}", e);
         }
-
-        let _ = env_logger::try_init();
     }
 
     pub fn execute(self) -> Result<(), Box<dyn std::error::Error>> {
