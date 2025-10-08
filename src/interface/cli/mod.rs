@@ -4,6 +4,7 @@ use std::{env, path::PathBuf};
 pub mod command_executor;
 pub mod commands;
 pub mod context_manager;
+pub mod exit_codes;
 pub mod handlers;
 pub mod logging;
 pub mod simplified_executor;

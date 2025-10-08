@@ -190,7 +190,7 @@ fn print_validation_results(results: &[crate::application::validate::types::Vali
             .any(|r| matches!(r.level, crate::application::validate::types::ValidationSeverity::Error));
         if has_errors {
             eprintln!("Validation failed in strict mode");
-            std::process::exit(1);
+            crate::interface::cli::exit_codes::CliError::Validation.exit();
         }
     }
 
@@ -199,7 +199,7 @@ fn print_validation_results(results: &[crate::application::validate::types::Vali
         Ok(f) => f,
         Err(e) => {
             eprintln!("{}", e);
-            std::process::exit(1);
+            crate::interface::cli::exit_codes::CliError::InvalidArgument.exit();
         }
     };
 
@@ -208,7 +208,7 @@ fn print_validation_results(results: &[crate::application::validate::types::Vali
         Ok(output) => output,
         Err(e) => {
             eprintln!("Failed to serialize results: {}", e);
-            std::process::exit(1);
+            crate::interface::cli::exit_codes::CliError::Internal.exit();
         }
     };
 
