@@ -1,5 +1,5 @@
 use crate::domain::company_settings::config::Config;
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 use std::path::{Path, PathBuf};
 
 /// Repository trait for Config entity operations.

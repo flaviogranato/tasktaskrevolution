@@ -3,7 +3,7 @@
 //! This module defines the ID generation interface that the domain layer
 //! requires from the infrastructure layer.
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 
 /// ID generator port for generating unique identifiers
 pub trait IdGeneratorPort: Send + Sync {

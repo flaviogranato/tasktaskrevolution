@@ -3,7 +3,7 @@
 //! This module defines the file system interface that the domain layer
 //! requires from the infrastructure layer.
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 use std::path::{Path, PathBuf};
 
 /// File system port for file operations

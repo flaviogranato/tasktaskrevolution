@@ -7,7 +7,6 @@ use crate::application::errors::AppError;
 use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::shared::specification::{AndSpecification, Specification};
 
 pub struct ValidateDataIntegrityUseCase<'a, P, R, C>

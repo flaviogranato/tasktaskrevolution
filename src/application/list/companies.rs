@@ -1,6 +1,5 @@
 use crate::application::errors::AppError;
 use crate::domain::company_management::{Company, repository::CompanyRepository};
-use crate::domain::shared::errors::{DomainError, DomainResult};
 
 pub struct ListCompaniesUseCase<R: CompanyRepository> {
     repository: R,

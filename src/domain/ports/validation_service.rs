@@ -3,7 +3,7 @@
 //! This module defines the validation interface that the domain layer
 //! requires from the infrastructure layer.
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 use std::collections::HashMap;
 
 /// Validation result for a field

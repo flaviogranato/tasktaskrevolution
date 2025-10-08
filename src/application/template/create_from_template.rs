@@ -3,7 +3,6 @@ use crate::application::create::resource::{CreateResourceParams, CreateResourceU
 use crate::application::create::task::CreateTaskUseCase;
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::company_settings::repository::ConfigRepository;
 use crate::domain::project_management::{
     ProjectTemplate,
     repository::{ProjectRepository, ProjectRepositoryWithId},

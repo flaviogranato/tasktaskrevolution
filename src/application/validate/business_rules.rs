@@ -6,7 +6,6 @@ use crate::application::errors::AppError;
 use crate::domain::company_management::repository::CompanyRepository;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::{repository::ResourceRepository, resource::Period};
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use chrono::{DateTime, FixedOffset, Local, NaiveDate, Offset};
 
 pub struct ValidateBusinessRulesUseCase<'a, P, R, C>

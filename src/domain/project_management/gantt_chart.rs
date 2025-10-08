@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 
 use super::advanced_dependencies::{AdvancedDependencyGraph, DependencyType};
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 
 // ============================================================================
 // ENUMS

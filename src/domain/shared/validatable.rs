@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 
 /// A trait for objects that can validate themselves
 pub trait Validatable {
@@ -86,7 +86,7 @@ impl<T: Validatable> Validator<T> for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::errors::{DomainError, DomainResult};
+    use crate::domain::shared::errors::DomainResult;
 
     // Mock structs for testing
     #[derive(Debug, Clone, PartialEq)]

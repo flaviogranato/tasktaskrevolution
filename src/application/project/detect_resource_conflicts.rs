@@ -5,13 +5,11 @@
 
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::project_management::{
-    any_project::AnyProject,
-    repository::{ProjectRepository, ProjectRepositoryWithId},
-};
+use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
 use crate::domain::task_management::repository::{TaskRepository, TaskRepositoryWithId};
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::project_management::AnyProject;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 

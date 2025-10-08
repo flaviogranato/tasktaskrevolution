@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::domain::company_management::Company;
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 
 /// Repository trait for Company entity operations.
 pub trait CompanyRepository {

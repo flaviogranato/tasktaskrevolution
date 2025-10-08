@@ -3,7 +3,7 @@
 //! This module defines the time interface that the domain layer
 //! requires from the infrastructure layer.
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 
 /// Time service port for time operations

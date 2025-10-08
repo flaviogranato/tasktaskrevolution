@@ -7,7 +7,6 @@ use crate::domain::resource_management::{
     repository::ResourceRepository,
     resource::{TaskAssignment, TaskAssignmentStatus},
 };
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::task_management::{any_task::AnyTask, repository::TaskRepository};
 use chrono::Local;
 use std::fmt;
@@ -144,11 +143,23 @@ where
         Ok(saved_task)
     }
 
-    fn is_resource_available(&self, _resource: &AnyResource) -> bool {
-        // TODO: Implement resource availability check
-        // This should check if the resource is not already assigned to another task
-        // or if it's not on vacation, etc.
-        true
+    fn is_resource_available(&self, resource: &AnyResource) -> bool {
+        match resource {
+            AnyResource::Available(_) => true,
+            AnyResource::Assigned(res) => {
+                // Check if resource is already assigned to another task
+                // and if it has capacity for more assignments
+                if let Some(ref wip_limits) = res.wip_limits {
+                    if wip_limits.enabled {
+                        let current_active_tasks = res.get_active_task_count();
+                        return current_active_tasks < wip_limits.max_concurrent_tasks;
+                    }
+                }
+                // If no WIP limits, allow assignment
+                true
+            }
+            AnyResource::Inactive(_) => false,
+        }
     }
 
     fn validate_wip_limits(

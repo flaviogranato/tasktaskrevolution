@@ -5,9 +5,8 @@
 
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
-use crate::domain::shared::errors::{DomainError, DomainResult};
-use chrono::{NaiveDate, Weekday};
+use crate::domain::resource_management::repository::ResourceRepository;
+use chrono::NaiveDate;
 use std::collections::HashMap;
 
 /// Calendar availability validation use case
