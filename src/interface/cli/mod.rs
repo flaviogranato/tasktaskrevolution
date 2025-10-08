@@ -3,6 +3,7 @@ use std::{env, path::PathBuf};
 
 pub mod command_executor;
 pub mod commands;
+pub mod completions;
 pub mod context_manager;
 pub mod exit_codes;
 pub mod handlers;
@@ -168,6 +169,21 @@ pub enum Commands {
         #[clap(long)]
         debug: bool,
     },
+    /// Generate shell completions
+    Completions {
+        /// Shell type (bash, zsh, fish, powershell, elvish)
+        #[clap(short, long)]
+        shell: Option<String>,
+        /// Install completions to files
+        #[clap(long)]
+        install: bool,
+        /// Output directory for installed completions
+        #[clap(long)]
+        output_dir: Option<String>,
+        /// Show installation help
+        #[clap(long)]
+        help: bool,
+    },
 }
 
 impl Cli {
@@ -264,6 +280,20 @@ impl Cli {
                     cors,
                     debug,
                 )),
+            Commands::Completions {
+                shell,
+                install,
+                output_dir,
+                help,
+            } => {
+                if help {
+                    completions::CompletionCommandHandler::handle_help_command()
+                } else if install {
+                    completions::CompletionCommandHandler::handle_install_command(output_dir.clone())
+                } else {
+                    completions::CompletionCommandHandler::handle_completion_command(shell.clone())
+                }
+            }
         }
     }
 
