@@ -4,7 +4,6 @@ use crate::application::project::detect_resource_conflicts::DetectResourceConfli
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
 use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::domain::task_management::{AnyTask, TaskBuilder, repository::TaskRepository};
 use chrono::NaiveDate;
 

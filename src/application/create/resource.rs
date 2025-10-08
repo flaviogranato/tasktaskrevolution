@@ -5,7 +5,6 @@ use crate::domain::resource_management::{
     repository::ResourceRepository,
     resource::{Resource, ResourceScope},
 };
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use crate::infrastructure::persistence::config_repository::FileConfigRepository;
 
 #[derive(Debug, Clone)]

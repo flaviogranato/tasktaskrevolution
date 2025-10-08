@@ -1,6 +1,5 @@
 use crate::application::errors::AppError;
 use crate::domain::resource_management::{any_resource::AnyResource, repository::ResourceRepository};
-use crate::domain::shared::errors::{DomainError, DomainResult};
 
 #[derive(Debug, Clone)]
 pub struct ResourceWithContext {

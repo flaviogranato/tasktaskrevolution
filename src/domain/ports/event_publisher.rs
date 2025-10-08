@@ -3,7 +3,7 @@
 //! This module defines the event publishing interface that the domain layer
 //! requires from the infrastructure layer.
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 use std::sync::Arc;
 
 /// Domain event that can be published

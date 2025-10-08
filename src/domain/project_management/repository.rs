@@ -1,5 +1,5 @@
 use crate::domain::project_management::AnyProject;
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 
 /// Repository trait for Project entity operations.
 /// 

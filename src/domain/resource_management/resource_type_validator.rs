@@ -1,5 +1,4 @@
 use crate::domain::company_settings::repository::ConfigRepository;
-use std::path::Path;
 
 pub struct ResourceTypeValidator;
 

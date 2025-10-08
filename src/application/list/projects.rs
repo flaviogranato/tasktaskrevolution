@@ -1,6 +1,5 @@
 use crate::application::errors::AppError;
 use crate::domain::project_management::{AnyProject, repository::ProjectRepository};
-use crate::domain::shared::errors::{DomainError, DomainResult};
 
 pub struct ListProjectsUseCase<R: ProjectRepository> {
     repository: R,

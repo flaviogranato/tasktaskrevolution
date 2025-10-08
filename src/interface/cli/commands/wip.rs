@@ -6,7 +6,7 @@ use crate::domain::resource_management::{
     repository::ResourceRepository,
     resource::{WipLimits, WipStatus},
 };
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainError;
 use crate::interface::cli::table_formatter::TableFormatter;
 use clap::{Args, Subcommand};
 use std::fmt;

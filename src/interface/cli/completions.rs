@@ -3,7 +3,6 @@
 //! This module provides shell completion generation for various shells.
 
 use clap::{Command, CommandFactory};
-use std::io;
 
 /// Supported shell types for completions
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

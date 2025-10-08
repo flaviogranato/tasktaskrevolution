@@ -3,7 +3,7 @@
 //! This module defines the repository interfaces that the domain layer
 //! requires from the infrastructure layer, following the Repository pattern.
 
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 use std::collections::HashMap;
 
 /// Generic repository port for domain entities

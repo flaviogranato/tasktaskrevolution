@@ -6,7 +6,7 @@
 use crate::domain::ports::notification_service::{
     NotificationServicePort, DomainNotification, NotificationServiceStatus,
 };
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 
 /// Standard notification service adapter
 pub struct StandardNotificationServiceAdapter {

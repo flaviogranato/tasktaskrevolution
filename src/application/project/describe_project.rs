@@ -4,7 +4,6 @@ use crate::domain::project_management::{
     any_project::AnyProject,
     repository::{ProjectRepository, ProjectRepositoryWithId},
 };
-use crate::domain::shared::errors::{DomainError, DomainResult};
 use std::fmt;
 
 #[derive(Debug)]

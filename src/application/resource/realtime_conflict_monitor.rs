@@ -4,30 +4,21 @@
 //! and task scheduling.
 
 use crate::application::errors::AppError;
+use crate::domain::shared::errors::DomainError;
 use crate::application::project::detect_resource_conflicts::{
     DetectResourceConflictsUseCase, ResourceConflict, ConflictType, ConflictSeverity,
 };
 use crate::application::resource::validate_calendar_availability::{
-    ValidateCalendarAvailabilityUseCase, CalendarAvailabilityResult, AvailabilityConflict,
+    CalendarAvailabilityResult, AvailabilityConflict,
 };
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::project_management::{
-    any_project::AnyProject,
-    repository::{ProjectRepository, ProjectRepositoryWithId},
-};
-use crate::domain::resource_management::{
-    any_resource::AnyResource,
-    repository::{ResourceRepository, ResourceRepositoryWithId},
-};
-use crate::domain::task_management::{
-    any_task::AnyTask,
-    repository::{TaskRepository, TaskRepositoryWithId},
-};
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::task_management::repository::TaskRepository;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use tokio::time::{Duration, Interval};
+use tokio::time::Duration;
 
 /// Real-time conflict monitor service
 pub struct RealtimeConflictMonitor {

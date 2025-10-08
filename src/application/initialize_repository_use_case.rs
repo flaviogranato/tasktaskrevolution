@@ -2,10 +2,7 @@
 
 use crate::application::errors::AppError;
 use crate::domain::company_settings::{config::Config, repository::ConfigRepository};
-use crate::domain::shared::convertable::Convertible;
-use crate::domain::shared::errors::{DomainError, DomainResult};
-use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[allow(dead_code)]
 pub struct InitializeRepositoryUseCase<R: ConfigRepository> {

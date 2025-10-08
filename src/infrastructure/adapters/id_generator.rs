@@ -6,7 +6,6 @@
 use crate::domain::ports::id_generator::{IdGeneratorPort, IdType};
 use crate::domain::shared::errors::{DomainError, DomainResult};
 use std::sync::atomic::{AtomicU64, Ordering};
-use uuid7::Uuid;
 
 /// Standard ID generator adapter
 pub struct StandardIdGeneratorAdapter {

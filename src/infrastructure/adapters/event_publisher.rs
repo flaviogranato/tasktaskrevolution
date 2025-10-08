@@ -6,7 +6,7 @@
 use crate::domain::ports::event_publisher::{
     EventPublisherPort, EventBusPort, DomainEvent, EventSubscriber,
 };
-use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::errors::DomainResult;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 

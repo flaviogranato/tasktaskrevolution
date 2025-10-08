@@ -1,5 +1,4 @@
 use crate::domain::resource_management::repository::ResourceRepository;
-use crate::domain::shared::errors::{DomainError, DomainResult};
 
 pub struct CreateVacationUseCase<R: ResourceRepository> {
     repository: R,
