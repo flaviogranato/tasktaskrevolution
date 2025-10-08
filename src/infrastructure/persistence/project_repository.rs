@@ -490,6 +490,9 @@ mod tests {
                 created_at: None,
                 updated_at: None,
                 created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec: ProjectSpec {
                 timezone: Some("UTC".to_string()),

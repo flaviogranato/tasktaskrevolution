@@ -47,6 +47,12 @@ pub struct Metadata {
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub created_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -228,6 +234,9 @@ impl From<AnyTask> for TaskManifest {
                 created_at: None,
                 updated_at: None,
                 created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec: Spec {
                 project_code: task_core.project_code,
@@ -435,6 +444,9 @@ mod convertable_tests {
                 created_at: None,
                 updated_at: None,
                 created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec: Spec {
                 project_code: "PROJ-1".to_string(),

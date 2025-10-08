@@ -40,6 +40,12 @@ pub struct ProjectMetadata {
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub created_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -138,6 +144,9 @@ impl From<AnyProject> for ProjectManifest {
                 created_at: None,
                 updated_at: None,
                 created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec: ProjectSpec {
                 timezone,

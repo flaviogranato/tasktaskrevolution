@@ -13,6 +13,8 @@ pub struct CompanyManifest {
     pub kind: String,
     pub metadata: CompanyMetadata,
     pub spec: CompanySpec,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<CompanyStatusManifest>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -24,6 +26,12 @@ pub struct CompanyMetadata {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub created_by: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -75,6 +83,9 @@ impl From<&Company> for CompanyManifest {
                 created_at: company.created_at,
                 updated_at: company.updated_at,
                 created_by: company.created_by.clone(),
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec: CompanySpec {
                 description: company.description.clone(),
@@ -87,6 +98,7 @@ impl From<&Company> for CompanyManifest {
                 size: CompanySizeManifest::from(&company.size),
                 status: CompanyStatusManifest::from(&company.status),
             },
+            status: Some(CompanyStatusManifest::from(&company.status)),
         }
     }
 }
