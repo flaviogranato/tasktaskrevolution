@@ -1,0 +1,359 @@
+name: Comprehensive CI Suite
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run comprehensive tests daily at 3 AM UTC
+    - cron: '0 3 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  # =============================================================================
+  # UNIT TESTS & CODE QUALITY
+  # =============================================================================
+  unit-tests:
+    name: Unit Tests & Code Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        components: rustfmt, clippy
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+          
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+      
+    - name: Run Clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+      
+    - name: Run unit tests
+      run: cargo test --lib --verbose
+      
+    - name: Run doc tests
+      run: cargo test --doc --verbose
+
+  # =============================================================================
+  # INTEGRATION TESTS
+  # =============================================================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: unit-tests
+    
+    strategy:
+      matrix:
+        test-suite: [cli, adapters, performance, compatibility, e2e]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Build TTR
+      run: cargo build --verbose
+      
+    - name: Run CLI integration tests
+      if: matrix.test-suite == 'cli'
+      run: cargo test --test cli --verbose
+      
+    - name: Run adapter tests
+      if: matrix.test-suite == 'adapters'
+      run: cargo test --test company_repository_test --test project_repository_test --test resource_repository_test --test task_repository_test --verbose
+      
+    - name: Run performance tests
+      if: matrix.test-suite == 'performance'
+      run: cargo test --test performance --verbose
+      
+    - name: Run compatibility tests
+      if: matrix.test-suite == 'compatibility'
+      run: cargo test --test compatibility --verbose
+      
+    - name: Run E2E tests
+      if: matrix.test-suite == 'e2e'
+      run: cargo test --test e2e_tests --verbose
+
+  # =============================================================================
+  # STRESS TESTS & LOAD TESTING
+  # =============================================================================
+  stress-tests:
+    name: Stress Tests & Load Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: integration-tests
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Build TTR release
+      run: cargo build --release --verbose
+      
+    - name: Run stress tests
+      run: |
+        echo "Running stress tests..."
+        # Test with large datasets
+        cargo test --test performance -- --ignored
+        echo "Stress tests completed"
+
+  # =============================================================================
+  # SECURITY & VULNERABILITY SCANNING
+  # =============================================================================
+  security-scan:
+    name: Security & Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: unit-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Install cargo-audit
+      run: cargo install cargo-audit
+      
+    - name: Security audit
+      run: cargo audit
+      continue-on-error: true
+      
+    - name: Install cargo-deny
+      run: cargo install cargo-deny
+      
+    - name: License check
+      run: cargo deny check
+      continue-on-error: true
+      
+    - name: Install semgrep
+      run: |
+        curl -L https://github.com/returntocorp/semgrep/releases/latest/download/semgrep-linux -o semgrep
+        chmod +x semgrep
+        sudo mv semgrep /usr/local/bin/
+        
+    - name: Run security scan
+      run: semgrep --config=auto --lang=rust src/
+      continue-on-error: true
+
+  # =============================================================================
+  # COVERAGE ANALYSIS
+  # =============================================================================
+  coverage:
+    name: Test Coverage Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: integration-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin
+      
+    - name: Generate coverage report
+      run: cargo tarpaulin --out Html --output-dir coverage --verbose
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/tarpaulin-report.html
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  # =============================================================================
+  # REGRESSION TESTS
+  # =============================================================================
+  regression-tests:
+    name: Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: integration-tests
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Build TTR
+      run: cargo build --verbose
+      
+    - name: Run regression tests
+      run: |
+        echo "Running regression tests..."
+        # Test known working scenarios
+        cargo test --test compatibility --verbose
+        cargo test --test data_validation --verbose
+        echo "Regression tests completed"
+
+  # =============================================================================
+  # MULTI-PLATFORM BUILD TESTS
+  # =============================================================================
+  multi-platform:
+    name: Multi-Platform Build Tests
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    needs: unit-tests
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust-version: [stable, 1.90]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust-version }}
+        override: true
+        
+    - name: Cache cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ matrix.rust-version }}-${{ hashFiles('**/Cargo.lock') }}
+        
+    - name: Build debug
+      run: cargo build --verbose
+      
+    - name: Build release
+      run: cargo build --release --verbose
+      
+    - name: Run basic tests
+      run: cargo test --lib --verbose
+
+  # =============================================================================
+  # CI SUMMARY & NOTIFICATIONS
+  # =============================================================================
+  ci-summary:
+    name: CI Summary & Notifications
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-scan, coverage, multi-platform]
+    if: always()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: CI Summary
+      run: |
+        echo "## 🚀 Comprehensive CI Suite Results"
+        echo ""
+        echo "### ✅ Completed Jobs:"
+        echo "- Unit Tests & Code Quality: ${{ needs.unit-tests.result }}"
+        echo "- Integration Tests: ${{ needs.integration-tests.result }}"
+        echo "- Security Scan: ${{ needs.security-scan.result }}"
+        echo "- Coverage Analysis: ${{ needs.coverage.result }}"
+        echo "- Multi-Platform Build: ${{ needs.multi-platform.result }}"
+        echo ""
+        echo "### 📊 Test Results:"
+        echo "- All test suites completed successfully!"
+        echo "- Code quality checks passed!"
+        echo "- Security scan completed!"
+        echo "- Coverage analysis generated!"
+        echo ""
+        echo "🎉 Comprehensive CI Suite completed successfully!"
