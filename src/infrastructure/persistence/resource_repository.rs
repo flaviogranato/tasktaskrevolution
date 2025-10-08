@@ -982,6 +982,9 @@ mod tests {
                 created_at: None,
                 updated_at: None,
                 created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec: crate::infrastructure::persistence::manifests::resource_manifest::ResourceSpec {
                 project_id: None,

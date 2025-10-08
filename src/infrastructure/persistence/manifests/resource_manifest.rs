@@ -68,6 +68,12 @@ pub struct ResourceMetadata {
     pub updated_at: Option<chrono::DateTime<chrono::Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub created_by: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub labels: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub annotations: Option<std::collections::HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -258,6 +264,9 @@ impl From<AnyResource> for ResourceManifest {
                 created_at: None,
                 updated_at: None,
                 created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec,
         }
@@ -484,6 +493,9 @@ mod tests {
                 created_at: None,
                 updated_at: None,
                 created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
             },
             spec: ResourceSpec {
                 time_off_balance: 0,
