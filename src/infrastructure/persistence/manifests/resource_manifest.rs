@@ -277,6 +277,9 @@ impl TryFrom<ResourceManifest> for AnyResource {
     type Error = String;
 
     fn try_from(manifest: ResourceManifest) -> Result<Self, Self::Error> {
+        // Validate status consistency before processing
+        ResourceManifest::validate_status_consistency(&manifest)?;
+
         let id = manifest
             .metadata
             .id
@@ -304,11 +307,6 @@ impl TryFrom<ResourceManifest> for AnyResource {
 
         match status {
             "Assigned" => {
-                // Validate that Assigned status requires project_assignments
-                if manifest.spec.project_assignments.is_none() || manifest.spec.project_assignments.as_ref().unwrap().is_empty() {
-                    return Err("Assigned status requires project_assignments to be present and non-empty".to_string());
-                }
-                
                 let project_assignments = manifest
                     .spec
                     .project_assignments
@@ -352,11 +350,6 @@ impl TryFrom<ResourceManifest> for AnyResource {
                 state: crate::domain::resource_management::state::Inactive,
             })),
             "Available" => {
-                // Validate that Available status should not have project_assignments
-                if manifest.spec.project_assignments.is_some() && !manifest.spec.project_assignments.as_ref().unwrap().is_empty() {
-                    return Err("Available status should not have project_assignments".to_string());
-                }
-                
                 Ok(AnyResource::Available(Resource {
                     id,
                     code,
@@ -396,6 +389,74 @@ impl TryFrom<ResourceManifest> for AnyResource {
                 }))
             }
         }
+    }
+}
+
+impl ResourceManifest {
+    /// Validates consistency between status and project_assignments
+    fn validate_status_consistency(manifest: &ResourceManifest) -> Result<(), String> {
+        let status = manifest.metadata.status.as_str();
+        let has_assignments = manifest.spec.project_assignments.as_ref()
+            .map(|assignments| !assignments.is_empty())
+            .unwrap_or(false);
+
+        match status {
+            "Assigned" => {
+                if !has_assignments {
+                    return Err(format!(
+                        "Resource '{}' has status 'Assigned' but no project assignments. Assigned resources must have at least one project assignment.",
+                        manifest.metadata.code
+                    ));
+                }
+            }
+            "Available" | "Inactive" => {
+                if has_assignments {
+                    return Err(format!(
+                        "Resource '{}' has status '{}' but has project assignments. {} resources should not have project assignments.",
+                        manifest.metadata.code,
+                        status,
+                        status
+                    ));
+                }
+            }
+            _ => {
+                // For unknown statuses, warn but don't fail
+                if has_assignments {
+                    eprintln!("Warning: Resource '{}' has unknown status '{}' with project assignments. This may cause unexpected behavior.", 
+                        manifest.metadata.code, status);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Automatically updates status based on project assignments
+    pub fn update_status_from_assignments(&mut self) {
+        let has_assignments = self.spec.project_assignments.as_ref()
+            .map(|assignments| !assignments.is_empty())
+            .unwrap_or(false);
+
+        // Only update status if it's not explicitly set to Inactive
+        if self.metadata.status != "Inactive" {
+            if has_assignments {
+                self.metadata.status = "Assigned".to_string();
+            } else {
+                // Only change to Available if currently Assigned
+                if self.metadata.status == "Assigned" {
+                    self.metadata.status = "Available".to_string();
+                }
+            }
+        }
+    }
+
+    /// Validates and fixes status consistency issues
+    pub fn ensure_status_consistency(&mut self) -> Result<(), String> {
+        // First, try to fix automatically
+        self.update_status_from_assignments();
+        
+        // Then validate
+        Self::validate_status_consistency(self)
     }
 }
 
@@ -731,7 +792,7 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = format!("{}", error);
-        assert!(error_message.contains("Assigned status requires project_assignments"));
+        assert!(error_message.contains("Resource 'DEV-001' has status 'Assigned' but no project assignments"));
     }
 
     #[test]
@@ -766,7 +827,7 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = format!("{}", error);
-        assert!(error_message.contains("Available status should not have project_assignments"));
+        assert!(error_message.contains("Resource 'DEV-001' has status 'Available' but has project assignments"));
     }
 
     #[test]
@@ -797,7 +858,7 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = format!("{}", error);
-        assert!(error_message.contains("Assigned status requires project_assignments"));
+        assert!(error_message.contains("Resource 'DEV-001' has status 'Assigned' but no project assignments"));
     }
 
     #[test]
@@ -842,5 +903,200 @@ mod tests {
         assert!(manifest.spec.project_assignments.is_some());
         assert!(manifest.spec.vacations.is_some());
         assert_eq!(manifest.spec.vacations.as_ref().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_status_consistency_validation_improved_messages() {
+        // Test improved error messages for status consistency
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                resourceType: "Developer"
+                status: "Assigned"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                scope: "Company"
+                timeOffBalance: 25
+                # Missing project_assignments for Assigned status
+        "#;
+
+        let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
+        let result = AnyResource::try_from(manifest);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let error_message = format!("{}", error);
+        assert!(error_message.contains("Resource 'DEV-001' has status 'Assigned' but no project assignments"));
+        assert!(error_message.contains("Assigned resources must have at least one project assignment"));
+    }
+
+    #[test]
+    fn test_status_consistency_validation_inactive_with_assignments() {
+        // Test that Inactive status should not have project assignments
+        let yaml_str = r#"
+            apiVersion: tasktaskrevolution.io/v1alpha1
+            kind: Resource
+            metadata:
+                id: "01996dev-0000-0000-0000-000000res"
+                code: "DEV-001"
+                name: "John Doe"
+                email: "john@example.com"
+                resourceType: "Developer"
+                status: "Inactive"
+                createdAt: "2024-01-01T00:00:00Z"
+                updatedAt: "2024-01-01T00:00:00Z"
+                createdBy: "system"
+            spec:
+                scope: "Company"
+                timeOffBalance: 25
+                projectAssignments:
+                  - projectId: "PROJ-001"
+                    startDate: "2024-01-01T00:00:00Z"
+                    endDate: "2024-12-31T23:59:59Z"
+                    allocationPercentage: 100
+        "#;
+
+        let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
+        let result = AnyResource::try_from(manifest);
+        
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        let error_message = format!("{}", error);
+        assert!(error_message.contains("Resource 'DEV-001' has status 'Inactive' but has project assignments"));
+        assert!(error_message.contains("Inactive resources should not have project assignments"));
+    }
+
+    #[test]
+    fn test_update_status_from_assignments() {
+        // Test automatic status update based on assignments
+        let mut manifest = ResourceManifest {
+            api_version: API_VERSION.to_string(),
+            kind: "Resource".to_string(),
+            metadata: ResourceMetadata {
+                id: Some("01996dev-0000-0000-0000-000000res".to_string()),
+                name: "Test Resource".to_string(),
+                email: "test@example.com".to_string(),
+                code: "TEST-001".to_string(),
+                resource_type: "Developer".to_string(),
+                status: "Available".to_string(),
+                description: None,
+                created_at: None,
+                updated_at: None,
+                created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
+            },
+            spec: ResourceSpec {
+                time_off_balance: 25,
+                project_assignments: Some(vec![ProjectAssignmentManifest {
+                    project_id: "PROJ-001".to_string(),
+                    start_date: Local::now(),
+                    end_date: Local::now(),
+                    allocation_percentage: 100,
+                }]),
+                ..Default::default()
+            },
+        };
+
+        // Initially Available, but has assignments
+        assert_eq!(manifest.metadata.status, "Available");
+        assert!(manifest.spec.project_assignments.is_some());
+
+        // Update status based on assignments
+        manifest.update_status_from_assignments();
+        assert_eq!(manifest.metadata.status, "Assigned");
+
+        // Remove assignments
+        manifest.spec.project_assignments = None;
+        manifest.update_status_from_assignments();
+        assert_eq!(manifest.metadata.status, "Available");
+    }
+
+    #[test]
+    fn test_ensure_status_consistency() {
+        // Test the ensure_status_consistency method
+        let mut manifest = ResourceManifest {
+            api_version: API_VERSION.to_string(),
+            kind: "Resource".to_string(),
+            metadata: ResourceMetadata {
+                id: Some("01996dev-0000-0000-0000-000000res".to_string()),
+                name: "Test Resource".to_string(),
+                email: "test@example.com".to_string(),
+                code: "TEST-001".to_string(),
+                resource_type: "Developer".to_string(),
+                status: "Available".to_string(),
+                description: None,
+                created_at: None,
+                updated_at: None,
+                created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
+            },
+            spec: ResourceSpec {
+                time_off_balance: 25,
+                project_assignments: Some(vec![ProjectAssignmentManifest {
+                    project_id: "PROJ-001".to_string(),
+                    start_date: Local::now(),
+                    end_date: Local::now(),
+                    allocation_percentage: 100,
+                }]),
+                ..Default::default()
+            },
+        };
+
+        // Should automatically fix the inconsistency
+        let result = manifest.ensure_status_consistency();
+        assert!(result.is_ok());
+        assert_eq!(manifest.metadata.status, "Assigned");
+    }
+
+    #[test]
+    fn test_ensure_status_consistency_fails_when_cannot_fix() {
+        // Test when automatic fixing is not possible
+        let mut manifest = ResourceManifest {
+            api_version: API_VERSION.to_string(),
+            kind: "Resource".to_string(),
+            metadata: ResourceMetadata {
+                id: Some("01996dev-0000-0000-0000-000000res".to_string()),
+                name: "Test Resource".to_string(),
+                email: "test@example.com".to_string(),
+                code: "TEST-001".to_string(),
+                resource_type: "Developer".to_string(),
+                status: "Inactive".to_string(), // Inactive with assignments
+                description: None,
+                created_at: None,
+                updated_at: None,
+                created_by: None,
+                labels: None,
+                annotations: None,
+                namespace: None,
+            },
+            spec: ResourceSpec {
+                time_off_balance: 25,
+                project_assignments: Some(vec![ProjectAssignmentManifest {
+                    project_id: "PROJ-001".to_string(),
+                    start_date: Local::now(),
+                    end_date: Local::now(),
+                    allocation_percentage: 100,
+                }]),
+                ..Default::default()
+            },
+        };
+
+        // Should fail because Inactive + assignments is invalid
+        // The automatic fixing won't change Inactive to Assigned, so it should fail validation
+        let result = manifest.ensure_status_consistency();
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.contains("Inactive resources should not have project assignments"));
     }
 }
