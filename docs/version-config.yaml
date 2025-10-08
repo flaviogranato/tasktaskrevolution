@@ -1,0 +1,206 @@
+# TaskTaskRevolution API Version Configuration
+# This file defines the supported API versions and their properties
+
+apiVersions:
+  # Alpha versions - Experimental, breaking changes allowed
+  - version: "tasktaskrevolution.io/v1alpha1"
+    status: "current"
+    stability: "alpha"
+    breaking_changes: true
+    support_until: "2024-12-31"
+    migration_target: "tasktaskrevolution.io/v1beta1"
+    features:
+      - "Basic manifest support"
+      - "Company, Project, Resource, Task entities"
+      - "YAML serialization"
+      - "Basic validation"
+    limitations:
+      - "No backward compatibility guarantee"
+      - "Limited documentation"
+      - "Experimental features"
+
+  # Beta versions - Feature complete, minor breaking changes allowed
+  - version: "tasktaskrevolution.io/v1beta1"
+    status: "planned"
+    stability: "beta"
+    breaking_changes: false
+    support_until: "2025-12-31"
+    migration_target: "tasktaskrevolution.io/v1"
+    features:
+      - "Enhanced manifest support"
+      - "Labels and annotations"
+      - "Namespace support"
+      - "Improved validation"
+      - "Better error messages"
+    improvements:
+      - "Backward compatibility"
+      - "Comprehensive documentation"
+      - "Production-ready features"
+
+  # Stable versions - Production ready, no breaking changes
+  - version: "tasktaskrevolution.io/v1"
+    status: "planned"
+    stability: "stable"
+    breaking_changes: false
+    support_until: "long-term"
+    migration_target: null
+    features:
+      - "Full manifest support"
+      - "Complete validation suite"
+      - "Production-grade performance"
+      - "Long-term support"
+    guarantees:
+      - "No breaking changes"
+      - "Full backward compatibility"
+      - "Long-term support"
+
+# Version compatibility matrix
+compatibility:
+  # Client version -> Server version compatibility
+  "tasktaskrevolution.io/v1alpha1":
+    "tasktaskrevolution.io/v1alpha1": "full"
+    "tasktaskrevolution.io/v1beta1": "limited"
+    "tasktaskrevolution.io/v1": "incompatible"
+  
+  "tasktaskrevolution.io/v1beta1":
+    "tasktaskrevolution.io/v1alpha1": "limited"
+    "tasktaskrevolution.io/v1beta1": "full"
+    "tasktaskrevolution.io/v1": "full"
+  
+  "tasktaskrevolution.io/v1":
+    "tasktaskrevolution.io/v1alpha1": "incompatible"
+    "tasktaskrevolution.io/v1beta1": "limited"
+    "tasktaskrevolution.io/v1": "full"
+
+# Migration paths
+migration:
+  "tasktaskrevolution.io/v1alpha1":
+    target: "tasktaskrevolution.io/v1beta1"
+    breaking_changes:
+      - "Added required fields: labels, annotations, namespace"
+      - "Enhanced validation rules"
+    new_fields:
+      - "metadata.labels"
+      - "metadata.annotations"
+      - "metadata.namespace"
+    deprecated_fields: []
+    migration_tools:
+      - "ttr migrate manifests"
+      - "Manual migration scripts"
+      - "Python migration script"
+
+  "tasktaskrevolution.io/v1beta1":
+    target: "tasktaskrevolution.io/v1"
+    breaking_changes: []
+    new_fields: []
+    deprecated_fields: []
+    migration_tools:
+      - "ttr migrate manifests"
+      - "Automatic migration"
+
+# Validation rules by version
+validation:
+  "tasktaskrevolution.io/v1alpha1":
+    required_fields:
+      - "apiVersion"
+      - "kind"
+      - "metadata.id"
+      - "metadata.code"
+      - "metadata.name"
+    optional_fields:
+      - "metadata.labels"
+      - "metadata.annotations"
+      - "metadata.namespace"
+    field_types:
+      "metadata.labels": "object"
+      "metadata.annotations": "object"
+      "metadata.namespace": "string"
+
+  "tasktaskrevolution.io/v1beta1":
+    required_fields:
+      - "apiVersion"
+      - "kind"
+      - "metadata.id"
+      - "metadata.code"
+      - "metadata.name"
+      - "metadata.labels"
+      - "metadata.annotations"
+      - "metadata.namespace"
+    optional_fields: []
+    field_types:
+      "metadata.labels": "object"
+      "metadata.annotations": "object"
+      "metadata.namespace": "string"
+
+  "tasktaskrevolution.io/v1":
+    required_fields:
+      - "apiVersion"
+      - "kind"
+      - "metadata.id"
+      - "metadata.code"
+      - "metadata.name"
+      - "metadata.labels"
+      - "metadata.annotations"
+      - "metadata.namespace"
+    optional_fields: []
+    field_types:
+      "metadata.labels": "object"
+      "metadata.annotations": "object"
+      "metadata.namespace": "string"
+
+# Deprecation schedule
+deprecation:
+  "tasktaskrevolution.io/v1alpha1":
+    announced: "2024-01-01"
+    deprecated: "2024-07-01"
+    removed: "2025-01-01"
+    replacement: "tasktaskrevolution.io/v1beta1"
+    migration_guide: "https://docs.tasktaskrevolution.io/migration/v1alpha1-to-v1beta1"
+
+# Support policy
+support:
+  alpha:
+    duration: "6 months"
+    notice: "1 month"
+    breaking_changes: "allowed"
+    documentation: "limited"
+  
+  beta:
+    duration: "12 months"
+    notice: "3 months"
+    breaking_changes: "minor only"
+    documentation: "comprehensive"
+  
+  stable:
+    duration: "long-term"
+    notice: "6 months"
+    breaking_changes: "none"
+    documentation: "complete"
+
+# Feature flags by version
+features:
+  "tasktaskrevolution.io/v1alpha1":
+    - "basic_manifests"
+    - "yaml_serialization"
+    - "basic_validation"
+  
+  "tasktaskrevolution.io/v1beta1":
+    - "basic_manifests"
+    - "yaml_serialization"
+    - "basic_validation"
+    - "labels_annotations"
+    - "namespace_support"
+    - "enhanced_validation"
+    - "better_error_messages"
+  
+  "tasktaskrevolution.io/v1":
+    - "basic_manifests"
+    - "yaml_serialization"
+    - "basic_validation"
+    - "labels_annotations"
+    - "namespace_support"
+    - "enhanced_validation"
+    - "better_error_messages"
+    - "production_ready"
+    - "long_term_support"
+    - "performance_optimizations"

@@ -1,357 +1,550 @@
 # Migration Guide
 
+## Overview
+
 This guide provides step-by-step instructions for migrating TaskTaskRevolution manifests between API versions.
 
 ## Quick Start
 
-### Check Current Versions
+### Automatic Migration
+
+The easiest way to migrate your manifests is using the built-in migration tool:
+
 ```bash
-# Check API versions in your workspace
-ttr validate system --check-versions
-
-# List all manifests with their versions
-find . -name "*.yaml" -exec grep -l "apiVersion:" {} \; | xargs grep -H "apiVersion:"
-```
-
-### Migrate All Manifests
-```bash
-# Migrate from v1alpha1 to v1beta1 (when available)
-ttr migrate --from v1alpha1 --to v1beta1
-
-# Dry run to see what would change
-ttr migrate --from v1alpha1 --to v1beta1 --dry-run
-
-# Migrate specific directory
-ttr migrate --from v1alpha1 --to v1beta1 --path ./companies/
-```
-
-## Migration Commands
-
-### Basic Migration
-```bash
-# Migrate all manifests
-ttr migrate --from <old-version> --to <new-version>
-
-# Migrate specific manifest type
-ttr migrate --from v1alpha1 --to v1beta1 --kind Project
+# Migrate all manifests in current directory
+ttr migrate manifests
 
 # Migrate specific file
-ttr migrate --from v1alpha1 --to v1beta1 --file company.yaml
+ttr migrate manifests --file company.yaml
 
-# Migrate with backup
-ttr migrate --from v1alpha1 --to v1beta1 --backup ./backup/
+# Force migration (overwrite existing files)
+ttr migrate manifests --force
+
+# Dry run (show what would be migrated)
+ttr migrate manifests --dry-run
 ```
 
-### Advanced Options
+### Manual Migration
+
+For complex scenarios or when you need more control, follow the manual migration steps below.
+
+## Migration Scenarios
+
+### Scenario 1: Alpha to Beta Migration
+
+#### Step 1: Backup Your Manifests
+
 ```bash
-# Force migration (skip validation)
-ttr migrate --from v1alpha1 --to v1beta1 --force
+# Create backup directory
+mkdir -p backup/$(date +%Y%m%d)
 
-# Verbose output
-ttr migrate --from v1alpha1 --to v1beta1 --verbose
-
-# Custom migration rules
-ttr migrate --from v1alpha1 --to v1beta1 --rules ./custom-rules.yaml
+# Copy all manifests
+cp -r companies/ backup/$(date +%Y%m%d)/
+cp -r projects/ backup/$(date +%Y%m%d)/
+cp -r resources/ backup/$(date +%Y%m%d)/
+cp -r tasks/ backup/$(date +%Y%m%d)/
 ```
 
-## Version-Specific Migrations
+#### Step 2: Update API Version
 
-### v1alpha1 → v1beta1 (Planned)
-
-#### Breaking Changes
-1. **Field Renames**:
-   - `projectName` → `name` in Project manifests
-   - `resourceType` → `type` in Resource manifests
-   - `taskStatus` → `status` in Task manifests
-
-2. **Field Type Changes**:
-   - `startDate` and `endDate` now require timezone information
-   - `priority` field now uses enum instead of string
-
-3. **Validation Changes**:
-   - Company codes must be uppercase
-   - Project codes must follow pattern: `[A-Z]+-[0-9]+`
-   - Resource codes must be unique within company
-
-#### Migration Steps
 ```bash
-# 1. Backup your data
-cp -r companies/ backup-companies-$(date +%Y%m%d)/
-
-# 2. Run migration
-ttr migrate --from v1alpha1 --to v1beta1
-
-# 3. Validate results
-ttr validate system
-
-# 4. Test functionality
-ttr list companies
-ttr list projects --company TECH-001
+# Update all YAML files
+find . -name "*.yaml" -exec sed -i 's/tasktaskrevolution.io\/v1alpha1/tasktaskrevolution.io\/v1beta1/g' {} \;
 ```
 
-#### Manual Changes Required
-Some changes require manual intervention:
+#### Step 3: Add New Fields
 
-1. **Update Company Codes**:
-   ```yaml
-   # Before (v1alpha1)
-   metadata:
-     code: "tech-001"  # lowercase
-   
-   # After (v1beta1)
-   metadata:
-     code: "TECH-001"  # uppercase
-   ```
+For each manifest type, add the new fields:
 
-2. **Add Timezone Information**:
-   ```yaml
-   # Before (v1alpha1)
-   spec:
-     startDate: "2024-01-01"
-     endDate: "2024-12-31"
-   
-   # After (v1beta1)
-   spec:
-     startDate: "2024-01-01T00:00:00Z"
-     endDate: "2024-12-31T23:59:59Z"
-     timezone: "UTC"
-   ```
+**Company Manifest:**
+```yaml
+# Before
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Company
+metadata:
+  id: "123"
+  code: "COMP-001"
+  name: "Company Name"
+spec:
+  description: "Company description"
 
-3. **Update Priority Enums**:
-   ```yaml
-   # Before (v1alpha1)
-   spec:
-     priority: "high"  # string
-   
-   # After (v1beta1)
-   spec:
-     priority: "High"  # enum value
-   ```
-
-### v1beta1 → v1stable (Future)
-
-#### Planned Changes
-1. **New Required Fields**:
-   - All manifests will require `description` field
-   - Projects will require `owner` field
-   - Resources will require `email` field
-
-2. **Enhanced Validation**:
-   - Stricter date validation
-   - Enhanced email validation
-   - Required field validation
-
-## Troubleshooting
-
-### Common Migration Issues
-
-#### 1. Validation Errors After Migration
-```bash
-# Check validation errors
-ttr validate system --verbose
-
-# Fix specific validation errors
-ttr validate system --fix
-
-# Validate specific manifest
-ttr validate manifest company.yaml
+# After
+apiVersion: tasktaskrevolution.io/v1beta1
+kind: Company
+metadata:
+  id: "123"
+  code: "COMP-001"
+  name: "Company Name"
+  labels: {}  # New field
+  annotations: {}  # New field
+  namespace: "default"  # New field
+spec:
+  description: "Company description"
 ```
 
-#### 2. Missing Required Fields
-```bash
-# Add missing required fields
-ttr migrate --from v1alpha1 --to v1beta1 --add-missing-fields
+**Project Manifest:**
+```yaml
+# Before
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Project
+metadata:
+  id: "456"
+  code: "PROJ-001"
+  name: "Project Name"
+spec:
+  status: "Planned"
 
-# Check what fields are missing
-ttr validate manifest company.yaml --show-missing
+# After
+apiVersion: tasktaskrevolution.io/v1beta1
+kind: Project
+metadata:
+  id: "456"
+  code: "PROJ-001"
+  name: "Project Name"
+  labels: {}  # New field
+  annotations: {}  # New field
+  namespace: "default"  # New field
+spec:
+  status: "Planned"
 ```
 
-#### 3. Field Type Mismatches
-```bash
-# Convert field types automatically
-ttr migrate --from v1alpha1 --to v1beta1 --convert-types
+**Resource Manifest:**
+```yaml
+# Before
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Resource
+metadata:
+  id: "789"
+  code: "RES-001"
+  name: "Resource Name"
+  email: "resource@example.com"
+  resourceType: "Developer"
+spec:
+  scope: "Company"
 
-# Manual field conversion
-ttr migrate --from v1alpha1 --to v1beta1 --field-map priority:string:enum
+# After
+apiVersion: tasktaskrevolution.io/v1beta1
+kind: Resource
+metadata:
+  id: "789"
+  code: "RES-001"
+  name: "Resource Name"
+  email: "resource@example.com"
+  resourceType: "Developer"
+  labels: {}  # New field
+  annotations: {}  # New field
+  namespace: "default"  # New field
+spec:
+  scope: "Company"
 ```
 
-### Rollback Procedures
+**Task Manifest:**
+```yaml
+# Before
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Task
+metadata:
+  id: "101"
+  code: "TASK-001"
+  name: "Task Name"
+spec:
+  projectCode: "PROJ-001"
+  status: "Planned"
 
-#### Rollback Migration
-```bash
-# Rollback to previous version
-ttr migrate --rollback --to v1alpha1
-
-# Restore from backup
-cp -r backup-companies-20240101/* companies/
-
-# Validate rollback
-ttr validate system
+# After
+apiVersion: tasktaskrevolution.io/v1beta1
+kind: Task
+metadata:
+  id: "101"
+  code: "TASK-001"
+  name: "Task Name"
+  labels: {}  # New field
+  annotations: {}  # New field
+  namespace: "default"  # New field
+spec:
+  projectCode: "PROJ-001"
+  status: "Planned"
 ```
 
-#### Partial Rollback
-```bash
-# Rollback specific manifest type
-ttr migrate --rollback --to v1alpha1 --kind Project
+#### Step 4: Validate Migration
 
-# Rollback specific file
-cp backup-companies-20240101/TECH-001/projects/WEB-APP/project.yaml \
-   companies/TECH-001/projects/WEB-APP/project.yaml
+```bash
+# Validate all manifests
+ttr validate
+
+# Check specific manifest
+ttr validate --file company.yaml
+```
+
+### Scenario 2: Beta to Stable Migration
+
+#### Step 1: Update API Version
+
+```bash
+# Update all YAML files
+find . -name "*.yaml" -exec sed -i 's/tasktaskrevolution.io\/v1beta1/tasktaskrevolution.io\/v1/g' {} \;
+```
+
+#### Step 2: Remove Deprecated Fields
+
+Check for any deprecated fields and remove them:
+
+```yaml
+# Remove deprecated fields
+metadata:
+  # Remove any fields marked as deprecated
+  # Keep only stable fields
+```
+
+#### Step 3: Validate Migration
+
+```bash
+# Validate all manifests
+ttr validate
+
+# Run comprehensive tests
+ttr test
+```
+
+## Common Migration Issues
+
+### Issue 1: Missing Required Fields
+
+**Error**: `Missing required field 'labels'`
+
+**Solution**: Add the missing field:
+
+```yaml
+metadata:
+  labels: {}  # Add empty labels
+  annotations: {}  # Add empty annotations
+  namespace: "default"  # Add default namespace
+```
+
+### Issue 2: Invalid Field Types
+
+**Error**: `Invalid field type for 'labels'`
+
+**Solution**: Ensure correct field types:
+
+```yaml
+metadata:
+  labels: {}  # Must be object, not string
+  annotations: {}  # Must be object, not string
+  namespace: "default"  # Must be string, not object
+```
+
+### Issue 3: Deprecated Fields
+
+**Error**: `Field 'oldField' is deprecated`
+
+**Solution**: Replace with new field:
+
+```yaml
+# Before
+spec:
+  oldField: "value"
+
+# After
+spec:
+  newField: "value"  # Use new field name
 ```
 
 ## Migration Scripts
 
-### Custom Migration Script
-Create a custom migration script for complex scenarios:
+### Bash Script for Alpha to Beta
 
 ```bash
 #!/bin/bash
-# custom-migration.sh
+# migrate-alpha-to-beta.sh
 
-set -e
+echo "Starting migration from v1alpha1 to v1beta1..."
 
-echo "Starting custom migration..."
-
-# Backup data
+# Backup
 echo "Creating backup..."
-cp -r companies/ backup-$(date +%Y%m%d)/
+mkdir -p backup/$(date +%Y%m%d)
+cp -r companies/ backup/$(date +%Y%m%d)/
+cp -r projects/ backup/$(date +%Y%m%d)/
+cp -r resources/ backup/$(date +%Y%m%d)/
+cp -r tasks/ backup/$(date +%Y%m%d)/
 
-# Run standard migration
-echo "Running standard migration..."
-ttr migrate --from v1alpha1 --to v1beta1
+# Update API version
+echo "Updating API version..."
+find . -name "*.yaml" -exec sed -i 's/tasktaskrevolution.io\/v1alpha1/tasktaskrevolution.io\/v1beta1/g' {} \;
 
-# Custom field mappings
-echo "Applying custom field mappings..."
-find companies/ -name "*.yaml" -exec sed -i 's/oldField:/newField:/g' {} \;
+# Add new fields to Company manifests
+echo "Adding new fields to Company manifests..."
+find companies/ -name "*.yaml" -exec sed -i '/^  name:.*/a\  labels: {}\n  annotations: {}\n  namespace: "default"' {} \;
 
-# Validate results
+# Add new fields to Project manifests
+echo "Adding new fields to Project manifests..."
+find projects/ -name "*.yaml" -exec sed -i '/^  name:.*/a\  labels: {}\n  annotations: {}\n  namespace: "default"' {} \;
+
+# Add new fields to Resource manifests
+echo "Adding new fields to Resource manifests..."
+find resources/ -name "*.yaml" -exec sed -i '/^  resourceType:.*/a\  labels: {}\n  annotations: {}\n  namespace: "default"' {} \;
+
+# Add new fields to Task manifests
+echo "Adding new fields to Task manifests..."
+find tasks/ -name "*.yaml" -exec sed -i '/^  name:.*/a\  labels: {}\n  annotations: {}\n  namespace: "default"' {} \;
+
+# Validate
 echo "Validating migration..."
-ttr validate system
+ttr validate
 
-echo "Migration completed successfully!"
+echo "Migration completed!"
 ```
 
-### Batch Migration Script
-For large workspaces:
+### Python Script for Complex Migrations
+
+```python
+#!/usr/bin/env python3
+# migrate_manifests.py
+
+import os
+import yaml
+import shutil
+from datetime import datetime
+
+def backup_manifests():
+    """Create backup of all manifests"""
+    backup_dir = f"backup/{datetime.now().strftime('%Y%m%d')}"
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    for dir_name in ['companies', 'projects', 'resources', 'tasks']:
+        if os.path.exists(dir_name):
+            shutil.copytree(dir_name, f"{backup_dir}/{dir_name}")
+
+def migrate_company_manifest(file_path):
+    """Migrate company manifest from alpha to beta"""
+    with open(file_path, 'r') as f:
+        manifest = yaml.safe_load(f)
+    
+    # Update API version
+    manifest['apiVersion'] = 'tasktaskrevolution.io/v1beta1'
+    
+    # Add new fields to metadata
+    if 'metadata' not in manifest:
+        manifest['metadata'] = {}
+    
+    if 'labels' not in manifest['metadata']:
+        manifest['metadata']['labels'] = {}
+    if 'annotations' not in manifest['metadata']:
+        manifest['metadata']['annotations'] = {}
+    if 'namespace' not in manifest['metadata']:
+        manifest['metadata']['namespace'] = 'default'
+    
+    # Write back
+    with open(file_path, 'w') as f:
+        yaml.dump(manifest, f, default_flow_style=False)
+
+def migrate_project_manifest(file_path):
+    """Migrate project manifest from alpha to beta"""
+    with open(file_path, 'r') as f:
+        manifest = yaml.safe_load(f)
+    
+    # Update API version
+    manifest['apiVersion'] = 'tasktaskrevolution.io/v1beta1'
+    
+    # Add new fields to metadata
+    if 'metadata' not in manifest:
+        manifest['metadata'] = {}
+    
+    if 'labels' not in manifest['metadata']:
+        manifest['metadata']['labels'] = {}
+    if 'annotations' not in manifest['metadata']:
+        manifest['metadata']['annotations'] = {}
+    if 'namespace' not in manifest['metadata']:
+        manifest['metadata']['namespace'] = 'default'
+    
+    # Write back
+    with open(file_path, 'w') as f:
+        yaml.dump(manifest, f, default_flow_style=False)
+
+def migrate_resource_manifest(file_path):
+    """Migrate resource manifest from alpha to beta"""
+    with open(file_path, 'r') as f:
+        manifest = yaml.safe_load(f)
+    
+    # Update API version
+    manifest['apiVersion'] = 'tasktaskrevolution.io/v1beta1'
+    
+    # Add new fields to metadata
+    if 'metadata' not in manifest:
+        manifest['metadata'] = {}
+    
+    if 'labels' not in manifest['metadata']:
+        manifest['metadata']['labels'] = {}
+    if 'annotations' not in manifest['metadata']:
+        manifest['metadata']['annotations'] = {}
+    if 'namespace' not in manifest['metadata']:
+        manifest['metadata']['namespace'] = 'default'
+    
+    # Write back
+    with open(file_path, 'w') as f:
+        yaml.dump(manifest, f, default_flow_style=False)
+
+def migrate_task_manifest(file_path):
+    """Migrate task manifest from alpha to beta"""
+    with open(file_path, 'r') as f:
+        manifest = yaml.safe_load(f)
+    
+    # Update API version
+    manifest['apiVersion'] = 'tasktaskrevolution.io/v1beta1'
+    
+    # Add new fields to metadata
+    if 'metadata' not in manifest:
+        manifest['metadata'] = {}
+    
+    if 'labels' not in manifest['metadata']:
+        manifest['metadata']['labels'] = {}
+    if 'annotations' not in manifest['metadata']:
+        manifest['metadata']['annotations'] = {}
+    if 'namespace' not in manifest['metadata']:
+        manifest['metadata']['namespace'] = 'default'
+    
+    # Write back
+    with open(file_path, 'w') as f:
+        yaml.dump(manifest, f, default_flow_style=False)
+
+def main():
+    """Main migration function"""
+    print("Starting migration from v1alpha1 to v1beta1...")
+    
+    # Create backup
+    backup_manifests()
+    print("Backup created")
+    
+    # Migrate company manifests
+    for root, dirs, files in os.walk('companies'):
+        for file in files:
+            if file.endswith('.yaml'):
+                file_path = os.path.join(root, file)
+                migrate_company_manifest(file_path)
+                print(f"Migrated: {file_path}")
+    
+    # Migrate project manifests
+    for root, dirs, files in os.walk('projects'):
+        for file in files:
+            if file.endswith('.yaml'):
+                file_path = os.path.join(root, file)
+                migrate_project_manifest(file_path)
+                print(f"Migrated: {file_path}")
+    
+    # Migrate resource manifests
+    for root, dirs, files in os.walk('resources'):
+        for file in files:
+            if file.endswith('.yaml'):
+                file_path = os.path.join(root, file)
+                migrate_resource_manifest(file_path)
+                print(f"Migrated: {file_path}")
+    
+    # Migrate task manifests
+    for root, dirs, files in os.walk('tasks'):
+        for file in files:
+            if file.endswith('.yaml'):
+                file_path = os.path.join(root, file)
+                migrate_task_manifest(file_path)
+                print(f"Migrated: {file_path}")
+    
+    print("Migration completed!")
+
+if __name__ == "__main__":
+    main()
+```
+
+## Testing Migration
+
+### Pre-Migration Testing
 
 ```bash
-#!/bin/bash
-# batch-migration.sh
+# Validate current state
+ttr validate
 
-COMPANIES_DIR="./companies"
-BACKUP_DIR="./backup-$(date +%Y%m%d)"
+# Run tests
+ttr test
 
-echo "Starting batch migration for $(find $COMPANIES_DIR -name "*.yaml" | wc -l) manifests..."
-
-# Create backup
-mkdir -p "$BACKUP_DIR"
-cp -r "$COMPANIES_DIR"/* "$BACKUP_DIR/"
-
-# Process each company
-for company in "$COMPANIES_DIR"/*; do
-    if [ -d "$company" ]; then
-        company_name=$(basename "$company")
-        echo "Migrating company: $company_name"
-        
-        # Migrate company manifest
-        ttr migrate --from v1alpha1 --to v1beta1 --file "$company/company.yaml"
-        
-        # Migrate projects
-        for project in "$company/projects"/*; do
-            if [ -d "$project" ]; then
-                project_name=$(basename "$project")
-                echo "  Migrating project: $project_name"
-                ttr migrate --from v1alpha1 --to v1beta1 --file "$project/project.yaml"
-            fi
-        done
-    fi
-done
-
-echo "Batch migration completed!"
+# Check for deprecated fields
+ttr validate --check-deprecated
 ```
+
+### Post-Migration Testing
+
+```bash
+# Validate migrated manifests
+ttr validate
+
+# Run comprehensive tests
+ttr test
+
+# Check for any issues
+ttr validate --strict
+```
+
+## Rollback Procedures
+
+### Automatic Rollback
+
+```bash
+# Restore from backup
+cp -r backup/20240101/* .
+
+# Validate rollback
+ttr validate
+```
+
+### Manual Rollback
+
+1. **Stop all operations**
+2. **Restore from backup**
+3. **Validate restored state**
+4. **Resume operations**
 
 ## Best Practices
 
 ### Before Migration
-1. **Backup Everything**: Always create a backup before migration
-2. **Test in Staging**: Test migration in a staging environment first
-3. **Review Breaking Changes**: Read the changelog for breaking changes
-4. **Update Tools**: Ensure all tools support the target version
+
+1. **Always backup** your manifests
+2. **Test in development** environment first
+3. **Review breaking changes**
+4. **Plan migration window**
+5. **Notify stakeholders**
 
 ### During Migration
-1. **Use Dry Run**: Always test with `--dry-run` first
-2. **Monitor Progress**: Use `--verbose` to monitor migration progress
-3. **Validate Frequently**: Run validation after each major step
-4. **Document Changes**: Keep track of manual changes made
+
+1. **Use dry-run mode** first
+2. **Migrate in batches** if large dataset
+3. **Monitor for errors**
+4. **Validate each step**
+5. **Keep backups accessible**
 
 ### After Migration
-1. **Validate Everything**: Run full system validation
-2. **Test Functionality**: Test all major functionality
-3. **Update Documentation**: Update any documentation references
-4. **Train Team**: Inform team about new features and changes
 
-## Migration Checklist
+1. **Validate all manifests**
+2. **Run comprehensive tests**
+3. **Monitor system behavior**
+4. **Document any issues**
+5. **Update documentation**
 
-### Pre-Migration
-- [ ] Backup all data
-- [ ] Review breaking changes
-- [ ] Update tools to target version
-- [ ] Test migration in staging
-- [ ] Plan for manual changes
+## Troubleshooting
 
-### During Migration
-- [ ] Run dry-run migration
-- [ ] Execute actual migration
-- [ ] Apply manual changes
-- [ ] Validate each step
-- [ ] Document any issues
+### Common Issues
 
-### Post-Migration
-- [ ] Run full system validation
-- [ ] Test all functionality
-- [ ] Update documentation
-- [ ] Train team members
-- [ ] Monitor for issues
-
-## Support
+1. **Missing fields**: Add required fields
+2. **Invalid types**: Fix field types
+3. **Deprecated fields**: Replace with new fields
+4. **Validation errors**: Check field requirements
+5. **Performance issues**: Optimize large datasets
 
 ### Getting Help
-- **Documentation**: Check this guide and API documentation
-- **Community**: Ask questions in community forums
-- **Issues**: Report bugs via GitHub issues
-- **Migration Tools**: Use built-in migration tools and validation
 
-### Reporting Issues
-When reporting migration issues, include:
-- Source and target versions
-- Error messages and logs
-- Sample manifests (anonymized)
-- Steps to reproduce
-- Expected vs actual behavior
+- **Documentation**: [docs.tasktaskrevolution.io](https://docs.tasktaskrevolution.io)
+- **Issues**: [GitHub Issues](https://github.com/tasktaskrevolution/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/tasktaskrevolution/discussions)
+- **Email**: support@tasktaskrevolution.io
 
-## Examples
+## Conclusion
 
-### Complete Migration Example
-```bash
-# 1. Check current state
-ttr validate system --check-versions
+Migration between API versions is a critical process that requires careful planning and execution. Follow the steps in this guide to ensure a smooth migration experience.
 
-# 2. Create backup
-cp -r companies/ backup-$(date +%Y%m%d)/
-
-# 3. Dry run migration
-ttr migrate --from v1alpha1 --to v1beta1 --dry-run
-
-# 4. Execute migration
-ttr migrate --from v1alpha1 --to v1beta1 --verbose
-
-# 5. Validate results
-ttr validate system
-
-# 6. Test functionality
-ttr list companies
-ttr list projects --company TECH-001
-ttr report generate --type task --format csv
-```
-
-This completes the migration process. The system should now be running on the new API version with all manifests properly migrated.
+Remember to always backup your data and test thoroughly before applying changes to production environments.
