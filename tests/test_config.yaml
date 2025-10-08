@@ -1,0 +1,245 @@
+# Test Configuration for TTR
+# This file contains configuration for all test suites
+
+# Global test configuration
+global:
+  timeout_seconds: 300
+  retry_count: 3
+  parallel_execution: true
+  data_cleanup: true
+  verbose: false
+
+# Unit test configuration
+unit_tests:
+  enabled: true
+  timeout_seconds: 60
+  categories:
+    - domain
+    - application
+    - infrastructure
+    - interface
+  coverage_threshold: 80.0
+
+# Integration test configuration
+integration_tests:
+  enabled: true
+  timeout_seconds: 120
+  categories:
+    - cli
+    - adapters
+    - performance
+    - compatibility
+    - e2e
+    - security
+    - regression
+  parallel_execution: true
+
+# Performance test configuration
+performance_tests:
+  enabled: true
+  timeout_seconds: 180
+  max_execution_time: 30s
+  memory_limit_mb: 512
+  cpu_usage_threshold: 80.0
+  test_data_sizes:
+    - small
+    - medium
+    - large
+    - xlarge
+
+# Stress test configuration
+stress_tests:
+  enabled: true
+  timeout_seconds: 300
+  concurrent_operations: 10
+  operation_duration: 60s
+  memory_pressure_mb: 1024
+  cpu_intensity: 0.8
+  scenarios:
+    - concurrent_cli_commands
+    - large_dataset_operations
+    - memory_intensive_operations
+    - cpu_intensive_operations
+    - filesystem_stress
+
+# Regression test configuration
+regression_tests:
+  enabled: true
+  timeout_seconds: 240
+  baseline_version: "1.0.0"
+  comparison_version: "current"
+  tolerance_percent: 5.0
+  categories:
+    - cli_commands
+    - data_validation
+    - html_generation
+    - yaml_parsing
+    - performance
+    - memory_usage
+    - file_operations
+    - error_handling
+
+# Security test configuration
+security_tests:
+  enabled: true
+  timeout_seconds: 120
+  vulnerability_checks: true
+  input_validation: true
+  file_permissions: true
+  network_security: false
+  data_encryption: false
+  categories:
+    - input_validation
+    - filesystem_security
+    - data_protection
+    - authentication
+    - authorization
+    - injection_attacks
+    - path_traversal
+    - file_upload
+    - command_injection
+    - xss
+    - csrf
+    - sql_injection
+
+# Compatibility test configuration
+compatibility_tests:
+  enabled: true
+  timeout_seconds: 180
+  target_versions:
+    - "1.0.0"
+    - "1.1.0"
+    - "current"
+  data_formats:
+    - yaml
+    - json
+    - csv
+    - html
+    - xml
+  operating_systems:
+    - linux
+    - windows
+    - macos
+    - freebsd
+    - openbsd
+  rust_versions:
+    - "1.90"
+    - "stable"
+  categories:
+    - data_migration
+    - file_format
+    - cli_interface
+    - api_compatibility
+    - database_schema
+    - configuration
+    - dependencies
+    - performance
+
+# E2E test configuration
+e2e_tests:
+  enabled: true
+  timeout_seconds: 300
+  retry_count: 3
+  parallel_execution: false
+  data_cleanup: true
+  scenarios:
+    - complete_workflow
+    - company_management
+    - project_management
+    - resource_management
+    - task_management
+    - html_generation
+    - data_validation
+    - error_handling
+    - performance
+    - security
+
+# CI/CD configuration
+ci_cd:
+  enabled: true
+  workflows:
+    - basic_ci
+    - comprehensive_ci
+    - advanced_ci
+    - qa_pipeline
+  triggers:
+    - push
+    - pull_request
+    - schedule
+    - manual
+  notifications:
+    - email
+    - slack
+    - teams
+  artifacts:
+    - test_reports
+    - coverage_reports
+    - security_reports
+    - performance_reports
+
+# Test data configuration
+test_data:
+  base_path: "tests/data"
+  cleanup_after_tests: true
+  generate_test_data: true
+  test_data_sizes:
+    small: 10
+    medium: 100
+    large: 1000
+    xlarge: 10000
+
+# Reporting configuration
+reporting:
+  enabled: true
+  formats:
+    - html
+    - json
+    - xml
+    - junit
+  output_directory: "test_reports"
+  include_coverage: true
+  include_performance: true
+  include_security: true
+  include_compatibility: true
+
+# Environment configuration
+environments:
+  development:
+    enabled: true
+    timeout_seconds: 60
+    verbose: true
+  staging:
+    enabled: true
+    timeout_seconds: 120
+    verbose: false
+  production:
+    enabled: false
+    timeout_seconds: 300
+    verbose: false
+
+# Test categories
+categories:
+  critical:
+    - unit_tests
+    - integration_tests
+    - e2e_tests
+  important:
+    - performance_tests
+    - security_tests
+    - compatibility_tests
+  optional:
+    - stress_tests
+    - regression_tests
+    - benchmark_tests
+
+# Test execution order
+execution_order:
+  - unit_tests
+  - integration_tests
+  - performance_tests
+  - security_tests
+  - compatibility_tests
+  - e2e_tests
+  - stress_tests
+  - regression_tests
+  - benchmark_tests
