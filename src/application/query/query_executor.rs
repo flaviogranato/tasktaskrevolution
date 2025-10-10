@@ -145,7 +145,11 @@ impl QueryExecutor {
         match entity_type {
             EntityType::Project => {
                 let projects = self.project_repository.find_all()?;
-                let result = QueryEngine::execute(&query, projects)?;
+                let result = QueryEngine::execute(&query, projects)
+                    .map_err(|e| AppError::ValidationError {
+                        field: "query".to_string(),
+                        message: format!("Query execution error: {:?}", e),
+                    })?;
                 Ok(QueryResult {
                     items: result.items.into_iter().map(|p| Box::new(p) as Box<dyn std::fmt::Debug>).collect(),
                     total_count: result.total_count,
@@ -155,7 +159,11 @@ impl QueryExecutor {
             }
             EntityType::Task => {
                 let tasks = self.task_repository.find_all()?;
-                let result = QueryEngine::execute(&query, tasks)?;
+                let result = QueryEngine::execute(&query, tasks)
+                    .map_err(|e| AppError::ValidationError {
+                        field: "query".to_string(),
+                        message: format!("Query execution error: {:?}", e),
+                    })?;
                 Ok(QueryResult {
                     items: result.items.into_iter().map(|t| Box::new(t) as Box<dyn std::fmt::Debug>).collect(),
                     total_count: result.total_count,
@@ -165,7 +173,11 @@ impl QueryExecutor {
             }
             EntityType::Resource => {
                 let resources = self.resource_repository.find_all()?;
-                let result = QueryEngine::execute(&query, resources)?;
+                let result = QueryEngine::execute(&query, resources)
+                    .map_err(|e| AppError::ValidationError {
+                        field: "query".to_string(),
+                        message: format!("Query execution error: {:?}", e),
+                    })?;
                 Ok(QueryResult {
                     items: result.items.into_iter().map(|r| Box::new(r) as Box<dyn std::fmt::Debug>).collect(),
                     total_count: result.total_count,

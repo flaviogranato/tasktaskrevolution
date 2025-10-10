@@ -789,7 +789,7 @@ impl Queryable for Project {
             "name" => Some(QueryValue::String(self.name.clone())),
             "description" => self.description.as_ref().map(|d| QueryValue::String(d.clone())),
             "status" => Some(QueryValue::String(self.status.to_string())),
-            "priority" => Some(QueryValue::String(self.priority.to_string())),
+            "priority" => Some(QueryValue::String(format!("{:?}", self.priority))),
             "start_date" => self.start_date.map(|d| QueryValue::Date(d)),
             "end_date" => self.end_date.map(|d| QueryValue::Date(d)),
             "actual_start_date" => self.actual_start_date.map(|d| QueryValue::Date(d)),

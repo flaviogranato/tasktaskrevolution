@@ -257,9 +257,19 @@ impl Cli {
                 use crate::interface::cli::commands::query::QueryArgs;
                 use crate::interface::cli::commands::query::execute_query;
                 execute_query(QueryArgs {
-                    query,
+                    query: Some(query),
                     entity_type,
                     format,
+                    field: None,
+                    operator: None,
+                    value: None,
+                    aggregate: None,
+                    aggregate_field: None,
+                    sort: None,
+                    order: "asc".to_string(),
+                    limit: None,
+                    offset: None,
+                    show_fields: false,
                 })
             }
             Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),

@@ -70,7 +70,7 @@ impl QueryValidator {
             AggregationType::Min(field) | 
             AggregationType::Max(field) => {
                 let available_fields = Self::get_available_fields(entity_type);
-                if !available_fields.contains(field) {
+                if !available_fields.contains(&field.to_string()) {
                     return Err(AppError::validation_error(
                         "aggregation_field",
                         format!("Field '{}' is not valid for aggregation on entity type '{}'", field, entity_type)
@@ -94,7 +94,7 @@ impl QueryValidator {
     fn validate_sort_field(field: &str, entity_type: EntityType) -> Result<(), AppError> {
         let available_fields = Self::get_available_fields(entity_type);
         
-        if !available_fields.contains(field) {
+        if !available_fields.contains(&field.to_string()) {
             return Err(AppError::validation_error(
                 "sort_field",
                 format!("Field '{}' is not valid for sorting on entity type '{}'. Available fields: {}", 

@@ -721,7 +721,7 @@ impl<S: TaskState> Queryable for Task<S> {
             "code" => Some(QueryValue::String(self.code.clone())),
             "name" => Some(QueryValue::String(self.name.clone())),
             "description" => self.description.as_ref().map(|d| QueryValue::String(d.clone())),
-            "status" => Some(QueryValue::String(self.state.status_name())),
+            "status" => Some(QueryValue::String(format!("{:?}", self.state))),
             "start_date" => Some(QueryValue::Date(self.start_date)),
             "due_date" => Some(QueryValue::Date(self.due_date)),
             "actual_end_date" => self.actual_end_date.map(|d| QueryValue::Date(d)),
@@ -729,9 +729,10 @@ impl<S: TaskState> Queryable for Task<S> {
             "category" => Some(QueryValue::String(self.category.to_string())),
             "dependency_count" => Some(QueryValue::Number(self.dependencies.len() as f64)),
             "assigned_resource_count" => Some(QueryValue::Number(self.assigned_resources.len() as f64)),
-            "is_overdue" => Some(QueryValue::Boolean(self.is_overdue())),
-            "days_until_due" => Some(QueryValue::Number(self.days_until_due() as f64)),
-            "priority_weight" => Some(QueryValue::Number(self.priority.weight() as f64)),
+            // TODO: Implement is_overdue, days_until_due, and Priority::weight methods
+            // "is_overdue" => Some(QueryValue::Boolean(self.is_overdue())),
+            // "days_until_due" => Some(QueryValue::Number(self.days_until_due() as f64)),
+            // "priority_weight" => Some(QueryValue::Number(self.priority.weight() as f64)),
             _ => None,
         }
     }
