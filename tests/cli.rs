@@ -1233,8 +1233,19 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     let temp = assert_fs::TempDir::new()?;
     let companies_dir = temp.child("companies");
 
-    // Setup basic environment
-    setup_basic_environment(&temp)?;
+    // Initialize TTR without creating company
+    let mut cmd = Command::cargo_bin("ttr")?;
+    cmd.current_dir(temp.path());
+    cmd.args([
+        "init",
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Company",
+    ]);
+    cmd.assert().success();
 
     // Create company
     let mut cmd = Command::cargo_bin("ttr")?;
