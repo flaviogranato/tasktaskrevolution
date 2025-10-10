@@ -1,4 +1,4 @@
-use crate::domain::shared::query_parser::{AggregationType, ComparisonOperator, FilterCondition, Query, QueryExpression, QueryValue, SortOption};
+use crate::domain::shared::query_parser::{AggregationType, ComparisonOperator, FilterCondition, PaginationOptions, Query, QueryExpression, QueryValue, SortOption};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
