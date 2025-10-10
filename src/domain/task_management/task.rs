@@ -724,7 +724,7 @@ impl<S: TaskState> Queryable for Task<S> {
             "status" => Some(QueryValue::String(format!("{:?}", self.state))),
             "start_date" => Some(QueryValue::Date(self.start_date)),
             "due_date" => Some(QueryValue::Date(self.due_date)),
-            "actual_end_date" => self.actual_end_date.map(|d| QueryValue::Date(d)),
+            "actual_end_date" => self.actual_end_date.map(QueryValue::Date),
             "priority" => Some(QueryValue::String(self.priority.to_string())),
             "category" => Some(QueryValue::String(self.category.to_string())),
             "dependency_count" => Some(QueryValue::Number(self.dependencies.len() as f64)),

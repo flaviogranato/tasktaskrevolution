@@ -29,7 +29,7 @@ impl SearchExecutor {
 
         self.search_engine
             .search(search_query)
-            .map_err(|e| AppError::search_error(&e.to_string()))
+            .map_err(|e| AppError::search_error(e.to_string()))
     }
 
     /// Executa busca por tipo de entidade
@@ -50,7 +50,7 @@ impl SearchExecutor {
 
         self.search_engine
             .search(search_query)
-            .map_err(|e| AppError::search_error(&e.to_string()))
+            .map_err(|e| AppError::search_error(e.to_string()))
     }
 
     /// Executa busca por campo específico
@@ -67,7 +67,7 @@ impl SearchExecutor {
 
         self.search_engine
             .search(search_query)
-            .map_err(|e| AppError::search_error(&e.to_string()))
+            .map_err(|e| AppError::search_error(e.to_string()))
     }
 
     /// Executa busca com filtros de campo
@@ -86,7 +86,7 @@ impl SearchExecutor {
 
         self.search_engine
             .search(search_query)
-            .map_err(|e| AppError::search_error(&e.to_string()))
+            .map_err(|e| AppError::search_error(e.to_string()))
     }
 
     /// Busca por padrão regex
@@ -138,7 +138,7 @@ impl SearchExecutor {
         let file_types: std::collections::HashMap<FileType, usize> = results
             .iter()
             .fold(std::collections::HashMap::new(), |mut acc, result| {
-                *acc.entry(result.file_type.clone()).or_insert(0) += 1;
+                *acc.entry(result.file_type).or_insert(0) += 1;
                 acc
             });
 

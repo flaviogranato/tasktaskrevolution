@@ -68,7 +68,7 @@ impl QueryExecutor {
     /// Executa query em projetos
     fn execute_project_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
         let projects = self.project_repository.find_all()
-            .map_err(|e| AppError::from(e))?;
+            .map_err(AppError::from)?;
         
         let result = QueryEngine::execute(&query, projects)
             .map_err(|e| AppError::ValidationError {
@@ -93,7 +93,7 @@ impl QueryExecutor {
     /// Executa query em tarefas
     fn execute_task_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
         let tasks = self.task_repository.find_all()
-            .map_err(|e| AppError::from(e))?;
+            .map_err(AppError::from)?;
         
         let result = QueryEngine::execute(&query, tasks)
             .map_err(|e| AppError::ValidationError {
@@ -118,7 +118,7 @@ impl QueryExecutor {
     /// Executa query em recursos
     fn execute_resource_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
         let resources = self.resource_repository.find_all()
-            .map_err(|e| AppError::from(e))?;
+            .map_err(AppError::from)?;
         
         let result = QueryEngine::execute(&query, resources)
             .map_err(|e| AppError::ValidationError {

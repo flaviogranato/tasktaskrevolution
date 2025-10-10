@@ -159,7 +159,7 @@ impl PaginationOptions {
         Self { limit, offset }
     }
     
-    pub fn default() -> Self {
+    pub fn new_default() -> Self {
         Self {
             limit: None,
             offset: None,
@@ -188,7 +188,7 @@ impl Query {
             expression,
             aggregation: None,
             sort: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
         }
     }
     
@@ -251,7 +251,7 @@ impl QueryParser {
         Ok(Query { 
             expression,
             aggregation: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
             sort: None,
         })
     }

@@ -137,10 +137,9 @@ fn apply_filters(results: &[crate::domain::shared::search_engine::SearchResult],
     let mut filter = SearchFilter::new();
 
     // Apply file type filter
-    if let Some(file_type) = &args.file_type {
-        if let Ok(ft) = parse_file_type(file_type) {
-            filter = filter.file_types(vec![ft]);
-        }
+    if let Some(file_type) = &args.file_type
+        && let Ok(ft) = parse_file_type(file_type) {
+        filter = filter.file_types(vec![ft]);
     }
 
     // Apply score filters

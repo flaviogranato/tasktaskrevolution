@@ -25,20 +25,18 @@ impl SearchResultFormatter {
                 for mat in &result.matches {
                     output.push_str(&format!("     Line {}: {}\n", mat.line_number, mat.line_content));
                     
-                    if let Some(context) = &mat.context_before {
-                        if !context.is_empty() {
-                            output.push_str(&format!("     Context before: {}\n", context));
-                        }
+                    if let Some(context) = &mat.context_before
+                        && !context.is_empty() {
+                        output.push_str(&format!("     Context before: {}\n", context));
                     }
                     
-                    if let Some(context) = &mat.context_after {
-                        if !context.is_empty() {
-                            output.push_str(&format!("     Context after: {}\n", context));
-                        }
+                    if let Some(context) = &mat.context_after
+                        && !context.is_empty() {
+                        output.push_str(&format!("     Context after: {}\n", context));
                     }
                 }
             }
-            output.push_str("\n");
+            output.push('\n');
         }
 
         output
@@ -119,7 +117,7 @@ impl SearchResultFormatter {
                     output.push_str(&format!("     Line {}: {}\n", mat.line_number, highlighted_line));
                 }
             }
-            output.push_str("\n");
+            output.push('\n');
         }
 
         output
@@ -149,7 +147,7 @@ impl SearchResultFormatter {
 
         let mut grouped: HashMap<FileType, Vec<&SearchResult>> = HashMap::new();
         for result in results {
-            grouped.entry(result.file_type.clone()).or_insert_with(Vec::new).push(result);
+            grouped.entry(result.file_type).or_default().push(result);
         }
 
         let mut output = String::new();
@@ -161,7 +159,7 @@ impl SearchResultFormatter {
             for result in type_results {
                 output.push_str(&format!("  - {} (score: {:.2})\n", result.file_path.display(), result.score));
             }
-            output.push_str("\n");
+            output.push('\n');
         }
 
         output
