@@ -51,7 +51,7 @@ impl ConfigRepository for FileConfigRepository {
 
     fn create_repository_dir(&self, path: &Path) -> DomainResult<()> {
         if !path.exists() {
-            fs::create_dir(&path).map_err(|e| DomainError::IoErrorWithPath {
+            fs::create_dir(path).map_err(|e| DomainError::IoErrorWithPath {
                 operation: "create directory".to_string(),
                 path: path.to_string_lossy().to_string(),
                 details: e.to_string(),

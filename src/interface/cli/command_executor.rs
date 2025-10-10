@@ -216,10 +216,8 @@ fn print_validation_results(results: &[crate::application::validate::types::Vali
     if let Some(output_path) = &args.output {
         if let Err(e) = fs::write(output_path, &output) {
             eprintln!("Failed to write to file: {}", e);
-        } else {
-            if !crate::interface::cli::Cli::is_quiet() {
-                println!("Validation results written to file");
-            }
+        } else if !crate::interface::cli::Cli::is_quiet() {
+            println!("Validation results written to file");
         }
     } else {
         println!("{}", output);

@@ -203,7 +203,7 @@ fn test_company_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
 
     // Use the first YAML file found for validation
     let company_file_path = &yaml_files[0];
-    let validator = YamlValidator::new(&company_file_path)?;
+    let validator = YamlValidator::new(company_file_path)?;
     assert!(validator.has_field("apiVersion"));
     assert!(validator.has_field("kind"));
     assert!(validator.has_field("metadata"));
@@ -458,17 +458,16 @@ fn test_task_format_evolution() -> Result<(), Box<dyn std::error::Error>> {
                         let project_path = project_entry.path();
                         if project_path.is_dir() {
                             let project_yaml = project_path.join("project.yaml");
-                            if project_yaml.exists() {
-                                if let Ok(content) = std::fs::read_to_string(&project_yaml)
-                                    && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
-                                    && let Some(code) = yaml
-                                        .get("metadata")
-                                        .and_then(|m| m.get("code"))
-                                        .and_then(|c| c.as_str())
-                                {
-                                    project_code = Some(code.to_string());
-                                    break;
-                                }
+                            if project_yaml.exists()
+                                && let Ok(content) = std::fs::read_to_string(&project_yaml)
+                                && let Ok(yaml) = serde_yaml::from_str::<serde_yaml::Value>(&content)
+                                && let Some(code) = yaml
+                                    .get("metadata")
+                                    .and_then(|m| m.get("code"))
+                                    .and_then(|c| c.as_str())
+                            {
+                                project_code = Some(code.to_string());
+                                break;
                             }
                         }
                     }

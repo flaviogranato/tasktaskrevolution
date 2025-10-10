@@ -791,7 +791,7 @@ mod tests {
         
         assert!(result.is_err());
         let error = result.unwrap_err();
-        let error_message = format!("{}", error);
+        let error_message = error.to_string();
         assert!(error_message.contains("Resource 'DEV-001' has status 'Assigned' but no project assignments"));
     }
 
@@ -826,7 +826,7 @@ mod tests {
         
         assert!(result.is_err());
         let error = result.unwrap_err();
-        let error_message = format!("{}", error);
+        let error_message = error.to_string();
         assert!(error_message.contains("Resource 'DEV-001' has status 'Available' but has project assignments"));
     }
 
@@ -857,7 +857,7 @@ mod tests {
         
         assert!(result.is_err());
         let error = result.unwrap_err();
-        let error_message = format!("{}", error);
+        let error_message = error.to_string();
         assert!(error_message.contains("Resource 'DEV-001' has status 'Assigned' but no project assignments"));
     }
 
@@ -932,7 +932,7 @@ mod tests {
         
         assert!(result.is_err());
         let error = result.unwrap_err();
-        let error_message = format!("{}", error);
+        let error_message = error.to_string();
         assert!(error_message.contains("Resource 'DEV-001' has status 'Assigned' but no project assignments"));
         assert!(error_message.contains("Assigned resources must have at least one project assignment"));
     }
@@ -968,7 +968,7 @@ mod tests {
         
         assert!(result.is_err());
         let error = result.unwrap_err();
-        let error_message = format!("{}", error);
+        let error_message = error.to_string();
         assert!(error_message.contains("Resource 'DEV-001' has status 'Inactive' but has project assignments"));
         assert!(error_message.contains("Inactive resources should not have project assignments"));
     }

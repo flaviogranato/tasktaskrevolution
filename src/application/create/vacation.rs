@@ -63,11 +63,11 @@ impl<R: ResourceRepository> CreateVacationUseCase<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::errors::AppError;
     use crate::domain::resource_management::{
         AnyResource,
         resource::{Period, PeriodType, Resource, ResourceScope},
     };
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::{DateTime, Local, NaiveDateTime};
     use std::cell::RefCell;
     use std::collections::HashMap;

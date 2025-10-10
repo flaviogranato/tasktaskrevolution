@@ -19,6 +19,7 @@ impl<R: CompanyRepository> ListCompaniesUseCase<R> {
 mod tests {
     use super::*;
     use crate::domain::company_management::Company;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
 
     struct MockCompanyRepository {
         companies: std::sync::RwLock<Vec<Company>>,

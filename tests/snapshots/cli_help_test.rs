@@ -3,7 +3,7 @@ use std::process::Command;
 #[test]
 fn test_main_help() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "--help"])
+        .args(["run", "--", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -23,7 +23,7 @@ fn test_main_help() {
 #[test]
 fn test_create_help() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "create", "--help"])
+        .args(["run", "--", "create", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -42,7 +42,7 @@ fn test_create_help() {
 #[test]
 fn test_create_project_help() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "create", "project", "--help"])
+        .args(["run", "--", "create", "project", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -61,7 +61,7 @@ fn test_create_project_help() {
 #[test]
 fn test_list_help() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "list", "--help"])
+        .args(["run", "--", "list", "--help"])
         .output()
         .expect("Failed to execute command");
 
@@ -80,7 +80,7 @@ fn test_list_help() {
 #[test]
 fn test_validate_help() {
     let output = Command::new("cargo")
-        .args(&["run", "--", "validate", "--help"])
+        .args(["run", "--", "validate", "--help"])
         .output()
         .expect("Failed to execute command");
 

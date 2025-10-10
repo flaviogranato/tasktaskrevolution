@@ -1,12 +1,11 @@
 use assert_fs::TempDir;
-use std::path::Path;
 
 use task_task_revolution::domain::company_management::{Company, CompanyRepository};
-use task_task_revolution::domain::company_management::company::{CompanySize, CompanyStatus};
 use task_task_revolution::infrastructure::persistence::company_repository::FileCompanyRepository;
 
 /// Test fixtures for CompanyRepository tests
 struct CompanyRepositoryTestFixture {
+    #[allow(dead_code)]
     temp_dir: TempDir,
     repository: FileCompanyRepository,
 }

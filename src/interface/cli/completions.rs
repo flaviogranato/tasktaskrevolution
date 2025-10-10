@@ -16,7 +16,7 @@ pub enum ShellType {
 
 impl ShellType {
     /// Parse shell type from string
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s.to_lowercase().as_str() {
             "bash" => Some(Self::Bash),
             "zsh" => Some(Self::Zsh),
@@ -44,12 +44,18 @@ pub struct ShellCompletionGenerator {
     command: Command,
 }
 
-impl ShellCompletionGenerator {
-    /// Create a new completion generator
-    pub fn new() -> Self {
+impl Default for ShellCompletionGenerator {
+    fn default() -> Self {
         Self {
             command: crate::interface::cli::Cli::command(),
         }
+    }
+}
+
+impl ShellCompletionGenerator {
+    /// Create a new completion generator
+    pub fn new() -> Self {
+        Self::default()
     }
     
     /// Generate completions for a specific shell
@@ -141,7 +147,7 @@ impl ShellCompletionGenerator {
     
     /// Generate installation instructions
     pub fn generate_installation_instructions(&self) -> String {
-        format!(r#"# TTR Shell Completions Installation
+        r#"# TTR Shell Completions Installation
 
 ## Bash
 To install bash completions, add this to your ~/.bashrc or ~/.bash_profile:
@@ -231,7 +237,7 @@ For more help, see the TTR documentation or run:
 ```bash
 ttr completions --help
 ```
-"#)
+"#.to_string()
     }
 }
 
@@ -244,7 +250,7 @@ impl CompletionCommandHandler {
         let generator = ShellCompletionGenerator::new();
         
         if let Some(shell_str) = shell {
-            let shell_type = ShellType::from_str(&shell_str)
+            let shell_type = ShellType::parse(&shell_str)
                 .ok_or_else(|| format!("Unsupported shell: {}", shell_str))?;
             
             let completions = generator.generate_completions(shell_type)?;
@@ -290,12 +296,12 @@ mod tests {
     
     #[test]
     fn test_shell_type_parsing() {
-        assert_eq!(ShellType::from_str("bash"), Some(ShellType::Bash));
-        assert_eq!(ShellType::from_str("zsh"), Some(ShellType::Zsh));
-        assert_eq!(ShellType::from_str("fish"), Some(ShellType::Fish));
-        assert_eq!(ShellType::from_str("powershell"), Some(ShellType::PowerShell));
-        assert_eq!(ShellType::from_str("elvish"), Some(ShellType::Elvish));
-        assert_eq!(ShellType::from_str("unknown"), None);
+        assert_eq!(ShellType::parse("bash"), Some(ShellType::Bash));
+        assert_eq!(ShellType::parse("zsh"), Some(ShellType::Zsh));
+        assert_eq!(ShellType::parse("fish"), Some(ShellType::Fish));
+        assert_eq!(ShellType::parse("powershell"), Some(ShellType::PowerShell));
+        assert_eq!(ShellType::parse("elvish"), Some(ShellType::Elvish));
+        assert_eq!(ShellType::parse("unknown"), None);
     }
     
     #[test]

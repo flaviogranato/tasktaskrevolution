@@ -23,7 +23,7 @@ pub struct GanttUseCase {
 impl GanttUseCase {
     /// Cria uma nova instância do use case
     pub fn new(base_path: PathBuf) -> Self {
-        let tera = Tera::new("templates/**/*").unwrap_or_else(|e| {
+        let tera = Tera::new("templates/**/*").unwrap_or_else(|_e| {
             std::process::exit(1);
         });
 

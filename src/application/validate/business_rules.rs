@@ -242,6 +242,7 @@ where
 mod tests {
     use super::*;
     use crate::application::validate::types::{ValidationResult, ValidationSeverity};
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::domain::company_management::company::Company;
     use crate::domain::company_management::repository::CompanyRepository;
     use crate::domain::project_management::any_project::AnyProject;

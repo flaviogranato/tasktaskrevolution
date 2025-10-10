@@ -8,6 +8,7 @@ use task_task_revolution::infrastructure::persistence::project_repository::FileP
 
 /// Test fixtures for ProjectRepository tests
 struct ProjectRepositoryTestFixture {
+    #[allow(dead_code)]
     temp_dir: TempDir,
     repository: FileProjectRepository,
 }

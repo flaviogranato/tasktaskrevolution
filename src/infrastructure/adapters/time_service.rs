@@ -69,7 +69,7 @@ impl TimeServicePort for StandardTimeServiceAdapter {
         self.timezone.clone()
     }
 
-    fn set_timezone(&self, timezone: &str) -> DomainResult<()> {
+    fn set_timezone(&self, _timezone: &str) -> DomainResult<()> {
         // In a real implementation, this would validate the timezone
         // For now, we'll just accept any string
         Ok(())

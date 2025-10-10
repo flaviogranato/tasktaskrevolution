@@ -222,7 +222,7 @@ impl RealtimeConflictMonitor {
     }
 
     /// Start a background monitoring task
-    pub async fn start_background_monitoring(&self, check_interval: Duration) -> Result<(), AppError> {
+    pub async fn start_background_monitoring(&self, _check_interval: Duration) -> Result<(), AppError> {
         // Background monitoring disabled due to Send/Sync constraints
         // This would need to be implemented differently in a real application
         eprintln!("Background monitoring not available due to technical constraints");
@@ -249,13 +249,13 @@ impl RealtimeConflictMonitor {
 
         if !conflicts.is_empty() {
             validation_result.is_valid = false;
-            for (resource_code, resource_conflicts) in conflicts {
+            for (_resource_code, resource_conflicts) in conflicts {
                 validation_result.conflicts.extend(resource_conflicts);
             }
         }
 
         // Check calendar availability
-        for resource_code in resource_codes {
+        for _resource_code in resource_codes {
             // TODO: Re-enable calendar validator when available
             // let availability_result = self.calendar_validator
             //     .validate_resource_availability(resource_code, start_date, end_date)?;
@@ -283,10 +283,15 @@ pub struct ValidationResult {
 
 #[cfg(test)]
 mod tests {
+    use crate::domain::shared::errors::DomainResult;
+    use crate::domain::project_management::AnyProject;
+    use crate::domain::project_management::repository::ProjectRepositoryWithId;
+    use crate::domain::resource_management::repository::ResourceRepositoryWithId;
+    use crate::domain::task_management::AnyTask;
+    use crate::domain::task_management::repository::TaskRepositoryWithId;
     use super::*;
     use crate::domain::resource_management::any_resource::AnyResource;
-    use crate::domain::resource_management::resource::Resource;
-    use crate::domain::resource_management::resource::ResourceScope;
+    use crate::domain::resource_management::resource::{Resource, ResourceScope};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;

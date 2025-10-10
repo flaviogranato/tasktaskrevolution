@@ -195,7 +195,7 @@ impl ProjectRepository for FileProjectRepository {
     /// Salva um projeto.
     /// Salva um arquivo `project.yaml` no diretório companies/<COMPANY_CODE>/projects/<PROJECT_CODE>/.
     fn save(&self, project: AnyProject) -> DomainResult<()> {
-        let project_id = project.id();
+        let _project_id = project.id();
         let project_code = project.code();
         let company_code = project.company_code();
 
@@ -242,8 +242,8 @@ impl ProjectRepository for FileProjectRepository {
                 let company_path = company_entry.path();
                 if company_path.is_dir() {
                     let projects_dir = company_path.join("projects");
-                    if projects_dir.exists() {
-                        if let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
+                    if projects_dir.exists()
+                        && let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
                             for project_entry in project_entries.flatten() {
                                 let project_path = project_entry.path();
                                 if project_path.is_dir() {
@@ -254,7 +254,6 @@ impl ProjectRepository for FileProjectRepository {
                                 }
                             }
                         }
-                    }
                 }
             }
         }

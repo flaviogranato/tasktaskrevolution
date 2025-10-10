@@ -99,7 +99,7 @@ impl ValidationServicePort for StandardValidationServiceAdapter {
         Ok(results)
     }
 
-    fn validate_entity(&self, entity_type: &str, data: &HashMap<String, String>) -> DomainResult<Vec<ValidationResult>> {
+    fn validate_entity(&self, _entity_type: &str, data: &HashMap<String, String>) -> DomainResult<Vec<ValidationResult>> {
         // In a real implementation, this would load entity-specific rules
         // For now, we'll just validate basic fields
         let mut results = Vec::new();
@@ -130,7 +130,7 @@ impl ValidationServicePort for StandardValidationServiceAdapter {
         ]
     }
 
-    fn register_custom_rule(&self, name: &str, rule: Box<dyn CustomValidationRule>) -> DomainResult<()> {
+    fn register_custom_rule(&self, _name: &str, _rule: Box<dyn CustomValidationRule>) -> DomainResult<()> {
         // In a real implementation, this would be mutable
         // For now, we'll just return an error
         Err(DomainError::OperationNotAllowed {

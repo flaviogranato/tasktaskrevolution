@@ -67,17 +67,20 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     /// Test logger that captures messages
+    #[allow(dead_code)]
     struct TestLogger {
         messages: Arc<Mutex<VecDeque<String>>>,
     }
 
     impl TestLogger {
+        #[allow(dead_code)]
         fn new() -> Self {
             Self {
                 messages: Arc::new(Mutex::new(VecDeque::new())),
             }
         }
 
+        #[allow(dead_code)]
         fn get_messages(&self) -> Vec<String> {
             self.messages.lock().unwrap().iter().cloned().collect()
         }

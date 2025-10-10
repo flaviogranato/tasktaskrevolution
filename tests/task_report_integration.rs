@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    use std::fs;
     use tempfile::TempDir;
 
     #[test]
@@ -29,6 +28,6 @@ mod tests {
         // 3. Run: ttr report generate --type task --format csv --project PROJ-251 --company TECH-251 --output tasks.csv
         // 4. Verify tasks.csv contains 1 record with the correct data
 
-        assert!(true, "Task report integration test placeholder");
+        // Task report integration test placeholder
     }
 }

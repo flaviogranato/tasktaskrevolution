@@ -76,6 +76,7 @@ mod tests {
         resource::{Resource, ResourceScope},
         state::Available,
     };
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use std::cell::RefCell;
 
     struct MockResourceRepository {

@@ -34,10 +34,9 @@ impl EventPublisherPort for StandardEventPublisherAdapter {
         let subscribers = self.subscribers.lock().unwrap();
         
         for (_, subscriber) in subscribers.iter() {
-            if subscriber.is_interested_in(event.event_type()) {
-                if let Err(e) = subscriber.handle_event(event.as_ref()) {
-                    eprintln!("Error handling event: {}", e);
-                }
+            if subscriber.is_interested_in(event.event_type())
+                && let Err(e) = subscriber.handle_event(event.as_ref()) {
+                eprintln!("Error handling event: {}", e);
             }
         }
 

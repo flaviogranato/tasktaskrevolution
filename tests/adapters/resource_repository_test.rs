@@ -8,6 +8,7 @@ use task_task_revolution::infrastructure::persistence::resource_repository::File
 
 /// Test fixtures for ResourceRepository tests
 struct ResourceRepositoryTestFixture {
+    #[allow(dead_code)]
     temp_dir: TempDir,
     repository: FileResourceRepository,
 }
@@ -50,7 +51,7 @@ mod tests {
         let resource = fixture.create_test_resource("RES-001", "Test Resource", "Developer");
 
         // Save the resource
-        let saved_resource = fixture.repository.save(resource).unwrap();
+        let _saved_resource = fixture.repository.save(resource).unwrap();
 
         // Find by code
         let found = fixture.repository.find_by_code("RES-001").unwrap();
@@ -106,9 +107,9 @@ mod tests {
         fixture.repository.save(resource).unwrap();
 
         // Find by company (assuming default company)
-        let found = fixture.repository.find_by_company("COMP-001").unwrap();
+        let _found = fixture.repository.find_by_company("COMP-001").unwrap();
         // Note: This test might need adjustment based on actual company association logic
-        assert!(found.len() >= 0);
+        // found.len() is always >= 0, so this assertion is redundant
     }
 
     #[test]
@@ -121,9 +122,9 @@ mod tests {
 
         // Find all with context
         let contexts = fixture.repository.find_all_with_context().unwrap();
-        assert!(contexts.len() >= 1);
+        assert!(!contexts.is_empty());
         
-        let (found_resource, company_code, project_codes) = &contexts[0];
+        let (found_resource, company_code, _project_codes) = &contexts[0];
         assert_eq!(found_resource.code(), "RES-004");
         assert!(!company_code.is_empty());
         // project_codes might be empty for company-scoped resources
@@ -135,7 +136,7 @@ mod tests {
         let resource = fixture.create_test_resource("RES-005", "Hierarchy Resource", "Developer");
 
         // Save in hierarchy
-        let saved_resource = fixture.repository.save_in_hierarchy(
+        let _saved_resource = fixture.repository.save_in_hierarchy(
             resource,
             "COMP-001",
             Some("PROJ-001"),
@@ -194,13 +195,14 @@ mod tests {
         let end_date = start_date + chrono::Duration::days(7);
 
         // Check layoff period (this will depend on the actual implementation)
-        let is_layoff = fixture.repository.check_if_layoff_period(
+        let _is_layoff = fixture.repository.check_if_layoff_period(
             &start_date.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Local).unwrap(),
             &end_date.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Local).unwrap(),
         );
 
         // This is a boolean check, so we just verify it returns a boolean
-        assert!(is_layoff == true || is_layoff == false);
+        // We just verify that the function returns a boolean value
+        // Note: This test just verifies the function doesn't panic
     }
 
     #[test]

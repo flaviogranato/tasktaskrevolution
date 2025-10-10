@@ -14,10 +14,10 @@ fn test_task_report_generates_correct_records() {
         .join("ttr");
     
     let output = Command::new(&ttr_binary)
-        .args(&["init"])
-        .args(&["--name", "Test Company"])
-        .args(&["--email", "test@example.com"])
-        .args(&["--timezone", "America/Sao_Paulo"])
+        .args(["init"])
+        .args(["--name", "Test Company"])
+        .args(["--email", "test@example.com"])
+        .args(["--timezone", "America/Sao_Paulo"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -26,9 +26,9 @@ fn test_task_report_generates_correct_records() {
 
     // Create a company
     let output = Command::new(&ttr_binary)
-        .args(&["create", "company"])
-        .args(&["--code", "TECH-001"])
-        .args(&["--name", "Tech Corp"])
+        .args(["create", "company"])
+        .args(["--code", "TECH-001"])
+        .args(["--name", "Tech Corp"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -37,12 +37,12 @@ fn test_task_report_generates_correct_records() {
 
     // Create a project
     let output = Command::new(&ttr_binary)
-        .args(&["create", "project"])
-        .args(&["--company", "TECH-001"])
-        .args(&["--code", "WEB-APP"])
-        .args(&["--name", "Web Application"])
-        .args(&["--start-date", "2024-01-01"])
-        .args(&["--end-date", "2024-12-31"])
+        .args(["create", "project"])
+        .args(["--company", "TECH-001"])
+        .args(["--code", "WEB-APP"])
+        .args(["--name", "Web Application"])
+        .args(["--start-date", "2024-01-01"])
+        .args(["--end-date", "2024-12-31"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -51,14 +51,14 @@ fn test_task_report_generates_correct_records() {
 
     // Create tasks
     let output = Command::new(&ttr_binary)
-        .args(&["create", "task"])
-        .args(&["--company", "TECH-001"])
-        .args(&["--project", "WEB-APP"])
-        .args(&["--code", "TASK-LOGIN"])
-        .args(&["--name", "Login Task"])
-        .args(&["--description", "Implement user login"])
-        .args(&["--start-date", "2024-01-01"])
-        .args(&["--due-date", "2024-01-15"])
+        .args(["create", "task"])
+        .args(["--company", "TECH-001"])
+        .args(["--project", "WEB-APP"])
+        .args(["--code", "TASK-LOGIN"])
+        .args(["--name", "Login Task"])
+        .args(["--description", "Implement user login"])
+        .args(["--start-date", "2024-01-01"])
+        .args(["--due-date", "2024-01-15"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -66,14 +66,14 @@ fn test_task_report_generates_correct_records() {
     assert!(output.status.success(), "Create task 1 failed: {}", String::from_utf8_lossy(&output.stderr));
 
     let output = Command::new(&ttr_binary)
-        .args(&["create", "task"])
-        .args(&["--company", "TECH-001"])
-        .args(&["--project", "WEB-APP"])
-        .args(&["--code", "TASK-API"])
-        .args(&["--name", "API Task"])
-        .args(&["--description", "Implement API endpoints"])
-        .args(&["--start-date", "2024-01-16"])
-        .args(&["--due-date", "2024-01-30"])
+        .args(["create", "task"])
+        .args(["--company", "TECH-001"])
+        .args(["--project", "WEB-APP"])
+        .args(["--code", "TASK-API"])
+        .args(["--name", "API Task"])
+        .args(["--description", "Implement API endpoints"])
+        .args(["--start-date", "2024-01-16"])
+        .args(["--due-date", "2024-01-30"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -82,9 +82,9 @@ fn test_task_report_generates_correct_records() {
 
     // Verify tasks exist
     let output = Command::new(&ttr_binary)
-        .args(&["list", "tasks"])
-        .args(&["--company", "TECH-001"])
-        .args(&["--project", "WEB-APP"])
+        .args(["list", "tasks"])
+        .args(["--company", "TECH-001"])
+        .args(["--project", "WEB-APP"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -96,12 +96,12 @@ fn test_task_report_generates_correct_records() {
 
     // Generate task report
     let output = Command::new(&ttr_binary)
-        .args(&["report", "generate"])
-        .args(&["--type", "task"])
-        .args(&["--format", "csv"])
-        .args(&["--project", "WEB-APP"])
-        .args(&["--company", "TECH-001"])
-        .args(&["--output", "tasks.csv"])
+        .args(["report", "generate"])
+        .args(["--type", "task"])
+        .args(["--format", "csv"])
+        .args(["--project", "WEB-APP"])
+        .args(["--company", "TECH-001"])
+        .args(["--output", "tasks.csv"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -137,10 +137,10 @@ fn test_task_report_with_no_tasks_returns_zero_records() {
         .join("ttr");
     
     let output = Command::new(&ttr_binary)
-        .args(&["init"])
-        .args(&["--name", "Test Company"])
-        .args(&["--email", "test@example.com"])
-        .args(&["--timezone", "America/Sao_Paulo"])
+        .args(["init"])
+        .args(["--name", "Test Company"])
+        .args(["--email", "test@example.com"])
+        .args(["--timezone", "America/Sao_Paulo"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -149,9 +149,9 @@ fn test_task_report_with_no_tasks_returns_zero_records() {
 
     // Create a company but no projects or tasks
     let output = Command::new(&ttr_binary)
-        .args(&["create", "company"])
-        .args(&["--code", "EMPTY-001"])
-        .args(&["--name", "Empty Corp"])
+        .args(["create", "company"])
+        .args(["--code", "EMPTY-001"])
+        .args(["--name", "Empty Corp"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -160,11 +160,11 @@ fn test_task_report_with_no_tasks_returns_zero_records() {
 
     // Generate task report (should return 0 records)
     let output = Command::new(&ttr_binary)
-        .args(&["report", "generate"])
-        .args(&["--type", "task"])
-        .args(&["--format", "csv"])
-        .args(&["--company", "EMPTY-001"])
-        .args(&["--output", "empty_tasks.csv"])
+        .args(["report", "generate"])
+        .args(["--type", "task"])
+        .args(["--format", "csv"])
+        .args(["--company", "EMPTY-001"])
+        .args(["--output", "empty_tasks.csv"])
         .current_dir(temp_path)
         .output()
         .unwrap();

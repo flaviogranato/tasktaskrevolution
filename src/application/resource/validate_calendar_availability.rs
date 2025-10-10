@@ -69,10 +69,10 @@ impl ValidateCalendarAvailabilityUseCase {
         end_date: NaiveDate,
     ) -> Result<CalendarAvailabilityResult, AppError> {
         // Resolve resource code to ID
-        let resource_id = self
+        let _resource_id = self
             .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(|e| AppError::from(e))?;
+            .map_err(AppError::from)?;
 
         // Load resource
         let resource = self
@@ -158,10 +158,10 @@ impl ValidateCalendarAvailabilityUseCase {
         date: NaiveDate,
     ) -> Result<bool, AppError> {
         // Resolve resource code to ID
-        let resource_id = self
+        let _resource_id = self
             .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(|e| AppError::from(e))?;
+            .map_err(AppError::from)?;
 
         // Load resource
         let resource = self
@@ -232,8 +232,10 @@ impl ValidateCalendarAvailabilityUseCase {
 mod tests {
     use super::*;
     use crate::domain::resource_management::any_resource::AnyResource;
+    use crate::domain::resource_management::repository::ResourceRepositoryWithId;
     use crate::domain::resource_management::resource::Resource;
     use crate::domain::resource_management::resource::ResourceScope;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
