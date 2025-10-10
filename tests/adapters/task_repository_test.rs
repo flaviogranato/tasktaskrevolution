@@ -2,7 +2,7 @@ use assert_fs::TempDir;
 use chrono::NaiveDate;
 
 use task_task_revolution::domain::task_management::{
-    AnyTask, task::Task, repository::TaskRepository, category::Category, priority::Priority, state::Planned
+    AnyTask, category::Category, priority::Priority, repository::TaskRepository, state::Planned, task::Task,
 };
 use task_task_revolution::infrastructure::persistence::task_repository::FileTaskRepository;
 
@@ -17,11 +17,8 @@ impl TaskRepositoryTestFixture {
     fn new() -> Self {
         let temp_dir = TempDir::new().unwrap();
         let repository = FileTaskRepository::new(temp_dir.path());
-        
-        Self {
-            temp_dir,
-            repository,
-        }
+
+        Self { temp_dir, repository }
     }
 
     fn create_test_task(&self, code: &str, name: &str, project_code: &str) -> AnyTask {
@@ -67,7 +64,7 @@ mod tests {
     #[test]
     fn test_find_all() {
         let fixture = TaskRepositoryTestFixture::new();
-        
+
         // Create multiple tasks
         let task1 = fixture.create_test_task("TASK-001", "Test Task 1", "PROJ-001");
         let task2 = fixture.create_test_task("TASK-002", "Test Task 2", "PROJ-001");
@@ -79,7 +76,7 @@ mod tests {
         // Find all
         let all_tasks = fixture.repository.find_all().unwrap();
         assert_eq!(all_tasks.len(), 2);
-        
+
         let codes: Vec<&str> = all_tasks.iter().map(|t| t.code()).collect();
         assert!(codes.contains(&"TASK-001"));
         assert!(codes.contains(&"TASK-002"));
@@ -105,7 +102,10 @@ mod tests {
         let task = fixture.create_test_task("TASK-004", "Company Project Task", "PROJ-001");
 
         // Save the task in hierarchy
-        fixture.repository.save_in_hierarchy(task, "COMP-001", "PROJ-001").unwrap();
+        fixture
+            .repository
+            .save_in_hierarchy(task, "COMP-001", "PROJ-001")
+            .unwrap();
 
         // Find all by project within company
         let found = fixture.repository.find_all_by_project("COMP-001", "PROJ-001").unwrap();
@@ -119,11 +119,10 @@ mod tests {
         let task = fixture.create_test_task("TASK-005", "Hierarchy Task", "PROJ-001");
 
         // Save in hierarchy
-        let _saved_task = fixture.repository.save_in_hierarchy(
-            task,
-            "COMP-001",
-            "PROJ-001",
-        ).unwrap();
+        let _saved_task = fixture
+            .repository
+            .save_in_hierarchy(task, "COMP-001", "PROJ-001")
+            .unwrap();
 
         // Verify the task was saved
         let found = fixture.repository.find_by_code("TASK-005").unwrap();

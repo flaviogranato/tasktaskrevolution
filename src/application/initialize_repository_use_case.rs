@@ -25,9 +25,9 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
-    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::domain::shared::convertable::Convertible;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
+    use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::Path;
 

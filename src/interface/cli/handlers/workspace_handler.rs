@@ -23,7 +23,7 @@ fn execute_workspace_init(
     yes: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("🚀 Initializing TaskTaskRevolution workspace...");
-    
+
     // Check if workspace already exists
     if PathBuf::from("config.yaml").exists() {
         if !yes {
@@ -60,7 +60,7 @@ spec:
     println!("🏢 Creating example company...");
     let company_dir = format!("companies/{}", company_code.to_lowercase());
     std::fs::create_dir_all(&company_dir)?;
-    
+
     let company_manifest = format!(
         r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Company
@@ -77,8 +77,8 @@ spec:
   status: "active"
 "#,
         uuid7::uuid7(),
-        company_code, 
-        company_name, 
+        company_code,
+        company_name,
         chrono::Utc::now().to_rfc3339(),
         chrono::Utc::now().to_rfc3339(),
         timezone
@@ -89,11 +89,11 @@ spec:
     println!("📋 Creating example project...");
     let project_dir = format!("{}/projects", company_dir);
     std::fs::create_dir_all(&project_dir)?;
-    
+
     let project_code = "WEB-APP";
     let project_subdir = format!("{}/{}", project_dir, project_code.to_lowercase());
     std::fs::create_dir_all(&project_subdir)?;
-    
+
     let project_manifest = format!(
         r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Project
@@ -123,14 +123,15 @@ spec:
   type: "Developer"
   email: "john@example.com"
   description: "Example developer resource"
-"#.to_string();
+"#
+    .to_string();
     std::fs::write(format!("{}/resources", company_dir), resource_manifest)?;
 
     // Create example task
     println!("✅ Creating example task...");
     let tasks_dir = format!("{}/tasks", project_subdir);
     std::fs::create_dir_all(&tasks_dir)?;
-    
+
     let task_manifest = format!(
         r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Task

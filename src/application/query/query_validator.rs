@@ -1,6 +1,6 @@
-use crate::application::errors::AppError;
-use crate::domain::shared::query_parser::{Query, QueryExpression, FilterCondition, AggregationType};
 use super::query_executor::EntityType;
+use crate::application::errors::AppError;
+use crate::domain::shared::query_parser::{AggregationType, FilterCondition, Query, QueryExpression};
 
 /// Validador de queries
 pub struct QueryValidator;
@@ -46,12 +46,16 @@ impl QueryValidator {
     /// Valida uma condição de filtro
     fn validate_condition(condition: &FilterCondition, entity_type: EntityType) -> Result<(), AppError> {
         let available_fields = Self::get_available_fields(entity_type);
-        
+
         if !available_fields.contains(&condition.field) {
             return Err(AppError::validation_error(
                 "field",
-                format!("Field '{}' is not valid for entity type '{}'. Available fields: {}", 
-                    condition.field, entity_type, available_fields.join(", "))
+                format!(
+                    "Field '{}' is not valid for entity type '{}'. Available fields: {}",
+                    condition.field,
+                    entity_type,
+                    available_fields.join(", ")
+                ),
             ));
         }
 
@@ -65,15 +69,18 @@ impl QueryValidator {
     fn validate_aggregation(aggregation: &AggregationType, entity_type: EntityType) -> Result<(), AppError> {
         match aggregation {
             AggregationType::Count => Ok(()), // COUNT sempre é válido
-            AggregationType::Sum(field) | 
-            AggregationType::Average(field) | 
-            AggregationType::Min(field) | 
-            AggregationType::Max(field) => {
+            AggregationType::Sum(field)
+            | AggregationType::Average(field)
+            | AggregationType::Min(field)
+            | AggregationType::Max(field) => {
                 let available_fields = Self::get_available_fields(entity_type);
                 if !available_fields.contains(&field.to_string()) {
                     return Err(AppError::validation_error(
                         "aggregation_field",
-                        format!("Field '{}' is not valid for aggregation on entity type '{}'", field, entity_type)
+                        format!(
+                            "Field '{}' is not valid for aggregation on entity type '{}'",
+                            field, entity_type
+                        ),
                     ));
                 }
 
@@ -81,7 +88,7 @@ impl QueryValidator {
                 if !Self::is_numeric_field(field, entity_type) {
                     return Err(AppError::validation_error(
                         "aggregation_field",
-                        format!("Field '{}' is not numeric and cannot be used for aggregation", field)
+                        format!("Field '{}' is not numeric and cannot be used for aggregation", field),
                     ));
                 }
 
@@ -93,12 +100,16 @@ impl QueryValidator {
     /// Valida um campo de ordenação
     fn validate_sort_field(field: &str, entity_type: EntityType) -> Result<(), AppError> {
         let available_fields = Self::get_available_fields(entity_type);
-        
+
         if !available_fields.contains(&field.to_string()) {
             return Err(AppError::validation_error(
                 "sort_field",
-                format!("Field '{}' is not valid for sorting on entity type '{}'. Available fields: {}", 
-                    field, entity_type, available_fields.join(", "))
+                format!(
+                    "Field '{}' is not valid for sorting on entity type '{}'. Available fields: {}",
+                    field,
+                    entity_type,
+                    available_fields.join(", ")
+                ),
             ));
         }
 
@@ -106,24 +117,30 @@ impl QueryValidator {
     }
 
     /// Valida um valor de campo
-    fn validate_field_value(field: &str, value: &crate::domain::shared::query_parser::QueryValue, entity_type: EntityType) -> Result<(), AppError> {
+    fn validate_field_value(
+        field: &str,
+        value: &crate::domain::shared::query_parser::QueryValue,
+        entity_type: EntityType,
+    ) -> Result<(), AppError> {
         // Validações específicas por tipo de campo
         match field {
             "status" => {
                 if let crate::domain::shared::query_parser::QueryValue::String(status) = value
-                    && !Self::is_valid_status(status, entity_type) {
+                    && !Self::is_valid_status(status, entity_type)
+                {
                     return Err(AppError::validation_error(
                         "status",
-                        format!("Invalid status '{}' for entity type '{}'", status, entity_type)
+                        format!("Invalid status '{}' for entity type '{}'", status, entity_type),
                     ));
                 }
             }
             "priority" => {
                 if let crate::domain::shared::query_parser::QueryValue::String(priority) = value
-                    && !Self::is_valid_priority(priority, entity_type) {
+                    && !Self::is_valid_priority(priority, entity_type)
+                {
                     return Err(AppError::validation_error(
                         "priority",
-                        format!("Invalid priority '{}' for entity type '{}'", priority, entity_type)
+                        format!("Invalid priority '{}' for entity type '{}'", priority, entity_type),
                     ));
                 }
             }
@@ -201,15 +218,20 @@ impl QueryValidator {
     /// Verifica se um campo é numérico
     fn is_numeric_field(field: &str, entity_type: EntityType) -> bool {
         let numeric_fields = match entity_type {
-            EntityType::Project => vec![
-                "task_count", "resource_count", "priority_weight"
-            ],
+            EntityType::Project => vec!["task_count", "resource_count", "priority_weight"],
             EntityType::Task => vec![
-                "dependency_count", "assigned_resource_count", "days_until_due", "priority_weight"
+                "dependency_count",
+                "assigned_resource_count",
+                "days_until_due",
+                "priority_weight",
             ],
             EntityType::Resource => vec![
-                "time_off_balance", "vacation_count", "time_off_history_count", 
-                "task_assignment_count", "active_task_count", "current_allocation_percentage"
+                "time_off_balance",
+                "vacation_count",
+                "time_off_history_count",
+                "task_assignment_count",
+                "active_task_count",
+                "current_allocation_percentage",
             ],
         };
 
@@ -220,10 +242,16 @@ impl QueryValidator {
     fn is_valid_status(status: &str, entity_type: EntityType) -> bool {
         match entity_type {
             EntityType::Project => {
-                matches!(status, "Planned" | "In Progress" | "On Hold" | "Completed" | "Cancelled")
+                matches!(
+                    status,
+                    "Planned" | "In Progress" | "On Hold" | "Completed" | "Cancelled"
+                )
             }
             EntityType::Task => {
-                matches!(status, "Planned" | "In Progress" | "Blocked" | "Completed" | "Cancelled")
+                matches!(
+                    status,
+                    "Planned" | "In Progress" | "Blocked" | "Completed" | "Cancelled"
+                )
             }
             EntityType::Resource => {
                 matches!(status, "Available" | "Assigned" | "Inactive")
@@ -248,7 +276,9 @@ impl QueryValidator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::query_parser::{Query, QueryExpression, FilterCondition, ComparisonOperator, QueryValue, AggregationType};
+    use crate::domain::shared::query_parser::{
+        AggregationType, ComparisonOperator, FilterCondition, Query, QueryExpression, QueryValue,
+    };
 
     #[test]
     fn test_validate_valid_query() {

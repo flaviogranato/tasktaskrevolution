@@ -256,7 +256,7 @@ fn test_create_company_without_init() -> Result<(), Box<dyn std::error::Error>> 
     // Check if there's at least one .yaml file in the companies directory (recursively)
     let companies_path = companies_dir.path();
     let mut yaml_files = Vec::new();
-    
+
     // Look for company.yaml files in subdirectories
     for entry in std::fs::read_dir(companies_path)? {
         let entry = entry?;

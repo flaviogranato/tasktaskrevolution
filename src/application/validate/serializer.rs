@@ -23,9 +23,14 @@ impl ValidationSerializer {
         }
 
         let mut output = String::new();
-        
+
         // Table header
-        writeln!(output, "{:<8} {:<12} {:<50} {:<20} {:<20}", "LEVEL", "CODE", "MESSAGE", "PATH", "ENTITY_REF").unwrap();
+        writeln!(
+            output,
+            "{:<8} {:<12} {:<50} {:<20} {:<20}",
+            "LEVEL", "CODE", "MESSAGE", "PATH", "ENTITY_REF"
+        )
+        .unwrap();
         writeln!(output, "{:-<8} {:-<12} {:-<50} {:-<20} {:-<20}", "", "", "", "", "").unwrap();
 
         // Table rows
@@ -48,13 +53,16 @@ impl ValidationSerializer {
                 finding.entity_ref.clone()
             };
 
-            writeln!(output, "{:<8} {:<12} {:<50} {:<20} {:<20}", 
-                finding.level.to_uppercase(), 
-                finding.code, 
-                message, 
-                path, 
+            writeln!(
+                output,
+                "{:<8} {:<12} {:<50} {:<20} {:<20}",
+                finding.level.to_uppercase(),
+                finding.code,
+                message,
+                path,
                 entity_ref
-            ).unwrap();
+            )
+            .unwrap();
         }
 
         output
@@ -67,7 +75,7 @@ impl ValidationSerializer {
         }
 
         let mut output = String::new();
-        
+
         // CSV header
         output.push_str("level,code,message,path,entity_ref\n");
 
@@ -77,13 +85,12 @@ impl ValidationSerializer {
             let path = finding.path.replace('"', "\"\"");
             let entity_ref = finding.entity_ref.replace('"', "\"\"");
 
-            writeln!(output, "{},{},\"{}\",\"{}\",\"{}\"", 
-                finding.level, 
-                finding.code, 
-                message, 
-                path, 
-                entity_ref
-            ).unwrap();
+            writeln!(
+                output,
+                "{},{},\"{}\",\"{}\",\"{}\"",
+                finding.level, finding.code, message, path, entity_ref
+            )
+            .unwrap();
         }
 
         output
@@ -92,7 +99,7 @@ impl ValidationSerializer {
     /// Serialize validation results to the specified format
     pub fn serialize(results: &[ValidationResult], format: OutputFormat) -> Result<String, Box<dyn std::error::Error>> {
         let findings = Self::to_findings(results);
-        
+
         match format {
             OutputFormat::Json => Self::to_json(&findings),
             OutputFormat::Table => Ok(Self::to_table(&findings)),

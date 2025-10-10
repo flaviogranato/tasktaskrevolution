@@ -44,12 +44,9 @@ impl IdGeneratorPort for StandardIdGeneratorAdapter {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
         use std::time::{SystemTime, UNIX_EPOCH};
-        
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-        
+
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+
         let mut hasher = DefaultHasher::new();
         timestamp.hash(&mut hasher);
         format!("{:x}", hasher.finish())[..8].to_string()

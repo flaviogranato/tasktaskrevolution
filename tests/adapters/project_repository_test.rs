@@ -2,7 +2,10 @@ use assert_fs::TempDir;
 use chrono::NaiveDate;
 
 use task_task_revolution::domain::project_management::{
-    AnyProject, project::Project, repository::{ProjectRepository, ProjectRepositoryWithId}, project::ProjectStatus
+    AnyProject,
+    project::Project,
+    project::ProjectStatus,
+    repository::{ProjectRepository, ProjectRepositoryWithId},
 };
 use task_task_revolution::infrastructure::persistence::project_repository::FileProjectRepository;
 
@@ -17,11 +20,8 @@ impl ProjectRepositoryTestFixture {
     fn new() -> Self {
         let temp_dir = TempDir::new().unwrap();
         let repository = FileProjectRepository::with_base_path(temp_dir.path().to_path_buf());
-        
-        Self {
-            temp_dir,
-            repository,
-        }
+
+        Self { temp_dir, repository }
     }
 
     fn create_test_project(&self, code: &str, name: &str, company_code: &str) -> AnyProject {
@@ -30,7 +30,8 @@ impl ProjectRepositoryTestFixture {
             name.to_string(),
             company_code.to_string(),
             "test@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
         AnyProject::from(project)
     }
 }
@@ -74,7 +75,7 @@ mod tests {
     #[test]
     fn test_find_all() {
         let fixture = ProjectRepositoryTestFixture::new();
-        
+
         // Create multiple projects
         let project1 = fixture.create_test_project("PROJ-001", "Test Project 1", "COMP-001");
         let project2 = fixture.create_test_project("PROJ-002", "Test Project 2", "COMP-001");
@@ -86,7 +87,7 @@ mod tests {
         // Find all
         let all_projects = fixture.repository.find_all().unwrap();
         assert_eq!(all_projects.len(), 2);
-        
+
         let codes: Vec<&str> = all_projects.iter().map(|p| p.code()).collect();
         assert!(codes.contains(&"PROJ-001"));
         assert!(codes.contains(&"PROJ-002"));
@@ -141,7 +142,8 @@ mod tests {
                 "Persistent Project".to_string(),
                 "COMP-001".to_string(),
                 "persist@example.com".to_string(),
-            ).unwrap();
+            )
+            .unwrap();
             let any_project = AnyProject::from(project);
             repository.save(any_project).unwrap();
         }
@@ -164,7 +166,8 @@ mod tests {
             "Project with Dates".to_string(),
             "COMP-001".to_string(),
             "test@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Set dates
         project.start_date = Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap());
@@ -179,8 +182,14 @@ mod tests {
         let found = fixture.repository.find_by_code("PROJ-DATES").unwrap();
         assert!(found.is_some());
         let found_project = found.unwrap();
-        assert_eq!(found_project.start_date(), Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()));
-        assert_eq!(found_project.end_date(), Some(NaiveDate::from_ymd_opt(2024, 12, 31).unwrap()));
+        assert_eq!(
+            found_project.start_date(),
+            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+        );
+        assert_eq!(
+            found_project.end_date(),
+            Some(NaiveDate::from_ymd_opt(2024, 12, 31).unwrap())
+        );
     }
 
     #[test]
@@ -191,7 +200,8 @@ mod tests {
             "Project with Status".to_string(),
             "COMP-001".to_string(),
             "test@example.com".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         // Set status
         project.status = ProjectStatus::InProgress;

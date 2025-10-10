@@ -1,4 +1,4 @@
-use crate::domain::shared::search_engine::{SearchResult, FileType};
+use crate::domain::shared::search_engine::{FileType, SearchResult};
 use serde_json;
 use std::collections::HashMap;
 
@@ -19,19 +19,21 @@ impl SearchResultFormatter {
         for (idx, result) in results.iter().enumerate() {
             output.push_str(&format!("{}. {}\n", idx + 1, result.file_path.display()));
             output.push_str(&format!("   Type: {} | Score: {:.2}\n", result.file_type, result.score));
-            
+
             if !result.matches.is_empty() {
                 output.push_str("   Matches:\n");
                 for mat in &result.matches {
                     output.push_str(&format!("     Line {}: {}\n", mat.line_number, mat.line_content));
-                    
+
                     if let Some(context) = &mat.context_before
-                        && !context.is_empty() {
+                        && !context.is_empty()
+                    {
                         output.push_str(&format!("     Context before: {}\n", context));
                     }
-                    
+
                     if let Some(context) = &mat.context_after
-                        && !context.is_empty() {
+                        && !context.is_empty()
+                    {
                         output.push_str(&format!("     Context after: {}\n", context));
                     }
                 }
@@ -109,11 +111,12 @@ impl SearchResultFormatter {
         for (idx, result) in results.iter().enumerate() {
             output.push_str(&format!("{}. {}\n", idx + 1, result.file_path.display()));
             output.push_str(&format!("   Type: {} | Score: {:.2}\n", result.file_type, result.score));
-            
+
             if !result.matches.is_empty() {
                 output.push_str("   Matches:\n");
                 for mat in &result.matches {
-                    let highlighted_line = Self::highlight_match(&mat.line_content, pattern, mat.match_start, mat.match_end);
+                    let highlighted_line =
+                        Self::highlight_match(&mat.line_content, pattern, mat.match_start, mat.match_end);
                     output.push_str(&format!("     Line {}: {}\n", mat.line_number, highlighted_line));
                 }
             }
@@ -131,7 +134,7 @@ impl SearchResultFormatter {
         output.push_str(&format!("Total files: {}\n", stats.total_files));
         output.push_str(&format!("Total matches: {}\n", stats.total_matches));
         output.push_str("\nFile types:\n");
-        
+
         for (file_type, count) in &stats.file_types {
             output.push_str(&format!("  {}: {}\n", file_type, count));
         }
@@ -157,7 +160,11 @@ impl SearchResultFormatter {
         for (file_type, type_results) in grouped {
             output.push_str(&format!("{} Files ({} results):\n", file_type, type_results.len()));
             for result in type_results {
-                output.push_str(&format!("  - {} (score: {:.2})\n", result.file_path.display(), result.score));
+                output.push_str(&format!(
+                    "  - {} (score: {:.2})\n",
+                    result.file_path.display(),
+                    result.score
+                ));
             }
             output.push('\n');
         }
@@ -185,13 +192,15 @@ impl SearchResultFormatter {
         }
 
         let mut output = String::new();
-        output.push_str(&format!("Found {} results in {} files:\n\n", 
+        output.push_str(&format!(
+            "Found {} results in {} files:\n\n",
             results.iter().map(|r| r.matches.len()).sum::<usize>(),
             results.len()
         ));
 
         for result in results {
-            output.push_str(&format!("{} ({}) - {} matches\n", 
+            output.push_str(&format!(
+                "{} ({}) - {} matches\n",
                 result.file_path.display(),
                 result.file_type,
                 result.matches.len()
@@ -211,16 +220,14 @@ mod tests {
     fn create_test_result() -> SearchResult {
         SearchResult {
             file_path: PathBuf::from("test.yaml"),
-            matches: vec![
-                SearchMatch {
-                    line_number: 1,
-                    line_content: "name: Test Project".to_string(),
-                    match_start: 6,
-                    match_end: 11,
-                    context_before: None,
-                    context_after: Some("status: active".to_string()),
-                }
-            ],
+            matches: vec![SearchMatch {
+                line_number: 1,
+                line_content: "name: Test Project".to_string(),
+                match_start: 6,
+                match_end: 11,
+                context_before: None,
+                context_after: Some("status: active".to_string()),
+            }],
             score: 1.5,
             file_type: FileType::Project,
         }

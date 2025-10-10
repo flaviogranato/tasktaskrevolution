@@ -3,9 +3,7 @@
 //! This module provides a concrete implementation of the EventPublisherPort
 //! for publishing domain events.
 
-use crate::domain::ports::event_publisher::{
-    EventPublisherPort, EventBusPort, DomainEvent, EventSubscriber,
-};
+use crate::domain::ports::event_publisher::{DomainEvent, EventBusPort, EventPublisherPort, EventSubscriber};
 use crate::domain::shared::errors::DomainResult;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -32,10 +30,11 @@ impl Default for StandardEventPublisherAdapter {
 impl EventPublisherPort for StandardEventPublisherAdapter {
     fn publish(&self, event: Box<dyn DomainEvent>) -> DomainResult<()> {
         let subscribers = self.subscribers.lock().unwrap();
-        
+
         for (_, subscriber) in subscribers.iter() {
             if subscriber.is_interested_in(event.event_type())
-                && let Err(e) = subscriber.handle_event(event.as_ref()) {
+                && let Err(e) = subscriber.handle_event(event.as_ref())
+            {
                 eprintln!("Error handling event: {}", e);
             }
         }

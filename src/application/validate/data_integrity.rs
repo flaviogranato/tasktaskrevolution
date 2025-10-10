@@ -69,12 +69,15 @@ where
                 results.push(
                     ValidationResult::warning(
                         "PROJECT_DATA_INTEGRITY".to_string(),
-                        project_spec.description().to_string()
+                        project_spec.description().to_string(),
                     )
                     .with_entity("Project".to_string(), project.code().to_string())
                     .with_details(explanation)
-                    .with_path(format!("companies/{}/projects/{}/project.yaml", 
-                        project.company_code(), project.code())),
+                    .with_path(format!(
+                        "companies/{}/projects/{}/project.yaml",
+                        project.company_code(),
+                        project.code()
+                    )),
                 );
             }
         }
@@ -95,9 +98,12 @@ where
                 && let Some(explanation) = resource_spec.explain_why_not_satisfied(resource)
             {
                 results.push(
-                    ValidationResult::warning("RESOURCE_DATA_INTEGRITY".to_string(), resource_spec.description().to_string())
-                        .with_entity("Resource".to_string(), resource.code().to_string())
-                        .with_details(explanation),
+                    ValidationResult::warning(
+                        "RESOURCE_DATA_INTEGRITY".to_string(),
+                        resource_spec.description().to_string(),
+                    )
+                    .with_entity("Resource".to_string(), resource.code().to_string())
+                    .with_details(explanation),
                 );
             }
         }
@@ -118,9 +124,12 @@ where
                 && let Some(explanation) = company_spec.explain_why_not_satisfied(company)
             {
                 results.push(
-                    ValidationResult::warning("COMPANY_DATA_INTEGRITY".to_string(), company_spec.description().to_string())
-                        .with_entity("Company".to_string(), company.code().to_string())
-                        .with_details(explanation),
+                    ValidationResult::warning(
+                        "COMPANY_DATA_INTEGRITY".to_string(),
+                        company_spec.description().to_string(),
+                    )
+                    .with_entity("Company".to_string(), company.code().to_string())
+                    .with_details(explanation),
                 );
             }
         }
@@ -131,7 +140,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::shared::errors::{DomainError, DomainResult};
     use super::*;
     use crate::application::validate::types::{ValidationResult, ValidationSeverity};
     use crate::domain::company_management::company::Company;
@@ -140,6 +148,7 @@ mod tests {
     use crate::domain::project_management::repository::ProjectRepository;
     use crate::domain::resource_management::any_resource::AnyResource;
     use crate::domain::resource_management::repository::ResourceRepository;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::{DateTime, Local};
 
     // Mock repositories for testing

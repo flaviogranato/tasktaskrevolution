@@ -7,8 +7,8 @@
 //! - Arquivos são gerados corretamente
 
 use assert_cmd::prelude::*;
-use assert_fs::prelude::*;
 use assert_fs::TempDir;
+use assert_fs::prelude::*;
 use predicates::prelude::*;
 use serde_yaml::Value;
 use std::fs;
@@ -294,7 +294,7 @@ fn test_create_company() -> Result<(), Box<dyn std::error::Error>> {
     // Check if there's at least one .yaml file in the companies directory (recursively)
     let companies_path = companies_dir.path();
     let mut yaml_files = Vec::new();
-    
+
     // Look for company.yaml files in subdirectories
     for entry in std::fs::read_dir(companies_path)? {
         let entry = entry?;
@@ -743,9 +743,9 @@ fn test_create_task() -> Result<(), Box<dyn std::error::Error>> {
         "TECH-CORP",
     ]);
 
-    cmd.assert().success().stdout(predicate::str::contains(
-        "Task created successfully!",
-    ));
+    cmd.assert()
+        .success()
+        .stdout(predicate::str::contains("Task created successfully!"));
 
     // Encontrar o arquivo da tarefa criada
     let tasks_dir = temp
@@ -1232,7 +1232,7 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
     // With code-based naming, find the actual company file
     let companies_path = companies_dir.path();
     let mut yaml_files = Vec::new();
-    
+
     // Look for company.yaml files in subdirectories
     for entry in std::fs::read_dir(companies_path)? {
         let entry = entry?;
@@ -2007,9 +2007,7 @@ fn test_cli_aliases_functionality() -> Result<(), Box<dyn std::error::Error>> {
     // Test 'ls' alias for list command
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(["ls", "--help"]);
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("List entities"));
+    cmd.assert().success().stdout(predicate::str::contains("List entities"));
 
     // Test 'rm' alias for delete command
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -2068,9 +2066,7 @@ fn test_cli_aliases_with_subcommands() -> Result<(), Box<dyn std::error::Error>>
     // Test 'rm' alias with subcommands
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(["rm", "task", "--help"]);
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Delete a task"));
+    cmd.assert().success().stdout(predicate::str::contains("Delete a task"));
 
     // Test 'edit' alias with subcommands
     let mut cmd = Command::cargo_bin("ttr")?;
@@ -2107,9 +2103,7 @@ fn test_cli_aliases_backward_compatibility() -> Result<(), Box<dyn std::error::E
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(["list", "--help"]);
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("List entities"));
+    cmd.assert().success().stdout(predicate::str::contains("List entities"));
 
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(["delete", "--help"]);
@@ -2153,13 +2147,19 @@ fn test_workspace_init_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.current_dir(temp_path);
     cmd.args([
-        "workspace", "init",
-        "--name", "Test Manager",
-        "--email", "test@example.com",
-        "--company-name", "Test Corp",
-        "--company-code", "TEST-001",
-        "--timezone", "UTC",
-        "--yes"
+        "workspace",
+        "init",
+        "--name",
+        "Test Manager",
+        "--email",
+        "test@example.com",
+        "--company-name",
+        "Test Corp",
+        "--company-code",
+        "TEST-001",
+        "--timezone",
+        "UTC",
+        "--yes",
     ]);
 
     cmd.assert()
@@ -2174,9 +2174,17 @@ fn test_workspace_init_command() -> Result<(), Box<dyn std::error::Error>> {
     assert!(temp_path.join("companies/test-001/company.yaml").exists());
     assert!(temp_path.join("companies/test-001/projects").exists());
     assert!(temp_path.join("companies/test-001/projects/web-app").exists());
-    assert!(temp_path.join("companies/test-001/projects/web-app/project.yaml").exists());
+    assert!(
+        temp_path
+            .join("companies/test-001/projects/web-app/project.yaml")
+            .exists()
+    );
     assert!(temp_path.join("companies/test-001/projects/web-app/tasks").exists());
-    assert!(temp_path.join("companies/test-001/projects/web-app/tasks/task.yaml").exists());
+    assert!(
+        temp_path
+            .join("companies/test-001/projects/web-app/tasks/task.yaml")
+            .exists()
+    );
     assert!(temp_path.join("README.md").exists());
 
     Ok(())
@@ -2251,9 +2259,9 @@ fn test_workspace_init_help() -> Result<(), Box<dyn std::error::Error>> {
     // Test workspace init help
     let mut cmd = Command::cargo_bin("ttr")?;
     cmd.args(["workspace", "init", "--help"]);
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Initialize workspace with examples for onboarding"));
+    cmd.assert().success().stdout(predicate::str::contains(
+        "Initialize workspace with examples for onboarding",
+    ));
 
     Ok(())
 }
@@ -2284,7 +2292,9 @@ fn test_migrate_manifests_with_force() -> Result<(), Box<dyn std::error::Error>>
         .success()
         .stdout(predicate::str::contains("Starting YAML manifests migration"))
         .stdout(predicate::str::contains("Migrated company manifests"))
-        .stdout(predicate::str::contains("YAML manifests migration completed successfully"));
+        .stdout(predicate::str::contains(
+            "YAML manifests migration completed successfully",
+        ));
 
     Ok(())
 }
@@ -2304,7 +2314,9 @@ fn test_migrate_manifests_help() -> Result<(), Box<dyn std::error::Error>> {
     cmd.args(["migrate", "manifests", "--help"]);
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Migrate YAML manifests to new apiVersion format"))
+        .stdout(predicate::str::contains(
+            "Migrate YAML manifests to new apiVersion format",
+        ))
         .stdout(predicate::str::contains("--dry-run"))
         .stdout(predicate::str::contains("--force"))
         .stdout(predicate::str::contains("--backup"));
@@ -2336,7 +2348,9 @@ fn test_tracing_logging_json() -> Result<(), Box<dyn std::error::Error>> {
         .success()
         .stdout(predicate::str::contains("Starting YAML manifests migration"))
         .stdout(predicate::str::contains("\"level\":\"INFO\""))
-        .stdout(predicate::str::contains("\"message\":\"Starting YAML manifests migration...\""));
+        .stdout(predicate::str::contains(
+            "\"message\":\"Starting YAML manifests migration...\"",
+        ));
 
     Ok(())
 }

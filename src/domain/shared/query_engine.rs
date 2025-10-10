@@ -1,4 +1,7 @@
-use crate::domain::shared::query_parser::{AggregationType, ComparisonOperator, FilterCondition, PaginationOptions, Query, QueryExpression, QueryValue, SortOption};
+use crate::domain::shared::query_parser::{
+    AggregationType, ComparisonOperator, FilterCondition, PaginationOptions, Query, QueryExpression, QueryValue,
+    SortOption,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -46,7 +49,7 @@ impl<T> QueryResult<T> {
             aggregation_result: None,
         }
     }
-    
+
     pub fn with_aggregation(mut self, aggregation_result: AggregationResult) -> Self {
         self.aggregation_result = Some(aggregation_result);
         self
@@ -245,7 +248,7 @@ impl QueryEngine {
         items.sort_by(|a, b| {
             let a_value = a.get_field_value(&sort.field);
             let b_value = b.get_field_value(&sort.field);
-            
+
             match (a_value, b_value) {
                 (Some(a_val), Some(b_val)) => {
                     let comparison = Self::compare_values_for_sorting(&a_val, &b_val);
@@ -255,8 +258,20 @@ impl QueryEngine {
                         comparison.reverse()
                     }
                 }
-                (Some(_), None) => if sort.ascending { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater },
-                (None, Some(_)) => if sort.ascending { std::cmp::Ordering::Greater } else { std::cmp::Ordering::Less },
+                (Some(_), None) => {
+                    if sort.ascending {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    }
+                }
+                (None, Some(_)) => {
+                    if sort.ascending {
+                        std::cmp::Ordering::Greater
+                    } else {
+                        std::cmp::Ordering::Less
+                    }
+                }
                 (None, None) => std::cmp::Ordering::Equal,
             }
         });
@@ -271,19 +286,26 @@ impl QueryEngine {
         } else {
             items.len()
         };
-        
+
         items.into_iter().skip(start).take(end - start).collect()
     }
 
     /// Calcula agregação sobre os itens
-    fn calculate_aggregation<T: Queryable>(items: &[T], aggregation: &AggregationType) -> Result<AggregationResult, QueryExecutionError> {
+    fn calculate_aggregation<T: Queryable>(
+        items: &[T],
+        aggregation: &AggregationType,
+    ) -> Result<AggregationResult, QueryExecutionError> {
         match aggregation {
             AggregationType::Count => Ok(AggregationResult {
                 aggregation_type: aggregation.clone(),
                 value: items.len() as f64,
             }),
-            AggregationType::Sum(field) | AggregationType::Average(field) | AggregationType::Min(field) | AggregationType::Max(field) => {
-                let values: Vec<f64> = items.iter()
+            AggregationType::Sum(field)
+            | AggregationType::Average(field)
+            | AggregationType::Min(field)
+            | AggregationType::Max(field) => {
+                let values: Vec<f64> = items
+                    .iter()
                     .filter_map(|item| {
                         if let Some(QueryValue::Number(n)) = item.get_field_value(field) {
                             Some(n)
@@ -294,7 +316,10 @@ impl QueryEngine {
                     .collect();
 
                 if values.is_empty() {
-                    return Err(QueryExecutionError::InvalidField(format!("No numeric values found for field: {}", field)));
+                    return Err(QueryExecutionError::InvalidField(format!(
+                        "No numeric values found for field: {}",
+                        field
+                    )));
                 }
 
                 let result_value = match aggregation {

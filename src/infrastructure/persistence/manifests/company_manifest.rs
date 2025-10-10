@@ -251,7 +251,7 @@ mod tests {
         "#;
 
         let manifest: CompanyManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
         assert_eq!(manifest.kind, "Company");
         assert_eq!(manifest.metadata.code, "TECH-CORP");
@@ -265,11 +265,11 @@ mod tests {
     fn test_yaml_parsing_failure_invalid_syntax() {
         let yaml_str = "invalid: yaml: content: [";
         let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -288,11 +288,11 @@ mod tests {
         "#;
 
         let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -315,11 +315,11 @@ mod tests {
         "#;
 
         let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -342,11 +342,11 @@ mod tests {
         "#;
 
         let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -369,7 +369,7 @@ mod tests {
         "#;
 
         let result: Result<CompanyManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         // This should still parse successfully as we don't validate API version
         assert!(result.is_ok());
         let manifest = result.unwrap();
@@ -401,7 +401,7 @@ mod tests {
         "#;
 
         let manifest: CompanyManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.spec.description, Some("A technology company".to_string()));
         assert_eq!(manifest.spec.tax_id, Some("12.345.678/0001-90".to_string()));
         assert_eq!(manifest.spec.address, Some("123 Tech Street".to_string()));

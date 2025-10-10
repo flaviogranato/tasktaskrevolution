@@ -169,14 +169,18 @@ pub fn execute_validate(command: commands::ValidateCommand) -> Result<(), Box<dy
     }
 }
 
-fn print_validation_results(results: &[crate::application::validate::types::ValidationResult], args: &crate::interface::cli::commands::validate::ValidateArgs) {
+fn print_validation_results(
+    results: &[crate::application::validate::types::ValidationResult],
+    args: &crate::interface::cli::commands::validate::ValidateArgs,
+) {
     use crate::application::validate::serializer::ValidationSerializer;
     use crate::application::validate::types::OutputFormat;
     use std::fs;
 
     // Filter results based on include_warnings flag
     let filtered_results: Vec<_> = if !args.include_warnings {
-        results.iter()
+        results
+            .iter()
             .filter(|r| matches!(r.level, crate::application::validate::types::ValidationSeverity::Error))
             .cloned()
             .collect()
@@ -186,7 +190,8 @@ fn print_validation_results(results: &[crate::application::validate::types::Vali
 
     // Check for errors in strict mode
     if args.strict {
-        let has_errors = filtered_results.iter()
+        let has_errors = filtered_results
+            .iter()
             .any(|r| matches!(r.level, crate::application::validate::types::ValidationSeverity::Error));
         if has_errors {
             eprintln!("Validation failed in strict mode");
@@ -223,4 +228,3 @@ fn print_validation_results(results: &[crate::application::validate::types::Vali
         println!("{}", output);
     }
 }
-

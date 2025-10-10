@@ -4,16 +4,14 @@
 //! and task scheduling.
 
 use crate::application::errors::AppError;
-use crate::domain::shared::errors::DomainError;
 use crate::application::project::detect_resource_conflicts::{
-    DetectResourceConflictsUseCase, ResourceConflict, ConflictType, ConflictSeverity,
+    ConflictSeverity, ConflictType, DetectResourceConflictsUseCase, ResourceConflict,
 };
-use crate::application::resource::validate_calendar_availability::{
-    CalendarAvailabilityResult, AvailabilityConflict,
-};
+use crate::application::resource::validate_calendar_availability::{AvailabilityConflict, CalendarAvailabilityResult};
 use crate::application::shared::code_resolver::CodeResolverTrait;
 use crate::domain::project_management::repository::ProjectRepository;
 use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::shared::errors::DomainError;
 use crate::domain::task_management::repository::TaskRepository;
 use chrono::NaiveDate;
 use std::collections::HashMap;
@@ -96,20 +94,14 @@ impl RealtimeConflictMonitor {
             availability_results: HashMap::new(),
         };
 
-        self.active_monitors
-            .lock()
-            .unwrap()
-            .insert(monitor_id, state);
+        self.active_monitors.lock().unwrap().insert(monitor_id, state);
 
         Ok(())
     }
 
     /// Stop monitoring conflicts for a specific monitor
     pub fn stop_monitoring(&self, monitor_id: &str) -> Result<(), AppError> {
-        self.active_monitors
-            .lock()
-            .unwrap()
-            .remove(monitor_id);
+        self.active_monitors.lock().unwrap().remove(monitor_id);
         Ok(())
     }
 
@@ -135,18 +127,21 @@ impl RealtimeConflictMonitor {
         let mut alerts = Vec::new();
 
         // Check resource conflicts
-        let conflicts = self.conflict_detector
-            .detect_conflicts_for_resources(
-                &state.resource_codes,
-                state.start_date,
-                state.end_date,
-                None,
-            )?;
+        let conflicts = self.conflict_detector.detect_conflicts_for_resources(
+            &state.resource_codes,
+            state.start_date,
+            state.end_date,
+            None,
+        )?;
 
         for (resource_code, resource_conflicts) in conflicts {
             for conflict in resource_conflicts {
                 let alert = ConflictAlert {
-                    alert_id: format!("{}-{}", monitor_id, uuid7::Uuid::from_fields_v7(chrono::Utc::now().timestamp_millis() as u64, 0, 0)),
+                    alert_id: format!(
+                        "{}-{}",
+                        monitor_id,
+                        uuid7::Uuid::from_fields_v7(chrono::Utc::now().timestamp_millis() as u64, 0, 0)
+                    ),
                     resource_code: resource_code.clone(),
                     conflict: conflict.clone(),
                     timestamp: chrono::Utc::now(),
@@ -174,7 +169,11 @@ impl RealtimeConflictMonitor {
             if !availability_result? {
                 // TODO: Add proper conflict details when calendar validator is available
                 let alert = ConflictAlert {
-                    alert_id: format!("{}-{}", monitor_id, uuid7::Uuid::from_fields_v7(chrono::Utc::now().timestamp_millis() as u64, 0, 0)),
+                    alert_id: format!(
+                        "{}-{}",
+                        monitor_id,
+                        uuid7::Uuid::from_fields_v7(chrono::Utc::now().timestamp_millis() as u64, 0, 0)
+                    ),
                     resource_code: resource_code.clone(),
                     conflict: ResourceConflict {
                         resource_code: resource_code.clone(),
@@ -244,8 +243,9 @@ impl RealtimeConflictMonitor {
         };
 
         // Check for resource conflicts
-        let conflicts = self.conflict_detector
-            .detect_conflicts_for_resources(resource_codes, start_date, end_date, None)?;
+        let conflicts =
+            self.conflict_detector
+                .detect_conflicts_for_resources(resource_codes, start_date, end_date, None)?;
 
         if !conflicts.is_empty() {
             validation_result.is_valid = false;
@@ -283,15 +283,15 @@ pub struct ValidationResult {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::shared::errors::DomainResult;
+    use super::*;
     use crate::domain::project_management::AnyProject;
     use crate::domain::project_management::repository::ProjectRepositoryWithId;
+    use crate::domain::resource_management::any_resource::AnyResource;
     use crate::domain::resource_management::repository::ResourceRepositoryWithId;
+    use crate::domain::resource_management::resource::{Resource, ResourceScope};
+    use crate::domain::shared::errors::DomainResult;
     use crate::domain::task_management::AnyTask;
     use crate::domain::task_management::repository::TaskRepositoryWithId;
-    use super::*;
-    use crate::domain::resource_management::any_resource::AnyResource;
-    use crate::domain::resource_management::resource::{Resource, ResourceScope};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
@@ -356,7 +356,9 @@ mod tests {
     impl ResourceRepository for MockResourceRepository {
         fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             let resource_id = resource.id().to_string();
-            self.resources.borrow_mut().insert(resource_id.clone(), resource.clone());
+            self.resources
+                .borrow_mut()
+                .insert(resource_id.clone(), resource.clone());
             Ok(resource)
         }
 
@@ -378,7 +380,13 @@ mod tests {
         }
 
         fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
-            Ok(self.resources.borrow().values().cloned().map(|r| (r, "company".to_string(), vec![])).collect())
+            Ok(self
+                .resources
+                .borrow()
+                .values()
+                .cloned()
+                .map(|r| (r, "company".to_string(), vec![]))
+                .collect())
         }
 
         fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
@@ -406,7 +414,11 @@ mod tests {
             Err(DomainError::validation_error("resource", "Not implemented in mock"))
         }
 
-        fn check_if_layoff_period(&self, _start_date: &chrono::DateTime<chrono::Local>, _end_date: &chrono::DateTime<chrono::Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &chrono::DateTime<chrono::Local>,
+            _end_date: &chrono::DateTime<chrono::Local>,
+        ) -> bool {
             false
         }
 
@@ -483,7 +495,9 @@ mod tests {
         }
 
         fn add_resource(&self, code: &str, id: &str) {
-            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+            self.resource_codes
+                .borrow_mut()
+                .insert(code.to_string(), id.to_string());
         }
     }
 
@@ -543,7 +557,6 @@ mod tests {
                 "Not implemented in mock",
             )))
         }
-
     }
 
     fn create_test_resource(code: &str) -> AnyResource {
@@ -569,12 +582,7 @@ mod tests {
         let task_repo = Box::new(MockTaskRepository::new());
         let code_resolver = Box::new(MockCodeResolver::new());
 
-        let monitor = RealtimeConflictMonitor::new(
-            project_repo,
-            resource_repo,
-            task_repo,
-            code_resolver,
-        );
+        let monitor = RealtimeConflictMonitor::new(project_repo, resource_repo, task_repo, code_resolver);
 
         let result = monitor.start_monitoring(
             "test-monitor".to_string(),
@@ -597,19 +605,16 @@ mod tests {
         resource_repo.add_resource(resource.clone());
         code_resolver.add_resource("DEV-001", &resource.id().to_string());
 
-        let monitor = RealtimeConflictMonitor::new(
-            project_repo,
-            resource_repo,
-            task_repo,
-            code_resolver,
-        );
+        let monitor = RealtimeConflictMonitor::new(project_repo, resource_repo, task_repo, code_resolver);
 
         // Use only weekdays to avoid weekend conflicts
-        let result = monitor.validate_assignment(
-            &["DEV-001".to_string()],
-            NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(), // Wednesday
-            NaiveDate::from_ymd_opt(2025, 1, 3).unwrap(), // Friday
-        ).await;
+        let result = monitor
+            .validate_assignment(
+                &["DEV-001".to_string()],
+                NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(), // Wednesday
+                NaiveDate::from_ymd_opt(2025, 1, 3).unwrap(), // Friday
+            )
+            .await;
 
         assert!(result.is_ok());
         let validation_result = result.unwrap();

@@ -115,10 +115,10 @@ impl fmt::Display for QueryExpression {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AggregationType {
     Count,
-    Sum(String),    // field name
+    Sum(String),     // field name
     Average(String), // field name
-    Min(String),    // field name
-    Max(String),    // field name
+    Min(String),     // field name
+    Max(String),     // field name
 }
 
 impl fmt::Display for AggregationType {
@@ -158,7 +158,7 @@ impl PaginationOptions {
     pub fn new(limit: Option<usize>, offset: Option<usize>) -> Self {
         Self { limit, offset }
     }
-    
+
     pub fn new_default() -> Self {
         Self {
             limit: None,
@@ -184,24 +184,24 @@ impl fmt::Display for Query {
 
 impl Query {
     pub fn new(expression: QueryExpression) -> Self {
-        Self { 
+        Self {
             expression,
             aggregation: None,
             sort: None,
             pagination: PaginationOptions::new_default(),
         }
     }
-    
+
     pub fn with_aggregation(mut self, aggregation: AggregationType) -> Self {
         self.aggregation = Some(aggregation);
         self
     }
-    
+
     pub fn with_sort(mut self, field: String, ascending: bool) -> Self {
         self.sort = Some(SortOption { field, ascending });
         self
     }
-    
+
     pub fn with_pagination(mut self, limit: Option<usize>, offset: Option<usize>) -> Self {
         self.pagination = PaginationOptions::new(limit, offset);
         self
@@ -248,7 +248,7 @@ impl QueryParser {
     /// Parse a query string into a Query AST
     pub fn parse(&mut self) -> Result<Query, QueryParseError> {
         let expression = self.parse_expression()?;
-        Ok(Query { 
+        Ok(Query {
             expression,
             aggregation: None,
             pagination: PaginationOptions::new_default(),

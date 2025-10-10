@@ -12,7 +12,7 @@ fn test_build_generates_company_page_with_projects() {
         .join("target")
         .join("debug")
         .join("ttr");
-    
+
     let output = Command::new(&ttr_binary)
         .args(["init"])
         .args(["--name", "Test Company"])
@@ -22,7 +22,11 @@ fn test_build_generates_company_page_with_projects() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Init failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Init failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Create a company
     let output = Command::new(&ttr_binary)
@@ -33,7 +37,11 @@ fn test_build_generates_company_page_with_projects() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Create company failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Create company failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Create projects
     let output = Command::new(&ttr_binary)
@@ -47,7 +55,11 @@ fn test_build_generates_company_page_with_projects() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Create project 1 failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Create project 1 failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     let output = Command::new(&ttr_binary)
         .args(["create", "project"])
@@ -60,7 +72,11 @@ fn test_build_generates_company_page_with_projects() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Create project 2 failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Create project 2 failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Verify projects exist
     let output = Command::new(&ttr_binary)
@@ -70,7 +86,11 @@ fn test_build_generates_company_page_with_projects() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "List projects failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "List projects failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("WEB-APP"));
     assert!(stdout.contains("DATA-PIPELINE"));
@@ -84,7 +104,11 @@ fn test_build_generates_company_page_with_projects() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Build failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Build failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Verify build output
     let dist_dir = temp_path.join("dist");
@@ -98,22 +122,34 @@ fn test_build_generates_company_page_with_projects() {
 
     // Read and verify company page content
     let company_html = std::fs::read_to_string(&company_index).unwrap();
-    
+
     // Should contain both projects
-    assert!(company_html.contains("Web Application"), "Company page missing WEB-APP project");
-    assert!(company_html.contains("Data Pipeline"), "Company page missing DATA-PIPELINE project");
-    
+    assert!(
+        company_html.contains("Web Application"),
+        "Company page missing WEB-APP project"
+    );
+    assert!(
+        company_html.contains("Data Pipeline"),
+        "Company page missing DATA-PIPELINE project"
+    );
+
     // Should contain project links
-    assert!(company_html.contains("projects/WEB-APP/index.html"), "Company page missing WEB-APP link");
-    assert!(company_html.contains("projects/DATA-PIPELINE/index.html"), "Company page missing DATA-PIPELINE link");
-    
+    assert!(
+        company_html.contains("projects/WEB-APP/index.html"),
+        "Company page missing WEB-APP link"
+    );
+    assert!(
+        company_html.contains("projects/DATA-PIPELINE/index.html"),
+        "Company page missing DATA-PIPELINE link"
+    );
+
     // Should show project count (optional check - main goal is that projects are displayed)
     // Note: The exact format may vary, so we just check that projects are present
 
     // Verify project pages exist
     let web_app_page = company_dir.join("projects").join("WEB-APP").join("index.html");
     let data_pipeline_page = company_dir.join("projects").join("DATA-PIPELINE").join("index.html");
-    
+
     assert!(web_app_page.exists(), "WEB-APP project page not created");
     assert!(data_pipeline_page.exists(), "DATA-PIPELINE project page not created");
 }
@@ -129,7 +165,7 @@ fn test_build_with_no_projects_shows_zero_count() {
         .join("target")
         .join("debug")
         .join("ttr");
-    
+
     let output = Command::new(&ttr_binary)
         .args(["init"])
         .args(["--name", "Test Company"])
@@ -139,7 +175,11 @@ fn test_build_with_no_projects_shows_zero_count() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Init failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Init failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Create a company but no projects
     let ttr_binary = std::env::current_dir()
@@ -147,7 +187,7 @@ fn test_build_with_no_projects_shows_zero_count() {
         .join("target")
         .join("debug")
         .join("ttr");
-    
+
     let output = Command::new(&ttr_binary)
         .args(["create", "company"])
         .args(["--code", "EMPTY-001"])
@@ -156,7 +196,11 @@ fn test_build_with_no_projects_shows_zero_count() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Create company failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Create company failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Run build
     let output = Command::new(&ttr_binary)
@@ -167,7 +211,11 @@ fn test_build_with_no_projects_shows_zero_count() {
         .output()
         .unwrap();
 
-    assert!(output.status.success(), "Build failed: {}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "Build failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 
     // Verify build output
     let dist_dir = temp_path.join("dist");
@@ -181,10 +229,13 @@ fn test_build_with_no_projects_shows_zero_count() {
 
     // Read and verify company page content
     let company_html = std::fs::read_to_string(&company_index).unwrap();
-    
+
     // Should show zero projects (optional check - main goal is that no projects are displayed)
     // Note: The exact format may vary, so we just check that no project links are present
-    
+
     // Should not contain any project links
-    assert!(!company_html.contains("projects/"), "Company page should not contain project links");
+    assert!(
+        !company_html.contains("projects/"),
+        "Company page should not contain project links"
+    );
 }

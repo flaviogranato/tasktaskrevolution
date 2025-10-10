@@ -1,5 +1,5 @@
-use tracing::{debug, error, info, warn, Level};
-use tracing_subscriber::{fmt, EnvFilter, layer::SubscriberExt, util::SubscriberInitExt, Layer};
+use tracing::{Level, debug, error, info, warn};
+use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Logging utilities for the CLI using tracing
 pub struct Logger;
@@ -17,8 +17,7 @@ impl Logger {
         };
 
         // Create environment filter
-        let filter = EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| EnvFilter::new(format!("{}", level)));
+        let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(format!("{}", level)));
 
         // Create formatter
         let fmt_layer = if json_format {
@@ -43,10 +42,7 @@ impl Logger {
         };
 
         // Initialize tracing
-        tracing_subscriber::registry()
-            .with(filter)
-            .with(fmt_layer)
-            .try_init()?;
+        tracing_subscriber::registry().with(filter).with(fmt_layer).try_init()?;
 
         Ok(())
     }
@@ -83,7 +79,7 @@ impl Logger {
     pub fn debug_command_context(command: &str, params: &[(&str, &str)]) {
         let span = tracing::span!(Level::DEBUG, "command_context", command = command);
         let _enter = span.enter();
-        
+
         debug!("Command called with parameters:");
         for (key, value) in params {
             debug!(parameter = key, value = %value, "Parameter");
@@ -100,10 +96,10 @@ impl Logger {
     /// Log debug information about data loading
     pub fn debug_data_loaded(entity_type: &str, identifier: &str, name: &str) {
         let span = tracing::span!(
-            Level::DEBUG, 
-            "data_loaded", 
-            entity_type = entity_type, 
-            identifier = identifier, 
+            Level::DEBUG,
+            "data_loaded",
+            entity_type = entity_type,
+            identifier = identifier,
             name = name
         );
         let _enter = span.enter();
@@ -120,10 +116,10 @@ impl Logger {
     /// Log debug information about project operations
     pub fn debug_project_operation(operation: &str, project_code: &str, details: &str) {
         let span = tracing::span!(
-            Level::DEBUG, 
-            "project_operation", 
-            operation = operation, 
-            project_code = project_code, 
+            Level::DEBUG,
+            "project_operation",
+            operation = operation,
+            project_code = project_code,
             details = details
         );
         let _enter = span.enter();
@@ -133,10 +129,10 @@ impl Logger {
     /// Log debug information about task operations
     pub fn debug_task_operation(operation: &str, task_code: &str, details: &str) {
         let span = tracing::span!(
-            Level::DEBUG, 
-            "task_operation", 
-            operation = operation, 
-            task_code = task_code, 
+            Level::DEBUG,
+            "task_operation",
+            operation = operation,
+            task_code = task_code,
             details = details
         );
         let _enter = span.enter();

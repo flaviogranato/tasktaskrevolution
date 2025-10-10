@@ -416,17 +416,20 @@ fn are_manifests_up_to_date() -> Result<bool, Box<dyn std::error::Error>> {
 }
 
 #[allow(dead_code)]
-fn check_manifest_api_version(manifest_path: &Path, expected_version: &str) -> Result<bool, Box<dyn std::error::Error>> {
+fn check_manifest_api_version(
+    manifest_path: &Path,
+    expected_version: &str,
+) -> Result<bool, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(manifest_path)?;
     let lines: Vec<&str> = content.lines().collect();
-    
+
     for line in lines {
         if line.trim().starts_with("apiVersion:") {
             let version = line.split(':').nth(1).unwrap_or("").trim();
             return Ok(version == expected_version);
         }
     }
-    
+
     // If no apiVersion found, consider it outdated
     Ok(false)
 }
@@ -473,7 +476,7 @@ fn update_manifest_api_version(manifest_path: &Path) -> Result<(), Box<dyn std::
     let lines: Vec<&str> = content.lines().collect();
     let mut updated_lines = Vec::new();
     let mut found_api_version = false;
-    
+
     for line in lines {
         if line.trim().starts_with("apiVersion:") {
             updated_lines.push("apiVersion: tasktaskrevolution.io/v1alpha1".to_string());
@@ -482,15 +485,15 @@ fn update_manifest_api_version(manifest_path: &Path) -> Result<(), Box<dyn std::
             updated_lines.push(line.to_string());
         }
     }
-    
+
     // If no apiVersion found, add it at the beginning
     if !found_api_version {
         updated_lines.insert(0, "apiVersion: tasktaskrevolution.io/v1alpha1".to_string());
         updated_lines.insert(1, "".to_string());
     }
-    
+
     let updated_content = updated_lines.join("\n");
     fs::write(manifest_path, updated_content)?;
-    
+
     Ok(())
 }

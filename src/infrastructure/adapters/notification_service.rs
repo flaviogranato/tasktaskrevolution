@@ -4,7 +4,7 @@
 //! for sending notifications.
 
 use crate::domain::ports::notification_service::{
-    NotificationServicePort, DomainNotification, NotificationServiceStatus,
+    DomainNotification, NotificationServicePort, NotificationServiceStatus,
 };
 use crate::domain::shared::errors::DomainResult;
 
@@ -39,9 +39,7 @@ impl NotificationServicePort for StandardNotificationServiceAdapter {
         // For now, we'll just log it
         println!(
             "Notification sent: {} to {} ({:?})",
-            notification.title,
-            notification.recipient.name,
-            notification.notification_type
+            notification.title, notification.recipient.name, notification.notification_type
         );
 
         Ok(())

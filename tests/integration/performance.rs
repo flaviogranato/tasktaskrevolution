@@ -446,7 +446,7 @@ fn test_batch_company_creation() -> Result<(), Box<dyn std::error::Error>> {
     // Check if there are 50 .yaml files in the companies directory (recursively)
     let companies_path = companies_dir.path();
     let mut yaml_files = Vec::new();
-    
+
     // Look for company.yaml files in subdirectories
     for entry in std::fs::read_dir(companies_path)? {
         let entry = entry?;

@@ -1,5 +1,5 @@
 use crate::application::errors::AppError;
-use crate::domain::shared::search_engine::{SearchEngine, SearchQuery, SearchResult, SearchOptions, FileType};
+use crate::domain::shared::search_engine::{FileType, SearchEngine, SearchOptions, SearchQuery, SearchResult};
 use std::path::PathBuf;
 
 /// Executor de busca integrado com o SearchEngine
@@ -33,7 +33,12 @@ impl SearchExecutor {
     }
 
     /// Executa busca por tipo de entidade
-    pub fn search_by_entity_type(&self, entity_type: EntityType, query: &str, options: SearchOptions) -> Result<Vec<SearchResult>, AppError> {
+    pub fn search_by_entity_type(
+        &self,
+        entity_type: EntityType,
+        query: &str,
+        options: SearchOptions,
+    ) -> Result<Vec<SearchResult>, AppError> {
         let file_types = match entity_type {
             EntityType::Project => vec![FileType::Project],
             EntityType::Task => vec![FileType::Task],
@@ -54,7 +59,12 @@ impl SearchExecutor {
     }
 
     /// Executa busca por campo específico
-    pub fn search_by_field(&self, field: &str, value: &str, options: SearchOptions) -> Result<Vec<SearchResult>, AppError> {
+    pub fn search_by_field(
+        &self,
+        field: &str,
+        value: &str,
+        options: SearchOptions,
+    ) -> Result<Vec<SearchResult>, AppError> {
         let mut field_filters = std::collections::HashMap::new();
         field_filters.insert(field.to_string(), value.to_string());
 
@@ -135,12 +145,13 @@ impl SearchExecutor {
     pub fn get_search_stats(&self, results: &[SearchResult]) -> SearchStats {
         let total_files = results.len();
         let total_matches: usize = results.iter().map(|r| r.matches.len()).sum();
-        let file_types: std::collections::HashMap<FileType, usize> = results
-            .iter()
-            .fold(std::collections::HashMap::new(), |mut acc, result| {
-                *acc.entry(result.file_type).or_insert(0) += 1;
-                acc
-            });
+        let file_types: std::collections::HashMap<FileType, usize> =
+            results
+                .iter()
+                .fold(std::collections::HashMap::new(), |mut acc, result| {
+                    *acc.entry(result.file_type).or_insert(0) += 1;
+                    acc
+                });
 
         SearchStats {
             total_files,
@@ -184,7 +195,10 @@ impl std::str::FromStr for EntityType {
             "task" => Ok(EntityType::Task),
             "resource" => Ok(EntityType::Resource),
             "company" => Ok(EntityType::Company),
-            _ => Err(AppError::validation_error("entity_type", format!("Invalid entity type: {}", s))),
+            _ => Err(AppError::validation_error(
+                "entity_type",
+                format!("Invalid entity type: {}", s),
+            )),
         }
     }
 }
@@ -226,8 +240,8 @@ impl std::fmt::Display for FileType {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
     use std::fs;
+    use tempfile::tempdir;
 
     #[test]
     fn test_search_executor_creation() {

@@ -370,26 +370,28 @@ impl ResourceRepository for FileResourceRepository {
 
     fn find_all(&self) -> DomainResult<Vec<AnyResource>> {
         let mut resources = Vec::new();
-        
+
         // Look in legacy resources directory
         let resources_dir = self.get_resources_path();
         if resources_dir.exists()
-            && let Ok(entries) = std::fs::read_dir(&resources_dir) {
-                for entry in entries.flatten() {
-                    let resource_path = entry.path();
-                    if resource_path.is_file()
-                        && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
-                        && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
-                    {
-                        resources.push(resource);
-                    }
+            && let Ok(entries) = std::fs::read_dir(&resources_dir)
+        {
+            for entry in entries.flatten() {
+                let resource_path = entry.path();
+                if resource_path.is_file()
+                    && resource_path.extension().and_then(|s| s.to_str()) == Some("yaml")
+                    && let Ok(Some(resource)) = self.read_resource_from_file(&resource_path)
+                {
+                    resources.push(resource);
                 }
             }
+        }
 
         // Look for company directories in hierarchical structure
         let companies_dir = self.base_path.join("companies");
         if companies_dir.exists()
-            && let Ok(entries) = std::fs::read_dir(&companies_dir) {
+            && let Ok(entries) = std::fs::read_dir(&companies_dir)
+        {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if path.is_dir() {
@@ -505,7 +507,8 @@ impl ResourceRepository for FileResourceRepository {
             for file_path in legacy_walker.flatten() {
                 if let Ok(yaml) = fs::read_to_string(&file_path)
                     && let Ok(resource_manifest) = serde_yaml::from_str::<ResourceManifest>(&yaml)
-                    && let Ok(resource) = AnyResource::try_from(resource_manifest) {
+                    && let Ok(resource) = AnyResource::try_from(resource_manifest)
+                {
                     resources_with_context.push((resource, "UNKNOWN".to_string(), vec![]));
                 }
             }

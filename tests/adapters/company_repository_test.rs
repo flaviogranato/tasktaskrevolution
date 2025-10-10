@@ -14,19 +14,12 @@ impl CompanyRepositoryTestFixture {
     fn new() -> Self {
         let temp_dir = TempDir::new().unwrap();
         let repository = FileCompanyRepository::new(temp_dir.path());
-        
-        Self {
-            temp_dir,
-            repository,
-        }
+
+        Self { temp_dir, repository }
     }
 
     fn create_test_company(&self, code: &str, name: &str) -> Company {
-        Company::new(
-            code.to_string(),
-            name.to_string(),
-            "test@example.com".to_string(),
-        ).unwrap()
+        Company::new(code.to_string(), name.to_string(), "test@example.com".to_string()).unwrap()
     }
 }
 
@@ -69,7 +62,7 @@ mod tests {
     #[test]
     fn test_find_all() {
         let fixture = CompanyRepositoryTestFixture::new();
-        
+
         // Create multiple companies
         let company1 = fixture.create_test_company("TEST-001", "Test Company 1");
         let company2 = fixture.create_test_company("TEST-002", "Test Company 2");
@@ -81,7 +74,7 @@ mod tests {
         // Find all
         let all_companies = fixture.repository.find_all().unwrap();
         assert_eq!(all_companies.len(), 2);
-        
+
         let codes: Vec<&str> = all_companies.iter().map(|c| c.code()).collect();
         assert!(codes.contains(&"TEST-001"));
         assert!(codes.contains(&"TEST-002"));
@@ -208,7 +201,8 @@ mod tests {
                 "PERSIST-001".to_string(),
                 "Persistent Company".to_string(),
                 "persist@example.com".to_string(),
-            ).unwrap();
+            )
+            .unwrap();
             repository.save(company).unwrap();
         }
 

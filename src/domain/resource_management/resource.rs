@@ -1176,10 +1176,16 @@ impl<S: ResourceState> Queryable for Resource<S> {
             "end_date" => self.end_date.map(QueryValue::Date),
             "time_off_balance" => Some(QueryValue::Number(self.time_off_balance as f64)),
             "vacation_count" => Some(QueryValue::Number(self.vacations.as_ref().map_or(0, |v| v.len()) as f64)),
-            "time_off_history_count" => Some(QueryValue::Number(self.time_off_history.as_ref().map_or(0, |h| h.len()) as f64)),
-            "task_assignment_count" => Some(QueryValue::Number(self.task_assignments.as_ref().map_or(0, |a| a.len()) as f64)),
+            "time_off_history_count" => Some(QueryValue::Number(
+                self.time_off_history.as_ref().map_or(0, |h| h.len()) as f64,
+            )),
+            "task_assignment_count" => Some(QueryValue::Number(
+                self.task_assignments.as_ref().map_or(0, |a| a.len()) as f64,
+            )),
             "active_task_count" => Some(QueryValue::Number(self.get_active_task_count() as f64)),
-            "current_allocation_percentage" => Some(QueryValue::Number(self.get_current_allocation_percentage() as f64)),
+            "current_allocation_percentage" => {
+                Some(QueryValue::Number(self.get_current_allocation_percentage() as f64))
+            }
             "is_wip_limits_exceeded" => Some(QueryValue::Boolean(self.is_wip_limits_exceeded())),
             "wip_status" => Some(QueryValue::String(self.get_wip_status().to_string())),
             // TODO: Implement is_available check for generic state

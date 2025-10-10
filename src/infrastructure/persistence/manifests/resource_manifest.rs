@@ -349,25 +349,23 @@ impl TryFrom<ResourceManifest> for AnyResource {
                 task_assignments: Some(Vec::new()),
                 state: crate::domain::resource_management::state::Inactive,
             })),
-            "Available" => {
-                Ok(AnyResource::Available(Resource {
-                    id,
-                    code,
-                    name,
-                    email,
-                    resource_type,
-                    scope: manifest.spec.scope,
-                    project_id: manifest.spec.project_id,
-                    start_date,
-                    end_date,
-                    vacations,
-                    time_off_balance,
-                    time_off_history,
-                    wip_limits: Some(WipLimits::new(5, 3, 100)),
-                    task_assignments: Some(Vec::new()),
-                    state: Available,
-                }))
-            }
+            "Available" => Ok(AnyResource::Available(Resource {
+                id,
+                code,
+                name,
+                email,
+                resource_type,
+                scope: manifest.spec.scope,
+                project_id: manifest.spec.project_id,
+                start_date,
+                end_date,
+                vacations,
+                time_off_balance,
+                time_off_history,
+                wip_limits: Some(WipLimits::new(5, 3, 100)),
+                task_assignments: Some(Vec::new()),
+                state: Available,
+            })),
             _ => {
                 // Default to Available for unknown statuses
                 Ok(AnyResource::Available(Resource {
@@ -396,7 +394,10 @@ impl ResourceManifest {
     /// Validates consistency between status and project_assignments
     fn validate_status_consistency(manifest: &ResourceManifest) -> Result<(), String> {
         let status = manifest.metadata.status.as_str();
-        let has_assignments = manifest.spec.project_assignments.as_ref()
+        let has_assignments = manifest
+            .spec
+            .project_assignments
+            .as_ref()
             .map(|assignments| !assignments.is_empty())
             .unwrap_or(false);
 
@@ -413,17 +414,17 @@ impl ResourceManifest {
                 if has_assignments {
                     return Err(format!(
                         "Resource '{}' has status '{}' but has project assignments. {} resources should not have project assignments.",
-                        manifest.metadata.code,
-                        status,
-                        status
+                        manifest.metadata.code, status, status
                     ));
                 }
             }
             _ => {
                 // For unknown statuses, warn but don't fail
                 if has_assignments {
-                    eprintln!("Warning: Resource '{}' has unknown status '{}' with project assignments. This may cause unexpected behavior.", 
-                        manifest.metadata.code, status);
+                    eprintln!(
+                        "Warning: Resource '{}' has unknown status '{}' with project assignments. This may cause unexpected behavior.",
+                        manifest.metadata.code, status
+                    );
                 }
             }
         }
@@ -433,7 +434,10 @@ impl ResourceManifest {
 
     /// Automatically updates status based on project assignments
     pub fn update_status_from_assignments(&mut self) {
-        let has_assignments = self.spec.project_assignments.as_ref()
+        let has_assignments = self
+            .spec
+            .project_assignments
+            .as_ref()
             .map(|assignments| !assignments.is_empty())
             .unwrap_or(false);
 
@@ -454,7 +458,7 @@ impl ResourceManifest {
     pub fn ensure_status_consistency(&mut self) -> Result<(), String> {
         // First, try to fix automatically
         self.update_status_from_assignments();
-        
+
         // Then validate
         Self::validate_status_consistency(self)
     }
@@ -658,7 +662,7 @@ mod tests {
         "#;
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
         assert_eq!(manifest.kind, "Resource");
         assert_eq!(manifest.metadata.code, "DEV-001");
@@ -674,11 +678,11 @@ mod tests {
     fn test_yaml_parsing_failure_invalid_syntax() {
         let yaml_str = "invalid: yaml: content: [";
         let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -697,11 +701,11 @@ mod tests {
         "#;
 
         let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -726,11 +730,11 @@ mod tests {
         "#;
 
         let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -755,11 +759,11 @@ mod tests {
         "#;
 
         let result: Result<ResourceManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -788,7 +792,7 @@ mod tests {
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
         let result = AnyResource::try_from(manifest);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = error.to_string();
@@ -823,7 +827,7 @@ mod tests {
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
         let result = AnyResource::try_from(manifest);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = error.to_string();
@@ -854,7 +858,7 @@ mod tests {
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
         let result = AnyResource::try_from(manifest);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = error.to_string();
@@ -895,7 +899,7 @@ mod tests {
         "#;
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.metadata.resource_type, "Senior Developer");
         assert_eq!(manifest.spec.scope, ResourceScope::Project);
         assert_eq!(manifest.spec.time_off_balance, 30);
@@ -929,7 +933,7 @@ mod tests {
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
         let result = AnyResource::try_from(manifest);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = error.to_string();
@@ -965,7 +969,7 @@ mod tests {
 
         let manifest: ResourceManifest = serde_yaml::from_str(yaml_str).unwrap();
         let result = AnyResource::try_from(manifest);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_message = error.to_string();

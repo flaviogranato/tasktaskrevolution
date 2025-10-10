@@ -179,14 +179,14 @@ impl TryFrom<ProjectManifest> for AnyProject {
             Some(manifest.metadata.description)
         };
         let company_code = manifest.metadata.company_code.unwrap_or_else(|| "COMP-001".to_string());
-        
+
         // Parse dates from ISO format (YYYY-MM-DD)
         let start_date = parse_date_opt(&manifest.spec.start_date)?;
         let end_date = parse_date_opt(&manifest.spec.end_date)?;
-        
+
         let vacation_rules = manifest.spec.vacation_rules;
         let timezone = manifest.spec.timezone;
-        
+
         // Convert status from manifest to domain
         let status = match manifest.spec.status {
             ProjectStatusManifest::Planned => crate::domain::project_management::project::ProjectStatus::Planned,
@@ -211,12 +211,12 @@ impl TryFrom<ProjectManifest> for AnyProject {
         project.status = status;
         project.start_date = start_date;
         project.end_date = end_date;
-        
+
         // Set timezone and vacation rules in settings
         if let Some(tz) = timezone {
             project.settings.timezone = Some(tz);
         }
-        
+
         if let Some(vr) = vacation_rules {
             project.settings.vacation_rules = Some(crate::domain::project_management::project::VacationRules {
                 allowed_days_per_year: vr.max_concurrent_vacations.unwrap_or(20),
@@ -270,7 +270,7 @@ mod tests {
     #[test]
     fn test_bidirectional_conversion() {
         use chrono::NaiveDate;
-        
+
         // Create a project with all fields
         let original_project = ProjectBuilder::new()
             .name("Test Project".to_string())
@@ -309,21 +309,24 @@ mod tests {
         assert_eq!(original_project.start_date, converted.start_date);
         assert_eq!(original_project.end_date, converted.end_date);
         assert_eq!(original_project.settings.timezone, converted.settings.timezone);
-        assert_eq!(original_project.settings.vacation_rules, converted.settings.vacation_rules);
+        assert_eq!(
+            original_project.settings.vacation_rules,
+            converted.settings.vacation_rules
+        );
     }
-    
+
     #[test]
     fn test_date_parsing() {
         // Test valid ISO date
         let valid_date = Some("2024-01-15".to_string());
         let parsed = parse_date_opt(&valid_date).unwrap();
         assert_eq!(parsed, Some(chrono::NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
-        
+
         // Test invalid date
         let invalid_date = Some("2024-13-45".to_string());
         let result = parse_date_opt(&invalid_date);
         assert!(result.is_err());
-        
+
         // Test None
         let none_date = None;
         let parsed = parse_date_opt(&none_date).unwrap();
@@ -355,7 +358,7 @@ mod tests {
         "#;
 
         let manifest: ProjectManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
         assert_eq!(manifest.kind, "Project");
         assert_eq!(manifest.metadata.code, Some("PROJ-001".to_string()));
@@ -372,11 +375,11 @@ mod tests {
     fn test_yaml_parsing_failure_invalid_syntax() {
         let yaml_str = "invalid: yaml: content: [";
         let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -394,11 +397,11 @@ mod tests {
         "#;
 
         let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -422,11 +425,11 @@ mod tests {
         "#;
 
         let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -451,11 +454,11 @@ mod tests {
         "#;
 
         let result: Result<ProjectManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -485,11 +488,14 @@ mod tests {
         "#;
 
         let manifest: ProjectManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.metadata.description, "A comprehensive test project");
         assert_eq!(manifest.spec.status, ProjectStatusManifest::InProgress);
         assert_eq!(manifest.spec.timezone, Some("America/Sao_Paulo".to_string()));
-        assert_eq!(manifest.spec.vacation_rules.as_ref().unwrap().max_concurrent_vacations, Some(30));
+        assert_eq!(
+            manifest.spec.vacation_rules.as_ref().unwrap().max_concurrent_vacations,
+            Some(30)
+        );
         assert_eq!(manifest.spec.vacation_rules.as_ref().unwrap().carry_over_days, Some(5));
     }
 }

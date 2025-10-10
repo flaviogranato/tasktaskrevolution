@@ -31,7 +31,6 @@ impl BuildUseCase {
         // Detect build context
         let context = BuildContext::detect(&base_path).map_err(|e| format!("Failed to detect build context: {}", e))?;
 
-
         let mut tera = Tera::default();
         for filename in TemplateAssets::iter() {
             let file = TemplateAssets::get(filename.as_ref()).unwrap();
@@ -166,13 +165,13 @@ impl BuildUseCase {
         context.insert("company_name", &config.company_name);
         context.insert("relative_path_prefix", "/");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
-        
+
         // Add Gantt chart variables
         context.insert("gantt_available", &true);
         context.insert("company_gantt_url", &"companies/gantt.html");
         context.insert("project_gantt_url", &"projects/gantt.html");
         context.insert("all_projects_gantt_url", &"gantt.html");
-        
+
         // Add current page variable
         context.insert("current_page", &"dashboard");
 
@@ -279,13 +278,13 @@ impl BuildUseCase {
             company_context.insert("resources", &company_resources_filtered);
             company_context.insert("relative_path_prefix", "../");
             company_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
-            
+
             // Add Gantt chart variables
             company_context.insert("gantt_available", &true);
             company_context.insert("company_gantt_url", &"gantt.html");
             company_context.insert("project_gantt_url", &"projects/gantt.html");
             company_context.insert("all_projects_gantt_url", &"../gantt.html");
-            
+
             // Add current page variable
             company_context.insert("current_page", &"companies");
 
@@ -315,16 +314,13 @@ impl BuildUseCase {
             // Render company page
             // Company context prepared
             let company_html = match self.tera.render("company.html", &company_context) {
-                Ok(html) => {
-                    html
-                }
+                Ok(html) => html,
                 Err(e) => {
                     return Err(format!("Template error: {}", e).into());
                 }
             };
             let company_page_path = company_output_dir.join("index.html");
             fs::write(company_page_path, company_html)?;
-
 
             // Generate company detail page
             let company_detail_html = match self.tera.render("company_detail.html", &company_context) {
@@ -351,13 +347,13 @@ impl BuildUseCase {
                 resource_context.insert("company", &tera::Value::Object(company_map.clone()));
                 resource_context.insert("relative_path_prefix", "../../");
                 resource_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
-                
+
                 // Add Gantt chart variables
                 resource_context.insert("gantt_available", &true);
                 resource_context.insert("company_gantt_url", &"../gantt.html");
                 resource_context.insert("project_gantt_url", &"../../gantt.html");
                 resource_context.insert("all_projects_gantt_url", &"../../../gantt.html");
-                
+
                 // Add current page variable
                 resource_context.insert("current_page", &"resources");
 
@@ -489,13 +485,13 @@ impl BuildUseCase {
                 project_context.insert("resources", resources);
                 project_context.insert("relative_path_prefix", "../../../");
                 project_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
-                
+
                 // Add Gantt chart variables
                 project_context.insert("gantt_available", &true);
                 project_context.insert("company_gantt_url", &"../gantt.html");
                 project_context.insert("project_gantt_url", &"gantt.html");
                 project_context.insert("all_projects_gantt_url", &"../../gantt.html");
-                
+
                 // Add current page variable
                 project_context.insert("current_page", &"projects");
 
@@ -508,7 +504,6 @@ impl BuildUseCase {
                 };
                 let project_page_path = project_output_dir.join("index.html");
                 fs::write(project_page_path, project_html)?;
-
 
                 // Generate project detail page
                 let project_detail_html = match self.tera.render("project_detail.html", &project_context) {
@@ -548,13 +543,13 @@ impl BuildUseCase {
                     task_context.insert("company", &tera::Value::Object(company_map.clone()));
                     task_context.insert("relative_path_prefix", "../../../../");
                     task_context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
-                    
+
                     // Add Gantt chart variables
                     task_context.insert("gantt_available", &true);
                     task_context.insert("company_gantt_url", &"../../gantt.html");
                     task_context.insert("project_gantt_url", &"../gantt.html");
                     task_context.insert("all_projects_gantt_url", &"../../../gantt.html");
-                    
+
                     // Add current page variable
                     task_context.insert("current_page", &"tasks");
 
@@ -685,13 +680,13 @@ impl BuildUseCase {
         context.insert("company_end_date", &company_end_date);
         context.insert("relative_path_prefix", "../");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
-        
+
         // Add Gantt chart variables
         context.insert("gantt_available", &true);
         context.insert("company_gantt_url", &"gantt.html");
         context.insert("project_gantt_url", &"projects/gantt.html");
         context.insert("all_projects_gantt_url", &"../gantt.html");
-        
+
         // Add current page variable
         context.insert("current_page", &"companies");
 
@@ -724,7 +719,10 @@ impl BuildUseCase {
         project_map.insert("id".to_string(), tera::Value::String(project.id().to_string()));
         project_map.insert("code".to_string(), tera::Value::String(project.code().to_string()));
         project_map.insert("name".to_string(), tera::Value::String(project.name().to_string()));
-        project_map.insert("company_code".to_string(), tera::Value::String(project.company_code().to_string()));
+        project_map.insert(
+            "company_code".to_string(),
+            tera::Value::String(project.company_code().to_string()),
+        );
         project_map.insert(
             "description".to_string(),
             tera::Value::String(
@@ -780,14 +778,8 @@ impl BuildUseCase {
                         .map_or("No description available.".to_string(), |d| d.to_string()),
                 ),
             );
-            task_map.insert(
-                "start_date".to_string(),
-                tera::Value::String("2024-01-01".to_string()),
-            );
-            task_map.insert(
-                "end_date".to_string(),
-                tera::Value::String("2024-12-31".to_string()),
-            );
+            task_map.insert("start_date".to_string(), tera::Value::String("2024-01-01".to_string()));
+            task_map.insert("end_date".to_string(), tera::Value::String("2024-12-31".to_string()));
             task_map.insert("progress".to_string(), tera::Value::Number(0.into()));
             task_map.insert("assigned_resources".to_string(), tera::Value::Array(vec![]));
             task_map.insert("dependencies".to_string(), tera::Value::Array(vec![]));
@@ -801,13 +793,13 @@ impl BuildUseCase {
         context.insert("resources", &resource_maps);
         context.insert("relative_path_prefix", "../../../");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d %H:%M").to_string());
-        
+
         // Add Gantt chart variables
         context.insert("gantt_available", &true);
         context.insert("company_gantt_url", &"../gantt.html");
         context.insert("project_gantt_url", &"gantt.html");
         context.insert("all_projects_gantt_url", &"../../gantt.html");
-        
+
         // Add current page variable
         context.insert("current_page", &"projects");
 

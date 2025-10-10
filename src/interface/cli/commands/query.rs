@@ -1,4 +1,4 @@
-use crate::application::query::{QueryBuilder, EntityType};
+use crate::application::query::{EntityType, QueryBuilder};
 use crate::domain::shared::query_parser::{QueryParser, QueryValue};
 use clap::Args;
 
@@ -99,22 +99,30 @@ fn build_query(args: &QueryArgs) -> Result<crate::domain::shared::query_parser::
         match aggregate.to_lowercase().as_str() {
             "count" => builder = builder.count(),
             "sum" => {
-                let field = args.aggregate_field.as_ref()
+                let field = args
+                    .aggregate_field
+                    .as_ref()
                     .ok_or("Aggregate field is required for sum")?;
                 builder = builder.sum(field);
             }
             "avg" | "average" => {
-                let field = args.aggregate_field.as_ref()
+                let field = args
+                    .aggregate_field
+                    .as_ref()
                     .ok_or("Aggregate field is required for average")?;
                 builder = builder.average(field);
             }
             "min" => {
-                let field = args.aggregate_field.as_ref()
+                let field = args
+                    .aggregate_field
+                    .as_ref()
                     .ok_or("Aggregate field is required for min")?;
                 builder = builder.min(field);
             }
             "max" => {
-                let field = args.aggregate_field.as_ref()
+                let field = args
+                    .aggregate_field
+                    .as_ref()
                     .ok_or("Aggregate field is required for max")?;
                 builder = builder.max(field);
             }
@@ -162,22 +170,63 @@ fn show_available_fields(entity_type: EntityType) {
     // Mock implementation - in real implementation, this would come from QueryExecutor
     let fields = match entity_type {
         EntityType::Project => vec![
-            "id", "code", "name", "description", "status", "priority",
-            "start_date", "end_date", "actual_start_date", "actual_end_date",
-            "company_code", "manager_id", "created_by", "created_at", "updated_at",
-            "task_count", "resource_count", "is_active", "priority_weight"
+            "id",
+            "code",
+            "name",
+            "description",
+            "status",
+            "priority",
+            "start_date",
+            "end_date",
+            "actual_start_date",
+            "actual_end_date",
+            "company_code",
+            "manager_id",
+            "created_by",
+            "created_at",
+            "updated_at",
+            "task_count",
+            "resource_count",
+            "is_active",
+            "priority_weight",
         ],
         EntityType::Task => vec![
-            "id", "project_code", "code", "name", "description", "status",
-            "start_date", "due_date", "actual_end_date", "priority", "category",
-            "dependency_count", "assigned_resource_count", "is_overdue",
-            "days_until_due", "priority_weight"
+            "id",
+            "project_code",
+            "code",
+            "name",
+            "description",
+            "status",
+            "start_date",
+            "due_date",
+            "actual_end_date",
+            "priority",
+            "category",
+            "dependency_count",
+            "assigned_resource_count",
+            "is_overdue",
+            "days_until_due",
+            "priority_weight",
         ],
         EntityType::Resource => vec![
-            "id", "code", "name", "email", "resource_type", "scope", "project_id",
-            "start_date", "end_date", "time_off_balance", "vacation_count",
-            "time_off_history_count", "task_assignment_count", "active_task_count",
-            "current_allocation_percentage", "is_wip_limits_exceeded", "wip_status", "is_available"
+            "id",
+            "code",
+            "name",
+            "email",
+            "resource_type",
+            "scope",
+            "project_id",
+            "start_date",
+            "end_date",
+            "time_off_balance",
+            "vacation_count",
+            "time_off_history_count",
+            "task_assignment_count",
+            "active_task_count",
+            "current_allocation_percentage",
+            "is_wip_limits_exceeded",
+            "wip_status",
+            "is_available",
         ],
     };
 
@@ -207,7 +256,10 @@ fn show_query_demo(
     }
 
     if query.pagination.limit.is_some() || query.pagination.offset.is_some() {
-        println!("Pagination: limit={:?}, offset={:?}", query.pagination.limit, query.pagination.offset);
+        println!(
+            "Pagination: limit={:?}, offset={:?}",
+            query.pagination.limit, query.pagination.offset
+        );
     }
 
     println!("\nQuery Structure:");

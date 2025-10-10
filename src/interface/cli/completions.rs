@@ -1,5 +1,5 @@
 //! Shell completions for TTR CLI
-//! 
+//!
 //! This module provides shell completion generation for various shells.
 
 use clap::{Command, CommandFactory};
@@ -26,16 +26,10 @@ impl ShellType {
             _ => None,
         }
     }
-    
+
     /// Get all supported shell types
     pub fn all() -> Vec<Self> {
-        vec![
-            Self::Bash,
-            Self::Zsh,
-            Self::Fish,
-            Self::PowerShell,
-            Self::Elvish,
-        ]
+        vec![Self::Bash, Self::Zsh, Self::Fish, Self::PowerShell, Self::Elvish]
     }
 }
 
@@ -57,7 +51,7 @@ impl ShellCompletionGenerator {
     pub fn new() -> Self {
         Self::default()
     }
-    
+
     /// Generate completions for a specific shell
     pub fn generate_completions(&self, shell: ShellType) -> Result<String, Box<dyn std::error::Error>> {
         match shell {
@@ -68,46 +62,58 @@ impl ShellCompletionGenerator {
             ShellType::Elvish => self.generate_elvish_completions(),
         }
     }
-    
+
     /// Generate bash completions
     fn generate_bash_completions(&self) -> Result<String, Box<dyn std::error::Error>> {
         let mut buf = Vec::new();
         clap_complete::generate(clap_complete::shells::Bash, &mut self.command.clone(), "ttr", &mut buf);
         Ok(String::from_utf8(buf)?)
     }
-    
+
     /// Generate zsh completions
     fn generate_zsh_completions(&self) -> Result<String, Box<dyn std::error::Error>> {
         let mut buf = Vec::new();
         clap_complete::generate(clap_complete::shells::Zsh, &mut self.command.clone(), "ttr", &mut buf);
         Ok(String::from_utf8(buf)?)
     }
-    
+
     /// Generate fish completions
     fn generate_fish_completions(&self) -> Result<String, Box<dyn std::error::Error>> {
         let mut buf = Vec::new();
         clap_complete::generate(clap_complete::shells::Fish, &mut self.command.clone(), "ttr", &mut buf);
         Ok(String::from_utf8(buf)?)
     }
-    
+
     /// Generate PowerShell completions
     fn generate_powershell_completions(&self) -> Result<String, Box<dyn std::error::Error>> {
         let mut buf = Vec::new();
-        clap_complete::generate(clap_complete::shells::PowerShell, &mut self.command.clone(), "ttr", &mut buf);
+        clap_complete::generate(
+            clap_complete::shells::PowerShell,
+            &mut self.command.clone(),
+            "ttr",
+            &mut buf,
+        );
         Ok(String::from_utf8(buf)?)
     }
-    
+
     /// Generate Elvish completions
     fn generate_elvish_completions(&self) -> Result<String, Box<dyn std::error::Error>> {
         let mut buf = Vec::new();
-        clap_complete::generate(clap_complete::shells::Elvish, &mut self.command.clone(), "ttr", &mut buf);
+        clap_complete::generate(
+            clap_complete::shells::Elvish,
+            &mut self.command.clone(),
+            "ttr",
+            &mut buf,
+        );
         Ok(String::from_utf8(buf)?)
     }
-    
+
     /// Generate completions for all supported shells
-    pub fn generate_all_completions(&self) -> Result<std::collections::HashMap<ShellType, String>, Box<dyn std::error::Error>> {
+    pub fn generate_all_completions(
+        &self,
+    ) -> Result<std::collections::HashMap<ShellType, String>, Box<dyn std::error::Error>> {
         let mut completions = std::collections::HashMap::new();
-        
+
         for shell in ShellType::all() {
             match self.generate_completions(shell.clone()) {
                 Ok(completion) => {
@@ -118,16 +124,16 @@ impl ShellCompletionGenerator {
                 }
             }
         }
-        
+
         Ok(completions)
     }
-    
+
     /// Save completions to files
     pub fn save_completions_to_files(&self, output_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
         std::fs::create_dir_all(output_dir)?;
-        
+
         let completions = self.generate_all_completions()?;
-        
+
         for (shell, content) in completions {
             let filename = match shell {
                 ShellType::Bash => "ttr.bash",
@@ -136,15 +142,15 @@ impl ShellCompletionGenerator {
                 ShellType::PowerShell => "ttr.ps1",
                 ShellType::Elvish => "ttr.elv",
             };
-            
+
             let file_path = output_dir.join(filename);
             std::fs::write(&file_path, content)?;
             println!("Generated completions for {:?} at {:?}", shell, file_path);
         }
-        
+
         Ok(())
     }
-    
+
     /// Generate installation instructions
     pub fn generate_installation_instructions(&self) -> String {
         r#"# TTR Shell Completions Installation
@@ -237,7 +243,8 @@ For more help, see the TTR documentation or run:
 ```bash
 ttr completions --help
 ```
-"#.to_string()
+"#
+        .to_string()
     }
 }
 
@@ -248,11 +255,10 @@ impl CompletionCommandHandler {
     /// Handle completion command
     pub fn handle_completion_command(shell: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
         let generator = ShellCompletionGenerator::new();
-        
+
         if let Some(shell_str) = shell {
-            let shell_type = ShellType::parse(&shell_str)
-                .ok_or_else(|| format!("Unsupported shell: {}", shell_str))?;
-            
+            let shell_type = ShellType::parse(&shell_str).ok_or_else(|| format!("Unsupported shell: {}", shell_str))?;
+
             let completions = generator.generate_completions(shell_type)?;
             print!("{}", completions);
         } else {
@@ -263,29 +269,32 @@ impl CompletionCommandHandler {
             }
             println!("\nUsage: ttr completions <shell>");
         }
-        
+
         Ok(())
     }
-    
+
     /// Handle completion installation command
     pub fn handle_install_command(output_dir: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
         let generator = ShellCompletionGenerator::new();
         let output_path = output_dir
             .map(std::path::PathBuf::from)
             .unwrap_or_else(|| std::path::PathBuf::from("completions"));
-        
+
         generator.save_completions_to_files(&output_path)?;
-        
+
         println!("Completions generated successfully!");
         println!("Output directory: {:?}", output_path);
         println!("\n{}", generator.generate_installation_instructions());
-        
+
         Ok(())
     }
-    
+
     /// Handle completion help command
     pub fn handle_help_command() -> Result<(), Box<dyn std::error::Error>> {
-        println!("{}", ShellCompletionGenerator::new().generate_installation_instructions());
+        println!(
+            "{}",
+            ShellCompletionGenerator::new().generate_installation_instructions()
+        );
         Ok(())
     }
 }
@@ -293,7 +302,7 @@ impl CompletionCommandHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_shell_type_parsing() {
         assert_eq!(ShellType::parse("bash"), Some(ShellType::Bash));
@@ -303,13 +312,13 @@ mod tests {
         assert_eq!(ShellType::parse("elvish"), Some(ShellType::Elvish));
         assert_eq!(ShellType::parse("unknown"), None);
     }
-    
+
     #[test]
     fn test_completion_generator_creation() {
         let generator = ShellCompletionGenerator::new();
         assert!(!generator.command.get_name().is_empty());
     }
-    
+
     #[test]
     fn test_all_shell_types() {
         let shells = ShellType::all();

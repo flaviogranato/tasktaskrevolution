@@ -1,4 +1,4 @@
-use crate::domain::shared::search_engine::{SearchResult, FileType};
+use crate::domain::shared::search_engine::{FileType, SearchResult};
 
 /// Filtro de busca para refinar resultados
 pub struct SearchFilter {
@@ -88,12 +88,14 @@ impl SearchFilter {
     /// Verifica se o resultado corresponde aos critérios de score
     fn matches_score(&self, result: &SearchResult) -> bool {
         if let Some(min_score) = self.min_score
-            && result.score < min_score {
+            && result.score < min_score
+        {
             return false;
         }
 
         if let Some(max_score) = self.max_score
-            && result.score > max_score {
+            && result.score > max_score
+        {
             return false;
         }
 
@@ -105,12 +107,14 @@ impl SearchFilter {
         let match_count = result.matches.len();
 
         if let Some(min_matches) = self.min_matches
-            && match_count < min_matches {
+            && match_count < min_matches
+        {
             return false;
         }
 
         if let Some(max_matches) = self.max_matches
-            && match_count > max_matches {
+            && match_count > max_matches
+        {
             return false;
         }
 
@@ -124,7 +128,9 @@ impl SearchFilter {
         }
 
         let path_str = result.file_path.to_string_lossy().to_lowercase();
-        self.path_patterns.iter().any(|pattern| path_str.contains(&pattern.to_lowercase()))
+        self.path_patterns
+            .iter()
+            .any(|pattern| path_str.contains(&pattern.to_lowercase()))
     }
 
     /// Verifica se o resultado corresponde aos padrões de caminho excluídos
@@ -134,7 +140,9 @@ impl SearchFilter {
         }
 
         let path_str = result.file_path.to_string_lossy().to_lowercase();
-        self.exclude_patterns.iter().any(|pattern| path_str.contains(&pattern.to_lowercase()))
+        self.exclude_patterns
+            .iter()
+            .any(|pattern| path_str.contains(&pattern.to_lowercase()))
     }
 }
 
@@ -274,10 +282,7 @@ impl SearchFilter {
 
     /// Cria um filtro para busca geral
     pub fn general_search() -> Self {
-        SearchFilterBuilder::new()
-            .exclude_config()
-            .exclude_temp()
-            .build()
+        SearchFilterBuilder::new().exclude_config().exclude_temp().build()
     }
 }
 
@@ -314,7 +319,7 @@ mod tests {
         let results = create_test_results();
         let filter = SearchFilter::new().file_types(vec![FileType::Project]);
         let filtered = filter.apply(&results);
-        
+
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].file_type, FileType::Project);
     }
@@ -324,7 +329,7 @@ mod tests {
         let results = create_test_results();
         let filter = SearchFilter::new().min_score(2.0);
         let filtered = filter.apply(&results);
-        
+
         assert_eq!(filtered.len(), 1);
         assert!(filtered[0].score >= 2.0);
     }
@@ -334,7 +339,7 @@ mod tests {
         let results = create_test_results();
         let filter = SearchFilter::new().include_path("projects");
         let filtered = filter.apply(&results);
-        
+
         assert_eq!(filtered.len(), 1);
         assert!(filtered[0].file_path.to_string_lossy().contains("projects"));
     }
@@ -344,9 +349,13 @@ mod tests {
         let results = create_test_results();
         let filter = SearchFilter::new().exclude_path("config");
         let filtered = filter.apply(&results);
-        
+
         assert_eq!(filtered.len(), 2);
-        assert!(!filtered.iter().any(|r| r.file_path.to_string_lossy().contains("config")));
+        assert!(
+            !filtered
+                .iter()
+                .any(|r| r.file_path.to_string_lossy().contains("config"))
+        );
     }
 
     #[test]
@@ -357,7 +366,7 @@ mod tests {
             .high_score()
             .exclude_config()
             .build();
-        
+
         let filtered = filter.apply(&results);
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].file_type, FileType::Project);
@@ -366,11 +375,11 @@ mod tests {
     #[test]
     fn test_predefined_filters() {
         let results = create_test_results();
-        
+
         let high_relevance = SearchFilter::high_relevance_projects();
         let filtered = high_relevance.apply(&results);
         assert_eq!(filtered.len(), 1);
-        
+
         let general = SearchFilter::general_search();
         let filtered = general.apply(&results);
         assert_eq!(filtered.len(), 2); // Exclui config.yaml
