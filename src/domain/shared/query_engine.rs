@@ -1,4 +1,4 @@
-use crate::domain::shared::query_parser::{ComparisonOperator, FilterCondition, Query, QueryExpression, QueryValue};
+use crate::domain::shared::query_parser::{AggregationType, ComparisonOperator, FilterCondition, Query, QueryExpression, QueryValue, SortOption};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -17,6 +17,14 @@ pub struct QueryResult<T> {
     pub items: Vec<T>,
     pub total_count: usize,
     pub filtered_count: usize,
+    pub aggregation_result: Option<AggregationResult>,
+}
+
+/// Resultado de uma agregação
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AggregationResult {
+    pub aggregation_type: AggregationType,
+    pub value: f64,
 }
 
 impl<T> QueryResult<T> {
@@ -26,6 +34,7 @@ impl<T> QueryResult<T> {
             filtered_count: total_count,
             total_count,
             items,
+            aggregation_result: None,
         }
     }
 
@@ -34,7 +43,13 @@ impl<T> QueryResult<T> {
             items: Vec::new(),
             total_count: 0,
             filtered_count: 0,
+            aggregation_result: None,
         }
+    }
+    
+    pub fn with_aggregation(mut self, aggregation_result: AggregationResult) -> Self {
+        self.aggregation_result = Some(aggregation_result);
+        self
     }
 }
 
@@ -73,6 +88,7 @@ impl QueryEngine {
         let total_count = items.len();
         let mut filtered_items = Vec::new();
 
+        // 1. Filtrar itens baseado na expressão
         for item in items {
             match Self::evaluate_expression(&query.expression, &item) {
                 Ok(true) => filtered_items.push(item),
@@ -81,11 +97,28 @@ impl QueryEngine {
             }
         }
 
-        Ok(QueryResult {
+        // 2. Aplicar ordenação se especificada
+        if let Some(sort) = &query.sort {
+            Self::sort_items(&mut filtered_items, sort)?;
+        }
+
+        // 3. Aplicar paginação
+        let paginated_items = Self::apply_pagination(filtered_items, &query.pagination);
+
+        // 4. Calcular agregação se especificada
+        let mut result = QueryResult {
             total_count,
-            filtered_count: filtered_items.len(),
-            items: filtered_items,
-        })
+            filtered_count: paginated_items.len(),
+            items: paginated_items,
+            aggregation_result: None,
+        };
+
+        if let Some(aggregation) = &query.aggregation {
+            let aggregation_result = Self::calculate_aggregation(&result.items, aggregation)?;
+            result.aggregation_result = Some(aggregation_result);
+        }
+
+        Ok(result)
     }
 
     /// Avalia uma expressão de consulta contra uma entidade
@@ -204,6 +237,91 @@ impl QueryEngine {
             QueryValue::Boolean(b) => Ok(b.to_string()),
             QueryValue::Date(d) => Ok(d.format("%Y-%m-%d").to_string()),
             QueryValue::DateTime(dt) => Ok(dt.format("%Y-%m-%d %H:%M:%S").to_string()),
+        }
+    }
+
+    /// Aplica ordenação aos itens
+    fn sort_items<T: Queryable>(items: &mut Vec<T>, sort: &SortOption) -> Result<(), QueryExecutionError> {
+        items.sort_by(|a, b| {
+            let a_value = a.get_field_value(&sort.field);
+            let b_value = b.get_field_value(&sort.field);
+            
+            match (a_value, b_value) {
+                (Some(a_val), Some(b_val)) => {
+                    let comparison = Self::compare_values(&a_val, &b_val);
+                    if sort.ascending {
+                        comparison
+                    } else {
+                        comparison.reverse()
+                    }
+                }
+                (Some(_), None) => if sort.ascending { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater },
+                (None, Some(_)) => if sort.ascending { std::cmp::Ordering::Greater } else { std::cmp::Ordering::Less },
+                (None, None) => std::cmp::Ordering::Equal,
+            }
+        });
+        Ok(())
+    }
+
+    /// Aplica paginação aos itens
+    fn apply_pagination<T>(items: Vec<T>, pagination: &crate::domain::shared::query_parser::PaginationOptions) -> Vec<T> {
+        let start = pagination.offset.unwrap_or(0);
+        let end = if let Some(limit) = pagination.limit {
+            start + limit
+        } else {
+            items.len()
+        };
+        
+        items.into_iter().skip(start).take(end - start).collect()
+    }
+
+    /// Calcula agregação sobre os itens
+    fn calculate_aggregation<T: Queryable>(items: &[T], aggregation: &AggregationType) -> Result<AggregationResult, QueryExecutionError> {
+        match aggregation {
+            AggregationType::Count => Ok(AggregationResult {
+                aggregation_type: aggregation.clone(),
+                value: items.len() as f64,
+            }),
+            AggregationType::Sum(field) | AggregationType::Average(field) | AggregationType::Min(field) | AggregationType::Max(field) => {
+                let values: Vec<f64> = items.iter()
+                    .filter_map(|item| {
+                        if let Some(QueryValue::Number(n)) = item.get_field_value(field) {
+                            Some(n)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+
+                if values.is_empty() {
+                    return Err(QueryExecutionError::InvalidField(format!("No numeric values found for field: {}", field)));
+                }
+
+                let result_value = match aggregation {
+                    AggregationType::Sum(_) => values.iter().sum(),
+                    AggregationType::Average(_) => values.iter().sum::<f64>() / values.len() as f64,
+                    AggregationType::Min(_) => values.iter().fold(f64::INFINITY, |a, &b| a.min(b)),
+                    AggregationType::Max(_) => values.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b)),
+                    _ => unreachable!(),
+                };
+
+                Ok(AggregationResult {
+                    aggregation_type: aggregation.clone(),
+                    value: result_value,
+                })
+            }
+        }
+    }
+
+    /// Compara dois valores para ordenação
+    fn compare_values(a: &QueryValue, b: &QueryValue) -> std::cmp::Ordering {
+        match (a, b) {
+            (QueryValue::String(a), QueryValue::String(b)) => a.cmp(b),
+            (QueryValue::Number(a), QueryValue::Number(b)) => a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal),
+            (QueryValue::Boolean(a), QueryValue::Boolean(b)) => a.cmp(b),
+            (QueryValue::Date(a), QueryValue::Date(b)) => a.cmp(b),
+            (QueryValue::DateTime(a), QueryValue::DateTime(b)) => a.cmp(b),
+            _ => std::cmp::Ordering::Equal,
         }
     }
 }

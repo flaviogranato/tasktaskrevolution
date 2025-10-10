@@ -7,5 +7,6 @@ pub mod observer;
 pub mod query_engine;
 pub mod query_parser;
 pub mod repository;
+pub mod search_engine;
 pub mod specification;
 pub mod validatable;

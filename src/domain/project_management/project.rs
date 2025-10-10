@@ -2,6 +2,8 @@
 
 use super::super::task_management::any_task::AnyTask;
 use crate::domain::shared::errors::{DomainError, DomainResult};
+use crate::domain::shared::query_engine::Queryable;
+use crate::domain::shared::query_parser::QueryValue;
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -772,5 +774,40 @@ mod tests {
         assert!(project.is_code_valid());
         assert!(!project.is_name_valid());
         assert!(project.is_date_range_valid());
+    }
+}
+
+// ============================================================================
+// QUERYABLE IMPLEMENTATION
+// ============================================================================
+
+impl Queryable for Project {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match field {
+            "id" => Some(QueryValue::String(self.id.clone())),
+            "code" => Some(QueryValue::String(self.code.clone())),
+            "name" => Some(QueryValue::String(self.name.clone())),
+            "description" => self.description.as_ref().map(|d| QueryValue::String(d.clone())),
+            "status" => Some(QueryValue::String(self.status.to_string())),
+            "priority" => Some(QueryValue::String(self.priority.to_string())),
+            "start_date" => self.start_date.map(|d| QueryValue::Date(d)),
+            "end_date" => self.end_date.map(|d| QueryValue::Date(d)),
+            "actual_start_date" => self.actual_start_date.map(|d| QueryValue::Date(d)),
+            "actual_end_date" => self.actual_end_date.map(|d| QueryValue::Date(d)),
+            "company_code" => Some(QueryValue::String(self.company_code.clone())),
+            "manager_id" => self.manager_id.as_ref().map(|id| QueryValue::String(id.clone())),
+            "created_by" => Some(QueryValue::String(self.created_by.clone())),
+            "created_at" => Some(QueryValue::DateTime(self.created_at.naive_utc())),
+            "updated_at" => Some(QueryValue::DateTime(self.updated_at.naive_utc())),
+            "task_count" => Some(QueryValue::Number(self.tasks.len() as f64)),
+            "resource_count" => Some(QueryValue::Number(self.resources.len() as f64)),
+            "is_active" => Some(QueryValue::Boolean(self.status.is_active())),
+            "priority_weight" => Some(QueryValue::Number(self.priority.weight() as f64)),
+            _ => None,
+        }
+    }
+
+    fn entity_type() -> &'static str {
+        "project"
     }
 }

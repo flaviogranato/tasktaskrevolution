@@ -7,6 +7,7 @@ pub mod migrate;
 pub mod project;
 pub mod query;
 pub mod report;
+pub mod search;
 pub mod resource;
 pub mod task;
 pub mod template;
