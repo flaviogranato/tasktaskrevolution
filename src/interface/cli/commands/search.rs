@@ -255,6 +255,6 @@ mod tests {
     fn test_format_results() {
         let results = vec![];
         let formatted = format_results(&results, "table", "test").unwrap();
-        assert_eq!(formatted, "No results found.\n");
+        assert_eq!(formatted, "No results found.");
     }
 }
