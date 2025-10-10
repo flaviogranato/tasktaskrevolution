@@ -169,7 +169,8 @@ fn find_task_code(temp: &assert_fs::TempDir, project_code: &str) -> Result<Strin
                                         if task_path.is_file()
                                             && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
                                             && let Ok(task_content) = std::fs::read_to_string(&task_path)
-                                            && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                                            && let Ok(task_yaml) =
+                                                serde_yaml::from_str::<serde_yaml::Value>(&task_content)
                                             && let Some(task_metadata) = task_yaml.get("metadata")
                                             && let Some(code) = task_metadata.get("code").and_then(|v| v.as_str())
                                         {
@@ -272,12 +273,15 @@ fn verify_task_updated(
                                         if task_path.is_file()
                                             && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
                                             && let Ok(task_content) = std::fs::read_to_string(&task_path)
-                                            && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                                            && let Ok(task_yaml) =
+                                                serde_yaml::from_str::<serde_yaml::Value>(&task_content)
                                             && let Some(task_metadata) = task_yaml.get("metadata")
-                                            && let Some(task_code_from_file) = task_metadata.get("code").and_then(|v| v.as_str())
+                                            && let Some(task_code_from_file) =
+                                                task_metadata.get("code").and_then(|v| v.as_str())
                                         {
                                             // task_code might include .yaml extension, so we need to strip it
-                                            let task_code_without_ext = task_code.strip_suffix(".yaml").unwrap_or(task_code);
+                                            let task_code_without_ext =
+                                                task_code.strip_suffix(".yaml").unwrap_or(task_code);
                                             if task_code_from_file == task_code_without_ext {
                                                 task_file = Some(task_path);
                                                 break;
@@ -973,9 +977,11 @@ fn test_file_integrity_after_updates() -> Result<(), Box<dyn std::error::Error>>
                                         if task_path.is_file()
                                             && task_path.extension().and_then(|s| s.to_str()) == Some("yaml")
                                             && let Ok(task_content) = std::fs::read_to_string(&task_path)
-                                            && let Ok(task_yaml) = serde_yaml::from_str::<serde_yaml::Value>(&task_content)
+                                            && let Ok(task_yaml) =
+                                                serde_yaml::from_str::<serde_yaml::Value>(&task_content)
                                             && let Some(task_metadata) = task_yaml.get("metadata")
-                                            && let Some(task_code_from_file) = task_metadata.get("code").and_then(|v| v.as_str())
+                                            && let Some(task_code_from_file) =
+                                                task_metadata.get("code").and_then(|v| v.as_str())
                                             && task_code_from_file == task_code
                                         {
                                             task_file = Some(task_path);

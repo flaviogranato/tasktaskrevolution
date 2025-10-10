@@ -3,10 +3,10 @@
 //! This module provides a concrete implementation of the FileSystemPort
 //! using the standard library file system operations.
 
-use crate::domain::ports::file_system::{FileSystemPort, FileMetadata, FilePermissions};
+use crate::domain::ports::file_system::{FileMetadata, FilePermissions, FileSystemPort};
 use crate::domain::shared::errors::{DomainError, DomainResult};
-use std::path::{Path, PathBuf};
 use std::fs;
+use std::path::{Path, PathBuf};
 
 /// Standard file system adapter
 pub struct StandardFileSystemAdapter;
@@ -95,9 +95,7 @@ impl FileSystemPort for StandardFileSystemAdapter {
             details: e.to_string(),
         })?;
 
-        let paths: Result<Vec<PathBuf>, _> = entries
-            .map(|entry| entry.map(|e| e.path()))
-            .collect();
+        let paths: Result<Vec<PathBuf>, _> = entries.map(|entry| entry.map(|e| e.path())).collect();
 
         paths.map_err(|e| DomainError::IoErrorWithPath {
             operation: "read directory entries".to_string(),
@@ -124,16 +122,12 @@ impl FileSystemPort for StandardFileSystemAdapter {
             is_file: metadata.is_file(),
             is_dir: metadata.is_dir(),
             created: metadata.created().ok().and_then(|t| {
-                chrono::DateTime::from_timestamp(
-                    t.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64,
-                    0,
-                ).map(|dt| dt.with_timezone(&chrono::Utc))
+                chrono::DateTime::from_timestamp(t.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0)
+                    .map(|dt| dt.with_timezone(&chrono::Utc))
             }),
             modified: metadata.modified().ok().and_then(|t| {
-                chrono::DateTime::from_timestamp(
-                    t.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64,
-                    0,
-                ).map(|dt| dt.with_timezone(&chrono::Utc))
+                chrono::DateTime::from_timestamp(t.duration_since(std::time::UNIX_EPOCH).ok()?.as_secs() as i64, 0)
+                    .map(|dt| dt.with_timezone(&chrono::Utc))
             }),
             permissions,
         })

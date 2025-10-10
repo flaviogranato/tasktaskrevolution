@@ -111,12 +111,13 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
             ResourceScope::Project => {
                 // Some resource types might be restricted to company scope
                 match params.resource_type.to_lowercase().as_str() {
-                    "manager" | "director" | "executive" => {
-                        Err(AppError::validation_error(
-                            "resource_scope",
-                            format!("Resource type '{}' should be company-scoped, not project-scoped", params.resource_type),
-                        ))
-                    }
+                    "manager" | "director" | "executive" => Err(AppError::validation_error(
+                        "resource_scope",
+                        format!(
+                            "Resource type '{}' should be company-scoped, not project-scoped",
+                            params.resource_type
+                        ),
+                    )),
                     _ => Ok(()),
                 }
             }
@@ -592,7 +593,7 @@ mod test {
 
         let result = use_case.execute(params);
         assert!(result.is_err());
-        
+
         if let Err(AppError::ValidationError { field, message }) = result {
             assert_eq!(field, "project_code");
             assert!(message.contains("must specify a project"));
@@ -621,7 +622,7 @@ mod test {
 
         let result = use_case.execute(params);
         assert!(result.is_err());
-        
+
         if let Err(AppError::ValidationError { field, message }) = result {
             assert_eq!(field, "resource_scope");
             assert!(message.contains("should be company-scoped"));

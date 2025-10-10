@@ -74,15 +74,18 @@ where
                             for period2 in vacations2 {
                                 if self.check_vacation_overlap(period1, period2) {
                                     results.push(
-                                        ValidationResult::warning("VACATION_OVERLAP".to_string(), "Vacation overlap detected".to_string())
-                                            .with_entity("Resource".to_string(), resource1.code().to_string())
-                                            .with_details(format!(
-                                                "Resource '{}' and '{}' have overlapping vacations between {} and {}",
-                                                resource1.name(),
-                                                resource2.name(),
-                                                period1.start_date.format("%d/%m/%Y"),
-                                                period1.end_date.format("%d/%m/%Y")
-                                            )),
+                                        ValidationResult::warning(
+                                            "VACATION_OVERLAP".to_string(),
+                                            "Vacation overlap detected".to_string(),
+                                        )
+                                        .with_entity("Resource".to_string(), resource1.code().to_string())
+                                        .with_details(format!(
+                                            "Resource '{}' and '{}' have overlapping vacations between {} and {}",
+                                            resource1.name(),
+                                            resource2.name(),
+                                            period1.start_date.format("%d/%m/%Y"),
+                                            period1.end_date.format("%d/%m/%Y")
+                                        )),
                                     );
                                 }
                             }
@@ -115,9 +118,12 @@ where
                 // Check if task has resources assigned
                 if assigned_resources.is_empty() {
                     results.push(
-                        ValidationResult::warning("TASK_NO_RESOURCES".to_string(), "Task has no assigned resources".to_string())
-                            .with_entity("Task".to_string(), task.code().to_string())
-                            .with_details("Task may not be completed without resource assignment".to_string()),
+                        ValidationResult::warning(
+                            "TASK_NO_RESOURCES".to_string(),
+                            "Task has no assigned resources".to_string(),
+                        )
+                        .with_entity("Task".to_string(), task.code().to_string())
+                        .with_details("Task may not be completed without resource assignment".to_string()),
                     );
                     continue;
                 }
@@ -141,9 +147,12 @@ where
             if let (Some(start_date), Some(end_date)) = (project.start_date(), project.end_date()) {
                 if start_date >= end_date {
                     results.push(
-                        ValidationResult::error("INVALID_PROJECT_TIMELINE".to_string(), "Invalid project timeline".to_string())
-                            .with_entity("Project".to_string(), project.code().to_string())
-                            .with_details("Project start date must be before end date".to_string()),
+                        ValidationResult::error(
+                            "INVALID_PROJECT_TIMELINE".to_string(),
+                            "Invalid project timeline".to_string(),
+                        )
+                        .with_entity("Project".to_string(), project.code().to_string())
+                        .with_details("Project start date must be before end date".to_string()),
                     );
                 }
 
@@ -153,16 +162,22 @@ where
                     let task_end = task.due_date();
                     if *task_start < start_date {
                         results.push(
-                            ValidationResult::error("TASK_STARTS_BEFORE_PROJECT".to_string(), "Task starts before project".to_string())
-                                .with_entity("Task".to_string(), task.code().to_string())
-                                .with_details("Task start date is before project start date".to_string()),
+                            ValidationResult::error(
+                                "TASK_STARTS_BEFORE_PROJECT".to_string(),
+                                "Task starts before project".to_string(),
+                            )
+                            .with_entity("Task".to_string(), task.code().to_string())
+                            .with_details("Task start date is before project start date".to_string()),
                         );
                     }
                     if *task_end > end_date {
                         results.push(
-                            ValidationResult::error("TASK_EXTENDS_BEYOND_PROJECT".to_string(), "Task extends beyond project".to_string())
-                                .with_entity("Task".to_string(), task.code().to_string())
-                                .with_details("Task due date is after project end date".to_string()),
+                            ValidationResult::error(
+                                "TASK_EXTENDS_BEYOND_PROJECT".to_string(),
+                                "Task extends beyond project".to_string(),
+                            )
+                            .with_entity("Task".to_string(), task.code().to_string())
+                            .with_details("Task due date is after project end date".to_string()),
                         );
                     }
                 }
@@ -242,7 +257,6 @@ where
 mod tests {
     use super::*;
     use crate::application::validate::types::{ValidationResult, ValidationSeverity};
-    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::domain::company_management::company::Company;
     use crate::domain::company_management::repository::CompanyRepository;
     use crate::domain::project_management::any_project::AnyProject;
@@ -250,6 +264,7 @@ mod tests {
     use crate::domain::resource_management::any_resource::AnyResource;
     use crate::domain::resource_management::repository::ResourceRepository;
     use crate::domain::resource_management::resource::Period;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::{DateTime, Local};
 
     // Mock repositories for testing
@@ -689,8 +704,8 @@ mod tests {
 
     #[test]
     fn test_validation_result_info_builder() {
-        let result =
-            ValidationResult::info("TEST_INFO".to_string(), "Test info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
+        let result = ValidationResult::info("TEST_INFO".to_string(), "Test info".to_string())
+            .with_entity("Task".to_string(), "TASK-001".to_string());
 
         assert_eq!(result.level, ValidationSeverity::Info);
         assert_eq!(result.message, "Test info");
@@ -735,8 +750,8 @@ mod tests {
         let resource_result = ValidationResult::warning("RESOURCE_WARNING".to_string(), "Resource warning".to_string())
             .with_entity("Resource".to_string(), "RES-001".to_string());
 
-        let task_result =
-            ValidationResult::info("TASK_INFO".to_string(), "Task info".to_string()).with_entity("Task".to_string(), "TASK-001".to_string());
+        let task_result = ValidationResult::info("TASK_INFO".to_string(), "Task info".to_string())
+            .with_entity("Task".to_string(), "TASK-001".to_string());
 
         assert_eq!(project_result.entity_type, Some("Project".to_string()));
         assert_eq!(resource_result.entity_type, Some("Resource".to_string()));

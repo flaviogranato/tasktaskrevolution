@@ -702,7 +702,7 @@ mod yaml_parsing_tests {
         "#;
 
         let manifest: TaskManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.api_version, "tasktaskrevolution.io/v1alpha1");
         assert_eq!(manifest.kind, "Task");
         assert_eq!(manifest.metadata.code, "TASK-001");
@@ -712,8 +712,14 @@ mod yaml_parsing_tests {
         assert_eq!(manifest.spec.assignee, "DEV-001");
         assert_eq!(manifest.spec.status, Status::Planned);
         assert_eq!(manifest.spec.priority, Priority::Medium);
-        assert_eq!(manifest.spec.estimated_start_date, Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap()));
-        assert_eq!(manifest.spec.estimated_end_date, Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap()));
+        assert_eq!(
+            manifest.spec.estimated_start_date,
+            Some(NaiveDate::from_ymd_opt(2024, 1, 1).unwrap())
+        );
+        assert_eq!(
+            manifest.spec.estimated_end_date,
+            Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap())
+        );
         assert_eq!(manifest.spec.dependencies, vec!["TASK-000"]);
         assert_eq!(manifest.spec.tags, vec!["development"]);
         assert_eq!(manifest.spec.effort.estimated_hours, 40.0);
@@ -724,11 +730,11 @@ mod yaml_parsing_tests {
     fn test_yaml_parsing_failure_invalid_syntax() {
         let yaml_str = "invalid: yaml: content: [";
         let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -749,11 +755,11 @@ mod yaml_parsing_tests {
         "#;
 
         let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -781,11 +787,11 @@ mod yaml_parsing_tests {
         "#;
 
         let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -813,11 +819,11 @@ mod yaml_parsing_tests {
         "#;
 
         let result: Result<TaskManifest, _> = serde_yaml::from_str(yaml_str);
-        
+
         assert!(result.is_err());
         let error = result.unwrap_err();
         let app_error: crate::application::errors::AppError = error.into();
-        
+
         let error_message = format!("{}", app_error);
         assert!(error_message.contains("Serialization error for format 'YAML'"));
     }
@@ -863,16 +869,25 @@ mod yaml_parsing_tests {
         "#;
 
         let manifest: TaskManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
-        assert_eq!(manifest.metadata.description, Some("A comprehensive test task with all fields".to_string()));
+
+        assert_eq!(
+            manifest.metadata.description,
+            Some("A comprehensive test task with all fields".to_string())
+        );
         assert_eq!(manifest.spec.status, Status::InProgress);
-        assert_eq!(manifest.spec.actual_end_date, Some(NaiveDate::from_ymd_opt(2024, 1, 14).unwrap()));
+        assert_eq!(
+            manifest.spec.actual_end_date,
+            Some(NaiveDate::from_ymd_opt(2024, 1, 14).unwrap())
+        );
         assert_eq!(manifest.spec.priority, Priority::High);
         assert_eq!(manifest.spec.tags, vec!["testing", "complex"]);
         assert_eq!(manifest.spec.dependencies, vec!["TASK-000", "TASK-002"]);
         assert_eq!(manifest.spec.effort.estimated_hours, 80.0);
         assert_eq!(manifest.spec.effort.actual_hours, Some(75.5));
-        assert_eq!(manifest.spec.acceptance_criteria, vec!["All tests pass", "Code review completed"]);
+        assert_eq!(
+            manifest.spec.acceptance_criteria,
+            vec!["All tests pass", "Code review completed"]
+        );
         assert_eq!(manifest.spec.comments.len(), 1);
     }
 
@@ -898,7 +913,7 @@ mod yaml_parsing_tests {
         "#;
 
         let manifest: TaskManifest = serde_yaml::from_str(yaml_str).unwrap();
-        
+
         assert_eq!(manifest.metadata.name, "Minimal Task");
         assert_eq!(manifest.spec.project_code, "PROJ-001");
         assert_eq!(manifest.spec.assignee, "DEV-001");

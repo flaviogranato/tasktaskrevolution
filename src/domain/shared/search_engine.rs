@@ -126,7 +126,8 @@ impl SearchEngine {
 
             // Buscar no arquivo
             if let Ok(matches) = self.search_in_file(file_path, &pattern, &query.options)
-                && !matches.is_empty() {
+                && !matches.is_empty()
+            {
                 let score = self.calculate_score(&matches, &query.pattern);
                 results.push(SearchResult {
                     file_path: file_path.to_path_buf(),
@@ -159,8 +160,7 @@ impl SearchEngine {
         pattern: &Regex,
         options: &SearchOptions,
     ) -> Result<Vec<SearchMatch>, SearchError> {
-        let content = fs::read_to_string(file_path)
-            .map_err(|e| SearchError::FileReadError(e.to_string()))?;
+        let content = fs::read_to_string(file_path).map_err(|e| SearchError::FileReadError(e.to_string()))?;
 
         let mut matches = Vec::new();
         let lines: Vec<&str> = content.lines().collect();
@@ -179,18 +179,16 @@ impl SearchEngine {
 
                 // Adicionar contexto se solicitado
                 let context_before = if options.context_lines > 0 && line_idx > 0 {
-                    Some(lines[line_idx.saturating_sub(options.context_lines)..line_idx]
-                        .join("\n"))
+                    Some(lines[line_idx.saturating_sub(options.context_lines)..line_idx].join("\n"))
                 } else {
                     None
                 };
 
                 let context_after = if options.context_lines > 0 && line_idx < lines.len() - 1 {
-                    Some(lines[line_idx + 1..=std::cmp::min(
-                        line_idx + options.context_lines,
-                        lines.len() - 1,
-                    )]
-                    .join("\n"))
+                    Some(
+                        lines[line_idx + 1..=std::cmp::min(line_idx + options.context_lines, lines.len() - 1)]
+                            .join("\n"),
+                    )
                 } else {
                     None
                 };
@@ -215,8 +213,7 @@ impl SearchEngine {
         file_path: &Path,
         filters: &HashMap<String, String>,
     ) -> Result<Vec<SearchMatch>, SearchError> {
-        let content = fs::read_to_string(file_path)
-            .map_err(|e| SearchError::FileReadError(e.to_string()))?;
+        let content = fs::read_to_string(file_path).map_err(|e| SearchError::FileReadError(e.to_string()))?;
 
         let mut matches = Vec::new();
 
@@ -224,7 +221,8 @@ impl SearchEngine {
         if let Some(frontmatter) = self.extract_frontmatter(&content) {
             for (key, value) in filters {
                 if let Some(field_value) = frontmatter.get(key)
-                    && field_value.contains(value) {
+                    && field_value.contains(value)
+                {
                     matches.push(SearchMatch {
                         line_number: 1, // Frontmatter está no início
                         line_content: format!("{}: {}", key, field_value),
@@ -266,8 +264,7 @@ impl SearchEngine {
             format!("(?{}){}", flags, regex_pattern)
         };
 
-        Regex::new(&final_pattern)
-            .map_err(|e| SearchError::RegexError(e.to_string()))
+        Regex::new(&final_pattern).map_err(|e| SearchError::RegexError(e.to_string()))
     }
 
     /// Detecta o tipo de arquivo baseado no caminho
@@ -388,7 +385,11 @@ mod tests {
         let engine = SearchEngine::new(temp_dir.path().to_path_buf());
 
         let test_file = temp_dir.path().join("test.txt");
-        fs::write(&test_file, "Line 1: test content\nLine 2: another test\nLine 3: no match").unwrap();
+        fs::write(
+            &test_file,
+            "Line 1: test content\nLine 2: another test\nLine 3: no match",
+        )
+        .unwrap();
 
         let options = SearchOptions::default();
         let pattern = engine.compile_pattern("test", &options).unwrap();
@@ -406,7 +407,7 @@ mod tests {
 
         let content = "---\nname: Test Project\nstatus: active\n---\nContent here";
         let frontmatter = engine.extract_frontmatter(content).unwrap();
-        
+
         assert_eq!(frontmatter.get("name"), Some(&"Test Project".to_string()));
         assert_eq!(frontmatter.get("status"), Some(&"active".to_string()));
     }

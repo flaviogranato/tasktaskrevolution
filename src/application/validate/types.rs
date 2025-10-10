@@ -139,10 +139,11 @@ impl From<&ValidationResult> for Finding {
             ValidationSeverity::Info => "info",
             ValidationSeverity::Warning => "warning",
             ValidationSeverity::Error => "error",
-        }.to_string();
+        }
+        .to_string();
 
         let path = result.path.clone().unwrap_or_else(|| "N/A".to_string());
-        
+
         let entity_ref = if let (Some(entity_type), Some(entity_code)) = (&result.entity_type, &result.entity_code) {
             format!("{}:{}", entity_type, entity_code)
         } else {
@@ -175,7 +176,10 @@ impl std::str::FromStr for OutputFormat {
             "json" => Ok(OutputFormat::Json),
             "table" => Ok(OutputFormat::Table),
             "csv" => Ok(OutputFormat::Csv),
-            _ => Err(format!("Unsupported format: {}. Supported formats: json, table, csv", s)),
+            _ => Err(format!(
+                "Unsupported format: {}. Supported formats: json, table, csv",
+                s
+            )),
         }
     }
 }

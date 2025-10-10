@@ -134,7 +134,9 @@ where
         let updated_resource = self.assign_resource_to_project_and_task(resource, project_code, task_assignment)?;
 
         // 8. Save the updated task using hierarchical structure
-        let saved_task = self.task_repository.save_in_hierarchy(updated_task, project.company_code(), project_code)?;
+        let saved_task = self
+            .task_repository
+            .save_in_hierarchy(updated_task, project.company_code(), project_code)?;
 
         // 9. Save the updated resource using save_in_hierarchy
         self.resource_repository
@@ -150,7 +152,8 @@ where
                 // Check if resource is already assigned to another task
                 // and if it has capacity for more assignments
                 if let Some(ref wip_limits) = res.wip_limits
-                    && wip_limits.enabled {
+                    && wip_limits.enabled
+                {
                     let current_active_tasks = res.get_active_task_count();
                     return current_active_tasks < wip_limits.max_concurrent_tasks;
                 }
@@ -287,8 +290,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
     use crate::domain::shared::errors::{DomainError, DomainResult};
+    use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
     use chrono::NaiveDate;
     use std::{cell::RefCell, collections::HashMap};
 

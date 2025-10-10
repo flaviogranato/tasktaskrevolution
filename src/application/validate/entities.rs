@@ -65,13 +65,16 @@ where
             let ref_company = project.company_code();
             if !company_codes.contains(ref_company) {
                 results.push(
-                    ValidationResult::error("PROJECT_INVALID_COMPANY".to_string(), "Project references non-existent company".to_string())
-                        .with_entity("Project".to_string(), project.code().to_string())
-                        .with_details(format!(
-                            "Project '{}' references company '{}' which does not exist",
-                            project.code(),
-                            ref_company
-                        )),
+                    ValidationResult::error(
+                        "PROJECT_INVALID_COMPANY".to_string(),
+                        "Project references non-existent company".to_string(),
+                    )
+                    .with_entity("Project".to_string(), project.code().to_string())
+                    .with_details(format!(
+                        "Project '{}' references company '{}' which does not exist",
+                        project.code(),
+                        ref_company
+                    )),
                 );
             }
         }
@@ -94,13 +97,16 @@ where
                 for resource_code in task.assigned_resources() {
                     if !resource_codes.contains(&resource_code.as_str()) {
                         results.push(
-                            ValidationResult::error("TASK_INVALID_RESOURCE".to_string(), "Task references non-existent resource".to_string())
-                                .with_entity("Task".to_string(), task.code().to_string())
-                                .with_details(format!(
-                                    "Task '{}' references resource '{}' which does not exist",
-                                    task.code(),
-                                    resource_code
-                                )),
+                            ValidationResult::error(
+                                "TASK_INVALID_RESOURCE".to_string(),
+                                "Task references non-existent resource".to_string(),
+                            )
+                            .with_entity("Task".to_string(), task.code().to_string())
+                            .with_details(format!(
+                                "Task '{}' references resource '{}' which does not exist",
+                                task.code(),
+                                resource_code
+                            )),
                         );
                     }
                 }
@@ -126,9 +132,12 @@ where
                 && let Some(explanation) = project_completeness_spec.explain_why_not_satisfied(project)
             {
                 results.push(
-                    ValidationResult::warning("PROJECT_INCOMPLETE".to_string(), "Project may be incomplete".to_string())
-                        .with_entity("Project".to_string(), project.code().to_string())
-                        .with_details(explanation),
+                    ValidationResult::warning(
+                        "PROJECT_INCOMPLETE".to_string(),
+                        "Project may be incomplete".to_string(),
+                    )
+                    .with_entity("Project".to_string(), project.code().to_string())
+                    .with_details(explanation),
                 );
             }
         }

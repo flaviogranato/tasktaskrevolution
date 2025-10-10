@@ -12,7 +12,7 @@ fn main() {
         Err(e) => {
             // Error - print to stderr and exit with appropriate code
             eprintln!("Error: {}", e);
-            
+
             // Try to determine appropriate exit code based on error type
             let exit_code = if e.to_string().contains("validation") {
                 task_task_revolution::interface::cli::exit_codes::CliError::Validation
@@ -27,7 +27,7 @@ fn main() {
             } else {
                 task_task_revolution::interface::cli::exit_codes::CliError::Internal
             };
-            
+
             exit_code.exit();
         }
     }

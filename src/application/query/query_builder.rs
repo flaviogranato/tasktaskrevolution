@@ -1,4 +1,6 @@
-use crate::domain::shared::query_parser::{AggregationType, Query, QueryExpression, QueryValue, SortOption, PaginationOptions};
+use crate::domain::shared::query_parser::{
+    AggregationType, PaginationOptions, Query, QueryExpression, QueryValue, SortOption,
+};
 
 /// Builder para construção de queries de forma fluente
 pub struct QueryBuilder {
@@ -258,7 +260,10 @@ mod tests {
         // Verifica se a estrutura OR foi criada corretamente
         match &query.expression {
             QueryExpression::Logical { operator, .. } => {
-                assert!(matches!(operator, crate::domain::shared::query_parser::LogicalOperator::Or));
+                assert!(matches!(
+                    operator,
+                    crate::domain::shared::query_parser::LogicalOperator::Or
+                ));
             }
             _ => panic!("Expected Logical expression with OR operator"),
         }
@@ -287,15 +292,16 @@ mod tests {
     #[test]
     fn test_query_builder_date_filters() {
         let date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
-        let query = QueryBuilder::start_date_after(date)
-            .build()
-            .unwrap();
+        let query = QueryBuilder::start_date_after(date).build().unwrap();
 
         // Verifica se a condição de data foi adicionada
         match &query.expression {
             QueryExpression::Condition(condition) => {
                 assert_eq!(condition.field, "start_date");
-                assert!(matches!(condition.operator, crate::domain::shared::query_parser::ComparisonOperator::GreaterThan));
+                assert!(matches!(
+                    condition.operator,
+                    crate::domain::shared::query_parser::ComparisonOperator::GreaterThan
+                ));
             }
             _ => panic!("Expected condition expression"),
         }

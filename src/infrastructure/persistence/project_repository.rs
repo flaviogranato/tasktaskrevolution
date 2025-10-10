@@ -61,10 +61,7 @@ impl FileProjectRepository {
 
     /// Gets the path to a company's projects directory
     fn get_company_projects_path(&self, company_code: &str) -> PathBuf {
-        self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("projects")
+        self.base_path.join("companies").join(company_code).join("projects")
     }
 
     /// Loads a single project from a specific project file path.
@@ -150,7 +147,12 @@ impl FileProjectRepository {
     }
 
     /// Save individual task files for a project in the new hierarchy
-    fn save_tasks_for_project_in_hierarchy(&self, project: &AnyProject, company_code: &str, project_code: &str) -> DomainResult<()> {
+    fn save_tasks_for_project_in_hierarchy(
+        &self,
+        project: &AnyProject,
+        company_code: &str,
+        project_code: &str,
+    ) -> DomainResult<()> {
         let project_dir = self.get_company_projects_path(company_code).join(project_code);
         let tasks_dir = project_dir.join("tasks");
 
@@ -243,17 +245,18 @@ impl ProjectRepository for FileProjectRepository {
                 if company_path.is_dir() {
                     let projects_dir = company_path.join("projects");
                     if projects_dir.exists()
-                        && let Ok(project_entries) = std::fs::read_dir(&projects_dir) {
-                            for project_entry in project_entries.flatten() {
-                                let project_path = project_entry.path();
-                                if project_path.is_dir() {
-                                    let project_file = project_path.join("project.yaml");
-                                    if project_file.exists() {
-                                        return self.load_from_path(&project_file);
-                                    }
+                        && let Ok(project_entries) = std::fs::read_dir(&projects_dir)
+                    {
+                        for project_entry in project_entries.flatten() {
+                            let project_path = project_entry.path();
+                            if project_path.is_dir() {
+                                let project_file = project_path.join("project.yaml");
+                                if project_file.exists() {
+                                    return self.load_from_path(&project_file);
                                 }
                             }
                         }
+                    }
                 }
             }
         }

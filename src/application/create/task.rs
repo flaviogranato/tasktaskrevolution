@@ -97,14 +97,14 @@ where
                         .iter()
                         .map(|c| format!("{}: {}", c.resource_code, c.message))
                         .collect();
-                    
-                return Err(AppError::validation_error(
-                    "resource_conflicts",
-                    format!("Resource conflicts detected: {}", conflict_messages.join("; ")),
-                ));
+
+                    return Err(AppError::validation_error(
+                        "resource_conflicts",
+                        format!("Resource conflicts detected: {}", conflict_messages.join("; ")),
+                    ));
                 }
             }
-            
+
             println!("Resources assigned: {:?}", assigned_resources);
         }
 
@@ -177,9 +177,13 @@ where
 mod test {
     use super::*;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
-    use crate::domain::task_management::{AnyTask, repository::TaskRepository};
+    use crate::domain::resource_management::{
+        any_resource::AnyResource,
+        resource::{Resource, ResourceScope},
+        state::Available,
+    };
     use crate::domain::shared::errors::{DomainError, DomainResult};
-    use crate::domain::resource_management::{any_resource::AnyResource, resource::{Resource, ResourceScope}, state::Available};
+    use crate::domain::task_management::{AnyTask, repository::TaskRepository};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
@@ -285,7 +289,7 @@ mod test {
     impl MockResourceRepository {
         fn new() -> Self {
             let mut resources = HashMap::new();
-            
+
             // Add test resources
             let dev1 = Resource::<Available>::new(
                 "dev1".to_string(),
@@ -301,7 +305,7 @@ mod test {
             );
             let any_dev1 = AnyResource::Available(dev1);
             resources.insert(any_dev1.id().to_string(), any_dev1);
-            
+
             let dev2 = Resource::<Available>::new(
                 "dev2".to_string(),
                 "Developer 2".to_string(),
@@ -316,7 +320,7 @@ mod test {
             );
             let any_dev2 = AnyResource::Available(dev2);
             resources.insert(any_dev2.id().to_string(), any_dev2);
-            
+
             let dev3 = Resource::<Available>::new(
                 "dev3".to_string(),
                 "Developer 3".to_string(),
@@ -331,7 +335,7 @@ mod test {
             );
             let any_dev3 = AnyResource::Available(dev3);
             resources.insert(any_dev3.id().to_string(), any_dev3);
-            
+
             Self {
                 resources: Rc::new(RefCell::new(resources)),
             }
@@ -339,9 +343,14 @@ mod test {
     }
 
     impl ResourceRepository for MockResourceRepository {
-        fn save(&self, resource: crate::domain::resource_management::any_resource::AnyResource) -> DomainResult<crate::domain::resource_management::any_resource::AnyResource> {
+        fn save(
+            &self,
+            resource: crate::domain::resource_management::any_resource::AnyResource,
+        ) -> DomainResult<crate::domain::resource_management::any_resource::AnyResource> {
             let resource_id = resource.id().to_string();
-            self.resources.borrow_mut().insert(resource_id.clone(), resource.clone());
+            self.resources
+                .borrow_mut()
+                .insert(resource_id.clone(), resource.clone());
             Ok(resource)
         }
 
@@ -358,15 +367,35 @@ mod test {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_by_company(&self, _company_code: &str) -> DomainResult<Vec<crate::domain::resource_management::any_resource::AnyResource>> {
+        fn find_by_company(
+            &self,
+            _company_code: &str,
+        ) -> DomainResult<Vec<crate::domain::resource_management::any_resource::AnyResource>> {
             Ok(self.resources.borrow().values().cloned().collect())
         }
 
-        fn find_all_with_context(&self) -> DomainResult<Vec<(crate::domain::resource_management::any_resource::AnyResource, String, Vec<String>)>> {
-            Ok(self.resources.borrow().values().cloned().map(|r| (r, "company".to_string(), vec![])).collect())
+        fn find_all_with_context(
+            &self,
+        ) -> DomainResult<
+            Vec<(
+                crate::domain::resource_management::any_resource::AnyResource,
+                String,
+                Vec<String>,
+            )>,
+        > {
+            Ok(self
+                .resources
+                .borrow()
+                .values()
+                .cloned()
+                .map(|r| (r, "company".to_string(), vec![]))
+                .collect())
         }
 
-        fn find_by_code(&self, code: &str) -> DomainResult<Option<crate::domain::resource_management::any_resource::AnyResource>> {
+        fn find_by_code(
+            &self,
+            code: &str,
+        ) -> DomainResult<Option<crate::domain::resource_management::any_resource::AnyResource>> {
             Ok(self.resources.borrow().values().find(|r| r.code() == code).cloned())
         }
 
@@ -391,7 +420,11 @@ mod test {
             Err(DomainError::validation_error("resource", "Not implemented in mock"))
         }
 
-        fn check_if_layoff_period(&self, _start_date: &chrono::DateTime<chrono::Local>, _end_date: &chrono::DateTime<chrono::Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &chrono::DateTime<chrono::Local>,
+            _end_date: &chrono::DateTime<chrono::Local>,
+        ) -> bool {
             false
         }
 
@@ -401,7 +434,10 @@ mod test {
     }
 
     impl ResourceRepositoryWithId for MockResourceRepository {
-        fn find_by_id(&self, id: &str) -> DomainResult<Option<crate::domain::resource_management::any_resource::AnyResource>> {
+        fn find_by_id(
+            &self,
+            id: &str,
+        ) -> DomainResult<Option<crate::domain::resource_management::any_resource::AnyResource>> {
             Ok(self.resources.borrow().get(id).cloned())
         }
     }
@@ -583,10 +619,7 @@ mod test {
 
         assert!(result.is_err());
         if let Err(e) = result {
-            assert!(
-                e.to_string()
-                    .contains("Start date cannot be after due date")
-            );
+            assert!(e.to_string().contains("Start date cannot be after due date"));
         }
     }
 
@@ -614,8 +647,7 @@ mod test {
         };
         let result = use_case.execute(args);
 
-        if let Err(_e) = &result {
-        }
+        if let Err(_e) = &result {}
 
         assert!(result.is_ok(), "Expected Ok, but got Err: {:?}", result);
     }

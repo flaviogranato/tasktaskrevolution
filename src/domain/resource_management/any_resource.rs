@@ -6,9 +6,9 @@ use super::{
     resource::{Period, Resource, TimeOffEntry},
     state::{Assigned, Available, Inactive, ResourceState},
 };
+use chrono::Datelike;
 use serde::Serialize;
 use uuid7::Uuid;
-use chrono::Datelike;
 
 /// An enum to represent a Resource in any of its possible states.
 #[derive(Debug, Clone, Serialize)]
@@ -163,9 +163,9 @@ impl AnyResource {
 
     pub fn is_holiday(&self, date: chrono::NaiveDate) -> bool {
         if let Some(vacations) = self.vacations() {
-            vacations.iter().any(|period| {
-                date >= period.start_date.date_naive() && date <= period.end_date.date_naive()
-            })
+            vacations
+                .iter()
+                .any(|period| date >= period.start_date.date_naive() && date <= period.end_date.date_naive())
         } else {
             false
         }
@@ -178,13 +178,28 @@ impl AnyResource {
 
     pub fn is_working_day(&self, date: chrono::NaiveDate) -> bool {
         // Simple implementation: Monday to Friday are working days
-        matches!(date.weekday(), chrono::Weekday::Mon | chrono::Weekday::Tue | chrono::Weekday::Wed | chrono::Weekday::Thu | chrono::Weekday::Fri)
+        matches!(
+            date.weekday(),
+            chrono::Weekday::Mon
+                | chrono::Weekday::Tue
+                | chrono::Weekday::Wed
+                | chrono::Weekday::Thu
+                | chrono::Weekday::Fri
+        )
     }
 
     pub fn max_allocation_percentage(&self) -> u32 {
         match self {
-            AnyResource::Available(r) => r.wip_limits.as_ref().map(|w| w.max_allocation_percentage as u32).unwrap_or(100),
-            AnyResource::Assigned(r) => r.wip_limits.as_ref().map(|w| w.max_allocation_percentage as u32).unwrap_or(100),
+            AnyResource::Available(r) => r
+                .wip_limits
+                .as_ref()
+                .map(|w| w.max_allocation_percentage as u32)
+                .unwrap_or(100),
+            AnyResource::Assigned(r) => r
+                .wip_limits
+                .as_ref()
+                .map(|w| w.max_allocation_percentage as u32)
+                .unwrap_or(100),
             AnyResource::Inactive(_) => 0,
         }
     }
@@ -192,11 +207,13 @@ impl AnyResource {
     fn check_resource_availability<S: ResourceState>(&self, resource: &Resource<S>, date: chrono::NaiveDate) -> bool {
         // Check if resource is within active period
         if let Some(start_date) = resource.start_date
-            && date < start_date {
+            && date < start_date
+        {
             return false;
         }
         if let Some(end_date) = resource.end_date
-            && date > end_date {
+            && date > end_date
+        {
             return false;
         }
 

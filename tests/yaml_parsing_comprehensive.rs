@@ -277,17 +277,17 @@ spec:
 
     for (yaml_content, expected_kind) in test_cases {
         let parser = YamlParser::new(yaml_content).expect("Should parse valid YAML");
-        
+
         // Verificar campos obrigatórios
         assert!(parser.has_field("apiVersion"), "Missing apiVersion field");
         assert!(parser.has_field("kind"), "Missing kind field");
         assert!(parser.has_field("metadata"), "Missing metadata field");
         assert!(parser.has_field("spec"), "Missing spec field");
-        
+
         // Verificar valores específicos
         assert!(parser.field_equals("apiVersion", "tasktaskrevolution.io/v1alpha1"));
         assert!(parser.field_equals("kind", expected_kind));
-        
+
         // Verificar campos de metadata
         assert!(parser.has_field("metadata.id"));
         assert!(parser.has_field("metadata.code"));
@@ -295,12 +295,12 @@ spec:
         assert!(parser.has_field("metadata.createdAt"));
         assert!(parser.has_field("metadata.updatedAt"));
         assert!(parser.has_field("metadata.createdBy"));
-        
+
         // Verificar campos opcionais (labels, annotations, namespace)
         assert!(parser.has_field("metadata.labels"));
         assert!(parser.has_field("metadata.annotations"));
         assert!(parser.has_field("metadata.namespace"));
-        
+
         // Verificar que os campos não estão vazios
         assert!(parser.field_not_empty("metadata.id"));
         assert!(parser.field_not_empty("metadata.code"));
@@ -312,10 +312,7 @@ spec:
 fn test_yaml_parsing_failure_scenarios() {
     let failure_cases = vec![
         // Sintaxe YAML inválida
-        (
-            "invalid: yaml: content: [",
-            "Invalid YAML syntax",
-        ),
+        ("invalid: yaml: content: [", "Invalid YAML syntax"),
         // Campo obrigatório ausente
         (
             r#"
@@ -407,7 +404,7 @@ spec:
 
     for (yaml_content, expected_error_type) in failure_cases {
         let result = YamlParser::new(yaml_content);
-        
+
         match result {
             Ok(_) => {
                 // Se o parsing foi bem-sucedido, verificar se há problemas de validação
@@ -521,13 +518,13 @@ spec:
 
     for (yaml_content, case_type) in edge_cases {
         let parser = YamlParser::new(yaml_content).unwrap_or_else(|_| panic!("Should parse YAML with {}", case_type));
-        
+
         // Verificar que o YAML foi parseado corretamente
         assert!(parser.has_field("apiVersion"));
         assert!(parser.has_field("kind"));
         assert!(parser.has_field("metadata"));
         assert!(parser.has_field("spec"));
-        
+
         match case_type {
             "Empty fields" => {
                 // Verificar que campos vazios são tratados corretamente
@@ -578,19 +575,25 @@ spec:
 {}
 "#,
         // Adicionar muitos campos para testar performance
-        (0..1000).map(|i| format!("  field{}: value{}\n", i, i)).collect::<String>()
+        (0..1000)
+            .map(|i| format!("  field{}: value{}\n", i, i))
+            .collect::<String>()
     );
 
     let start = std::time::Instant::now();
     let parser = YamlParser::new(&large_yaml).expect("Should parse large YAML");
     let duration = start.elapsed();
-    
+
     // Verificar que o parsing foi bem-sucedido
     assert!(parser.has_field("apiVersion"));
     assert!(parser.has_field("kind"));
-    
+
     // Verificar que o parsing foi rápido (menos de 1 segundo)
-    assert!(duration.as_millis() < 1000, "YAML parsing took too long: {:?}", duration);
+    assert!(
+        duration.as_millis() < 1000,
+        "YAML parsing took too long: {:?}",
+        duration
+    );
 }
 
 #[test]
@@ -618,7 +621,7 @@ spec:
 "#;
 
     let parser = YamlParser::new(unicode_yaml).expect("Should parse Unicode YAML");
-    
+
     // Verificar que campos Unicode foram parseados corretamente
     assert!(parser.field_equals("metadata.code", "TECH-ÇORP"));
     assert!(parser.field_equals("metadata.name", "Tecnologia & Cia. Ltda."));

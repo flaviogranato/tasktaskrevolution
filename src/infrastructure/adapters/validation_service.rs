@@ -4,8 +4,8 @@
 //! for validating domain data.
 
 use crate::domain::ports::validation_service::{
-    ValidationServicePort, ValidationResult, ValidationRule, ValidationRuleType, ValidationSeverity,
-    CustomValidationRule,
+    CustomValidationRule, ValidationResult, ValidationRule, ValidationRuleType, ValidationServicePort,
+    ValidationSeverity,
 };
 use crate::domain::shared::errors::{DomainError, DomainResult};
 use std::collections::HashMap;
@@ -55,9 +55,7 @@ impl ValidationServicePort for StandardValidationServiceAdapter {
                     value.starts_with("http://") || value.starts_with("https://")
                 }
                 ValidationRuleType::Numeric => value.parse::<f64>().is_ok(),
-                ValidationRuleType::Date => {
-                    chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").is_ok()
-                }
+                ValidationRuleType::Date => chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").is_ok(),
                 ValidationRuleType::DateTime => {
                     chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%d %H:%M:%S").is_ok()
                 }
@@ -88,7 +86,11 @@ impl ValidationServicePort for StandardValidationServiceAdapter {
         })
     }
 
-    fn validate_fields(&self, data: &HashMap<String, String>, rules: &[ValidationRule]) -> DomainResult<Vec<ValidationResult>> {
+    fn validate_fields(
+        &self,
+        data: &HashMap<String, String>,
+        rules: &[ValidationRule],
+    ) -> DomainResult<Vec<ValidationResult>> {
         let mut results = Vec::new();
 
         for (field, value) in data {
@@ -99,7 +101,11 @@ impl ValidationServicePort for StandardValidationServiceAdapter {
         Ok(results)
     }
 
-    fn validate_entity(&self, _entity_type: &str, data: &HashMap<String, String>) -> DomainResult<Vec<ValidationResult>> {
+    fn validate_entity(
+        &self,
+        _entity_type: &str,
+        data: &HashMap<String, String>,
+    ) -> DomainResult<Vec<ValidationResult>> {
         // In a real implementation, this would load entity-specific rules
         // For now, we'll just validate basic fields
         let mut results = Vec::new();

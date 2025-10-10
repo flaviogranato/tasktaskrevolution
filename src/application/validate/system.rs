@@ -76,17 +76,16 @@ where
         );
         use_case.execute()
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::application::validate::types::{ValidationResult, ValidationSeverity};
-    use crate::domain::shared::errors::DomainResult;
     use crate::domain::company_management::repository::CompanyRepository;
     use crate::domain::project_management::repository::ProjectRepository;
     use crate::domain::resource_management::repository::ResourceRepository;
+    use crate::domain::shared::errors::DomainResult;
     use chrono::{DateTime, Local};
 
     // Mock repositories for testing
@@ -304,10 +303,7 @@ mod tests {
             .iter()
             .filter(|r| r.level == ValidationSeverity::Warning)
             .collect();
-        let info: Vec<_> = results
-            .iter()
-            .filter(|r| r.level == ValidationSeverity::Info)
-            .collect();
+        let info: Vec<_> = results.iter().filter(|r| r.level == ValidationSeverity::Info).collect();
 
         // Verify categorization
         assert_eq!(errors.len() + warnings.len() + info.len(), results.len());

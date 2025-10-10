@@ -54,10 +54,15 @@ pub trait ValidationServicePort: Send + Sync {
     fn validate_field(&self, field: &str, value: &str, rules: &[ValidationRule]) -> DomainResult<ValidationResult>;
 
     /// Validate multiple fields
-    fn validate_fields(&self, data: &HashMap<String, String>, rules: &[ValidationRule]) -> DomainResult<Vec<ValidationResult>>;
+    fn validate_fields(
+        &self,
+        data: &HashMap<String, String>,
+        rules: &[ValidationRule],
+    ) -> DomainResult<Vec<ValidationResult>>;
 
     /// Validate an entity
-    fn validate_entity(&self, entity_type: &str, data: &HashMap<String, String>) -> DomainResult<Vec<ValidationResult>>;
+    fn validate_entity(&self, entity_type: &str, data: &HashMap<String, String>)
+    -> DomainResult<Vec<ValidationResult>>;
 
     /// Check if validation is available
     fn is_available(&self) -> bool;

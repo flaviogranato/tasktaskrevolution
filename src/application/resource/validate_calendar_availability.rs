@@ -35,11 +35,11 @@ pub struct AvailabilityConflict {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AvailabilityConflictType {
-    Vacation,           // Resource is on vacation
-    Holiday,           // Company holiday
-    NonWorkingDay,     // Weekend or non-working day
-    Leave,             // Personal leave
-    OverAllocation,    // Resource is over-allocated
+    Vacation,       // Resource is on vacation
+    Holiday,        // Company holiday
+    NonWorkingDay,  // Weekend or non-working day
+    Leave,          // Personal leave
+    OverAllocation, // Resource is over-allocated
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -51,10 +51,7 @@ pub enum ConflictSeverity {
 }
 
 impl ValidateCalendarAvailabilityUseCase {
-    pub fn new(
-        resource_repository: Box<dyn ResourceRepository>,
-        code_resolver: Box<dyn CodeResolverTrait>,
-    ) -> Self {
+    pub fn new(resource_repository: Box<dyn ResourceRepository>, code_resolver: Box<dyn CodeResolverTrait>) -> Self {
         Self {
             resource_repository,
             code_resolver,
@@ -90,7 +87,7 @@ impl ValidateCalendarAvailabilityUseCase {
                 working_days.push(date);
             } else {
                 non_working_days.push(date);
-                
+
                 // Determine the specific conflict type
                 let conflict = self.determine_conflict_type(&resource, date);
                 conflicts.push(conflict);
@@ -118,11 +115,7 @@ impl ValidateCalendarAvailabilityUseCase {
         let mut results = HashMap::new();
 
         for resource_code in resource_codes {
-            let result = self.validate_resource_availability(
-                resource_code,
-                start_date,
-                end_date,
-            )?;
+            let result = self.validate_resource_availability(resource_code, start_date, end_date)?;
             results.insert(resource_code.clone(), result);
         }
 
@@ -152,11 +145,7 @@ impl ValidateCalendarAvailabilityUseCase {
     }
 
     /// Check if a resource is available on a specific date
-    pub fn is_available_on_date(
-        &self,
-        resource_code: &str,
-        date: NaiveDate,
-    ) -> Result<bool, AppError> {
+    pub fn is_available_on_date(&self, resource_code: &str, date: NaiveDate) -> Result<bool, AppError> {
         // Resolve resource code to ID
         let _resource_id = self
             .code_resolver
@@ -194,11 +183,7 @@ impl ValidateCalendarAvailabilityUseCase {
             return AvailabilityConflict {
                 conflict_type: AvailabilityConflictType::Leave,
                 date,
-                message: format!(
-                    "Resource {} is on leave on {}",
-                    resource.code(),
-                    date
-                ),
+                message: format!("Resource {} is on leave on {}", resource.code(), date),
                 severity: ConflictSeverity::High,
             };
         }
@@ -216,7 +201,6 @@ impl ValidateCalendarAvailabilityUseCase {
                 severity: ConflictSeverity::Medium,
             };
         }
-
 
         // Default case - should not happen if is_available_on_date is working correctly
         AvailabilityConflict {
@@ -259,7 +243,9 @@ mod tests {
     impl ResourceRepository for MockResourceRepository {
         fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             let resource_id = resource.id().to_string();
-            self.resources.borrow_mut().insert(resource_id.clone(), resource.clone());
+            self.resources
+                .borrow_mut()
+                .insert(resource_id.clone(), resource.clone());
             Ok(resource)
         }
 
@@ -281,7 +267,13 @@ mod tests {
         }
 
         fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
-            Ok(self.resources.borrow().values().cloned().map(|r| (r, "company".to_string(), vec![])).collect())
+            Ok(self
+                .resources
+                .borrow()
+                .values()
+                .cloned()
+                .map(|r| (r, "company".to_string(), vec![]))
+                .collect())
         }
 
         fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
@@ -309,7 +301,11 @@ mod tests {
             Err(DomainError::validation_error("resource", "Not implemented in mock"))
         }
 
-        fn check_if_layoff_period(&self, _start_date: &chrono::DateTime<chrono::Local>, _end_date: &chrono::DateTime<chrono::Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &chrono::DateTime<chrono::Local>,
+            _end_date: &chrono::DateTime<chrono::Local>,
+        ) -> bool {
             false
         }
 
@@ -336,7 +332,9 @@ mod tests {
         }
 
         fn add_resource(&self, code: &str, id: &str) {
-            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+            self.resource_codes
+                .borrow_mut()
+                .insert(code.to_string(), id.to_string());
         }
     }
 
@@ -396,7 +394,6 @@ mod tests {
                 "Not implemented in mock",
             )))
         }
-
     }
 
     fn create_test_resource(code: &str) -> AnyResource {
@@ -424,10 +421,7 @@ mod tests {
         resource_repo.add_resource(resource.clone());
         code_resolver.add_resource("DEV-001", &resource.id().to_string());
 
-        let use_case = ValidateCalendarAvailabilityUseCase::new(
-            Box::new(resource_repo),
-            Box::new(code_resolver),
-        );
+        let use_case = ValidateCalendarAvailabilityUseCase::new(Box::new(resource_repo), Box::new(code_resolver));
 
         // Use only weekdays to avoid weekend conflicts
         let start_date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(); // Wednesday
@@ -451,14 +445,11 @@ mod tests {
         resource_repo.add_resource(resource.clone());
         code_resolver.add_resource("DEV-001", &resource.id().to_string());
 
-        let use_case = ValidateCalendarAvailabilityUseCase::new(
-            Box::new(resource_repo),
-            Box::new(code_resolver),
-        );
+        let use_case = ValidateCalendarAvailabilityUseCase::new(Box::new(resource_repo), Box::new(code_resolver));
 
         // Test with a weekend date
         let start_date = NaiveDate::from_ymd_opt(2025, 1, 4).unwrap(); // Saturday
-        let end_date = NaiveDate::from_ymd_opt(2025, 1, 5).unwrap();   // Sunday
+        let end_date = NaiveDate::from_ymd_opt(2025, 1, 5).unwrap(); // Sunday
 
         let result = use_case
             .validate_resource_availability("DEV-001", start_date, end_date)
@@ -478,16 +469,11 @@ mod tests {
         resource_repo.add_resource(resource.clone());
         code_resolver.add_resource("DEV-001", &resource.id().to_string());
 
-        let use_case = ValidateCalendarAvailabilityUseCase::new(
-            Box::new(resource_repo),
-            Box::new(code_resolver),
-        );
+        let use_case = ValidateCalendarAvailabilityUseCase::new(Box::new(resource_repo), Box::new(code_resolver));
 
         // Test with a weekday
         let weekday = NaiveDate::from_ymd_opt(2025, 1, 6).unwrap(); // Monday
-        let is_available = use_case
-            .is_available_on_date("DEV-001", weekday)
-            .unwrap();
+        let is_available = use_case.is_available_on_date("DEV-001", weekday).unwrap();
 
         assert!(is_available);
     }

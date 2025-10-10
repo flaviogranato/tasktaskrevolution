@@ -11,11 +11,7 @@ fn test_main_help() {
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     // Filter out compilation warnings and focus on the help output
-    let help_output = if stdout.contains("Usage: ttr") {
-        stdout
-    } else {
-        stderr
-    };
+    let help_output = if stdout.contains("Usage: ttr") { stdout } else { stderr };
 
     insta::assert_snapshot!(help_output);
 }

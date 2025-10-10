@@ -31,7 +31,10 @@ impl std::str::FromStr for EntityType {
             "project" => Ok(EntityType::Project),
             "task" => Ok(EntityType::Task),
             "resource" => Ok(EntityType::Resource),
-            _ => Err(AppError::validation_error("entity_type", format!("Invalid entity type: {}", s))),
+            _ => Err(AppError::validation_error(
+                "entity_type",
+                format!("Invalid entity type: {}", s),
+            )),
         }
     }
 }
@@ -67,21 +70,20 @@ impl QueryExecutor {
 
     /// Executa query em projetos
     fn execute_project_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
-        let projects = self.project_repository.find_all()
-            .map_err(AppError::from)?;
-        
-        let result = QueryEngine::execute(&query, projects)
-            .map_err(|e| AppError::ValidationError {
-                field: "query".to_string(),
-                message: format!("Query execution error: {:?}", e),
-            })?;
-        
+        let projects = self.project_repository.find_all().map_err(AppError::from)?;
+
+        let result = QueryEngine::execute(&query, projects).map_err(|e| AppError::ValidationError {
+            field: "query".to_string(),
+            message: format!("Query execution error: {:?}", e),
+        })?;
+
         // Converter resultado para QueryValue
-        let items: Vec<QueryValue> = result.items
+        let items: Vec<QueryValue> = result
+            .items
             .into_iter()
             .map(|p| QueryValue::String(serde_json::to_string(&p).unwrap_or_default()))
             .collect();
-        
+
         Ok(QueryResult {
             items,
             total_count: result.total_count,
@@ -92,21 +94,20 @@ impl QueryExecutor {
 
     /// Executa query em tarefas
     fn execute_task_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
-        let tasks = self.task_repository.find_all()
-            .map_err(AppError::from)?;
-        
-        let result = QueryEngine::execute(&query, tasks)
-            .map_err(|e| AppError::ValidationError {
-                field: "query".to_string(),
-                message: format!("Query execution error: {:?}", e),
-            })?;
-        
+        let tasks = self.task_repository.find_all().map_err(AppError::from)?;
+
+        let result = QueryEngine::execute(&query, tasks).map_err(|e| AppError::ValidationError {
+            field: "query".to_string(),
+            message: format!("Query execution error: {:?}", e),
+        })?;
+
         // Converter resultado para QueryValue
-        let items: Vec<QueryValue> = result.items
+        let items: Vec<QueryValue> = result
+            .items
             .into_iter()
             .map(|t| QueryValue::String(serde_json::to_string(&t).unwrap_or_default()))
             .collect();
-        
+
         Ok(QueryResult {
             items,
             total_count: result.total_count,
@@ -117,21 +118,20 @@ impl QueryExecutor {
 
     /// Executa query em recursos
     fn execute_resource_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
-        let resources = self.resource_repository.find_all()
-            .map_err(AppError::from)?;
-        
-        let result = QueryEngine::execute(&query, resources)
-            .map_err(|e| AppError::ValidationError {
-                field: "query".to_string(),
-                message: format!("Query execution error: {:?}", e),
-            })?;
-        
+        let resources = self.resource_repository.find_all().map_err(AppError::from)?;
+
+        let result = QueryEngine::execute(&query, resources).map_err(|e| AppError::ValidationError {
+            field: "query".to_string(),
+            message: format!("Query execution error: {:?}", e),
+        })?;
+
         // Converter resultado para QueryValue
-        let items: Vec<QueryValue> = result.items
+        let items: Vec<QueryValue> = result
+            .items
             .into_iter()
             .map(|r| QueryValue::String(serde_json::to_string(&r).unwrap_or_default()))
             .collect();
-        
+
         Ok(QueryResult {
             items,
             total_count: result.total_count,
@@ -141,17 +141,24 @@ impl QueryExecutor {
     }
 
     /// Executa query e retorna entidades completas
-    pub fn execute_query_with_entities(&self, entity_type: EntityType, query: Query) -> Result<QueryResult<Box<dyn std::fmt::Debug>>, AppError> {
+    pub fn execute_query_with_entities(
+        &self,
+        entity_type: EntityType,
+        query: Query,
+    ) -> Result<QueryResult<Box<dyn std::fmt::Debug>>, AppError> {
         match entity_type {
             EntityType::Project => {
                 let projects = self.project_repository.find_all()?;
-                let result = QueryEngine::execute(&query, projects)
-                    .map_err(|e| AppError::ValidationError {
-                        field: "query".to_string(),
-                        message: format!("Query execution error: {:?}", e),
-                    })?;
+                let result = QueryEngine::execute(&query, projects).map_err(|e| AppError::ValidationError {
+                    field: "query".to_string(),
+                    message: format!("Query execution error: {:?}", e),
+                })?;
                 Ok(QueryResult {
-                    items: result.items.into_iter().map(|p| Box::new(p) as Box<dyn std::fmt::Debug>).collect(),
+                    items: result
+                        .items
+                        .into_iter()
+                        .map(|p| Box::new(p) as Box<dyn std::fmt::Debug>)
+                        .collect(),
                     total_count: result.total_count,
                     filtered_count: result.filtered_count,
                     aggregation_result: result.aggregation_result,
@@ -159,13 +166,16 @@ impl QueryExecutor {
             }
             EntityType::Task => {
                 let tasks = self.task_repository.find_all()?;
-                let result = QueryEngine::execute(&query, tasks)
-                    .map_err(|e| AppError::ValidationError {
-                        field: "query".to_string(),
-                        message: format!("Query execution error: {:?}", e),
-                    })?;
+                let result = QueryEngine::execute(&query, tasks).map_err(|e| AppError::ValidationError {
+                    field: "query".to_string(),
+                    message: format!("Query execution error: {:?}", e),
+                })?;
                 Ok(QueryResult {
-                    items: result.items.into_iter().map(|t| Box::new(t) as Box<dyn std::fmt::Debug>).collect(),
+                    items: result
+                        .items
+                        .into_iter()
+                        .map(|t| Box::new(t) as Box<dyn std::fmt::Debug>)
+                        .collect(),
                     total_count: result.total_count,
                     filtered_count: result.filtered_count,
                     aggregation_result: result.aggregation_result,
@@ -173,13 +183,16 @@ impl QueryExecutor {
             }
             EntityType::Resource => {
                 let resources = self.resource_repository.find_all()?;
-                let result = QueryEngine::execute(&query, resources)
-                    .map_err(|e| AppError::ValidationError {
-                        field: "query".to_string(),
-                        message: format!("Query execution error: {:?}", e),
-                    })?;
+                let result = QueryEngine::execute(&query, resources).map_err(|e| AppError::ValidationError {
+                    field: "query".to_string(),
+                    message: format!("Query execution error: {:?}", e),
+                })?;
                 Ok(QueryResult {
-                    items: result.items.into_iter().map(|r| Box::new(r) as Box<dyn std::fmt::Debug>).collect(),
+                    items: result
+                        .items
+                        .into_iter()
+                        .map(|r| Box::new(r) as Box<dyn std::fmt::Debug>)
+                        .collect(),
                     total_count: result.total_count,
                     filtered_count: result.filtered_count,
                     aggregation_result: result.aggregation_result,
@@ -336,7 +349,12 @@ mod tests {
             }))
         }
 
-        fn save_in_hierarchy(&self, task: AnyTask, _company_code: &str, _project_code: &str) -> crate::domain::shared::errors::DomainResult<AnyTask> {
+        fn save_in_hierarchy(
+            &self,
+            task: AnyTask,
+            _company_code: &str,
+            _project_code: &str,
+        ) -> crate::domain::shared::errors::DomainResult<AnyTask> {
             Ok(task)
         }
 
@@ -352,7 +370,11 @@ mod tests {
             Ok(self.tasks.borrow().clone())
         }
 
-        fn find_all_by_project(&self, _company_code: &str, _project_code: &str) -> crate::domain::shared::errors::DomainResult<Vec<AnyTask>> {
+        fn find_all_by_project(
+            &self,
+            _company_code: &str,
+            _project_code: &str,
+        ) -> crate::domain::shared::errors::DomainResult<Vec<AnyTask>> {
             Ok(self.tasks.borrow().clone())
         }
 
@@ -384,7 +406,12 @@ mod tests {
             Ok(resource)
         }
 
-        fn save_in_hierarchy(&self, resource: AnyResource, _company_code: &str, _project_code: Option<&str>) -> crate::domain::shared::errors::DomainResult<AnyResource> {
+        fn save_in_hierarchy(
+            &self,
+            resource: AnyResource,
+            _company_code: &str,
+            _project_code: Option<&str>,
+        ) -> crate::domain::shared::errors::DomainResult<AnyResource> {
             Ok(resource)
         }
 
@@ -392,11 +419,16 @@ mod tests {
             Ok(self.resources.borrow().clone())
         }
 
-        fn find_by_company(&self, _company_code: &str) -> crate::domain::shared::errors::DomainResult<Vec<AnyResource>> {
+        fn find_by_company(
+            &self,
+            _company_code: &str,
+        ) -> crate::domain::shared::errors::DomainResult<Vec<AnyResource>> {
             Ok(self.resources.borrow().clone())
         }
 
-        fn find_all_with_context(&self) -> crate::domain::shared::errors::DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
+        fn find_all_with_context(
+            &self,
+        ) -> crate::domain::shared::errors::DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
             Ok(vec![])
         }
 
@@ -404,21 +436,38 @@ mod tests {
             Ok(None)
         }
 
-        fn save_time_off(&self, _name: &str, _hours: u32, _date: &str, _desc: Option<String>) -> crate::domain::shared::errors::DomainResult<AnyResource> {
+        fn save_time_off(
+            &self,
+            _name: &str,
+            _hours: u32,
+            _date: &str,
+            _desc: Option<String>,
+        ) -> crate::domain::shared::errors::DomainResult<AnyResource> {
             Err(crate::domain::shared::errors::DomainError::ValidationError {
                 field: "resource".to_string(),
                 message: "Not implemented in mock".to_string(),
             })
         }
 
-        fn save_vacation(&self, _name: &str, _start: &str, _end: &str, _comp: bool, _hours: Option<u32>) -> crate::domain::shared::errors::DomainResult<AnyResource> {
+        fn save_vacation(
+            &self,
+            _name: &str,
+            _start: &str,
+            _end: &str,
+            _comp: bool,
+            _hours: Option<u32>,
+        ) -> crate::domain::shared::errors::DomainResult<AnyResource> {
             Err(crate::domain::shared::errors::DomainError::ValidationError {
                 field: "resource".to_string(),
                 message: "Not implemented in mock".to_string(),
             })
         }
 
-        fn check_if_layoff_period(&self, _start: &chrono::DateTime<chrono::Local>, _end: &chrono::DateTime<chrono::Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start: &chrono::DateTime<chrono::Local>,
+            _end: &chrono::DateTime<chrono::Local>,
+        ) -> bool {
             false
         }
 

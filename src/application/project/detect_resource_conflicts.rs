@@ -33,11 +33,11 @@ pub struct ResourceConflict {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ConflictType {
-    DoubleBooking,           // Resource assigned to multiple tasks at same time
-    VacationConflict,       // Resource on vacation during task period
-    CapacityExceeded,       // Resource allocation exceeds capacity
-    SkillMismatch,          // Resource lacks required skills
-    AvailabilityConflict,   // Resource not available during task period
+    DoubleBooking,        // Resource assigned to multiple tasks at same time
+    VacationConflict,     // Resource on vacation during task period
+    CapacityExceeded,     // Resource allocation exceeds capacity
+    SkillMismatch,        // Resource lacks required skills
+    AvailabilityConflict, // Resource not available during task period
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -96,12 +96,9 @@ impl DetectResourceConflictsUseCase {
         }
 
         // Check double booking conflicts
-        if let Some(double_booking_conflicts) = self.check_double_booking_conflicts(
-            &resource_id,
-            start_date,
-            end_date,
-            exclude_task_code,
-        )? {
+        if let Some(double_booking_conflicts) =
+            self.check_double_booking_conflicts(&resource_id, start_date, end_date, exclude_task_code)?
+        {
             conflicts.extend(double_booking_conflicts);
         }
 
@@ -124,13 +121,9 @@ impl DetectResourceConflictsUseCase {
         let mut all_conflicts = HashMap::new();
 
         for resource_code in resource_codes {
-            let conflicts = self.detect_conflicts_for_resource(
-                resource_code,
-                start_date,
-                end_date,
-                exclude_task_code,
-            )?;
-            
+            let conflicts =
+                self.detect_conflicts_for_resource(resource_code, start_date, end_date, exclude_task_code)?;
+
             if !conflicts.is_empty() {
                 all_conflicts.insert(resource_code.clone(), conflicts);
             }
@@ -217,7 +210,8 @@ impl DetectResourceConflictsUseCase {
         for task in all_tasks {
             // Skip the task we're excluding (for updates)
             if let Some(exclude_code) = exclude_task_code
-                && task.code() == exclude_code {
+                && task.code() == exclude_code
+            {
                 continue;
             }
 
@@ -302,12 +296,12 @@ mod tests {
     use crate::domain::resource_management::repository::ResourceRepositoryWithId;
     use crate::domain::resource_management::resource::Resource;
     use crate::domain::resource_management::resource::ResourceScope;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use crate::domain::task_management::any_task::AnyTask;
     use crate::domain::task_management::repository::TaskRepositoryWithId;
-    use crate::domain::task_management::task::Task;
     use crate::domain::task_management::state::Planned;
+    use crate::domain::task_management::task::Task;
     use crate::domain::task_management::{Category, Priority};
-    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
@@ -373,7 +367,9 @@ mod tests {
     impl ResourceRepository for MockResourceRepository {
         fn save(&self, resource: AnyResource) -> DomainResult<AnyResource> {
             let resource_id = resource.id().to_string();
-            self.resources.borrow_mut().insert(resource_id.clone(), resource.clone());
+            self.resources
+                .borrow_mut()
+                .insert(resource_id.clone(), resource.clone());
             Ok(resource)
         }
 
@@ -395,7 +391,13 @@ mod tests {
         }
 
         fn find_all_with_context(&self) -> DomainResult<Vec<(AnyResource, String, Vec<String>)>> {
-            Ok(self.resources.borrow().values().cloned().map(|r| (r, "company".to_string(), vec![])).collect())
+            Ok(self
+                .resources
+                .borrow()
+                .values()
+                .cloned()
+                .map(|r| (r, "company".to_string(), vec![]))
+                .collect())
         }
 
         fn find_by_code(&self, code: &str) -> DomainResult<Option<AnyResource>> {
@@ -423,7 +425,11 @@ mod tests {
             Err(DomainError::validation_error("resource", "Not implemented in mock"))
         }
 
-        fn check_if_layoff_period(&self, _start_date: &chrono::DateTime<chrono::Local>, _end_date: &chrono::DateTime<chrono::Local>) -> bool {
+        fn check_if_layoff_period(
+            &self,
+            _start_date: &chrono::DateTime<chrono::Local>,
+            _end_date: &chrono::DateTime<chrono::Local>,
+        ) -> bool {
             false
         }
 
@@ -505,7 +511,9 @@ mod tests {
         }
 
         fn add_resource(&self, code: &str, id: &str) {
-            self.resource_codes.borrow_mut().insert(code.to_string(), id.to_string());
+            self.resource_codes
+                .borrow_mut()
+                .insert(code.to_string(), id.to_string());
             self.resource_ids.borrow_mut().insert(id.to_string(), code.to_string());
         }
     }
@@ -566,7 +574,6 @@ mod tests {
                 "Not implemented in mock",
             )))
         }
-
     }
 
     fn create_test_resource(code: &str) -> AnyResource {
@@ -615,12 +622,7 @@ mod tests {
         resource_repo.add_resource(resource.clone());
         code_resolver.add_resource("DEV-001", &resource.id().to_string());
 
-        let use_case = DetectResourceConflictsUseCase::new(
-            project_repo,
-            resource_repo,
-            task_repo,
-            code_resolver,
-        );
+        let use_case = DetectResourceConflictsUseCase::new(project_repo, resource_repo, task_repo, code_resolver);
 
         // Use only weekdays to avoid weekend conflicts
         let start_date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(); // Wednesday
@@ -654,12 +656,7 @@ mod tests {
         );
         task_repo.add_task(existing_task);
 
-        let use_case = DetectResourceConflictsUseCase::new(
-            project_repo,
-            resource_repo,
-            task_repo,
-            code_resolver,
-        );
+        let use_case = DetectResourceConflictsUseCase::new(project_repo, resource_repo, task_repo, code_resolver);
 
         let start_date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
         let end_date = NaiveDate::from_ymd_opt(2025, 1, 10).unwrap();

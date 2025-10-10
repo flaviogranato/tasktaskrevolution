@@ -1,5 +1,5 @@
-use crate::application::search::{SearchExecutor, SearchResultFormatter, SearchFilter};
-use crate::domain::shared::search_engine::{SearchOptions, FileType};
+use crate::application::search::{SearchExecutor, SearchFilter, SearchResultFormatter};
+use crate::domain::shared::search_engine::{FileType, SearchOptions};
 use clap::Args;
 use std::path::PathBuf;
 
@@ -133,12 +133,16 @@ fn build_search_options(args: &SearchArgs) -> SearchOptions {
     }
 }
 
-fn apply_filters(results: &[crate::domain::shared::search_engine::SearchResult], args: &SearchArgs) -> Vec<crate::domain::shared::search_engine::SearchResult> {
+fn apply_filters(
+    results: &[crate::domain::shared::search_engine::SearchResult],
+    args: &SearchArgs,
+) -> Vec<crate::domain::shared::search_engine::SearchResult> {
     let mut filter = SearchFilter::new();
 
     // Apply file type filter
     if let Some(file_type) = &args.file_type
-        && let Ok(ft) = parse_file_type(file_type) {
+        && let Ok(ft) = parse_file_type(file_type)
+    {
         filter = filter.file_types(vec![ft]);
     }
 

@@ -2,7 +2,11 @@ use assert_fs::TempDir;
 use chrono::Local;
 
 use task_task_revolution::domain::resource_management::{
-    AnyResource, resource::Resource, repository::{ResourceRepository, ResourceRepositoryWithId}, resource::ResourceScope, state::Available
+    AnyResource,
+    repository::{ResourceRepository, ResourceRepositoryWithId},
+    resource::Resource,
+    resource::ResourceScope,
+    state::Available,
 };
 use task_task_revolution::infrastructure::persistence::resource_repository::FileResourceRepository;
 
@@ -17,11 +21,8 @@ impl ResourceRepositoryTestFixture {
     fn new() -> Self {
         let temp_dir = TempDir::new().unwrap();
         let repository = FileResourceRepository::new(temp_dir.path());
-        
-        Self {
-            temp_dir,
-            repository,
-        }
+
+        Self { temp_dir, repository }
     }
 
     fn create_test_resource(&self, code: &str, name: &str, resource_type: &str) -> AnyResource {
@@ -80,7 +81,7 @@ mod tests {
     #[test]
     fn test_find_all() {
         let fixture = ResourceRepositoryTestFixture::new();
-        
+
         // Create multiple resources
         let resource1 = fixture.create_test_resource("RES-001", "Test Resource 1", "Developer");
         let resource2 = fixture.create_test_resource("RES-002", "Test Resource 2", "Manager");
@@ -92,7 +93,7 @@ mod tests {
         // Find all
         let all_resources = fixture.repository.find_all().unwrap();
         assert_eq!(all_resources.len(), 2);
-        
+
         let codes: Vec<&str> = all_resources.iter().map(|r| r.code()).collect();
         assert!(codes.contains(&"RES-001"));
         assert!(codes.contains(&"RES-002"));
@@ -123,7 +124,7 @@ mod tests {
         // Find all with context
         let contexts = fixture.repository.find_all_with_context().unwrap();
         assert!(!contexts.is_empty());
-        
+
         let (found_resource, company_code, _project_codes) = &contexts[0];
         assert_eq!(found_resource.code(), "RES-004");
         assert!(!company_code.is_empty());
@@ -136,11 +137,10 @@ mod tests {
         let resource = fixture.create_test_resource("RES-005", "Hierarchy Resource", "Developer");
 
         // Save in hierarchy
-        let _saved_resource = fixture.repository.save_in_hierarchy(
-            resource,
-            "COMP-001",
-            Some("PROJ-001"),
-        ).unwrap();
+        let _saved_resource = fixture
+            .repository
+            .save_in_hierarchy(resource, "COMP-001", Some("PROJ-001"))
+            .unwrap();
 
         // Verify the resource was saved
         let found = fixture.repository.find_by_code("RES-005").unwrap();
@@ -156,12 +156,10 @@ mod tests {
         fixture.repository.save(resource).unwrap();
 
         // Save time off
-        let updated_resource = fixture.repository.save_time_off(
-            "Time Off Resource",
-            8,
-            "2024-01-15",
-            Some("Sick leave".to_string()),
-        ).unwrap();
+        let updated_resource = fixture
+            .repository
+            .save_time_off("Time Off Resource", 8, "2024-01-15", Some("Sick leave".to_string()))
+            .unwrap();
 
         // Verify the resource was updated
         assert_eq!(updated_resource.name(), "Time Off Resource");
@@ -176,13 +174,10 @@ mod tests {
         fixture.repository.save(resource).unwrap();
 
         // Save vacation
-        let updated_resource = fixture.repository.save_vacation(
-            "Vacation Resource",
-            "2024-07-01",
-            "2024-07-15",
-            false,
-            None,
-        ).unwrap();
+        let updated_resource = fixture
+            .repository
+            .save_vacation("Vacation Resource", "2024-07-01", "2024-07-15", false, None)
+            .unwrap();
 
         // Verify the resource was updated
         assert_eq!(updated_resource.name(), "Vacation Resource");
@@ -196,8 +191,16 @@ mod tests {
 
         // Check layoff period (this will depend on the actual implementation)
         let _is_layoff = fixture.repository.check_if_layoff_period(
-            &start_date.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Local).unwrap(),
-            &end_date.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Local).unwrap(),
+            &start_date
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_local_timezone(Local)
+                .unwrap(),
+            &end_date
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_local_timezone(Local)
+                .unwrap(),
         );
 
         // This is a boolean check, so we just verify it returns a boolean
@@ -267,7 +270,7 @@ mod tests {
     #[test]
     fn test_resource_with_different_scopes() {
         let fixture = ResourceRepositoryTestFixture::new();
-        
+
         // Test company-scoped resource
         let company_resource = Resource::<Available>::new(
             "COMP-RES-001".to_string(),
@@ -303,7 +306,7 @@ mod tests {
         // Verify both resources exist
         let found_company = fixture.repository.find_by_code("COMP-RES-001").unwrap();
         let found_project = fixture.repository.find_by_code("PROJ-RES-001").unwrap();
-        
+
         assert!(found_company.is_some());
         assert!(found_project.is_some());
     }
