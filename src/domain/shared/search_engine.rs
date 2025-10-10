@@ -125,16 +125,15 @@ impl SearchEngine {
             }
 
             // Buscar no arquivo
-            if let Ok(matches) = self.search_in_file(file_path, &pattern, &query.options) {
-                if !matches.is_empty() {
-                    let score = self.calculate_score(&matches, &query.pattern);
-                    results.push(SearchResult {
-                        file_path: file_path.to_path_buf(),
-                        matches,
-                        score,
-                        file_type,
-                    });
-                }
+            if let Ok(matches) = self.search_in_file(file_path, &pattern, &query.options)
+                && !matches.is_empty() {
+                let score = self.calculate_score(&matches, &query.pattern);
+                results.push(SearchResult {
+                    file_path: file_path.to_path_buf(),
+                    matches,
+                    score,
+                    file_type,
+                });
             }
         }
 
@@ -224,17 +223,16 @@ impl SearchEngine {
         // Parse YAML frontmatter
         if let Some(frontmatter) = self.extract_frontmatter(&content) {
             for (key, value) in filters {
-                if let Some(field_value) = frontmatter.get(key) {
-                    if field_value.contains(value) {
-                        matches.push(SearchMatch {
-                            line_number: 1, // Frontmatter está no início
-                            line_content: format!("{}: {}", key, field_value),
-                            match_start: 0,
-                            match_end: field_value.len(),
-                            context_before: None,
-                            context_after: None,
-                        });
-                    }
+                if let Some(field_value) = frontmatter.get(key)
+                    && field_value.contains(value) {
+                    matches.push(SearchMatch {
+                        line_number: 1, // Frontmatter está no início
+                        line_content: format!("{}: {}", key, field_value),
+                        match_start: 0,
+                        match_end: field_value.len(),
+                        context_before: None,
+                        context_after: None,
+                    });
                 }
             }
         }
@@ -276,15 +274,15 @@ impl SearchEngine {
     fn detect_file_type(&self, file_path: &Path) -> Result<FileType, SearchError> {
         let path_str = file_path.to_string_lossy().to_lowercase();
 
-        if path_str.contains("projects/") && file_path.extension().map_or(false, |ext| ext == "yaml") {
+        if path_str.contains("projects/") && file_path.extension().is_some_and(|ext| ext == "yaml") {
             Ok(FileType::Project)
-        } else if path_str.contains("tasks/") && file_path.extension().map_or(false, |ext| ext == "yaml") {
+        } else if path_str.contains("tasks/") && file_path.extension().is_some_and(|ext| ext == "yaml") {
             Ok(FileType::Task)
-        } else if path_str.contains("resources/") && file_path.extension().map_or(false, |ext| ext == "yaml") {
+        } else if path_str.contains("resources/") && file_path.extension().is_some_and(|ext| ext == "yaml") {
             Ok(FileType::Resource)
-        } else if path_str.contains("companies/") && file_path.extension().map_or(false, |ext| ext == "yaml") {
+        } else if path_str.contains("companies/") && file_path.extension().is_some_and(|ext| ext == "yaml") {
             Ok(FileType::Company)
-        } else if file_path.file_name().map_or(false, |name| name == "config.yaml") {
+        } else if file_path.file_name().is_some_and(|name| name == "config.yaml") {
             Ok(FileType::Config)
         } else {
             Ok(FileType::Other)

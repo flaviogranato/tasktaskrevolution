@@ -87,16 +87,14 @@ impl SearchFilter {
 
     /// Verifica se o resultado corresponde aos critérios de score
     fn matches_score(&self, result: &SearchResult) -> bool {
-        if let Some(min_score) = self.min_score {
-            if result.score < min_score {
-                return false;
-            }
+        if let Some(min_score) = self.min_score
+            && result.score < min_score {
+            return false;
         }
 
-        if let Some(max_score) = self.max_score {
-            if result.score > max_score {
-                return false;
-            }
+        if let Some(max_score) = self.max_score
+            && result.score > max_score {
+            return false;
         }
 
         true
@@ -106,16 +104,14 @@ impl SearchFilter {
     fn matches_match_count(&self, result: &SearchResult) -> bool {
         let match_count = result.matches.len();
 
-        if let Some(min_matches) = self.min_matches {
-            if match_count < min_matches {
-                return false;
-            }
+        if let Some(min_matches) = self.min_matches
+            && match_count < min_matches {
+            return false;
         }
 
-        if let Some(max_matches) = self.max_matches {
-            if match_count > max_matches {
-                return false;
-            }
+        if let Some(max_matches) = self.max_matches
+            && match_count > max_matches {
+            return false;
         }
 
         true

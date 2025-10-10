@@ -431,8 +431,8 @@ impl Project {
     }
 }
 
-#[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
@@ -790,10 +790,10 @@ impl Queryable for Project {
             "description" => self.description.as_ref().map(|d| QueryValue::String(d.clone())),
             "status" => Some(QueryValue::String(self.status.to_string())),
             "priority" => Some(QueryValue::String(format!("{:?}", self.priority))),
-            "start_date" => self.start_date.map(|d| QueryValue::Date(d)),
-            "end_date" => self.end_date.map(|d| QueryValue::Date(d)),
-            "actual_start_date" => self.actual_start_date.map(|d| QueryValue::Date(d)),
-            "actual_end_date" => self.actual_end_date.map(|d| QueryValue::Date(d)),
+            "start_date" => self.start_date.map(QueryValue::Date),
+            "end_date" => self.end_date.map(QueryValue::Date),
+            "actual_start_date" => self.actual_start_date.map(QueryValue::Date),
+            "actual_end_date" => self.actual_end_date.map(QueryValue::Date),
             "company_code" => Some(QueryValue::String(self.company_code.clone())),
             "manager_id" => self.manager_id.as_ref().map(|id| QueryValue::String(id.clone())),
             "created_by" => Some(QueryValue::String(self.created_by.clone())),

@@ -241,7 +241,7 @@ impl QueryEngine {
     }
 
     /// Aplica ordenação aos itens
-    fn sort_items<T: Queryable>(items: &mut Vec<T>, sort: &SortOption) -> Result<(), QueryExecutionError> {
+    fn sort_items<T: Queryable>(items: &mut [T], sort: &SortOption) -> Result<(), QueryExecutionError> {
         items.sort_by(|a, b| {
             let a_value = a.get_field_value(&sort.field);
             let b_value = b.get_field_value(&sort.field);
@@ -264,7 +264,7 @@ impl QueryEngine {
     }
 
     /// Aplica paginação aos itens
-    fn apply_pagination<T>(items: Vec<T>, pagination: &crate::domain::shared::query_parser::PaginationOptions) -> Vec<T> {
+    fn apply_pagination<T>(items: Vec<T>, pagination: &PaginationOptions) -> Vec<T> {
         let start = pagination.offset.unwrap_or(0);
         let end = if let Some(limit) = pagination.limit {
             start + limit
@@ -387,7 +387,7 @@ mod tests {
                 value: QueryValue::Boolean(true),
             }),
             aggregation: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
             sort: None,
         };
 
@@ -427,7 +427,7 @@ mod tests {
                 value: QueryValue::Number(80.0),
             }),
             aggregation: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
             sort: None,
         };
 
@@ -466,7 +466,7 @@ mod tests {
                 value: QueryValue::String("li".to_string()),
             }),
             aggregation: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
             sort: None,
         };
 
@@ -513,7 +513,7 @@ mod tests {
                 }))),
             },
             aggregation: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
             sort: None,
         };
 
@@ -538,7 +538,7 @@ mod tests {
                 value: QueryValue::String("value".to_string()),
             }),
             aggregation: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
             sort: None,
         };
 

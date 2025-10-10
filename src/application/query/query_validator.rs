@@ -110,23 +110,21 @@ impl QueryValidator {
         // Validações específicas por tipo de campo
         match field {
             "status" => {
-                if let crate::domain::shared::query_parser::QueryValue::String(status) = value {
-                    if !Self::is_valid_status(status, entity_type) {
-                        return Err(AppError::validation_error(
-                            "status",
-                            format!("Invalid status '{}' for entity type '{}'", status, entity_type)
-                        ));
-                    }
+                if let crate::domain::shared::query_parser::QueryValue::String(status) = value
+                    && !Self::is_valid_status(status, entity_type) {
+                    return Err(AppError::validation_error(
+                        "status",
+                        format!("Invalid status '{}' for entity type '{}'", status, entity_type)
+                    ));
                 }
             }
             "priority" => {
-                if let crate::domain::shared::query_parser::QueryValue::String(priority) = value {
-                    if !Self::is_valid_priority(priority, entity_type) {
-                        return Err(AppError::validation_error(
-                            "priority",
-                            format!("Invalid priority '{}' for entity type '{}'", priority, entity_type)
-                        ));
-                    }
+                if let crate::domain::shared::query_parser::QueryValue::String(priority) = value
+                    && !Self::is_valid_priority(priority, entity_type) {
+                    return Err(AppError::validation_error(
+                        "priority",
+                        format!("Invalid priority '{}' for entity type '{}'", priority, entity_type)
+                    ));
                 }
             }
             _ => {} // Outros campos não têm validação específica
@@ -262,7 +260,7 @@ mod tests {
             }),
             aggregation: None,
             sort: None,
-            pagination: crate::domain::shared::query_parser::PaginationOptions::default(),
+            pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -279,7 +277,7 @@ mod tests {
             }),
             aggregation: None,
             sort: None,
-            pagination: crate::domain::shared::query_parser::PaginationOptions::default(),
+            pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -297,7 +295,7 @@ mod tests {
             }),
             aggregation: Some(AggregationType::Count),
             sort: None,
-            pagination: crate::domain::shared::query_parser::PaginationOptions::default(),
+            pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -314,7 +312,7 @@ mod tests {
             }),
             aggregation: Some(AggregationType::Sum("task_count".to_string())),
             sort: None,
-            pagination: crate::domain::shared::query_parser::PaginationOptions::default(),
+            pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -331,7 +329,7 @@ mod tests {
             }),
             aggregation: Some(AggregationType::Sum("name".to_string())),
             sort: None,
-            pagination: crate::domain::shared::query_parser::PaginationOptions::default(),
+            pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -352,7 +350,7 @@ mod tests {
                 field: "name".to_string(),
                 ascending: true,
             }),
-            pagination: crate::domain::shared::query_parser::PaginationOptions::default(),
+            pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -372,7 +370,7 @@ mod tests {
                 field: "invalid_field".to_string(),
                 ascending: true,
             }),
-            pagination: crate::domain::shared::query_parser::PaginationOptions::default(),
+            pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);

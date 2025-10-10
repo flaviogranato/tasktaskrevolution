@@ -15,7 +15,7 @@ impl QueryBuilder {
             expression: None,
             aggregation: None,
             sort: None,
-            pagination: PaginationOptions::default(),
+            pagination: PaginationOptions::new_default(),
         }
     }
 
