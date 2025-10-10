@@ -101,20 +101,28 @@ jobs:
       - name: Make binary executable
         run: chmod +x ./dist/ttr
 
-      - name: Get version from Cargo.toml
+      - name: Get version and commit info
         id: version
         run: |
           VERSION=$(grep '^version = ' Cargo.toml | cut -d '"' -f 2)
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          TIMESTAMP=$(date '+%Y%m%d-%H%M%S')
+          RELEASE_NAME="v${VERSION}-${COMMIT_SHA}-${TIMESTAMP}"
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: Release ${{ steps.version.outputs.tag }}
+          tag_name: ${{ steps.version.outputs.release_name }}
+          name: Release ${{ steps.version.outputs.release_name }}
           body: |
             ## 🚀 Task Task Revolution ${{ steps.version.outputs.version }}
+            
+            **Commit**: `${{ steps.version.outputs.commit_sha }}`  
+            **Build**: $(date '+%Y-%m-%d %H:%M:%S UTC')
             
             ### 📦 Download Binário Linux AMD64
             
@@ -153,7 +161,6 @@ jobs:
             ```
           files: ./dist/ttr
           draft: false
-          prerelease: false
-          generate_release_notes: true
+          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
