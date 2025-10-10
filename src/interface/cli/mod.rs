@@ -143,6 +143,66 @@ pub enum Commands {
         #[clap(long, default_value = "table")]
         format: String,
     },
+    /// Search across all files
+    #[clap(alias = "s")]
+    Search {
+        /// Search query/pattern
+        query: String,
+        /// Entity type to search (project, task, resource, company)
+        #[clap(long)]
+        entity_type: Option<String>,
+        /// Output format (table, json, csv, list, compact, grouped, highlighted)
+        #[clap(long, default_value = "table")]
+        format: String,
+        /// Case sensitive search
+        #[clap(long)]
+        case_sensitive: bool,
+        /// Whole word matching
+        #[clap(long)]
+        whole_word: bool,
+        /// Use regex pattern
+        #[clap(long)]
+        regex: bool,
+        /// Search only in metadata (YAML frontmatter)
+        #[clap(long)]
+        metadata_only: bool,
+        /// Search only in content (not metadata)
+        #[clap(long)]
+        content_only: bool,
+        /// Maximum number of results
+        #[clap(long)]
+        max_results: Option<usize>,
+        /// Number of context lines to show
+        #[clap(long, default_value = "2")]
+        context_lines: usize,
+        /// Filter by file type
+        #[clap(long)]
+        file_type: Option<String>,
+        /// Minimum score threshold
+        #[clap(long)]
+        min_score: Option<f32>,
+        /// Maximum score threshold
+        #[clap(long)]
+        max_score: Option<f32>,
+        /// Minimum number of matches per file
+        #[clap(long)]
+        min_matches: Option<usize>,
+        /// Maximum number of matches per file
+        #[clap(long)]
+        max_matches: Option<usize>,
+        /// Include path pattern
+        #[clap(long)]
+        include_path: Option<String>,
+        /// Exclude path pattern
+        #[clap(long)]
+        exclude_path: Option<String>,
+        /// Show search statistics
+        #[clap(long)]
+        stats: bool,
+        /// Workspace path (defaults to current directory)
+        #[clap(long)]
+        workspace: Option<String>,
+    },
     /// Migration tools
     Migrate {
         #[clap(subcommand)]
@@ -183,6 +243,11 @@ pub enum Commands {
         /// Show installation help
         #[clap(long)]
         help: bool,
+    },
+    /// Test data validation and management
+    TestData {
+        #[clap(subcommand)]
+        command: commands::TestDataCommand,
     },
 }
 
@@ -272,6 +337,51 @@ impl Cli {
                     show_fields: false,
                 })
             }
+            Commands::Search {
+                query,
+                entity_type,
+                format,
+                case_sensitive,
+                whole_word,
+                regex,
+                metadata_only,
+                content_only,
+                max_results,
+                context_lines,
+                file_type,
+                min_score,
+                max_score,
+                min_matches,
+                max_matches,
+                include_path,
+                exclude_path,
+                stats,
+                workspace,
+            } => {
+                use crate::interface::cli::commands::search::SearchArgs;
+                use crate::interface::cli::commands::search::execute_search;
+                execute_search(SearchArgs {
+                    query,
+                    entity_type,
+                    format,
+                    case_sensitive,
+                    whole_word,
+                    regex,
+                    metadata_only,
+                    content_only,
+                    max_results,
+                    context_lines,
+                    file_type,
+                    min_score,
+                    max_score,
+                    min_matches,
+                    max_matches,
+                    include_path,
+                    exclude_path,
+                    stats,
+                    workspace,
+                })
+            }
             Commands::Migrate { command } => handlers::migrate_handler::handle_migrate_command(command),
             Commands::Serve {
                 port,
@@ -303,6 +413,13 @@ impl Cli {
                 } else {
                     completions::CompletionCommandHandler::handle_completion_command(shell.clone())
                 }
+            }
+            Commands::TestData { command } => {
+                let base_path = std::env::current_dir().unwrap().to_string_lossy().to_string();
+                tokio::runtime::Runtime::new()
+                    .unwrap()
+                    .block_on(command.execute(&base_path))
+                    .map_err(|e| e.into())
             }
         }
     }

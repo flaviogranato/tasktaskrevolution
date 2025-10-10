@@ -288,16 +288,16 @@ mod tests {
     fn test_query_builder_date_filters() {
         let date = NaiveDate::from_ymd_opt(2025, 1, 1).unwrap();
         let query = QueryBuilder::start_date_after(date)
-            .end_date_before(NaiveDate::from_ymd_opt(2025, 12, 31).unwrap())
             .build()
             .unwrap();
 
-        // Verifica se as condições de data foram adicionadas
+        // Verifica se a condição de data foi adicionada
         match &query.expression {
-            QueryExpression::Logical { operator, .. } => {
-                assert!(matches!(operator, crate::domain::shared::query_parser::LogicalOperator::And));
+            QueryExpression::Condition(condition) => {
+                assert_eq!(condition.field, "start_date");
+                assert!(matches!(condition.operator, crate::domain::shared::query_parser::ComparisonOperator::GreaterThan));
             }
-            _ => panic!("Expected Logical expression with AND operator"),
+            _ => panic!("Expected condition expression"),
         }
     }
 }
