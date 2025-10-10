@@ -1,102 +1,70 @@
-name: Trunk-Based Release
+name: Trunk-Based CI
 
 on:
   push:
-    tags:
-      - "v*"
-
-permissions:
-  contents: write
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test-and-lint:
-    name: Test and Lint
+  test:
+    name: Test & Lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
 
-      - name: Cache Cargo dependencies
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
 
-      - name: Check formatting
+      - name: Format check
         run: cargo fmt --all -- --check
 
-      - name: Run Clippy
+      - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Test
+        run: cargo test --all-features
 
-  build-binary:
-    name: Build Binary (Linux AMD64)
-    needs: test-and-lint
+  build:
+    name: Build
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo dependencies
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
 
-      - name: Build release binary
-        run: cargo build --verbose --release
+      - name: Build
+        run: cargo build --release
 
-      - name: Upload binary as artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ttr-linux-amd64
+          name: ttr-binary
           path: target/release/ttr
-
-  create-release:
-    name: Create GitHub Release
-    needs: build-binary
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download binary artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ttr-linux-amd64
-
-      - name: Create Release and Upload Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ttr
-          fail_on_unmatched_files: true
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
