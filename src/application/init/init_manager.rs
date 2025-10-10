@@ -50,8 +50,6 @@ impl InitManagerUseCase {
         config = config.with_work_days(work_days);
 
         // Save to repository
-        use crate::domain::shared::convertable::Convertible;
-        use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
         let current_dir = std::env::current_dir().map_err(|e| AppError::ValidationError {
             field: "path".to_string(),
             message: e.to_string(),
@@ -116,7 +114,6 @@ mod tests {
     use super::*;
     use crate::domain::company_settings::repository::ConfigRepository;
     use crate::domain::shared::errors::{DomainError, DomainResult};
-    use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::{Path, PathBuf};
 

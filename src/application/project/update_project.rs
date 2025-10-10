@@ -98,6 +98,7 @@ where
 mod tests {
     use super::*;
     use crate::domain::project_management::builder::ProjectBuilder;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use std::{cell::RefCell, collections::HashMap};
 
     // --- Mocks ---

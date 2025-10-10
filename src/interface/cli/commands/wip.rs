@@ -344,6 +344,7 @@ impl WipStatusInfo {
 mod tests {
     use super::*;
     use crate::domain::resource_management::resource::Resource;
+    use crate::domain::shared::errors::DomainResult;
     use std::{cell::RefCell, collections::HashMap};
 
     struct MockResourceRepository {
@@ -378,7 +379,7 @@ mod tests {
             _company_code: &str,
             _project_code: Option<&str>,
         ) -> DomainResult<AnyResource> {
-            Ok(self.save(resource)?)
+            self.save(resource)
         }
 
         fn save_time_off(

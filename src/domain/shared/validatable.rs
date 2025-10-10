@@ -86,7 +86,7 @@ impl<T: Validatable> Validator<T> for T {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::errors::DomainResult;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
 
     // Mock structs for testing
     #[derive(Debug, Clone, PartialEq)]

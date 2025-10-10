@@ -3,7 +3,6 @@
 use assert_fs::TempDir;
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::path::PathBuf;
 
 fn get_ttr_command() -> Command {
     Command::cargo_bin("ttr").unwrap()

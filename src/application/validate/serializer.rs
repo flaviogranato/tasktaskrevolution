@@ -104,7 +104,7 @@ impl ValidationSerializer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::application::validate::types::{ValidationResult, ValidationSeverity};
+    use crate::application::validate::types::ValidationResult;
 
     fn create_test_finding() -> Finding {
         Finding {

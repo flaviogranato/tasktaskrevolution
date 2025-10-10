@@ -14,10 +14,10 @@ fn test_build_generates_company_page_with_projects() {
         .join("ttr");
     
     let output = Command::new(&ttr_binary)
-        .args(&["init"])
-        .args(&["--name", "Test Company"])
-        .args(&["--email", "test@example.com"])
-        .args(&["--timezone", "America/Sao_Paulo"])
+        .args(["init"])
+        .args(["--name", "Test Company"])
+        .args(["--email", "test@example.com"])
+        .args(["--timezone", "America/Sao_Paulo"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -26,9 +26,9 @@ fn test_build_generates_company_page_with_projects() {
 
     // Create a company
     let output = Command::new(&ttr_binary)
-        .args(&["create", "company"])
-        .args(&["--code", "TECH-001"])
-        .args(&["--name", "Tech Corp"])
+        .args(["create", "company"])
+        .args(["--code", "TECH-001"])
+        .args(["--name", "Tech Corp"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -37,12 +37,12 @@ fn test_build_generates_company_page_with_projects() {
 
     // Create projects
     let output = Command::new(&ttr_binary)
-        .args(&["create", "project"])
-        .args(&["--company", "TECH-001"])
-        .args(&["--code", "WEB-APP"])
-        .args(&["--name", "Web Application"])
-        .args(&["--start-date", "2024-01-01"])
-        .args(&["--end-date", "2024-12-31"])
+        .args(["create", "project"])
+        .args(["--company", "TECH-001"])
+        .args(["--code", "WEB-APP"])
+        .args(["--name", "Web Application"])
+        .args(["--start-date", "2024-01-01"])
+        .args(["--end-date", "2024-12-31"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -50,12 +50,12 @@ fn test_build_generates_company_page_with_projects() {
     assert!(output.status.success(), "Create project 1 failed: {}", String::from_utf8_lossy(&output.stderr));
 
     let output = Command::new(&ttr_binary)
-        .args(&["create", "project"])
-        .args(&["--company", "TECH-001"])
-        .args(&["--code", "DATA-PIPELINE"])
-        .args(&["--name", "Data Pipeline"])
-        .args(&["--start-date", "2024-02-01"])
-        .args(&["--end-date", "2024-11-30"])
+        .args(["create", "project"])
+        .args(["--company", "TECH-001"])
+        .args(["--code", "DATA-PIPELINE"])
+        .args(["--name", "Data Pipeline"])
+        .args(["--start-date", "2024-02-01"])
+        .args(["--end-date", "2024-11-30"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -64,8 +64,8 @@ fn test_build_generates_company_page_with_projects() {
 
     // Verify projects exist
     let output = Command::new(&ttr_binary)
-        .args(&["list", "projects"])
-        .args(&["--company", "TECH-001"])
+        .args(["list", "projects"])
+        .args(["--company", "TECH-001"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -77,9 +77,9 @@ fn test_build_generates_company_page_with_projects() {
 
     // Run build
     let output = Command::new(&ttr_binary)
-        .args(&["build"])
-        .args(&["--output", "dist"])
-        .args(&["--base-url", "https://example.com"])
+        .args(["build"])
+        .args(["--output", "dist"])
+        .args(["--base-url", "https://example.com"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -131,10 +131,10 @@ fn test_build_with_no_projects_shows_zero_count() {
         .join("ttr");
     
     let output = Command::new(&ttr_binary)
-        .args(&["init"])
-        .args(&["--name", "Test Company"])
-        .args(&["--email", "test@example.com"])
-        .args(&["--timezone", "America/Sao_Paulo"])
+        .args(["init"])
+        .args(["--name", "Test Company"])
+        .args(["--email", "test@example.com"])
+        .args(["--timezone", "America/Sao_Paulo"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -149,9 +149,9 @@ fn test_build_with_no_projects_shows_zero_count() {
         .join("ttr");
     
     let output = Command::new(&ttr_binary)
-        .args(&["create", "company"])
-        .args(&["--code", "EMPTY-001"])
-        .args(&["--name", "Empty Corp"])
+        .args(["create", "company"])
+        .args(["--code", "EMPTY-001"])
+        .args(["--name", "Empty Corp"])
         .current_dir(temp_path)
         .output()
         .unwrap();
@@ -160,9 +160,9 @@ fn test_build_with_no_projects_shows_zero_count() {
 
     // Run build
     let output = Command::new(&ttr_binary)
-        .args(&["build"])
-        .args(&["--output", "dist"])
-        .args(&["--base-url", "https://example.com"])
+        .args(["build"])
+        .args(["--output", "dist"])
+        .args(["--base-url", "https://example.com"])
         .current_dir(temp_path)
         .output()
         .unwrap();

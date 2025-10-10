@@ -415,6 +415,7 @@ fn are_manifests_up_to_date() -> Result<bool, Box<dyn std::error::Error>> {
     Ok(false)
 }
 
+#[allow(dead_code)]
 fn check_manifest_api_version(manifest_path: &Path, expected_version: &str) -> Result<bool, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(manifest_path)?;
     let lines: Vec<&str> = content.lines().collect();
@@ -466,6 +467,7 @@ fn migrate_task_manifests(dry_run: bool) -> Result<(), Box<dyn std::error::Error
     Ok(())
 }
 
+#[allow(dead_code)]
 fn update_manifest_api_version(manifest_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let content = fs::read_to_string(manifest_path)?;
     let lines: Vec<&str> = content.lines().collect();

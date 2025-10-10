@@ -451,7 +451,7 @@ impl BuildUseCase {
 
             for (project, tasks, resources, _) in company_projects {
                 let project_code = project.code();
-                let project_name = project.name();
+                let _project_name = project.name();
 
                 let project_output_dir = projects_base_dir.join(project_code);
                 fs::create_dir_all(&project_output_dir)?;

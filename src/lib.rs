@@ -8,8 +8,6 @@ use clap::Parser;
 
 pub mod application;
 pub mod domain;
-pub mod debug_company_test;
-pub mod debug_company_test2;
 pub mod infrastructure;
 pub mod interface;
 

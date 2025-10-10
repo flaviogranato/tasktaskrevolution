@@ -144,6 +144,7 @@ impl Logger {
     }
 
     /// Check if verbose mode is enabled
+    #[allow(dead_code)]
     fn is_verbose() -> bool {
         std::env::var("TTR_VERBOSE").unwrap_or_default() == "1"
     }

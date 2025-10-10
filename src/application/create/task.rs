@@ -26,6 +26,7 @@ where
 {
     project_repository: PR,
     task_repository: TR,
+    #[allow(dead_code)]
     resource_repository: RR,
     code_resolver: CR,
 }
@@ -75,36 +76,32 @@ where
 
         // 3. Validate resource conflicts if resources are assigned
         if !assigned_resources.is_empty() {
-            // Check for resource conflicts using DetectResourceConflictsUseCase
-            // Skip conflict detection in test environment to avoid mock issues
-            #[cfg(not(test))]
-            {
-                let conflict_detector = DetectResourceConflictsUseCase::new(
-                    Box::new(self.project_repository.clone()),
-                    Box::new(self.resource_repository.clone()),
-                    Box::new(self.task_repository.clone()),
-                    Box::new(self.code_resolver.clone()),
-                );
-                
-                let conflicts_map = conflict_detector.detect_conflicts_for_resources(
-                    &assigned_resources,
+            // Check for resource conflicts
+            let conflict_detector = DetectResourceConflictsUseCase::new(
+                Box::new(self.project_repository.clone()),
+                Box::new(self.resource_repository.clone()),
+                Box::new(self.task_repository.clone()),
+                Box::new(self.code_resolver.clone()),
+            );
+
+            for resource_code in &assigned_resources {
+                let conflicts = conflict_detector.detect_conflicts_for_resource(
+                    resource_code,
                     start_date,
                     due_date,
-                    None, // No task ID for new tasks
+                    None, // No task to exclude for new tasks
                 )?;
-                
-                if !conflicts_map.is_empty() {
-                    let mut all_conflicts = Vec::new();
-                    for (resource_code, conflicts) in conflicts_map {
-                        for conflict in conflicts {
-                            all_conflicts.push(format!("{}: {}", resource_code, conflict.message));
-                        }
-                    }
+
+                if !conflicts.is_empty() {
+                    let conflict_messages: Vec<String> = conflicts
+                        .iter()
+                        .map(|c| format!("{}: {}", c.resource_code, c.message))
+                        .collect();
                     
-                    return Err(AppError::ValidationError {
-                        field: "assigned_resources".to_string(),
-                        message: format!("Resource conflicts detected: {}", all_conflicts.join("; ")),
-                    });
+                return Err(AppError::validation_error(
+                    "resource_conflicts",
+                    format!("Resource conflicts detected: {}", conflict_messages.join("; ")),
+                ));
                 }
             }
             
@@ -126,7 +123,7 @@ where
             None => format!("task-{}", project.tasks().len() + 1),
         };
 
-        let task_code_for_output = next_task_code.clone();
+        let _task_code_for_output = next_task_code.clone();
         let project_code_for_save = project_code.clone();
 
         let builder = TaskBuilder::new()
@@ -181,6 +178,8 @@ mod test {
     use super::*;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
     use crate::domain::task_management::{AnyTask, repository::TaskRepository};
+    use crate::domain::shared::errors::{DomainError, DomainResult};
+    use crate::domain::resource_management::{any_resource::AnyResource, resource::{Resource, ResourceScope}, state::Available};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;
@@ -226,11 +225,9 @@ mod test {
             })
         }
 
-        fn resolve_resource_code(&self, _code: &str) -> DomainResult<String> {
-            Err(DomainError::from(AppError::validation_error(
-                "resource",
-                "Not implemented in mock",
-            )))
+        fn resolve_resource_code(&self, code: &str) -> DomainResult<String> {
+            // For testing, we'll return the code as the ID
+            Ok(code.to_string())
         }
 
         fn resolve_task_code(&self, _code: &str) -> DomainResult<String> {
@@ -282,13 +279,61 @@ mod test {
 
     #[derive(Clone)]
     struct MockResourceRepository {
-        resources: RefCell<HashMap<String, crate::domain::resource_management::any_resource::AnyResource>>,
+        resources: Rc<RefCell<HashMap<String, crate::domain::resource_management::any_resource::AnyResource>>>,
     }
 
     impl MockResourceRepository {
         fn new() -> Self {
+            let mut resources = HashMap::new();
+            
+            // Add test resources
+            let dev1 = Resource::<Available>::new(
+                "dev1".to_string(),
+                "Developer 1".to_string(),
+                Some("dev1@test.com".to_string()),
+                "Developer".to_string(),
+                ResourceScope::Company,
+                None,
+                None,
+                None,
+                None,
+                0,
+            );
+            let any_dev1 = AnyResource::Available(dev1);
+            resources.insert(any_dev1.id().to_string(), any_dev1);
+            
+            let dev2 = Resource::<Available>::new(
+                "dev2".to_string(),
+                "Developer 2".to_string(),
+                Some("dev2@test.com".to_string()),
+                "Developer".to_string(),
+                ResourceScope::Company,
+                None,
+                None,
+                None,
+                None,
+                0,
+            );
+            let any_dev2 = AnyResource::Available(dev2);
+            resources.insert(any_dev2.id().to_string(), any_dev2);
+            
+            let dev3 = Resource::<Available>::new(
+                "dev3".to_string(),
+                "Developer 3".to_string(),
+                Some("dev3@test.com".to_string()),
+                "Developer".to_string(),
+                ResourceScope::Company,
+                None,
+                None,
+                None,
+                None,
+                0,
+            );
+            let any_dev3 = AnyResource::Available(dev3);
+            resources.insert(any_dev3.id().to_string(), any_dev3);
+            
             Self {
-                resources: RefCell::new(HashMap::new()),
+                resources: Rc::new(RefCell::new(resources)),
             }
         }
     }
@@ -448,8 +493,9 @@ mod test {
     }
 
     fn create_test_dates() -> (NaiveDate, NaiveDate) {
-        let start_date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
-        let due_date = NaiveDate::from_ymd_opt(2024, 1, 30).unwrap();
+        // Use weekdays to avoid weekend conflicts
+        let start_date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap(); // Monday
+        let due_date = NaiveDate::from_ymd_opt(2024, 1, 19).unwrap(); // Friday
         (start_date, due_date)
     }
 
@@ -568,7 +614,7 @@ mod test {
         };
         let result = use_case.execute(args);
 
-        if let Err(e) = &result {
+        if let Err(_e) = &result {
         }
 
         assert!(result.is_ok(), "Expected Ok, but got Err: {:?}", result);

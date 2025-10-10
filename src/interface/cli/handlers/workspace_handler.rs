@@ -113,8 +113,7 @@ spec:
 
     // Create example resource
     println!("👤 Creating example resource...");
-    let resource_manifest = format!(
-        r#"apiVersion: tasktaskrevolution.io/v1alpha1
+    let resource_manifest = r#"apiVersion: tasktaskrevolution.io/v1alpha1
 kind: Resource
 metadata:
   code: "DEV-001"
@@ -124,8 +123,7 @@ spec:
   type: "Developer"
   email: "john@example.com"
   description: "Example developer resource"
-"#,
-    );
+"#.to_string();
     std::fs::write(format!("{}/resources", company_dir), resource_manifest)?;
 
     // Create example task

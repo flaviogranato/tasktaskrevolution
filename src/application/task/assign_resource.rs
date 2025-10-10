@@ -149,11 +149,10 @@ where
             AnyResource::Assigned(res) => {
                 // Check if resource is already assigned to another task
                 // and if it has capacity for more assignments
-                if let Some(ref wip_limits) = res.wip_limits {
-                    if wip_limits.enabled {
-                        let current_active_tasks = res.get_active_task_count();
-                        return current_active_tasks < wip_limits.max_concurrent_tasks;
-                    }
+                if let Some(ref wip_limits) = res.wip_limits
+                    && wip_limits.enabled {
+                    let current_active_tasks = res.get_active_task_count();
+                    return current_active_tasks < wip_limits.max_concurrent_tasks;
                 }
                 // If no WIP limits, allow assignment
                 true
@@ -289,6 +288,7 @@ where
 mod tests {
     use super::*;
     use crate::domain::{resource_management::resource::Resource, task_management::builder::TaskBuilder};
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::NaiveDate;
     use std::{cell::RefCell, collections::HashMap};
 

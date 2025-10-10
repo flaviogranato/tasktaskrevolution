@@ -131,6 +131,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use super::*;
     use crate::application::validate::types::{ValidationResult, ValidationSeverity};
     use crate::domain::company_management::company::Company;

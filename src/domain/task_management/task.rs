@@ -195,7 +195,6 @@ impl DateRange {
 }
 
 #[allow(dead_code)]
-
 // Common methods for all Task states
 impl<S: TaskState> Task<S> {
     // --- Zero-copy accessors ---

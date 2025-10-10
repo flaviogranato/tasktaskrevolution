@@ -8,6 +8,7 @@ use task_task_revolution::infrastructure::persistence::task_repository::FileTask
 
 /// Test fixtures for TaskRepository tests
 struct TaskRepositoryTestFixture {
+    #[allow(dead_code)]
     temp_dir: TempDir,
     repository: FileTaskRepository,
 }
@@ -53,7 +54,7 @@ mod tests {
         let task = fixture.create_test_task("TASK-001", "Test Task", "PROJ-001");
 
         // Save the task
-        let saved_task = fixture.repository.save(task).unwrap();
+        let _saved_task = fixture.repository.save(task).unwrap();
 
         // Find by code
         let found = fixture.repository.find_by_code("TASK-001").unwrap();
@@ -118,7 +119,7 @@ mod tests {
         let task = fixture.create_test_task("TASK-005", "Hierarchy Task", "PROJ-001");
 
         // Save in hierarchy
-        let saved_task = fixture.repository.save_in_hierarchy(
+        let _saved_task = fixture.repository.save_in_hierarchy(
             task,
             "COMP-001",
             "PROJ-001",
@@ -188,7 +189,7 @@ mod tests {
     #[test]
     fn test_task_with_dependencies() {
         let fixture = TaskRepositoryTestFixture::new();
-        let mut task = Task {
+        let task = Task {
             id: uuid7::uuid7(),
             project_code: "PROJ-001".to_string(),
             code: "TASK-DEPS".to_string(),
@@ -220,7 +221,7 @@ mod tests {
     #[test]
     fn test_task_with_dates() {
         let fixture = TaskRepositoryTestFixture::new();
-        let mut task = Task {
+        let task = Task {
             id: uuid7::uuid7(),
             project_code: "PROJ-001".to_string(),
             code: "TASK-DATES".to_string(),
@@ -253,7 +254,7 @@ mod tests {
     #[test]
     fn test_task_with_assigned_resources() {
         let fixture = TaskRepositoryTestFixture::new();
-        let mut task = Task {
+        let task = Task {
             id: uuid7::uuid7(),
             project_code: "PROJ-001".to_string(),
             code: "TASK-RESOURCES".to_string(),

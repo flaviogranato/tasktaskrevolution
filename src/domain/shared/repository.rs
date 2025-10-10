@@ -370,6 +370,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use std::sync::Arc;
 
     // Mock entity types for testing

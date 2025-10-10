@@ -48,6 +48,7 @@ mod tests {
         any_resource::AnyResource,
         resource::{Resource, ResourceScope},
     };
+    use crate::domain::shared::errors::{DomainError, DomainResult};
 
     struct MockResourceRepository {
         resources: Vec<AnyResource>,

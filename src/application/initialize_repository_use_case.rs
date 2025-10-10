@@ -25,9 +25,11 @@ impl<R: ConfigRepository> InitializeRepositoryUseCase<R> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::application::errors::AppError;
     use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
+    use crate::domain::shared::convertable::Convertible;
     use std::cell::RefCell;
+    use std::path::Path;
 
     struct MockConfigRepository {
         should_fail: bool,

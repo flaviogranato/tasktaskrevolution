@@ -73,6 +73,7 @@ mod test {
     use super::*;
     use crate::application::errors::AppError;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use std::cell::RefCell;
 
     struct MockProjectRepository {

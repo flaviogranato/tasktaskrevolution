@@ -19,6 +19,7 @@ impl<R: ProjectRepository> ListProjectsUseCase<R> {
 mod tests {
     use super::*;
     use crate::domain::project_management::{AnyProject, builder::ProjectBuilder};
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use std::cell::RefCell;
 
     struct MockProjectRepository {

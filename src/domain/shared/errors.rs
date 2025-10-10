@@ -300,7 +300,7 @@ impl DomainError {
     }
 
     /// Create a new generic domain error
-    pub fn domain_error(message: &str) -> Self {
+    pub fn create_domain_error(message: &str) -> Self {
         Self::DomainError {
             message: message.to_string(),
         }

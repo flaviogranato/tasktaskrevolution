@@ -479,7 +479,7 @@ fn test_business_rules_validation() -> Result<(), Box<dyn std::error::Error>> {
 
     // Use the first YAML file found for validation
     let company_file_path = &yaml_files[0];
-    let validator1 = YamlValidator::new(&company_file_path)?;
+    let validator1 = YamlValidator::new(company_file_path)?;
     assert!(validator1.field_equals("metadata.code", "TECH-CORP"));
 
     // Testar regra: Códigos de projeto devem ser únicos por empresa

@@ -46,7 +46,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
             Some(c) => c,
             None => self.repository.get_next_code(&params.resource_type)?,
         };
-        let name = params.name.clone();
+        let _name = params.name.clone();
         let project_id = match params.scope {
             ResourceScope::Company => None,
             ResourceScope::Project => params.project_code.clone(),
@@ -69,7 +69,7 @@ impl<R: ResourceRepository> CreateResourceUseCase<R> {
         self.repository
             .save_in_hierarchy(r.into(), &params.company_code, params.project_code.as_deref())?;
 
-        let location = if let Some(proj_code) = params.project_code {
+        let _location = if let Some(proj_code) = params.project_code {
             format!("company {} and project {}", params.company_code, proj_code)
         } else {
             format!("company {}", params.company_code)
@@ -129,6 +129,7 @@ mod test {
     use super::*;
     use crate::application::errors::AppError;
     use crate::domain::resource_management::AnyResource;
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::{DateTime, Local};
     use std::cell::RefCell;
 

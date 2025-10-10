@@ -191,15 +191,13 @@ impl AnyResource {
 
     fn check_resource_availability<S: ResourceState>(&self, resource: &Resource<S>, date: chrono::NaiveDate) -> bool {
         // Check if resource is within active period
-        if let Some(start_date) = resource.start_date {
-            if date < start_date {
-                return false;
-            }
+        if let Some(start_date) = resource.start_date
+            && date < start_date {
+            return false;
         }
-        if let Some(end_date) = resource.end_date {
-            if date > end_date {
-                return false;
-            }
+        if let Some(end_date) = resource.end_date
+            && date > end_date {
+            return false;
         }
 
         // Check if it's a working day

@@ -2,6 +2,12 @@ use crate::domain::company_settings::repository::ConfigRepository;
 
 pub struct ResourceTypeValidator;
 
+impl Default for ResourceTypeValidator {
+    fn default() -> Self {
+        Self
+    }
+}
+
 impl ResourceTypeValidator {
     pub fn new() -> Self {
         Self
@@ -50,6 +56,7 @@ mod tests {
     use super::*;
     use crate::domain::company_settings::config::Config;
     use crate::domain::shared::errors::{DomainError, DomainResult};
+    use std::path::Path;
     use std::path::PathBuf;
 
     // Mock config repository for testing

@@ -344,7 +344,6 @@ mod tests {
     use super::*;
     use crate::domain::company_settings::config::Config;
     use crate::domain::shared::errors::{DomainError, DomainResult};
-    use crate::infrastructure::persistence::manifests::config_manifest::ConfigManifest;
     use std::cell::RefCell;
     use std::path::{Path, PathBuf};
 

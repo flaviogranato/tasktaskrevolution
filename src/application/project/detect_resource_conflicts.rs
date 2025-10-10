@@ -5,16 +5,15 @@
 
 use crate::application::errors::AppError;
 use crate::application::shared::code_resolver::CodeResolverTrait;
-use crate::domain::project_management::repository::{ProjectRepository, ProjectRepositoryWithId};
-use crate::domain::resource_management::repository::{ResourceRepository, ResourceRepositoryWithId};
-use crate::domain::task_management::repository::{TaskRepository, TaskRepositoryWithId};
-use crate::domain::shared::errors::{DomainError, DomainResult};
-use crate::domain::project_management::AnyProject;
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::resource_management::repository::ResourceRepository;
+use crate::domain::task_management::repository::TaskRepository;
 use chrono::NaiveDate;
 use std::collections::HashMap;
 
 /// Resource conflict detection use case
 pub struct DetectResourceConflictsUseCase {
+    #[allow(dead_code)]
     project_repository: Box<dyn ProjectRepository>,
     resource_repository: Box<dyn ResourceRepository>,
     task_repository: Box<dyn TaskRepository>,
@@ -78,7 +77,7 @@ impl DetectResourceConflictsUseCase {
         let resource_id = self
             .code_resolver
             .resolve_resource_code(resource_code)
-            .map_err(|e| AppError::from(e))?;
+            .map_err(AppError::from)?;
 
         // Load resource
         let resource = self
@@ -217,10 +216,9 @@ impl DetectResourceConflictsUseCase {
 
         for task in all_tasks {
             // Skip the task we're excluding (for updates)
-            if let Some(exclude_code) = exclude_task_code {
-                if task.code() == exclude_code {
-                    continue;
-                }
+            if let Some(exclude_code) = exclude_task_code
+                && task.code() == exclude_code {
+                continue;
             }
 
             // Check if task uses this resource and overlaps in time
@@ -265,8 +263,8 @@ impl DetectResourceConflictsUseCase {
     fn check_capacity_conflict(
         &self,
         resource: &crate::domain::resource_management::any_resource::AnyResource,
-        start_date: NaiveDate,
-        end_date: NaiveDate,
+        _start_date: NaiveDate,
+        _end_date: NaiveDate,
     ) -> Option<ResourceConflict> {
         // This is a simplified check - in a real implementation,
         // you would check current allocations and calculate total percentage
@@ -298,13 +296,18 @@ impl DetectResourceConflictsUseCase {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::project_management::AnyProject;
+    use crate::domain::project_management::repository::ProjectRepositoryWithId;
     use crate::domain::resource_management::any_resource::AnyResource;
+    use crate::domain::resource_management::repository::ResourceRepositoryWithId;
     use crate::domain::resource_management::resource::Resource;
     use crate::domain::resource_management::resource::ResourceScope;
     use crate::domain::task_management::any_task::AnyTask;
+    use crate::domain::task_management::repository::TaskRepositoryWithId;
     use crate::domain::task_management::task::Task;
     use crate::domain::task_management::state::Planned;
     use crate::domain::task_management::{Category, Priority};
+    use crate::domain::shared::errors::{DomainError, DomainResult};
     use chrono::NaiveDate;
     use std::cell::RefCell;
     use std::collections::HashMap;

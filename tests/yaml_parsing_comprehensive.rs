@@ -3,15 +3,13 @@
 //! Este módulo contém testes robustos para validação de parsing YAML
 //! cobrindo cenários de sucesso e falha com mensagens claras.
 
-use assert_cmd::prelude::*;
-use assert_fs::prelude::*;
-use predicates::prelude::*;
 use serde_yaml::Value;
 use std::fs;
 use std::path::Path;
 
 /// Validador YAML robusto com mensagens claras
 struct YamlParser {
+    #[allow(dead_code)]
     content: String,
     parsed: Value,
 }
@@ -25,6 +23,7 @@ impl YamlParser {
         })
     }
 
+    #[allow(dead_code)]
     fn from_file(file_path: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         let content = fs::read_to_string(file_path)?;
         Self::new(&content)
@@ -98,6 +97,7 @@ impl YamlParser {
     }
 
     /// Verifica se um campo é um array com elementos
+    #[allow(dead_code)]
     fn field_is_array_with_items(&self, path: &str) -> bool {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = &self.parsed;
@@ -520,7 +520,7 @@ spec:
     ];
 
     for (yaml_content, case_type) in edge_cases {
-        let parser = YamlParser::new(yaml_content).expect(&format!("Should parse YAML with {}", case_type));
+        let parser = YamlParser::new(yaml_content).unwrap_or_else(|_| panic!("Should parse YAML with {}", case_type));
         
         // Verificar que o YAML foi parseado corretamente
         assert!(parser.has_field("apiVersion"));

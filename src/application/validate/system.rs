@@ -83,6 +83,7 @@ where
 mod tests {
     use super::*;
     use crate::application::validate::types::{ValidationResult, ValidationSeverity};
+    use crate::domain::shared::errors::DomainResult;
     use crate::domain::company_management::repository::CompanyRepository;
     use crate::domain::project_management::repository::ProjectRepository;
     use crate::domain::resource_management::repository::ResourceRepository;
