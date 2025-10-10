@@ -94,6 +94,30 @@ impl YamlValidator {
         }
     }
 
+    /// Obtém o valor de um campo para debug
+    fn get_field_value(&self, path: &str) -> Option<String> {
+        let parts: Vec<&str> = path.split('.').collect();
+        let mut current = &self.parsed;
+
+        for part in parts {
+            if let Some(map) = current.as_mapping() {
+                if let Some(value) = map.get(part) {
+                    current = value;
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        }
+
+        if let Some(str_value) = current.as_str() {
+            Some(str_value.to_string())
+        } else {
+            Some(format!("{:?}", current))
+        }
+    }
+
     /// Verifica se o arquivo contém uma string específica
     fn contains(&self, text: &str) -> bool {
         self.content.contains(text)
@@ -1296,10 +1320,22 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         assert!(validator.field_not_empty(field), "Campo {} não deve estar vazio", field);
     }
 
-    // Valores específicos
-    assert!(validator.field_equals("metadata.code", "YAML-CORP"));
-    assert!(validator.field_equals("metadata.name", "YAML Corporation"));
-    assert!(validator.field_equals("spec.description", "YAML validation test company"));
+    // Valores específicos - verificação mais robusta
+    assert!(
+        validator.has_field("metadata.code") && validator.field_equals("metadata.code", "YAML-CORP"),
+        "metadata.code deve existir e ser 'YAML-CORP', mas foi: {:?}",
+        validator.get_field_value("metadata.code")
+    );
+    assert!(
+        validator.has_field("metadata.name") && validator.field_equals("metadata.name", "YAML Corporation"),
+        "metadata.name deve existir e ser 'YAML Corporation', mas foi: {:?}",
+        validator.get_field_value("metadata.name")
+    );
+    assert!(
+        validator.has_field("spec.description") && validator.field_equals("spec.description", "YAML validation test company"),
+        "spec.description deve existir e ser 'YAML validation test company', mas foi: {:?}",
+        validator.get_field_value("spec.description")
+    );
 
     temp.close()?;
     Ok(())
