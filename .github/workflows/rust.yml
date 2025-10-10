@@ -89,6 +89,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for tags
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -99,106 +101,59 @@ jobs:
       - name: Make binary executable
         run: chmod +x ./dist/ttr
 
-      - name: Ensure tag exists on remote
-        run: |
-          TAG="${{ steps.version.outputs.tag }}"
-          echo "Ensuring tag $TAG exists on remote repository..."
-          
-          # Check if tag exists locally
-          if git tag -l | grep -q "^$TAG$"; then
-            echo "Tag $TAG exists locally"
-            # Push tag to remote if it doesn't exist there
-            if ! git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
-              echo "Pushing tag $TAG to remote..."
-              git push origin "$TAG"
-            else
-              echo "Tag $TAG already exists on remote"
-            fi
-          else
-            echo "Tag $TAG does not exist locally, cannot create release"
-            exit 1
-          fi
-
-      - name: Get version and tag info
+      - name: Get version from Cargo.toml
         id: version
         run: |
           VERSION=$(grep '^version = ' Cargo.toml | cut -d '"' -f 2)
-          TAG="v$VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-          
-          # Get tag message if tag exists
-          if git tag -l | grep -q "^$TAG$"; then
-            TAG_MESSAGE=$(git tag -l --format='%(contents)' $TAG)
-            echo "tag_message<<EOF" >> $GITHUB_OUTPUT
-            echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "tag_message=Release $TAG" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Check if release already exists
-        id: check_release
-        run: |
-          TAG="${{ steps.version.outputs.tag }}"
-          echo "Checking if release $TAG exists..."
-          
-          # Check if tag exists locally
-          if git tag -l | grep -q "^$TAG$"; then
-            echo "Tag $TAG exists locally"
-          else
-            echo "Tag $TAG does not exist locally"
-          fi
-          
-          # Check if release exists on GitHub
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Release $TAG already exists on GitHub, skipping creation"
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Release $TAG does not exist on GitHub, will create"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Release
-        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
           body: |
-            ${{ steps.version.outputs.tag_message }}
+            ## 🚀 Task Task Revolution ${{ steps.version.outputs.version }}
             
-            ---
+            ### 📦 Download Binário Linux AMD64
             
-            ## 📦 Download Binário Linux AMD64
+            **Arquivo**: `ttr-linux-amd64`  
+            **Plataforma**: Linux x86_64 (AMD64)  
+            **Build**: Release otimizado  
             
-            ### 🔧 Instalação
-            1. Baixe o arquivo `ttr-linux-amd64` abaixo
-            2. Renomeie para `ttr`: `mv ttr-linux-amd64 ttr`
-            3. Torne executável: `chmod +x ttr`
-            4. Instale no sistema: `sudo mv ttr /usr/local/bin/`
-            
-            ### 📋 Verificação da Instalação
+            ### 🔧 Instalação Rápida
             ```bash
+            # 1. Baixe o arquivo abaixo
+            # 2. Renomeie e torne executável
+            mv ttr-linux-amd64 ttr
+            chmod +x ttr
+            
+            # 3. Instale no sistema
+            sudo mv ttr /usr/local/bin/
+            
+            # 4. Verifique a instalação
             ttr --version
-            ttr --help
             ```
             
-            ### 🏗️ Build Info
-            - **Plataforma**: Linux x86_64 (AMD64)
-            - **Arquitetura**: x86_64-unknown-linux-gnu
-            - **Build**: Release (otimizado)
-            - **Data**: $(date '+%Y-%m-%d %H:%M:%S UTC')
+            ### ✨ Funcionalidades desta versão
+            - 🔍 Sistema de busca avançado
+            - 📊 Engine de consultas
+            - 🐚 Completions para shell
+            - ✅ Validação de dados robusta
+            - ⚠️ Detecção de conflitos de recursos
+            - 📈 Geração de relatórios Gantt
+            
+            ### 📋 Comandos Principais
+            ```bash
+            ttr --help           # Ajuda geral
+            ttr search --help    # Sistema de busca
+            ttr query --help     # Engine de consultas
+            ttr completions --help  # Completions
+            ```
           files: ./dist/ttr
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Skip Release (already exists)
-        if: steps.check_release.outputs.exists == 'true'
-        run: |
-          echo "Release ${{ steps.version.outputs.tag }} already exists, skipping creation"
-          echo "To update the release, delete it first and re-run the workflow"
