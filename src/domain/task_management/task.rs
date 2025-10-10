@@ -334,6 +334,34 @@ impl Transition for Task<InProgress> {
 }
 
 #[cfg(test)]
+impl<S: TaskState> Queryable for Task<S> {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match field {
+            "id" => Some(QueryValue::String(self.id.to_string())),
+            "project_code" => Some(QueryValue::String(self.project_code.clone())),
+            "code" => Some(QueryValue::String(self.code.clone())),
+            "name" => Some(QueryValue::String(self.name.clone())),
+            "description" => self.description.as_ref().map(|d| QueryValue::String(d.clone())),
+            "status" => Some(QueryValue::String(format!("{:?}", self.state))),
+            "start_date" => Some(QueryValue::Date(self.start_date)),
+            "due_date" => Some(QueryValue::Date(self.due_date)),
+            "actual_end_date" => self.actual_end_date.map(QueryValue::Date),
+            "priority" => Some(QueryValue::String(self.priority.to_string())),
+            "category" => Some(QueryValue::String(self.category.to_string())),
+            "dependency_count" => Some(QueryValue::Number(self.dependencies.len() as f64)),
+            "assigned_resource_count" => Some(QueryValue::Number(self.assigned_resources.len() as f64)),
+            // TODO: Implement is_overdue, days_until_due, and Priority::weight methods
+            // "is_overdue" => Some(QueryValue::Boolean(self.is_overdue())),
+            // "days_until_due" => Some(QueryValue::Number(self.days_until_due() as f64)),
+            // "priority_weight" => Some(QueryValue::Number(self.priority.weight() as f64)),
+            _ => None,
+        }
+    }
+
+    fn entity_type() -> &'static str {
+        "task"
+    }
+}
 mod tests {
     use super::*;
     use crate::domain::shared::errors::DomainError;
@@ -713,31 +741,3 @@ mod tests {
 // QUERYABLE IMPLEMENTATION
 // ============================================================================
 
-impl<S: TaskState> Queryable for Task<S> {
-    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
-        match field {
-            "id" => Some(QueryValue::String(self.id.to_string())),
-            "project_code" => Some(QueryValue::String(self.project_code.clone())),
-            "code" => Some(QueryValue::String(self.code.clone())),
-            "name" => Some(QueryValue::String(self.name.clone())),
-            "description" => self.description.as_ref().map(|d| QueryValue::String(d.clone())),
-            "status" => Some(QueryValue::String(format!("{:?}", self.state))),
-            "start_date" => Some(QueryValue::Date(self.start_date)),
-            "due_date" => Some(QueryValue::Date(self.due_date)),
-            "actual_end_date" => self.actual_end_date.map(QueryValue::Date),
-            "priority" => Some(QueryValue::String(self.priority.to_string())),
-            "category" => Some(QueryValue::String(self.category.to_string())),
-            "dependency_count" => Some(QueryValue::Number(self.dependencies.len() as f64)),
-            "assigned_resource_count" => Some(QueryValue::Number(self.assigned_resources.len() as f64)),
-            // TODO: Implement is_overdue, days_until_due, and Priority::weight methods
-            // "is_overdue" => Some(QueryValue::Boolean(self.is_overdue())),
-            // "days_until_due" => Some(QueryValue::Number(self.days_until_due() as f64)),
-            // "priority_weight" => Some(QueryValue::Number(self.priority.weight() as f64)),
-            _ => None,
-        }
-    }
-
-    fn entity_type() -> &'static str {
-        "task"
-    }
-}

@@ -20,10 +20,13 @@ Commands:
   build        Build static site
   template     Template management
   task         Task management
+  resource     Resource management
   query        Query entities with filtering
+  search       Search across all files
   migrate      Migration tools
   serve        Serve HTML files locally
   completions  Generate shell completions
+  test-data    Test data validation and management
   help         Print this message or the help of the given subcommand(s)
 
 Options:

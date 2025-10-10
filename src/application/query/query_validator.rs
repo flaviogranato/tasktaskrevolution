@@ -286,7 +286,7 @@ mod tests {
             expression: QueryExpression::Condition(FilterCondition {
                 field: "status".to_string(),
                 operator: ComparisonOperator::Equal,
-                value: QueryValue::String("active".to_string()),
+                value: QueryValue::String("In Progress".to_string()),
             }),
             aggregation: None,
             sort: None,
@@ -321,7 +321,7 @@ mod tests {
             expression: QueryExpression::Condition(FilterCondition {
                 field: "status".to_string(),
                 operator: ComparisonOperator::Equal,
-                value: QueryValue::String("active".to_string()),
+                value: QueryValue::String("In Progress".to_string()),
             }),
             aggregation: Some(AggregationType::Count),
             sort: None,
@@ -329,6 +329,9 @@ mod tests {
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
+        if let Err(e) = &result {
+            println!("Validation error: {}", e);
+        }
         assert!(result.is_ok());
     }
 
@@ -338,7 +341,7 @@ mod tests {
             expression: QueryExpression::Condition(FilterCondition {
                 field: "status".to_string(),
                 operator: ComparisonOperator::Equal,
-                value: QueryValue::String("active".to_string()),
+                value: QueryValue::String("In Progress".to_string()),
             }),
             aggregation: Some(AggregationType::Sum("task_count".to_string())),
             sort: None,
@@ -355,7 +358,7 @@ mod tests {
             expression: QueryExpression::Condition(FilterCondition {
                 field: "status".to_string(),
                 operator: ComparisonOperator::Equal,
-                value: QueryValue::String("active".to_string()),
+                value: QueryValue::String("In Progress".to_string()),
             }),
             aggregation: Some(AggregationType::Sum("name".to_string())),
             sort: None,
@@ -373,7 +376,7 @@ mod tests {
             expression: QueryExpression::Condition(FilterCondition {
                 field: "status".to_string(),
                 operator: ComparisonOperator::Equal,
-                value: QueryValue::String("active".to_string()),
+                value: QueryValue::String("In Progress".to_string()),
             }),
             aggregation: None,
             sort: Some(crate::domain::shared::query_parser::SortOption {
@@ -393,7 +396,7 @@ mod tests {
             expression: QueryExpression::Condition(FilterCondition {
                 field: "status".to_string(),
                 operator: ComparisonOperator::Equal,
-                value: QueryValue::String("active".to_string()),
+                value: QueryValue::String("In Progress".to_string()),
             }),
             aggregation: None,
             sort: Some(crate::domain::shared::query_parser::SortOption {

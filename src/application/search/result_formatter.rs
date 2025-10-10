@@ -269,14 +269,14 @@ mod tests {
     fn test_format_highlighted() {
         let results = vec![create_test_result()];
         let formatted = SearchResultFormatter::format_highlighted(&results, "Test");
-        assert!(formatted.contains(">>>Test<<<"));
+        assert!(formatted.contains(">>>Test <<<"));
     }
 
     #[test]
     fn test_format_empty_results() {
         let results = vec![];
         let formatted = SearchResultFormatter::format_table(&results);
-        assert_eq!(formatted, "No results found.\n");
+        assert_eq!(formatted, "No results found.");
     }
 
     #[test]

@@ -1,13 +1,15 @@
 #![allow(dead_code)]
 
 use super::state::{Assigned, Available, Inactive, ResourceState};
-use crate::domain::shared::query_engine::Queryable;
-use crate::domain::shared::query_parser::QueryValue;
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::Display;
 use uuid7::{Uuid, uuid7};
+#[cfg(test)]
+use crate::domain::shared::query_engine::Queryable;
+#[cfg(test)]
+use crate::domain::shared::query_parser::QueryValue;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimeOffEntry {
@@ -596,10 +598,46 @@ impl Display for ProjectAssignment {
 }
 
 #[cfg(test)]
+impl<S: ResourceState> Queryable for Resource<S> {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match field {
+            "id" => Some(QueryValue::String(self.id.to_string())),
+            "code" => Some(QueryValue::String(self.code.clone())),
+            "name" => Some(QueryValue::String(self.name.clone())),
+            "email" => self.email.as_ref().map(|e| QueryValue::String(e.clone())),
+            "resource_type" => Some(QueryValue::String(self.resource_type.clone())),
+            "scope" => Some(QueryValue::String(self.scope.to_string())),
+            "project_id" => self.project_id.as_ref().map(|id| QueryValue::String(id.clone())),
+            "start_date" => self.start_date.map(QueryValue::Date),
+            "end_date" => self.end_date.map(QueryValue::Date),
+            "time_off_balance" => Some(QueryValue::Number(self.time_off_balance as f64)),
+            "vacation_count" => Some(QueryValue::Number(self.vacations.as_ref().map_or(0, |v| v.len()) as f64)),
+            "time_off_history_count" => Some(QueryValue::Number(
+                self.time_off_history.as_ref().map_or(0, |h| h.len()) as f64,
+            )),
+            "task_assignment_count" => Some(QueryValue::Number(
+                self.task_assignments.as_ref().map_or(0, |a| a.len()) as f64,
+            )),
+            "active_task_count" => Some(QueryValue::Number(self.get_active_task_count() as f64)),
+            "current_allocation_percentage" => {
+                Some(QueryValue::Number(self.get_current_allocation_percentage() as f64))
+            }
+            "is_wip_limits_exceeded" => Some(QueryValue::Boolean(self.is_wip_limits_exceeded())),
+            "wip_status" => Some(QueryValue::String(self.get_wip_status().to_string())),
+            // TODO: Implement is_available check for generic state
+            // "is_available" => Some(QueryValue::Boolean(matches!(self.state, Available))),
+            _ => None,
+        }
+    }
+
+    fn entity_type() -> &'static str {
+        "resource"
+    }
+}
 mod tests {
+    #[allow(unused_imports)]
     use super::*;
     use chrono::{DateTime, Local, TimeZone};
-    use uuid7::uuid7;
 
     // Helper to create a DateTime<Local> for tests
     fn dt(year: i32, month: u32, day: u32) -> DateTime<Local> {
@@ -1162,39 +1200,3 @@ mod tests {
 // QUERYABLE IMPLEMENTATION
 // ============================================================================
 
-impl<S: ResourceState> Queryable for Resource<S> {
-    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
-        match field {
-            "id" => Some(QueryValue::String(self.id.to_string())),
-            "code" => Some(QueryValue::String(self.code.clone())),
-            "name" => Some(QueryValue::String(self.name.clone())),
-            "email" => self.email.as_ref().map(|e| QueryValue::String(e.clone())),
-            "resource_type" => Some(QueryValue::String(self.resource_type.clone())),
-            "scope" => Some(QueryValue::String(self.scope.to_string())),
-            "project_id" => self.project_id.as_ref().map(|id| QueryValue::String(id.clone())),
-            "start_date" => self.start_date.map(QueryValue::Date),
-            "end_date" => self.end_date.map(QueryValue::Date),
-            "time_off_balance" => Some(QueryValue::Number(self.time_off_balance as f64)),
-            "vacation_count" => Some(QueryValue::Number(self.vacations.as_ref().map_or(0, |v| v.len()) as f64)),
-            "time_off_history_count" => Some(QueryValue::Number(
-                self.time_off_history.as_ref().map_or(0, |h| h.len()) as f64,
-            )),
-            "task_assignment_count" => Some(QueryValue::Number(
-                self.task_assignments.as_ref().map_or(0, |a| a.len()) as f64,
-            )),
-            "active_task_count" => Some(QueryValue::Number(self.get_active_task_count() as f64)),
-            "current_allocation_percentage" => {
-                Some(QueryValue::Number(self.get_current_allocation_percentage() as f64))
-            }
-            "is_wip_limits_exceeded" => Some(QueryValue::Boolean(self.is_wip_limits_exceeded())),
-            "wip_status" => Some(QueryValue::String(self.get_wip_status().to_string())),
-            // TODO: Implement is_available check for generic state
-            // "is_available" => Some(QueryValue::Boolean(matches!(self.state, Available))),
-            _ => None,
-        }
-    }
-
-    fn entity_type() -> &'static str {
-        "resource"
-    }
-}

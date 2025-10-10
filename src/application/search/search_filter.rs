@@ -290,12 +290,30 @@ impl SearchFilter {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use crate::domain::shared::search_engine::SearchMatch;
 
     fn create_test_results() -> Vec<SearchResult> {
         vec![
             SearchResult {
                 file_path: PathBuf::from("projects/test1.yaml"),
-                matches: vec![],
+                matches: vec![
+                    SearchMatch {
+                        line_number: 1,
+                        line_content: "name: Test Project".to_string(),
+                        match_start: 0,
+                        match_end: 4,
+                        context_before: None,
+                        context_after: None,
+                    },
+                    SearchMatch {
+                        line_number: 2,
+                        line_content: "status: active".to_string(),
+                        match_start: 0,
+                        match_end: 6,
+                        context_before: None,
+                        context_after: None,
+                    },
+                ],
                 score: 2.5,
                 file_type: FileType::Project,
             },
