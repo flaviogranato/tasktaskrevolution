@@ -26,7 +26,7 @@ pub struct SearchMatch {
 }
 
 /// Tipo de arquivo
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum FileType {
     Project,
     Task,

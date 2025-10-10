@@ -386,6 +386,9 @@ mod tests {
                 operator: ComparisonOperator::Equal,
                 value: QueryValue::Boolean(true),
             }),
+            aggregation: None,
+            pagination: PaginationOptions::default(),
+            sort: None,
         };
 
         let result = QueryEngine::execute(&query, entities).unwrap();
@@ -423,6 +426,9 @@ mod tests {
                 operator: ComparisonOperator::GreaterThan,
                 value: QueryValue::Number(80.0),
             }),
+            aggregation: None,
+            pagination: PaginationOptions::default(),
+            sort: None,
         };
 
         let result = QueryEngine::execute(&query, entities).unwrap();
@@ -459,6 +465,9 @@ mod tests {
                 operator: ComparisonOperator::Contains,
                 value: QueryValue::String("li".to_string()),
             }),
+            aggregation: None,
+            pagination: PaginationOptions::default(),
+            sort: None,
         };
 
         let result = QueryEngine::execute(&query, entities).unwrap();
@@ -503,6 +512,9 @@ mod tests {
                     value: QueryValue::Number(80.0),
                 }))),
             },
+            aggregation: None,
+            pagination: PaginationOptions::default(),
+            sort: None,
         };
 
         let result = QueryEngine::execute(&query, entities).unwrap();
@@ -525,6 +537,9 @@ mod tests {
                 operator: ComparisonOperator::Equal,
                 value: QueryValue::String("value".to_string()),
             }),
+            aggregation: None,
+            pagination: PaginationOptions::default(),
+            sort: None,
         };
 
         let result = QueryEngine::execute(&query, entities);

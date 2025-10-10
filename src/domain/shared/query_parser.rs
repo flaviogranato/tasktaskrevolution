@@ -248,7 +248,12 @@ impl QueryParser {
     /// Parse a query string into a Query AST
     pub fn parse(&mut self) -> Result<Query, QueryParseError> {
         let expression = self.parse_expression()?;
-        Ok(Query { expression })
+        Ok(Query { 
+            expression,
+            aggregation: None,
+            pagination: PaginationOptions::default(),
+            sort: None,
+        })
     }
 
     fn parse_expression(&mut self) -> Result<QueryExpression, QueryParseError> {

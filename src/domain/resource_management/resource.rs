@@ -1182,7 +1182,8 @@ impl<S: ResourceState> Queryable for Resource<S> {
             "current_allocation_percentage" => Some(QueryValue::Number(self.get_current_allocation_percentage() as f64)),
             "is_wip_limits_exceeded" => Some(QueryValue::Boolean(self.is_wip_limits_exceeded())),
             "wip_status" => Some(QueryValue::String(self.get_wip_status().to_string())),
-            "is_available" => Some(QueryValue::Boolean(matches!(self.state, Available))),
+            // TODO: Implement is_available check for generic state
+            // "is_available" => Some(QueryValue::Boolean(matches!(self.state, Available))),
             _ => None,
         }
     }

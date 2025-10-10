@@ -59,7 +59,7 @@ pub struct QueryArgs {
 
 pub fn execute_query(args: QueryArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Parse entity type
-    let entity_type = EntityType::from_str(&args.entity_type)?;
+    let entity_type = args.entity_type.parse::<EntityType>()?;
 
     // Show available fields if requested
     if args.show_fields {

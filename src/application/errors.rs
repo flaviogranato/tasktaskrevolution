@@ -72,6 +72,9 @@ pub enum AppError {
     ConfigurationMissing {
         field: String,
     },
+    SearchError {
+        message: String,
+    },
 
     // Business Logic Errors
     TaskAssignmentFailed {
@@ -245,6 +248,9 @@ impl fmt::Display for AppError {
             }
             AppError::ConfigurationMissing { field } => {
                 write!(f, "Missing configuration for field '{}'", field)
+            }
+            AppError::SearchError { message } => {
+                write!(f, "Search error: {}", message)
             }
 
             // Business Logic Errors
@@ -441,6 +447,13 @@ impl AppError {
         Self::DeserializationError {
             format: format.into(),
             details: details.into(),
+        }
+    }
+
+    /// Create a search error
+    pub fn search_error(message: impl Into<String>) -> Self {
+        Self::SearchError {
+            message: message.into(),
         }
     }
 
