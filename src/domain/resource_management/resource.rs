@@ -1,15 +1,15 @@
 #![allow(dead_code)]
 
 use super::state::{Assigned, Available, Inactive, ResourceState};
+#[cfg(test)]
+use crate::domain::shared::query_engine::Queryable;
+#[cfg(test)]
+use crate::domain::shared::query_parser::QueryValue;
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::Display;
 use uuid7::{Uuid, uuid7};
-#[cfg(test)]
-use crate::domain::shared::query_engine::Queryable;
-#[cfg(test)]
-use crate::domain::shared::query_parser::QueryValue;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TimeOffEntry {
@@ -1199,4 +1199,3 @@ mod tests {
 // ============================================================================
 // QUERYABLE IMPLEMENTATION
 // ============================================================================
-
