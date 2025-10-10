@@ -1,4 +1,4 @@
-use crate::domain::shared::search_engine::{SearchResult, SearchMatch, FileType};
+use crate::domain::shared::search_engine::{SearchResult, FileType};
 use serde_json;
 use std::collections::HashMap;
 
@@ -168,7 +168,7 @@ impl SearchResultFormatter {
     }
 
     /// Destaca matches em uma linha
-    fn highlight_match(line: &str, pattern: &str, start: usize, end: usize) -> String {
+    fn highlight_match(line: &str, _pattern: &str, start: usize, end: usize) -> String {
         if start >= line.len() || end > line.len() || start >= end {
             return line.to_string();
         }
@@ -207,6 +207,7 @@ impl SearchResultFormatter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::shared::search_engine::SearchMatch;
     use std::path::PathBuf;
 
     fn create_test_result() -> SearchResult {

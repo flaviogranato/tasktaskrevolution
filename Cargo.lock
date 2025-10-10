@@ -2939,6 +2939,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid7",
  "validator",
+ "walkdir",
  "warp",
 ]
 

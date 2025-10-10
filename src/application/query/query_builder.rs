@@ -132,7 +132,7 @@ impl QueryBuilder {
     }
 
     /// Adiciona ordenação descendente
-    pub fn sort_desc(mut self, field: &str) -> Self {
+    pub fn sort_desc(self, field: &str) -> Self {
         self.sort_by(field, false)
     }
 

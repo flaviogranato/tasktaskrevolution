@@ -1,21 +1,12 @@
 use crate::application::errors::AppError;
-use crate::domain::project_management::{
-    any_project::AnyProject,
-    repository::{ProjectRepository, ProjectRepositoryWithId},
-};
-use crate::domain::resource_management::{
-    any_resource::AnyResource,
-    repository::{ResourceRepository, ResourceRepositoryWithId},
-};
+use crate::domain::project_management::repository::ProjectRepository;
+use crate::domain::resource_management::repository::ResourceRepository;
 use crate::domain::shared::query_engine::{QueryEngine, QueryResult};
 use crate::domain::shared::query_parser::{Query, QueryValue};
-use crate::domain::task_management::{
-    any_task::AnyTask,
-    repository::{TaskRepository, TaskRepositoryWithId},
-};
+use crate::domain::task_management::repository::TaskRepository;
 
 /// Tipos de entidades que podem ser consultadas
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EntityType {
     Project,
     Task,
@@ -76,38 +67,77 @@ impl QueryExecutor {
 
     /// Executa query em projetos
     fn execute_project_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
-        let projects = self.project_repository.find_all()?;
-        let project_values: Vec<QueryValue> = projects
+        let projects = self.project_repository.find_all()
+            .map_err(|e| AppError::from(e))?;
+        
+        let result = QueryEngine::execute(&query, projects)
+            .map_err(|e| AppError::ValidationError {
+                field: "query".to_string(),
+                message: format!("Query execution error: {:?}", e),
+            })?;
+        
+        // Converter resultado para QueryValue
+        let items: Vec<QueryValue> = result.items
             .into_iter()
             .map(|p| QueryValue::String(serde_json::to_string(&p).unwrap_or_default()))
             .collect();
-
-        let result = QueryEngine::execute(&query, project_values)?;
-        Ok(result)
+        
+        Ok(QueryResult {
+            items,
+            total_count: result.total_count,
+            filtered_count: result.filtered_count,
+            aggregation_result: result.aggregation_result,
+        })
     }
 
     /// Executa query em tarefas
     fn execute_task_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
-        let tasks = self.task_repository.find_all()?;
-        let task_values: Vec<QueryValue> = tasks
+        let tasks = self.task_repository.find_all()
+            .map_err(|e| AppError::from(e))?;
+        
+        let result = QueryEngine::execute(&query, tasks)
+            .map_err(|e| AppError::ValidationError {
+                field: "query".to_string(),
+                message: format!("Query execution error: {:?}", e),
+            })?;
+        
+        // Converter resultado para QueryValue
+        let items: Vec<QueryValue> = result.items
             .into_iter()
             .map(|t| QueryValue::String(serde_json::to_string(&t).unwrap_or_default()))
             .collect();
-
-        let result = QueryEngine::execute(&query, task_values)?;
-        Ok(result)
+        
+        Ok(QueryResult {
+            items,
+            total_count: result.total_count,
+            filtered_count: result.filtered_count,
+            aggregation_result: result.aggregation_result,
+        })
     }
 
     /// Executa query em recursos
     fn execute_resource_query(&self, query: Query) -> Result<QueryResult<QueryValue>, AppError> {
-        let resources = self.resource_repository.find_all()?;
-        let resource_values: Vec<QueryValue> = resources
+        let resources = self.resource_repository.find_all()
+            .map_err(|e| AppError::from(e))?;
+        
+        let result = QueryEngine::execute(&query, resources)
+            .map_err(|e| AppError::ValidationError {
+                field: "query".to_string(),
+                message: format!("Query execution error: {:?}", e),
+            })?;
+        
+        // Converter resultado para QueryValue
+        let items: Vec<QueryValue> = result.items
             .into_iter()
             .map(|r| QueryValue::String(serde_json::to_string(&r).unwrap_or_default()))
             .collect();
-
-        let result = QueryEngine::execute(&query, resource_values)?;
-        Ok(result)
+        
+        Ok(QueryResult {
+            items,
+            total_count: result.total_count,
+            filtered_count: result.filtered_count,
+            aggregation_result: result.aggregation_result,
+        })
     }
 
     /// Executa query e retorna entidades completas
@@ -215,9 +245,10 @@ impl QueryExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::shared::query_parser::{AggregationType, FilterCondition, ComparisonOperator, QueryValue, QueryExpression, SortOption, PaginationOptions};
+    use crate::domain::project_management::{AnyProject, repository::ProjectRepositoryWithId};
+    use crate::domain::resource_management::{AnyResource, repository::ResourceRepositoryWithId};
+    use crate::domain::task_management::{AnyTask, repository::TaskRepositoryWithId};
     use std::cell::RefCell;
-    use std::collections::HashMap;
 
     // Mock repositories for testing
     struct MockProjectRepository {
