@@ -99,12 +99,23 @@ jobs:
       - name: Make binary executable
         run: chmod +x ./dist/ttr
 
-      - name: Get version from Cargo.toml
+      - name: Get version and tag info
         id: version
         run: |
           VERSION=$(grep '^version = ' Cargo.toml | cut -d '"' -f 2)
+          TAG="v$VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          
+          # Get tag message if tag exists
+          if git tag -l | grep -q "^$TAG$"; then
+            TAG_MESSAGE=$(git tag -l --format='%(contents)' $TAG)
+            echo "tag_message<<EOF" >> $GITHUB_OUTPUT
+            echo "$TAG_MESSAGE" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "tag_message=Release $TAG" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -112,32 +123,29 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.tag }}
           body: |
-            ## 🚀 Task Task Revolution ${{ steps.version.outputs.version }}
+            ${{ steps.version.outputs.tag_message }}
             
-            ### 📦 Binário Linux AMD64
-            - **Arquivo**: `ttr-linux-amd64`
-            - **Plataforma**: Linux x86_64
-            - **Arquitetura**: AMD64
+            ---
             
-            ### 🔧 Como usar
-            1. Baixe o arquivo `ttr-linux-amd64`
-            2. Renomeie para `ttr`
+            ## 📦 Download Binário Linux AMD64
+            
+            ### 🔧 Instalação
+            1. Baixe o arquivo `ttr-linux-amd64` abaixo
+            2. Renomeie para `ttr`: `mv ttr-linux-amd64 ttr`
             3. Torne executável: `chmod +x ttr`
-            4. Mova para PATH: `sudo mv ttr /usr/local/bin/`
+            4. Instale no sistema: `sudo mv ttr /usr/local/bin/`
             
-            ### ✨ Funcionalidades desta versão
-            - Sistema de busca avançado
-            - Engine de consultas
-            - Completions para shell
-            - Validação de dados robusta
-            - Detecção de conflitos de recursos
-            - Geração de relatórios Gantt
-            
-            ### 📋 Verificação
+            ### 📋 Verificação da Instalação
             ```bash
             ttr --version
             ttr --help
             ```
+            
+            ### 🏗️ Build Info
+            - **Plataforma**: Linux x86_64 (AMD64)
+            - **Arquitetura**: x86_64-unknown-linux-gnu
+            - **Build**: Release (otimizado)
+            - **Data**: $(date '+%Y-%m-%d %H:%M:%S UTC')
           files: ./dist/ttr
           draft: false
           prerelease: false
