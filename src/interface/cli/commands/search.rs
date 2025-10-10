@@ -1,8 +1,7 @@
-use crate::application::search::{SearchExecutor, SearchResultFormatter, SearchFilter, SearchFilterBuilder};
+use crate::application::search::{SearchExecutor, SearchResultFormatter, SearchFilter};
 use crate::domain::shared::search_engine::{SearchOptions, FileType};
 use clap::Args;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 #[derive(Args, Debug)]
 pub struct SearchArgs {
@@ -85,7 +84,7 @@ pub struct SearchArgs {
 
 pub fn execute_search(args: SearchArgs) -> Result<(), Box<dyn std::error::Error>> {
     // Determine workspace path
-    let workspace_path = if let Some(workspace) = args.workspace {
+    let workspace_path = if let Some(ref workspace) = args.workspace {
         PathBuf::from(workspace)
     } else {
         std::env::current_dir()?
@@ -98,7 +97,7 @@ pub fn execute_search(args: SearchArgs) -> Result<(), Box<dyn std::error::Error>
     let search_options = build_search_options(&args);
 
     // Execute search
-    let results = if let Some(entity_type) = args.entity_type {
+    let results = if let Some(ref entity_type) = args.entity_type {
         let entity_type = entity_type.parse()?;
         executor.search_by_entity_type(entity_type, &args.query, search_options)?
     } else {
@@ -203,8 +202,6 @@ fn format_results(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::tempdir;
-    use std::fs;
 
     #[test]
     fn test_parse_file_type() {

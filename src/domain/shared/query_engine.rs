@@ -248,7 +248,7 @@ impl QueryEngine {
             
             match (a_value, b_value) {
                 (Some(a_val), Some(b_val)) => {
-                    let comparison = Self::compare_values(&a_val, &b_val);
+                    let comparison = Self::compare_values_for_sorting(&a_val, &b_val);
                     if sort.ascending {
                         comparison
                     } else {
@@ -314,7 +314,7 @@ impl QueryEngine {
     }
 
     /// Compara dois valores para ordenação
-    fn compare_values(a: &QueryValue, b: &QueryValue) -> std::cmp::Ordering {
+    fn compare_values_for_sorting(a: &QueryValue, b: &QueryValue) -> std::cmp::Ordering {
         match (a, b) {
             (QueryValue::String(a), QueryValue::String(b)) => a.cmp(b),
             (QueryValue::Number(a), QueryValue::Number(b)) => a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal),

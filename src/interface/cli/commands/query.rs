@@ -1,8 +1,6 @@
-use crate::application::query::{QueryExecutor, QueryBuilder, QueryValidator, EntityType};
-use crate::domain::shared::query_parser::{QueryParser, QueryValue, AggregationType};
+use crate::application::query::{QueryBuilder, EntityType};
+use crate::domain::shared::query_parser::{QueryParser, QueryValue};
 use clap::Args;
-use serde_json;
-use std::str::FromStr;
 
 #[derive(Args, Debug)]
 pub struct QueryArgs {

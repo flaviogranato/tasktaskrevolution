@@ -1,5 +1,4 @@
 use crate::domain::shared::search_engine::{SearchResult, FileType};
-use std::collections::HashMap;
 
 /// Filtro de busca para refinar resultados
 pub struct SearchFilter {
