@@ -1332,7 +1332,8 @@ fn test_company_yaml_validation() -> Result<(), Box<dyn std::error::Error>> {
         validator.get_field_value("metadata.name")
     );
     assert!(
-        validator.has_field("spec.description") && validator.field_equals("spec.description", "YAML validation test company"),
+        validator.has_field("spec.description")
+            && validator.field_equals("spec.description", "YAML validation test company"),
         "spec.description deve existir e ser 'YAML validation test company', mas foi: {:?}",
         validator.get_field_value("spec.description")
     );
