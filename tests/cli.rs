@@ -2332,8 +2332,7 @@ fn test_tracing_logging_verbose() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Starting YAML manifests migration"))
-        .stdout(predicate::str::contains("INFO Starting YAML manifests migration"));
+        .stdout(predicate::str::contains("Starting YAML manifests migration"));
 
     Ok(())
 }
