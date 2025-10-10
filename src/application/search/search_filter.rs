@@ -289,8 +289,8 @@ impl SearchFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
     use crate::domain::shared::search_engine::SearchMatch;
+    use std::path::PathBuf;
 
     fn create_test_results() -> Vec<SearchResult> {
         vec![
