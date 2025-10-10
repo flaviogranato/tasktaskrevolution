@@ -1,0 +1,51 @@
+{
+  "summary": {
+    "total_entities": 5,
+    "valid_entities": 4,
+    "invalid_entities": 1,
+    "entities_with_errors": 1,
+    "entities_with_warnings": 0,
+    "total_errors": 1,
+    "total_warnings": 0,
+    "success_rate": 80.0
+  },
+  "results": [
+    {
+      "entity_type": "Company",
+      "entity_id": "TECH-001",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "entity_type": "Company",
+      "entity_id": "TEST-CORP",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "entity_type": "Resource",
+      "entity_id": "developer-1",
+      "errors": [
+        {
+          "field": "company_code",
+          "expected": "existing company code",
+          "actual": "ALL",
+          "message": "Resource references non-existent company"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "entity_type": "Project",
+      "entity_id": "TEST-PROJ",
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "entity_type": "Task",
+      "entity_id": "task-1",
+      "errors": [],
+      "warnings": []
+    }
+  ]
+}

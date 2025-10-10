@@ -130,6 +130,11 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::TaskCommand,
     },
+    /// Resource management
+    Resource {
+        #[clap(subcommand)]
+        command: commands::ResourceCommand,
+    },
     /// Query entities with filtering
     #[clap(alias = "q")]
     Query {
@@ -314,6 +319,7 @@ impl Cli {
             Commands::Build { output, base_url } => command_executor::execute_build(output, base_url),
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),
+            Commands::Resource { command } => handlers::resource_handler::handle_resource_command(command),
             Commands::Query {
                 query,
                 entity_type,
