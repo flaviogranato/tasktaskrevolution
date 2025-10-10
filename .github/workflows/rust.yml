@@ -99,6 +99,26 @@ jobs:
       - name: Make binary executable
         run: chmod +x ./dist/ttr
 
+      - name: Ensure tag exists on remote
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          echo "Ensuring tag $TAG exists on remote repository..."
+          
+          # Check if tag exists locally
+          if git tag -l | grep -q "^$TAG$"; then
+            echo "Tag $TAG exists locally"
+            # Push tag to remote if it doesn't exist there
+            if ! git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+              echo "Pushing tag $TAG to remote..."
+              git push origin "$TAG"
+            else
+              echo "Tag $TAG already exists on remote"
+            fi
+          else
+            echo "Tag $TAG does not exist locally, cannot create release"
+            exit 1
+          fi
+
       - name: Get version and tag info
         id: version
         run: |
@@ -117,7 +137,32 @@ jobs:
             echo "tag_message=Release $TAG" >> $GITHUB_OUTPUT
           fi
 
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          echo "Checking if release $TAG exists..."
+          
+          # Check if tag exists locally
+          if git tag -l | grep -q "^$TAG$"; then
+            echo "Tag $TAG exists locally"
+          else
+            echo "Tag $TAG does not exist locally"
+          fi
+          
+          # Check if release exists on GitHub
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release $TAG already exists on GitHub, skipping creation"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release $TAG does not exist on GitHub, will create"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
+        if: steps.check_release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -151,3 +196,9 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip Release (already exists)
+        if: steps.check_release.outputs.exists == 'true'
+        run: |
+          echo "Release ${{ steps.version.outputs.tag }} already exists, skipping creation"
+          echo "To update the release, delete it first and re-run the workflow"
