@@ -3,6 +3,8 @@
 use super::category::Category;
 use super::priority::Priority;
 use super::state::{Blocked, Cancelled, Completed, InProgress, Planned, TaskState};
+use crate::domain::shared::query_engine::Queryable;
+use crate::domain::shared::query_parser::QueryValue;
 use chrono::{NaiveDate, Utc};
 use serde::Serialize;
 use uuid7::Uuid;
@@ -704,5 +706,37 @@ mod tests {
 
         let completed_task: Task<Completed> = in_progress_task.transition();
         assert!(matches!(completed_task.state, Completed));
+    }
+}
+
+// ============================================================================
+// QUERYABLE IMPLEMENTATION
+// ============================================================================
+
+impl<S: TaskState> Queryable for Task<S> {
+    fn get_field_value(&self, field: &str) -> Option<QueryValue> {
+        match field {
+            "id" => Some(QueryValue::String(self.id.to_string())),
+            "project_code" => Some(QueryValue::String(self.project_code.clone())),
+            "code" => Some(QueryValue::String(self.code.clone())),
+            "name" => Some(QueryValue::String(self.name.clone())),
+            "description" => self.description.as_ref().map(|d| QueryValue::String(d.clone())),
+            "status" => Some(QueryValue::String(self.state.status_name())),
+            "start_date" => Some(QueryValue::Date(self.start_date)),
+            "due_date" => Some(QueryValue::Date(self.due_date)),
+            "actual_end_date" => self.actual_end_date.map(|d| QueryValue::Date(d)),
+            "priority" => Some(QueryValue::String(self.priority.to_string())),
+            "category" => Some(QueryValue::String(self.category.to_string())),
+            "dependency_count" => Some(QueryValue::Number(self.dependencies.len() as f64)),
+            "assigned_resource_count" => Some(QueryValue::Number(self.assigned_resources.len() as f64)),
+            "is_overdue" => Some(QueryValue::Boolean(self.is_overdue())),
+            "days_until_due" => Some(QueryValue::Number(self.days_until_due() as f64)),
+            "priority_weight" => Some(QueryValue::Number(self.priority.weight() as f64)),
+            _ => None,
+        }
+    }
+
+    fn entity_type() -> &'static str {
+        "task"
     }
 }

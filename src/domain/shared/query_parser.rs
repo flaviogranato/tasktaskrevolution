@@ -111,15 +111,100 @@ impl fmt::Display for QueryExpression {
     }
 }
 
+/// Representa um tipo de agregação
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AggregationType {
+    Count,
+    Sum(String),    // field name
+    Average(String), // field name
+    Min(String),    // field name
+    Max(String),    // field name
+}
+
+impl fmt::Display for AggregationType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AggregationType::Count => write!(f, "COUNT"),
+            AggregationType::Sum(field) => write!(f, "SUM({})", field),
+            AggregationType::Average(field) => write!(f, "AVG({})", field),
+            AggregationType::Min(field) => write!(f, "MIN({})", field),
+            AggregationType::Max(field) => write!(f, "MAX({})", field),
+        }
+    }
+}
+
+/// Representa uma ordenação
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SortOption {
+    pub field: String,
+    pub ascending: bool,
+}
+
+impl fmt::Display for SortOption {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let direction = if self.ascending { "ASC" } else { "DESC" };
+        write!(f, "{} {}", self.field, direction)
+    }
+}
+
+/// Representa opções de paginação
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PaginationOptions {
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
+}
+
+impl PaginationOptions {
+    pub fn new(limit: Option<usize>, offset: Option<usize>) -> Self {
+        Self { limit, offset }
+    }
+    
+    pub fn default() -> Self {
+        Self {
+            limit: None,
+            offset: None,
+        }
+    }
+}
+
 /// Representa uma consulta completa
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Query {
     pub expression: QueryExpression,
+    pub aggregation: Option<AggregationType>,
+    pub sort: Option<SortOption>,
+    pub pagination: PaginationOptions,
 }
 
 impl fmt::Display for Query {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.expression)
+    }
+}
+
+impl Query {
+    pub fn new(expression: QueryExpression) -> Self {
+        Self { 
+            expression,
+            aggregation: None,
+            sort: None,
+            pagination: PaginationOptions::default(),
+        }
+    }
+    
+    pub fn with_aggregation(mut self, aggregation: AggregationType) -> Self {
+        self.aggregation = Some(aggregation);
+        self
+    }
+    
+    pub fn with_sort(mut self, field: String, ascending: bool) -> Self {
+        self.sort = Some(SortOption { field, ascending });
+        self
+    }
+    
+    pub fn with_pagination(mut self, limit: Option<usize>, offset: Option<usize>) -> Self {
+        self.pagination = PaginationOptions::new(limit, offset);
+        self
     }
 }
 
