@@ -8,11 +8,14 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUST_TEST_THREADS: 1
 
 jobs:
   test:
     name: Test & Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,7 +41,14 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Test
-        run: cargo test --all-features
+        run: |
+          echo "Running tests with verbose output..."
+          echo "Rust version: $(rustc --version)"
+          echo "Cargo version: $(cargo --version)"
+          echo "Available memory: $(free -h)"
+          echo "Disk space: $(df -h)"
+          cargo test --all-features --verbose -- --nocapture
+          echo "Test command completed with exit code: $?"
 
   build:
     name: Build
