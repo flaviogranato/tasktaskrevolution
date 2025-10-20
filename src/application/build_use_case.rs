@@ -29,7 +29,18 @@ pub struct BuildUseCase {
 impl BuildUseCase {
     pub fn new(base_path: PathBuf, output_dir: &str) -> Result<Self, Box<dyn Error>> {
         // Detect build context
-        let context = BuildContext::detect(&base_path).map_err(|e| format!("Failed to detect build context: {}", e))?;
+        let context = match BuildContext::detect(&base_path) {
+            Ok(context) => {
+                if crate::interface::cli::Cli::is_verbose() {
+                    eprintln!("Build context detected successfully");
+                }
+                context
+            }
+            Err(e) => {
+                eprintln!("Failed to detect build context: {}", e);
+                return Err(format!("Failed to detect build context: {}", e).into());
+            }
+        };
 
         let mut tera = Tera::default();
         for filename in TemplateAssets::iter() {
@@ -58,7 +69,18 @@ impl BuildUseCase {
 
         // 3. Load global configuration.
         let config_repo = FileConfigRepository::with_base_path(self.base_path.clone());
-        let (config, _) = config_repo.load()?;
+        let (config, _) = match config_repo.load() {
+            Ok((config, warnings)) => {
+                if crate::interface::cli::Cli::is_verbose() {
+                    eprintln!("Loaded configuration successfully");
+                }
+                (config, warnings)
+            }
+            Err(e) => {
+                eprintln!("Failed to load configuration: {}", e);
+                return Err(format!("Failed to load configuration: {}", e).into());
+            }
+        };
 
         // Create manager context
         let mut manager_map = tera::Map::new();
@@ -68,14 +90,36 @@ impl BuildUseCase {
         // 4. Load companies and their data
         let company_repo =
             crate::infrastructure::persistence::company_repository::FileCompanyRepository::new(self.base_path.clone());
-        let companies = company_repo.find_all()?;
+        let companies = match company_repo.find_all() {
+            Ok(companies) => {
+                if crate::interface::cli::Cli::is_verbose() {
+                    eprintln!("Loaded {} companies successfully", companies.len());
+                }
+                companies
+            }
+            Err(e) => {
+                eprintln!("Failed to load companies: {}", e);
+                return Err(format!("Failed to load companies: {}", e).into());
+            }
+        };
 
         // 5. Find all projects and load their data using repository (ID-based compatible).
         let mut all_projects_data = Vec::new();
         let project_repo = FileProjectRepository::with_base_path(self.base_path.clone());
         let resource_repo = FileResourceRepository::new(self.base_path.clone());
         // Load projects from repository (now handles both ID-based and hierarchical)
-        let projects = project_repo.find_all().unwrap_or_default();
+        let projects = match project_repo.find_all() {
+            Ok(projects) => {
+                if crate::interface::cli::Cli::is_verbose() {
+                    eprintln!("Loaded {} projects successfully", projects.len());
+                }
+                projects
+            }
+            Err(e) => {
+                eprintln!("Failed to load projects: {}", e);
+                return Err(format!("Failed to load projects: {}", e).into());
+            }
+        };
 
         for project in projects {
             let company_code = project.company_code().to_string();

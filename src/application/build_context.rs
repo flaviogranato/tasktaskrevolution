@@ -41,14 +41,28 @@ impl std::error::Error for BuildContextError {}
 
 /// Metadata structure for company.yaml files
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CompanyMetadata {
     code: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    created_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    created_by: Option<String>,
 }
 
 /// Metadata structure for project.yaml files
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ProjectMetadata {
     code: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    created_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    updated_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    created_by: Option<String>,
 }
 
 /// Manifest structure for company.yaml files
