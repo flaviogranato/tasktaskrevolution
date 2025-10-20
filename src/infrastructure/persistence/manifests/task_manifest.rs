@@ -68,7 +68,7 @@ pub struct Spec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub actual_end_date: Option<NaiveDate>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
-    pub dependencies: Vec<String>,
+    pub dependencies: Vec<TaskDependencyManifest>,
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new")]
     pub tags: Vec<String>,
     pub effort: Effort,
@@ -109,6 +109,43 @@ pub struct Comment {
     author: String,
     message: String,
     timestamp: NaiveDate,
+}
+
+/// Manifest for task dependencies in YAML files
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskDependencyManifest {
+    /// Code of the predecessor task
+    pub predecessor: String,
+    /// Type of dependency relationship
+    pub dependency_type: String,
+    /// Lag time in days (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lag_days: Option<u32>,
+    /// Lead time in days (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lead_days: Option<u32>,
+    /// Description of the dependency (optional)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+impl TaskDependencyManifest {
+    /// Convert from a simple string (for backward compatibility)
+    pub fn from_string(predecessor: String) -> Self {
+        Self {
+            predecessor,
+            dependency_type: "FS".to_string(),
+            lag_days: None,
+            lead_days: None,
+            description: None,
+        }
+    }
+
+    /// Convert to a simple string (for backward compatibility)
+    pub fn to_string(&self) -> String {
+        self.predecessor.clone()
+    }
 }
 
 impl From<AnyTask> for TaskManifest {
@@ -251,7 +288,7 @@ impl From<AnyTask> for TaskManifest {
                 estimated_end_date: Some(task_core.due_date),
                 actual_start_date: Some(task_core.start_date),
                 actual_end_date: task_core.actual_end_date,
-                dependencies: task_core.dependencies,
+                dependencies: task_core.dependencies.into_iter().map(TaskDependencyManifest::from_string).collect(),
                 tags: task_core.assigned_resources.clone(),
                 effort: Effort {
                     estimated_hours: 8.0,
@@ -307,7 +344,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 start_date,
                 due_date,
                 actual_end_date: manifest.spec.actual_end_date,
-                dependencies: manifest.spec.dependencies,
+                dependencies: manifest.spec.dependencies.into_iter().map(|d| d.to_string()).collect(),
                 assigned_resources,
                 priority: TaskPriority::default(),
                 category: TaskCategory::default(),
@@ -335,7 +372,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     start_date,
                     due_date,
                     actual_end_date: manifest.spec.actual_end_date,
-                    dependencies: manifest.spec.dependencies,
+                    dependencies: manifest.spec.dependencies.into_iter().map(|d| d.to_string()).collect(),
                     assigned_resources,
                     priority: TaskPriority::default(),
                     category: TaskCategory::default(),
@@ -351,7 +388,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 start_date,
                 due_date,
                 actual_end_date: manifest.spec.actual_end_date,
-                dependencies: manifest.spec.dependencies,
+                dependencies: manifest.spec.dependencies.into_iter().map(|d| d.to_string()).collect(),
                 assigned_resources,
                 priority: TaskPriority::default(),
                 category: TaskCategory::default(),
@@ -375,7 +412,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                     start_date,
                     due_date,
                     actual_end_date: manifest.spec.actual_end_date,
-                    dependencies: manifest.spec.dependencies,
+                    dependencies: manifest.spec.dependencies.into_iter().map(|d| d.to_string()).collect(),
                     assigned_resources,
                     priority: TaskPriority::default(),
                     category: TaskCategory::default(),
@@ -391,7 +428,7 @@ impl TryFrom<TaskManifest> for AnyTask {
                 start_date,
                 due_date,
                 actual_end_date: manifest.spec.actual_end_date,
-                dependencies: manifest.spec.dependencies,
+                dependencies: manifest.spec.dependencies.into_iter().map(|d| d.to_string()).collect(),
                 assigned_resources,
                 priority: TaskPriority::default(),
                 category: TaskCategory::default(),
@@ -692,7 +729,8 @@ mod yaml_parsing_tests {
                 estimatedStartDate: "2024-01-01"
                 estimatedEndDate: "2024-01-15"
                 dependencies:
-                    - "TASK-000"
+                    - predecessor: "TASK-000"
+                      dependencyType: "FS"
                 tags:
                     - "development"
                 effort:
@@ -720,7 +758,7 @@ mod yaml_parsing_tests {
             manifest.spec.estimated_end_date,
             Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap())
         );
-        assert_eq!(manifest.spec.dependencies, vec!["TASK-000"]);
+        assert_eq!(manifest.spec.dependencies, vec![TaskDependencyManifest::from_string("TASK-000".to_string())]);
         assert_eq!(manifest.spec.tags, vec!["development"]);
         assert_eq!(manifest.spec.effort.estimated_hours, 40.0);
         assert_eq!(manifest.spec.acceptance_criteria, vec!["Task completed successfully"]);
@@ -851,8 +889,10 @@ mod yaml_parsing_tests {
                 actualStartDate: "2024-01-01"
                 actualEndDate: "2024-01-14"
                 dependencies:
-                    - "TASK-000"
-                    - "TASK-002"
+                    - predecessor: "TASK-000"
+                      dependencyType: "FS"
+                    - predecessor: "TASK-002"
+                      dependencyType: "FS"
                 tags:
                     - "testing"
                     - "complex"
@@ -881,7 +921,10 @@ mod yaml_parsing_tests {
         );
         assert_eq!(manifest.spec.priority, Priority::High);
         assert_eq!(manifest.spec.tags, vec!["testing", "complex"]);
-        assert_eq!(manifest.spec.dependencies, vec!["TASK-000", "TASK-002"]);
+        assert_eq!(manifest.spec.dependencies, vec![
+            TaskDependencyManifest::from_string("TASK-000".to_string()),
+            TaskDependencyManifest::from_string("TASK-002".to_string())
+        ]);
         assert_eq!(manifest.spec.effort.estimated_hours, 80.0);
         assert_eq!(manifest.spec.effort.actual_hours, Some(75.5));
         assert_eq!(

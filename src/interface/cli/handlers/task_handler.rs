@@ -218,5 +218,15 @@ pub fn handle_task_command(command: TaskCommand) -> Result<(), Box<dyn std::erro
                 }
             }
         }
+        TaskCommand::Dependency { args } => {
+            let base_path = std::env::current_dir().unwrap().to_string_lossy().to_string();
+            match args.command.execute(&base_path) {
+                Ok(()) => Ok(()),
+                Err(e) => {
+                    eprintln!("Failed to execute dependency command: {}", e);
+                    Err(e.into())
+                }
+            }
+        }
     }
 }

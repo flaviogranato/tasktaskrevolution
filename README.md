@@ -219,6 +219,74 @@ ttr query --query "status = 'active'" --entity-type project --format table
 ttr query --query "status = 'active'" --entity-type project --format json
 ```
 
+## 🔗 Task Dependencies
+
+Manage complex task dependencies with support for all PMI standard dependency types.
+
+### Dependency Types
+- **FS (Finish-to-Start)**: Task B cannot start until Task A finishes
+- **SS (Start-to-Start)**: Task B cannot start until Task A starts  
+- **FF (Finish-to-Finish)**: Task B cannot finish until Task A finishes
+- **SF (Start-to-Finish)**: Task B cannot finish until Task A starts
+
+### Basic Commands
+```bash
+# Add a dependency
+ttr task dependency add --predecessor TASK-1 --successor TASK-2 --dependency-type FS
+
+# Add dependency with lag time
+ttr task dependency add --predecessor TASK-1 --successor TASK-2 --dependency-type FS --lag-days 2
+
+# Add dependency with lead time
+ttr task dependency add --predecessor TASK-1 --successor TASK-2 --dependency-type FS --lead-days 1
+
+# Add dependency with description
+ttr task dependency add --predecessor TASK-1 --successor TASK-2 --dependency-type FS --description "Code review required"
+```
+
+### Dependency Management
+```bash
+# List all dependencies
+ttr task dependency list
+
+# List dependencies for a specific task
+ttr task dependency list --task TASK-1
+
+# List dependencies for a project
+ttr task dependency list --project PROJ-1
+
+# Remove a dependency
+ttr task dependency remove --predecessor TASK-1 --successor TASK-2
+```
+
+### Validation and Analysis
+```bash
+# Validate dependency graph
+ttr task dependency validate
+
+# Show dependency summary
+ttr task dependency summary
+
+# Validate specific project
+ttr task dependency validate --project PROJ-1
+```
+
+### YAML Configuration
+Dependencies are automatically stored in task YAML files:
+
+```yaml
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Task
+metadata:
+  code: TASK-2
+spec:
+  dependencies:
+    - predecessor: TASK-1
+      dependencyType: FS
+      lagDays: 2
+      description: "Code review required"
+```
+
 ## 🧪 Test Data Management
 
 Validate and manage your data with the new test-data command.

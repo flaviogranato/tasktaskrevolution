@@ -1,5 +1,7 @@
 use clap::Subcommand;
 
+use super::task_dependency::TaskDependencyArgs;
+
 #[derive(Subcommand)]
 pub enum TaskCommand {
     /// Create a new task
@@ -121,5 +123,10 @@ pub enum TaskCommand {
         /// Resource code
         #[clap(short, long)]
         resource: String,
+    },
+    /// Manage task dependencies
+    Dependency {
+        #[clap(flatten)]
+        args: TaskDependencyArgs,
     },
 }
