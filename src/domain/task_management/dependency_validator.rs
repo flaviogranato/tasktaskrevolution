@@ -319,7 +319,7 @@ mod tests {
     #[test]
     fn test_validate_self_dependency() {
         let tasks = HashSet::from(["TASK-1".to_string()]);
-        let validator = DependencyValidator::new(tasks);
+        let _validator = DependencyValidator::new(tasks);
         
         // Create a dependency that would be self-referencing
         let dependency_result = TaskDependency::new(

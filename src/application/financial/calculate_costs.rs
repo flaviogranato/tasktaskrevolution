@@ -1,4 +1,4 @@
-use crate::domain::financial::{CostEntry, CostSummary};
+use crate::domain::financial::CostSummary;
 use crate::domain::shared::errors::DomainError;
 use std::path::PathBuf;
 
@@ -11,7 +11,7 @@ impl CalculateCostsUseCase {
         Self { base_path }
     }
 
-    pub fn execute(&self, project_id: &str) -> Result<CostSummary, DomainError> {
+    pub fn execute(&self, _project_id: &str) -> Result<CostSummary, DomainError> {
         // TODO: Load costs from repository
         // For now, return empty summary
         let summary = CostSummary::new();

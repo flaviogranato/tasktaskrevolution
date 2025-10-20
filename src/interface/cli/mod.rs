@@ -135,7 +135,12 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::ResourceCommand,
     },
-    /// Cost and budget management
+    /// Budget management
+    Budget {
+        #[clap(flatten)]
+        args: commands::BudgetArgs,
+    },
+    /// Cost management
     Cost {
         #[clap(flatten)]
         args: commands::CostArgs,
@@ -325,6 +330,10 @@ impl Cli {
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),
             Commands::Resource { command } => handlers::resource_handler::handle_resource_command(command),
+            Commands::Budget { args } => {
+                let base_path = env::current_dir().unwrap().to_string_lossy().to_string();
+                args.command.execute(&base_path)
+            }
             Commands::Cost { args } => {
                 let base_path = env::current_dir().unwrap().to_string_lossy().to_string();
                 args.command.execute(&base_path)

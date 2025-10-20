@@ -1,3 +1,4 @@
+pub mod budget;
 pub mod company;
 pub mod cost;
 pub mod create;
@@ -20,6 +21,7 @@ pub mod validate;
 pub mod wip;
 pub mod workspace;
 
+pub use budget::BudgetArgs;
 pub use company::CompanyCommand;
 pub use cost::CostArgs;
 pub use create::CreateCommand;

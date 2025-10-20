@@ -21,6 +21,8 @@ Commands:
   template     Template management
   task         Task management
   resource     Resource management
+  budget       Budget management
+  cost         Cost management
   query        Query entities with filtering
   search       Search across all files
   migrate      Migration tools
