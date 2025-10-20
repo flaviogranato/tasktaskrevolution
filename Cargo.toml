@@ -1,7 +1,7 @@
 [package]
 name = "task_task_revolution"
 authors = ["Flávio Granato <flavio.granato@protonmail.com>"]
-version = "0.6.0"
+version = "0.7.0"
 edition = "2024"
 description = "A powerful, flexible, and transparent project management tool that puts you in control. CLI-first design with beautiful HTML outputs."
 repository = "https://github.com/flaviogranato/tasktaskrevolution"

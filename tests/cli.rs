@@ -149,7 +149,7 @@ fn test_version_command() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("ttr")?;
 
     cmd.arg("--version");
-    cmd.assert().success().stdout(predicate::str::contains("0.6.0"));
+    cmd.assert().success().stdout(predicate::str::contains("0.7.0"));
 
     Ok(())
 }

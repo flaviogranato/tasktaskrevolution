@@ -2897,7 +2897,7 @@ dependencies = [
 
 [[package]]
 name = "task_task_revolution"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "assert_cmd",
  "assert_fs",

@@ -5,3 +5,5 @@ pub mod project_management;
 pub mod resource_management;
 pub mod shared;
 pub mod task_management;
+pub mod financial;
+pub mod notifications;
