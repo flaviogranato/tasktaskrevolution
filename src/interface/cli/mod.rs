@@ -135,6 +135,11 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::ResourceCommand,
     },
+    /// Cost and budget management
+    Cost {
+        #[clap(flatten)]
+        args: commands::CostArgs,
+    },
     /// Query entities with filtering
     #[clap(alias = "q")]
     Query {
@@ -320,6 +325,10 @@ impl Cli {
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),
             Commands::Resource { command } => handlers::resource_handler::handle_resource_command(command),
+            Commands::Cost { args } => {
+                let base_path = env::current_dir().unwrap().to_string_lossy().to_string();
+                args.command.execute(&base_path)
+            }
             Commands::Query {
                 query,
                 entity_type,

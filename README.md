@@ -219,6 +219,86 @@ ttr query --query "status = 'active'" --entity-type project --format table
 ttr query --query "status = 'active'" --entity-type project --format json
 ```
 
+## 💰 Cost Management
+
+Complete financial control with cost tracking and budget management.
+
+### Cost Types
+- **Hourly**: Cost per hour (for time-based work)
+- **Fixed**: Fixed cost (for deliverables or milestones)
+- **Material**: Material costs (equipment, supplies)
+- **Travel**: Travel and transportation costs
+
+### Basic Commands
+```bash
+# Add a cost entry
+ttr cost add --resource RES-1 --amount 100 --cost-type hourly --project PROJ-1
+
+# Add cost with task and description
+ttr cost add --resource RES-1 --amount 500 --cost-type fixed --project PROJ-1 --task TASK-1 --description "Code review"
+
+# Calculate project costs
+ttr cost calculate --project PROJ-1
+
+# Generate financial report
+ttr cost report --project PROJ-1 --format table
+```
+
+### Budget Management
+```bash
+# Set project budget
+ttr cost budget set --project PROJ-1 --amount 50000 --currency USD
+
+# Check budget status
+ttr cost budget status --project PROJ-1
+
+# Example output:
+# Budget status for project: PROJ-1
+#
+# BUDGET STATUS:
+#    Total Budget: $50,000.00
+#    Spent Amount: $35,000.00
+#    Remaining: $15,000.00
+#    Utilization: 70.0%
+#    Status: ON_TRACK
+```
+
+### Budget Alerts
+Automatic alerts are generated when:
+- **90% utilization**: WARNING alert with suggestion to monitor closely
+- **100%+ utilization**: CRITICAL alert with suggestion to increase budget or reduce scope
+
+### Cost Reports
+```bash
+# Table format (default)
+ttr cost report --project PROJ-1 --format table
+
+# JSON format for integration
+ttr cost report --project PROJ-1 --format json
+
+# CSV format for spreadsheet analysis
+ttr cost report --project PROJ-1 --format csv
+```
+
+### Real-World Example
+```bash
+# Set up project budget
+ttr cost budget set --project ECOMM-001 --amount 100000 --currency USD
+
+# Track development costs
+ttr cost add --resource developer-1 --amount 75 --cost-type hourly --project ECOMM-001 --task TASK-001
+ttr cost add --resource developer-2 --amount 85 --cost-type hourly --project ECOMM-001 --task TASK-002
+
+# Track infrastructure costs
+ttr cost add --resource cloud-server --amount 500 --cost-type fixed --project ECOMM-001 --description "Monthly AWS bill"
+
+# Check budget status
+ttr cost budget status --project ECOMM-001
+
+# Generate financial report
+ttr cost report --project ECOMM-001
+```
+
 ## 🔗 Task Dependencies
 
 Manage complex task dependencies with support for all PMI standard dependency types.

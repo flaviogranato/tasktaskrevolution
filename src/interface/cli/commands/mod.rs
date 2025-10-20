@@ -1,4 +1,5 @@
 pub mod company;
+pub mod cost;
 pub mod create;
 pub mod delete;
 pub mod link;
@@ -20,6 +21,7 @@ pub mod wip;
 pub mod workspace;
 
 pub use company::CompanyCommand;
+pub use cost::CostArgs;
 pub use create::CreateCommand;
 pub use delete::DeleteCommand;
 pub use link::LinkCommand;

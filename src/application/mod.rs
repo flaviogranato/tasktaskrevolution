@@ -10,6 +10,7 @@ pub mod shared;
 pub mod company_management;
 pub mod company_settings;
 pub mod create;
+pub mod financial;
 pub mod init;
 pub mod list;
 pub mod project;
