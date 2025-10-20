@@ -118,6 +118,8 @@ impl SimplifiedExecutor {
                 end_date,
                 template: _,
                 template_vars: _,
+                budget,
+                currency,
             } => {
                 context_manager.validate_command("create", "project")?;
 
@@ -137,15 +139,46 @@ impl SimplifiedExecutor {
                     &name,
                     description.as_deref(),
                     company_code.clone(),
-                    code,
+                    code.clone(),
                     Some(start_date_parsed),
                     Some(end_date_parsed),
                 ) {
                     Ok(project) => {
-                        println!("Project created successfully!");
-                        println!("   Name: {}", project.name());
-                        println!("   Code: {}", project.code());
-                        println!("   Company: {}", company_code);
+                        let project_code = project.code();
+                        
+                        println!("✓ Project created successfully");
+                        println!();
+                        println!("  Name:       {}", project.name());
+                        println!("  Code:       {}", project_code);
+                        println!("  Company:    {}", company_code);
+                        
+                        // Create budget if specified
+                        if let Some(budget_amount) = budget {
+                            use crate::domain::financial::ProjectBudget;
+                            use crate::infrastructure::persistence::repositories::BudgetRepository;
+                            use std::env;
+                            
+                            let base_path = env::current_dir()?.to_string_lossy().to_string();
+                            let budget_repo = BudgetRepository::new(&base_path);
+                            
+                            let project_budget = ProjectBudget::new(
+                                project_code.to_string(),
+                                budget_amount,
+                                currency.clone(),
+                                "CLI".to_string(),
+                            );
+                            
+                            match budget_repo.save(&company_code, &project_code, &project_budget) {
+                                Ok(_) => {
+                                    println!("  Budget:     {} {}", budget_amount, currency);
+                                }
+                                Err(e) => {
+                                    eprintln!();
+                                    eprintln!("⚠ Warning: Failed to create budget: {}", e);
+                                }
+                            }
+                        }
+                        
                         Ok(())
                     }
                     Err(e) => {
@@ -370,6 +403,13 @@ impl SimplifiedExecutor {
 
                 match use_case.execute() {
                     Ok(projects) => {
+                        // Load budgets for all projects
+                        use crate::infrastructure::persistence::repositories::BudgetRepository;
+                        use std::env;
+                        
+                        let base_path = env::current_dir()?.to_string_lossy().to_string();
+                        let budget_repo = BudgetRepository::new(&base_path);
+                        
                         if company_code == "ALL" {
                             // Global listing - show all projects
                             if projects.is_empty() {
@@ -380,14 +420,31 @@ impl SimplifiedExecutor {
                                     "CODE".to_string(),
                                     "COMPANY".to_string(),
                                     "STATUS".to_string(),
+                                    "BUDGET".to_string(),
+                                    "SPENT".to_string(),
                                 ]);
 
                                 for project in projects {
+                                    let budget_info = budget_repo
+                                        .load(project.company_code(), project.code())
+                                        .ok();
+                                    
+                                    let (budget_str, spent_str) = if let Some(budget) = budget_info {
+                                        (
+                                            format!("{} {}", budget.total_budget, budget.currency),
+                                            format!("{} {}", budget.spent_amount, budget.currency),
+                                        )
+                                    } else {
+                                        ("-".to_string(), "-".to_string())
+                                    };
+                                    
                                     table.add_row(vec![
                                         project.name().to_string(),
                                         project.code().to_string(),
                                         project.company_code().to_string(),
                                         project.status().to_string(),
+                                        budget_str,
+                                        spent_str,
                                     ]);
                                 }
 
@@ -407,13 +464,33 @@ impl SimplifiedExecutor {
                                     "NAME".to_string(),
                                     "CODE".to_string(),
                                     "STATUS".to_string(),
+                                    "BUDGET".to_string(),
+                                    "SPENT".to_string(),
+                                    "REMAINING".to_string(),
                                 ]);
 
                                 for project in filtered_projects {
+                                    let budget_info = budget_repo
+                                        .load(&company_code, project.code())
+                                        .ok();
+                                    
+                                    let (budget_str, spent_str, remaining_str) = if let Some(budget) = budget_info {
+                                        (
+                                            format!("{} {}", budget.total_budget, budget.currency),
+                                            format!("{} {}", budget.spent_amount, budget.currency),
+                                            format!("{} {}", budget.remaining_amount, budget.currency),
+                                        )
+                                    } else {
+                                        ("-".to_string(), "-".to_string(), "-".to_string())
+                                    };
+                                    
                                     table.add_row(vec![
                                         project.name().to_string(),
                                         project.code().to_string(),
                                         project.status().to_string(),
+                                        budget_str,
+                                        spent_str,
+                                        remaining_str,
                                     ]);
                                 }
 

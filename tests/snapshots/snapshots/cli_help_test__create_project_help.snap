@@ -19,4 +19,6 @@ Options:
       --end-date <END_DATE>            End date (YYYY-MM-DD)
       --template <TEMPLATE>            Template name (optional)
       --template-vars <TEMPLATE_VARS>  Template variables (comma-separated key=value pairs)
+      --budget <BUDGET>                Initial budget amount (optional)
+      --currency <CURRENCY>            Budget currency (default: USD) [default: USD]
   -h, --help                           Print help

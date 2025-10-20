@@ -578,7 +578,7 @@ fn test_create_project() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd.assert()
         .success()
-        .stdout(predicate::str::contains("Project created successfully!"));
+        .stdout(predicate::str::contains("Project created successfully"));
 
     // Encontrar o arquivo do projeto criado (new hierarchical format)
     let companies_dir = temp.path().join("companies");

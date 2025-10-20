@@ -40,6 +40,12 @@ pub enum CreateCommand {
         /// Template variables (comma-separated key=value pairs)
         #[clap(long)]
         template_vars: Option<String>,
+        /// Initial budget amount (optional)
+        #[clap(long)]
+        budget: Option<f64>,
+        /// Budget currency (default: USD)
+        #[clap(long, default_value = "USD")]
+        currency: String,
     },
     /// Create a new task
     Task {
