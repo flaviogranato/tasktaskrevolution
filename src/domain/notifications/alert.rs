@@ -26,9 +26,9 @@ impl std::fmt::Display for AlertType {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AlertSeverity {
-    Info,       // Informação
-    Warning,    // Aviso
-    Critical,   // Crítico
+    Info,     // Informação
+    Warning,  // Aviso
+    Critical, // Crítico
 }
 
 impl std::fmt::Display for AlertSeverity {
@@ -120,17 +120,17 @@ impl AlertSummary {
 
     pub fn add_alert(&mut self, alert: &Alert) {
         self.total_alerts += 1;
-        
+
         match alert.severity {
             AlertSeverity::Critical => self.critical_count += 1,
             AlertSeverity::Warning => self.warning_count += 1,
             AlertSeverity::Info => self.info_count += 1,
         }
-        
+
         if !alert.acknowledged {
             self.unacknowledged_count += 1;
         }
-        
+
         *self.alerts_by_type.entry(alert.alert_type.clone()).or_insert(0) += 1;
     }
 }
@@ -140,4 +140,3 @@ impl Default for AlertSummary {
         Self::new()
     }
 }
-

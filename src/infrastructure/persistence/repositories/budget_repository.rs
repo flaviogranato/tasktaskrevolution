@@ -26,12 +26,7 @@ impl BudgetRepository {
     }
 
     /// Save a budget to disk
-    pub fn save(
-        &self,
-        company_code: &str,
-        project_code: &str,
-        budget: &ProjectBudget,
-    ) -> Result<(), DomainError> {
+    pub fn save(&self, company_code: &str, project_code: &str, budget: &ProjectBudget) -> Result<(), DomainError> {
         let path = self.budget_path(company_code, project_code);
 
         // Ensure directory exists
@@ -57,11 +52,7 @@ impl BudgetRepository {
     }
 
     /// Load a budget from disk
-    pub fn load(
-        &self,
-        company_code: &str,
-        project_code: &str,
-    ) -> Result<ProjectBudget, DomainError> {
+    pub fn load(&self, company_code: &str, project_code: &str) -> Result<ProjectBudget, DomainError> {
         let path = self.budget_path(company_code, project_code);
 
         if !path.exists() {
@@ -76,18 +67,15 @@ impl BudgetRepository {
             message: format!("Failed to read budget file: {}", e),
         })?;
 
-        let manifest: BudgetManifest = serde_yaml::from_str(&content).map_err(|e| {
-            DomainError::ValidationError {
-                field: "budget".to_string(),
-                message: format!("Failed to parse budget YAML: {}", e),
-            }
+        let manifest: BudgetManifest = serde_yaml::from_str(&content).map_err(|e| DomainError::ValidationError {
+            field: "budget".to_string(),
+            message: format!("Failed to parse budget YAML: {}", e),
         })?;
 
-        let mut budget = ProjectBudget::try_from(manifest)
-            .map_err(|e| DomainError::ValidationError {
-                field: "budget".to_string(),
-                message: e,
-            })?;
+        let mut budget = ProjectBudget::try_from(manifest).map_err(|e| DomainError::ValidationError {
+            field: "budget".to_string(),
+            message: e,
+        })?;
 
         // Set project_id from path
         budget.project_id = project_code.to_string();
@@ -121,10 +109,7 @@ impl BudgetRepository {
 
     /// List all budgets for a company
     pub fn list_by_company(&self, company_code: &str) -> Result<Vec<ProjectBudget>, DomainError> {
-        let projects_dir = self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("projects");
+        let projects_dir = self.base_path.join("companies").join(company_code).join("projects");
 
         if !projects_dir.exists() {
             return Ok(Vec::new());
@@ -163,12 +148,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let repo = BudgetRepository::new(temp_dir.path());
 
-        let budget = ProjectBudget::new(
-            "PROJ-1".to_string(),
-            10000.0,
-            "USD".to_string(),
-            "user1".to_string(),
-        );
+        let budget = ProjectBudget::new("PROJ-1".to_string(), 10000.0, "USD".to_string(), "user1".to_string());
 
         repo.save("COMP-1", "PROJ-1", &budget).unwrap();
         assert!(repo.exists("COMP-1", "PROJ-1"));
@@ -187,4 +167,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

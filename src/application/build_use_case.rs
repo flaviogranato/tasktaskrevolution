@@ -574,12 +574,8 @@ impl BuildUseCase {
 
                 // Generate financial dashboard page
                 let financial_dashboard_path = project_output_dir.join("financial.html");
-                let financial_context = self.create_financial_dashboard_context(
-                    project,
-                    company_code,
-                    &company_map,
-                    &project_map,
-                )?;
+                let financial_context =
+                    self.create_financial_dashboard_context(project, company_code, &company_map, &project_map)?;
                 let financial_html = match self.tera.render("financial_dashboard.html", &financial_context) {
                     Ok(html) => html,
                     Err(e) => {
@@ -588,6 +584,19 @@ impl BuildUseCase {
                     }
                 };
                 fs::write(financial_dashboard_path, financial_html)?;
+
+                // Generate schedule dashboard page
+                let schedule_dashboard_path = project_output_dir.join("schedule.html");
+                let schedule_context =
+                    self.create_schedule_dashboard_context(project, company_code, &company_map, &project_map)?;
+                let schedule_html = match self.tera.render("schedule_dashboard.html", &schedule_context) {
+                    Ok(html) => html,
+                    Err(e) => {
+                        println!("Schedule Dashboard template error: {:?}", e);
+                        return Err(format!("Template error: {}", e).into());
+                    }
+                };
+                fs::write(schedule_dashboard_path, schedule_html)?;
 
                 // Generate task detail pages
                 let tasks_base_dir = project_output_dir.join("tasks");
@@ -886,22 +895,22 @@ impl BuildUseCase {
         project_map: &tera::Map<String, tera::Value>,
     ) -> Result<Context, Box<dyn Error>> {
         use crate::infrastructure::persistence::repositories::{BudgetRepository, CostRepository};
-        
+
         let mut context = Context::new();
-        
+
         // Add standard context
         context.insert("project", &tera::Value::Object(project_map.clone()));
         context.insert("company", &tera::Value::Object(company_map.clone()));
         context.insert("relative_path_prefix", "../../../");
         context.insert("current_date", &chrono::Utc::now().format("%Y-%m-%d").to_string());
         context.insert("current_page", &"financial");
-        
+
         // Load budget data
         let budget_repo = BudgetRepository::new(&self.base_path);
         let cost_repo = CostRepository::new(&self.base_path);
-        
+
         let project_code = project.code();
-        
+
         // Try to load budget
         if let Ok(budget) = budget_repo.load(company_code, project_code) {
             // Calculate utilization percentage
@@ -910,71 +919,90 @@ impl BuildUseCase {
             } else {
                 0.0
             };
-            
+
             // Create budget map
             let mut budget_map = tera::Map::new();
-            budget_map.insert("total_budget".to_string(), tera::to_value(&budget.total_budget).unwrap());
-            budget_map.insert("spent_amount".to_string(), tera::to_value(&budget.spent_amount).unwrap());
-            budget_map.insert("remaining_amount".to_string(), tera::to_value(&budget.remaining_amount).unwrap());
+            budget_map.insert("total_budget".to_string(), tera::to_value(budget.total_budget).unwrap());
+            budget_map.insert("spent_amount".to_string(), tera::to_value(budget.spent_amount).unwrap());
+            budget_map.insert(
+                "remaining_amount".to_string(),
+                tera::to_value(budget.remaining_amount).unwrap(),
+            );
             budget_map.insert("currency".to_string(), tera::Value::String(budget.currency.clone()));
             budget_map.insert("status".to_string(), tera::Value::String(budget.status.to_string()));
-            budget_map.insert("utilization_percent".to_string(), tera::to_value(&utilization_percent).unwrap());
-            
+            budget_map.insert(
+                "utilization_percent".to_string(),
+                tera::to_value(utilization_percent).unwrap(),
+            );
+
             // Add alerts
-            let alerts: Vec<tera::Value> = budget.alerts.iter().map(|alert| {
-                let mut alert_map = tera::Map::new();
-                alert_map.insert("severity".to_string(), tera::Value::String(alert.severity.to_string()));
-                alert_map.insert("title".to_string(), tera::Value::String(alert.title.clone()));
-                alert_map.insert("message".to_string(), tera::Value::String(alert.message.clone()));
-                if let Some(action) = &alert.suggested_action {
-                    alert_map.insert("suggested_action".to_string(), tera::Value::String(action.clone()));
-                }
-                tera::Value::Object(alert_map)
-            }).collect();
+            let alerts: Vec<tera::Value> = budget
+                .alerts
+                .iter()
+                .map(|alert| {
+                    let mut alert_map = tera::Map::new();
+                    alert_map.insert("severity".to_string(), tera::Value::String(alert.severity.to_string()));
+                    alert_map.insert("title".to_string(), tera::Value::String(alert.title.clone()));
+                    alert_map.insert("message".to_string(), tera::Value::String(alert.message.clone()));
+                    if let Some(action) = &alert.suggested_action {
+                        alert_map.insert("suggested_action".to_string(), tera::Value::String(action.clone()));
+                    }
+                    tera::Value::Object(alert_map)
+                })
+                .collect();
             budget_map.insert("alerts".to_string(), tera::Value::Array(alerts));
-            
+
             context.insert("budget", &tera::Value::Object(budget_map));
-            
+
             // Load costs
             if let Ok(costs) = cost_repo.list(company_code, project_code) {
                 // Sort costs by date
                 let mut sorted_costs = costs.clone();
                 sorted_costs.sort_by(|a, b| a.date.cmp(&b.date));
-                
+
                 // Create costs array with cumulative amounts
                 let mut cumulative = 0.0;
-                let costs_with_cumulative: Vec<tera::Value> = sorted_costs.iter().map(|cost| {
-                    cumulative += cost.amount;
-                    let mut cost_map = tera::Map::new();
-                    cost_map.insert("date".to_string(), tera::Value::String(cost.date.to_string()));
-                    cost_map.insert("resource_code".to_string(), tera::Value::String(cost.resource_id.clone()));
-                    if let Some(ref task_id) = cost.task_id {
-                        cost_map.insert("task_code".to_string(), tera::Value::String(task_id.clone()));
-                    }
-                    cost_map.insert("cost_type".to_string(), tera::Value::String(cost.cost_type.to_string()));
-                    if let Some(ref desc) = cost.description {
-                        cost_map.insert("description".to_string(), tera::Value::String(desc.clone()));
-                    }
-                    cost_map.insert("amount".to_string(), tera::to_value(&cost.amount).unwrap());
-                    cost_map.insert("cumulative_amount".to_string(), tera::to_value(&cumulative).unwrap());
-                    tera::Value::Object(cost_map)
-                }).collect();
-                
+                let costs_with_cumulative: Vec<tera::Value> = sorted_costs
+                    .iter()
+                    .map(|cost| {
+                        cumulative += cost.amount;
+                        let mut cost_map = tera::Map::new();
+                        cost_map.insert("date".to_string(), tera::Value::String(cost.date.to_string()));
+                        cost_map.insert(
+                            "resource_code".to_string(),
+                            tera::Value::String(cost.resource_id.clone()),
+                        );
+                        if let Some(ref task_id) = cost.task_id {
+                            cost_map.insert("task_code".to_string(), tera::Value::String(task_id.clone()));
+                        }
+                        cost_map.insert("cost_type".to_string(), tera::Value::String(cost.cost_type.to_string()));
+                        if let Some(ref desc) = cost.description {
+                            cost_map.insert("description".to_string(), tera::Value::String(desc.clone()));
+                        }
+                        cost_map.insert("amount".to_string(), tera::to_value(cost.amount).unwrap());
+                        cost_map.insert("cumulative_amount".to_string(), tera::to_value(cumulative).unwrap());
+                        tera::Value::Object(cost_map)
+                    })
+                    .collect();
+
                 context.insert("costs", &tera::Value::Array(costs_with_cumulative));
-                
+
                 // Calculate cost breakdown by type
                 let mut cost_by_type: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
                 for cost in &sorted_costs {
                     *cost_by_type.entry(cost.cost_type.to_string()).or_insert(0.0) += cost.amount;
                 }
-                
-                let cost_by_type_array: Vec<tera::Value> = cost_by_type.iter().map(|(type_name, amount)| {
-                    tera::Value::Array(vec![
-                        tera::Value::String(type_name.clone()),
-                        tera::to_value(amount).unwrap(),
-                    ])
-                }).collect();
-                
+
+                let cost_by_type_array: Vec<tera::Value> = cost_by_type
+                    .iter()
+                    .map(|(type_name, amount)| {
+                        tera::Value::Array(vec![
+                            tera::Value::String(type_name.clone()),
+                            tera::to_value(amount).unwrap(),
+                        ])
+                    })
+                    .collect();
+
                 context.insert("cost_by_type", &tera::Value::Array(cost_by_type_array));
             } else {
                 context.insert("costs", &tera::Value::Array(vec![]));
@@ -983,19 +1011,147 @@ impl BuildUseCase {
         } else {
             // No budget found - create default budget
             let mut budget_map = tera::Map::new();
-            budget_map.insert("total_budget".to_string(), tera::to_value(&0.0).unwrap());
-            budget_map.insert("spent_amount".to_string(), tera::to_value(&0.0).unwrap());
-            budget_map.insert("remaining_amount".to_string(), tera::to_value(&0.0).unwrap());
+            budget_map.insert("total_budget".to_string(), tera::to_value(0.0).unwrap());
+            budget_map.insert("spent_amount".to_string(), tera::to_value(0.0).unwrap());
+            budget_map.insert("remaining_amount".to_string(), tera::to_value(0.0).unwrap());
             budget_map.insert("currency".to_string(), tera::Value::String("USD".to_string()));
             budget_map.insert("status".to_string(), tera::Value::String("N/A".to_string()));
-            budget_map.insert("utilization_percent".to_string(), tera::to_value(&0.0).unwrap());
+            budget_map.insert("utilization_percent".to_string(), tera::to_value(0.0).unwrap());
             budget_map.insert("alerts".to_string(), tera::Value::Array(vec![]));
-            
+
             context.insert("budget", &tera::Value::Object(budget_map));
             context.insert("costs", &tera::Value::Array(vec![]));
             context.insert("cost_by_type", &tera::Value::Array(vec![]));
         }
-        
+
+        Ok(context)
+    }
+
+    fn create_schedule_dashboard_context(
+        &self,
+        _project: &crate::domain::project_management::AnyProject,
+        _company_code: &str,
+        company_map: &tera::Map<String, tera::Value>,
+        project_map: &tera::Map<String, tera::Value>,
+    ) -> Result<Context, Box<dyn Error>> {
+        // use crate::domain::scheduling::{Scheduler, CriticalPathCalculator, ResourceLeveler, ConflictResolver};
+
+        let mut context = Context::new();
+
+        // Add project and company data
+        context.insert("project", project_map);
+        context.insert("company", company_map);
+        context.insert("relative_path_prefix", &tera::to_value("../../").unwrap());
+        context.insert("current_page", &tera::to_value("schedule").unwrap());
+        context.insert("current_date", &tera::to_value("2025-01-01").unwrap());
+
+        // Create a mock schedule for demonstration
+        let _schedule_data = tera::Map::new();
+        let mut schedule = tera::Map::new();
+        schedule.insert("status".to_string(), tera::to_value("active").unwrap());
+        schedule.insert("total_tasks".to_string(), tera::to_value(5).unwrap());
+        schedule.insert("critical_tasks".to_string(), tera::to_value(2).unwrap());
+        schedule.insert("conflicts".to_string(), tera::to_value(1).unwrap());
+        schedule.insert("completion_percentage".to_string(), tera::to_value(60).unwrap());
+
+        // Mock tasks
+        let mut tasks = Vec::new();
+        let task1 = {
+            let mut task = tera::Map::new();
+            task.insert("name".to_string(), tera::to_value("Task 1").unwrap());
+            task.insert("description".to_string(), tera::to_value("Critical path task").unwrap());
+            task.insert("start_date".to_string(), tera::to_value("2025-01-01").unwrap());
+            task.insert("end_date".to_string(), tera::to_value("2025-01-05").unwrap());
+            task.insert("duration".to_string(), tera::to_value(5).unwrap());
+            task.insert("is_critical".to_string(), tera::to_value(true).unwrap());
+            tera::Value::Object(task)
+        };
+        let task2 = {
+            let mut task = tera::Map::new();
+            task.insert("name".to_string(), tera::to_value("Task 2").unwrap());
+            task.insert("description".to_string(), tera::to_value("Regular task").unwrap());
+            task.insert("start_date".to_string(), tera::to_value("2025-01-06").unwrap());
+            task.insert("end_date".to_string(), tera::to_value("2025-01-10").unwrap());
+            task.insert("duration".to_string(), tera::to_value(5).unwrap());
+            task.insert("is_critical".to_string(), tera::to_value(false).unwrap());
+            tera::Value::Object(task)
+        };
+        tasks.push(task1);
+        tasks.push(task2);
+
+        schedule.insert("tasks".to_string(), tera::to_value(tasks).unwrap());
+        context.insert("schedule", &schedule);
+
+        // Mock critical path analysis
+        let mut critical_path = tera::Map::new();
+        let critical_tasks = vec![tera::to_value("Task 1").unwrap(), tera::to_value("Task 3").unwrap()];
+        critical_path.insert("critical_tasks".to_string(), tera::to_value(critical_tasks).unwrap());
+
+        let optimization_suggestions = vec![{
+            let mut suggestion = tera::Map::new();
+            suggestion.insert("title".to_string(), tera::to_value("Parallelize Tasks").unwrap());
+            suggestion.insert(
+                "description".to_string(),
+                tera::to_value("Tasks 2 and 4 can be executed in parallel").unwrap(),
+            );
+            suggestion.insert("priority".to_string(), tera::to_value("High").unwrap());
+            tera::Value::Object(suggestion)
+        }];
+        critical_path.insert(
+            "optimization_suggestions".to_string(),
+            tera::to_value(optimization_suggestions).unwrap(),
+        );
+        context.insert("critical_path", &critical_path);
+
+        // Mock resource utilization
+        let mut resource_utilization = tera::Map::new();
+        let resources = vec![
+            {
+                let mut resource = tera::Map::new();
+                resource.insert("name".to_string(), tera::to_value("Developer 1").unwrap());
+                resource.insert("utilization_percentage".to_string(), tera::to_value(85).unwrap());
+                tera::Value::Object(resource)
+            },
+            {
+                let mut resource = tera::Map::new();
+                resource.insert("name".to_string(), tera::to_value("Developer 2").unwrap());
+                resource.insert("utilization_percentage".to_string(), tera::to_value(60).unwrap());
+                tera::Value::Object(resource)
+            },
+        ];
+        resource_utilization.insert("resources".to_string(), tera::to_value(resources).unwrap());
+
+        let recommendations = vec![{
+            let mut rec = tera::Map::new();
+            rec.insert("title".to_string(), tera::to_value("Balance Workload").unwrap());
+            rec.insert(
+                "description".to_string(),
+                tera::to_value("Redistribute tasks to balance resource utilization").unwrap(),
+            );
+            tera::Value::Object(rec)
+        }];
+        resource_utilization.insert("recommendations".to_string(), tera::to_value(recommendations).unwrap());
+        context.insert("resource_utilization", &resource_utilization);
+
+        // Mock conflict analysis
+        let mut conflict_analysis = tera::Map::new();
+        conflict_analysis.insert("total_conflicts".to_string(), tera::to_value(3).unwrap());
+        conflict_analysis.insert("resolved_conflicts".to_string(), tera::to_value(2).unwrap());
+        conflict_analysis.insert("resolution_efficiency".to_string(), tera::to_value(67).unwrap());
+
+        let patterns = vec![{
+            let mut pattern = tera::Map::new();
+            pattern.insert("type".to_string(), tera::to_value("Resource Over-allocation").unwrap());
+            pattern.insert("count".to_string(), tera::to_value(2).unwrap());
+            pattern.insert(
+                "description".to_string(),
+                tera::to_value("Multiple tasks assigned to same resource").unwrap(),
+            );
+            tera::Value::Object(pattern)
+        }];
+        conflict_analysis.insert("patterns".to_string(), tera::to_value(patterns).unwrap());
+        context.insert("conflict_analysis", &conflict_analysis);
+
         Ok(context)
     }
 }

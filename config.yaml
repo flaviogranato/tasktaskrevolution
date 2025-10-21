@@ -1,0 +1,17 @@
+apiVersion: tasktaskrevolution.io/v1alpha1
+kind: Config
+metadata:
+  id: config-001
+  code: DEFAULT-CONFIG
+  createdAt: "2025-01-01T00:00:00Z"
+  updatedAt: "2025-01-01T00:00:00Z"
+  createdBy: system
+spec:
+  managerName: "Test Manager"
+  managerEmail: "test@example.com"
+  company:
+    name: "Test Company"
+    timezone: "UTC"
+  settings:
+    defaultCurrency: "USD"
+    dateFormat: "YYYY-MM-DD"

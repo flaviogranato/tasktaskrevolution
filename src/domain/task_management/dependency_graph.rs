@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 
-use super::dependency::{DependencyError, DependencyStatus, TaskDependency, DependencyType};
+use super::dependency::{DependencyError, DependencyStatus, DependencyType, TaskDependency};
 use crate::domain::shared::errors::DomainResult;
 
 /// Represents a graph of task dependencies for cycle detection and topological sorting
@@ -28,7 +28,7 @@ impl DependencyGraph {
     /// Create a dependency graph from a list of dependencies
     pub fn from_dependencies(dependencies: Vec<TaskDependency>) -> DomainResult<Self> {
         let mut graph = Self::new();
-        
+
         for dependency in dependencies {
             graph.add_dependency(dependency)?;
         }
@@ -43,22 +43,25 @@ impl DependencyGraph {
             return Err(DependencyError::DependencyExists {
                 predecessor: dependency.predecessor.clone(),
                 successor: dependency.successor.clone(),
-            }.into());
+            }
+            .into());
         }
 
         // Create a temporary graph to validate no cycles would be introduced
         let mut temp_graph = self.clone();
         temp_graph.dependencies.push(dependency.clone());
-        
+
         // Update adjacency lists in temp graph
-        temp_graph.adjacency_list
+        temp_graph
+            .adjacency_list
             .entry(dependency.predecessor.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(dependency.successor.clone());
 
-        temp_graph.reverse_adjacency_list
+        temp_graph
+            .reverse_adjacency_list
             .entry(dependency.successor.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(dependency.predecessor.clone());
 
         // Validate no cycles would be introduced
@@ -70,12 +73,12 @@ impl DependencyGraph {
         // Update adjacency lists
         self.adjacency_list
             .entry(dependency.predecessor.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(dependency.successor.clone());
 
         self.reverse_adjacency_list
             .entry(dependency.successor.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(dependency.predecessor.clone());
 
         Ok(())
@@ -84,14 +87,17 @@ impl DependencyGraph {
     /// Remove a dependency from the graph
     pub fn remove_dependency(&mut self, predecessor: &str, successor: &str) -> DomainResult<()> {
         // Find and remove the dependency
-        if let Some(pos) = self.dependencies.iter().position(|dep| {
-            dep.predecessor == predecessor && dep.successor == successor
-        }) {
+        if let Some(pos) = self
+            .dependencies
+            .iter()
+            .position(|dep| dep.predecessor == predecessor && dep.successor == successor)
+        {
             self.dependencies.remove(pos);
         } else {
             return Err(DependencyError::DependencyNotFound {
                 id: format!("{} -> {}", predecessor, successor),
-            }.into());
+            }
+            .into());
         }
 
         // Update adjacency lists
@@ -114,9 +120,9 @@ impl DependencyGraph {
 
     /// Check if a dependency exists between two tasks
     pub fn dependency_exists(&self, predecessor: &str, successor: &str) -> bool {
-        self.dependencies.iter().any(|dep| {
-            dep.predecessor == predecessor && dep.successor == successor
-        })
+        self.dependencies
+            .iter()
+            .any(|dep| dep.predecessor == predecessor && dep.successor == successor)
     }
 
     /// Get all dependencies
@@ -156,10 +162,10 @@ impl DependencyGraph {
         let mut recursion_stack = HashSet::new();
 
         for task in self.get_all_tasks() {
-            if !visited.contains(&task) {
-                if let Some(cycle) = self.dfs_cycle_detection(&task, &mut visited, &mut recursion_stack) {
-                    return Err(DependencyError::CycleDetected { path: cycle }.into());
-                }
+            if !visited.contains(&task)
+                && let Some(cycle) = self.dfs_cycle_detection(&task, &mut visited, &mut recursion_stack)
+            {
+                return Err(DependencyError::CycleDetected { path: cycle }.into());
             }
         }
 
@@ -214,7 +220,8 @@ impl DependencyGraph {
         if result.len() != self.get_all_tasks().len() {
             return Err(DependencyError::InvalidConfiguration {
                 message: "Graph contains cycles or disconnected components".to_string(),
-            }.into());
+            }
+            .into());
         }
 
         Ok(result)
@@ -232,7 +239,8 @@ impl DependencyGraph {
         let mut ready_tasks = Vec::new();
 
         for task in self.get_all_tasks() {
-            let has_active_predecessors = self.get_predecessors(&task)
+            let has_active_predecessors = self
+                .get_predecessors(&task)
                 .iter()
                 .any(|dep| dep.status == DependencyStatus::Active);
 
@@ -259,10 +267,10 @@ impl DependencyGraph {
         let mut recursion_stack = HashSet::new();
 
         for task in self.get_all_tasks() {
-            if !visited.contains(&task) {
-                if let Some(cycle) = self.dfs_cycle_detection(&task, &mut visited, &mut recursion_stack) {
-                    cycles.push(cycle);
-                }
+            if !visited.contains(&task)
+                && let Some(cycle) = self.dfs_cycle_detection(&task, &mut visited, &mut recursion_stack)
+            {
+                cycles.push(cycle);
             }
         }
 
@@ -292,7 +300,9 @@ impl DependencyGraph {
                     while current != successor {
                         cycle.push(current.to_string());
                         // Find the predecessor in the current path
-                        if let Some(pred) = self.reverse_adjacency_list.get(current)
+                        if let Some(pred) = self
+                            .reverse_adjacency_list
+                            .get(current)
                             .and_then(|preds| preds.iter().find(|p| recursion_stack.contains(*p)))
                         {
                             current = pred;
@@ -314,11 +324,12 @@ impl DependencyGraph {
     /// Get a summary of the dependency graph
     pub fn get_summary(&self) -> DependencyGraphSummary {
         let total_dependencies = self.dependencies.len();
-        let active_dependencies = self.dependencies
+        let active_dependencies = self
+            .dependencies
             .iter()
             .filter(|dep| dep.status == DependencyStatus::Active)
             .count();
-        
+
         let total_tasks = self.get_all_tasks().len();
         let ready_tasks = self.get_ready_tasks().len();
 
@@ -358,19 +369,15 @@ impl fmt::Display for DependencyGraphSummary {
              - Active Dependencies: {}\n\
              - Ready Tasks: {}\n\
              - Has Cycles: {}",
-            self.total_tasks,
-            self.total_dependencies,
-            self.active_dependencies,
-            self.ready_tasks,
-            self.has_cycles
+            self.total_tasks, self.total_dependencies, self.active_dependencies, self.ready_tasks, self.has_cycles
         )
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::dependency::{DependencyStatus, DependencyType};
     use super::*;
-    use super::super::dependency::{DependencyType, DependencyStatus};
 
     fn create_test_dependency(predecessor: &str, successor: &str) -> TaskDependency {
         TaskDependency::new(
@@ -378,7 +385,8 @@ mod tests {
             successor.to_string(),
             DependencyType::FinishToStart,
             "test".to_string(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
@@ -392,7 +400,7 @@ mod tests {
     fn test_add_dependency() {
         let mut graph = DependencyGraph::new();
         let dep = create_test_dependency("TASK-1", "TASK-2");
-        
+
         assert!(graph.add_dependency(dep).is_ok());
         assert_eq!(graph.dependencies().len(), 1);
         assert!(graph.validate_no_cycles().is_ok());
@@ -401,15 +409,19 @@ mod tests {
     #[test]
     fn test_cycle_detection() {
         let mut graph = DependencyGraph::new();
-        
+
         // Add dependencies that create a cycle
-        graph.add_dependency(create_test_dependency("TASK-1", "TASK-2")).unwrap();
-        graph.add_dependency(create_test_dependency("TASK-2", "TASK-3")).unwrap();
-        
+        graph
+            .add_dependency(create_test_dependency("TASK-1", "TASK-2"))
+            .unwrap();
+        graph
+            .add_dependency(create_test_dependency("TASK-2", "TASK-3"))
+            .unwrap();
+
         // This should be rejected because it creates a cycle
         let result = graph.add_dependency(create_test_dependency("TASK-3", "TASK-1"));
         assert!(result.is_err());
-        
+
         // Verify the graph still has only 2 dependencies (the cycle was rejected)
         assert_eq!(graph.dependencies().len(), 2);
         assert!(graph.validate_no_cycles().is_ok());
@@ -418,7 +430,7 @@ mod tests {
     #[test]
     fn test_topological_sort() {
         let mut graph = DependencyGraph::new();
-        
+
         // A -> B -> C
         graph.add_dependency(create_test_dependency("A", "B")).unwrap();
         graph.add_dependency(create_test_dependency("B", "C")).unwrap();
@@ -430,7 +442,7 @@ mod tests {
     #[test]
     fn test_ready_tasks() {
         let mut graph = DependencyGraph::new();
-        
+
         // A -> B, C -> D (no dependencies)
         graph.add_dependency(create_test_dependency("A", "B")).unwrap();
         graph.add_dependency(create_test_dependency("C", "D")).unwrap();
@@ -445,9 +457,11 @@ mod tests {
     #[test]
     fn test_duplicate_dependency() {
         let mut graph = DependencyGraph::new();
-        
-        graph.add_dependency(create_test_dependency("TASK-1", "TASK-2")).unwrap();
-        
+
+        graph
+            .add_dependency(create_test_dependency("TASK-1", "TASK-2"))
+            .unwrap();
+
         // Try to add the same dependency again
         let result = graph.add_dependency(create_test_dependency("TASK-1", "TASK-2"));
         assert!(result.is_err());

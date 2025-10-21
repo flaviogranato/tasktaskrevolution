@@ -15,7 +15,7 @@ impl CalculateCostsUseCase {
         // TODO: Load costs from repository
         // For now, return empty summary
         let summary = CostSummary::new();
-        
+
         Ok(summary)
     }
 
@@ -59,4 +59,3 @@ mod tests {
         assert_eq!(result.unwrap(), 0.0);
     }
 }
-

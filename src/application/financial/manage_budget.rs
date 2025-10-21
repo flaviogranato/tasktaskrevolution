@@ -1,4 +1,4 @@
-use crate::domain::financial::{ProjectBudget, BudgetStatus};
+use crate::domain::financial::{BudgetStatus, ProjectBudget};
 use crate::domain::shared::errors::DomainError;
 use std::path::PathBuf;
 
@@ -41,11 +41,7 @@ impl ManageBudgetUseCase {
         })
     }
 
-    pub fn update_spending(
-        &self,
-        project_id: &str,
-        spent_amount: f64,
-    ) -> Result<ProjectBudget, DomainError> {
+    pub fn update_spending(&self, project_id: &str, spent_amount: f64) -> Result<ProjectBudget, DomainError> {
         // Load budget
         let mut budget = self.get_budget(project_id)?;
 
@@ -75,12 +71,7 @@ mod tests {
     #[test]
     fn test_set_budget_success() {
         let use_case = ManageBudgetUseCase::new(PathBuf::from("."));
-        let result = use_case.set_budget(
-            "PROJ-1".to_string(),
-            50000.0,
-            "USD".to_string(),
-            "user1".to_string(),
-        );
+        let result = use_case.set_budget("PROJ-1".to_string(), 50000.0, "USD".to_string(), "user1".to_string());
 
         assert!(result.is_ok());
         let budget = result.unwrap();
@@ -91,12 +82,7 @@ mod tests {
     #[test]
     fn test_set_budget_negative_amount() {
         let use_case = ManageBudgetUseCase::new(PathBuf::from("."));
-        let result = use_case.set_budget(
-            "PROJ-1".to_string(),
-            -1000.0,
-            "USD".to_string(),
-            "user1".to_string(),
-        );
+        let result = use_case.set_budget("PROJ-1".to_string(), -1000.0, "USD".to_string(), "user1".to_string());
 
         assert!(result.is_err());
     }
@@ -104,14 +90,8 @@ mod tests {
     #[test]
     fn test_set_budget_zero_amount() {
         let use_case = ManageBudgetUseCase::new(PathBuf::from("."));
-        let result = use_case.set_budget(
-            "PROJ-1".to_string(),
-            0.0,
-            "USD".to_string(),
-            "user1".to_string(),
-        );
+        let result = use_case.set_budget("PROJ-1".to_string(), 0.0, "USD".to_string(), "user1".to_string());
 
         assert!(result.is_err());
     }
 }
-

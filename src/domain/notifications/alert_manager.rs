@@ -7,9 +7,7 @@ pub struct AlertManager {
 
 impl AlertManager {
     pub fn new() -> Self {
-        Self {
-            alerts: HashMap::new(),
-        }
+        Self { alerts: HashMap::new() }
     }
 
     pub fn add_alert(&mut self, alert: Alert) {
@@ -35,10 +33,7 @@ impl AlertManager {
     }
 
     pub fn get_unacknowledged_alerts(&self) -> Vec<&Alert> {
-        self.alerts
-            .values()
-            .filter(|alert| !alert.acknowledged)
-            .collect()
+        self.alerts.values().filter(|alert| !alert.acknowledged).collect()
     }
 
     pub fn acknowledge_alert(&mut self, id: &str, acknowledged_by: String) -> bool {
@@ -52,11 +47,11 @@ impl AlertManager {
 
     pub fn get_summary(&self) -> AlertSummary {
         let mut summary = AlertSummary::new();
-        
+
         for alert in self.alerts.values() {
             summary.add_alert(alert);
         }
-        
+
         summary
     }
 
@@ -70,4 +65,3 @@ impl Default for AlertManager {
         Self::new()
     }
 }
-

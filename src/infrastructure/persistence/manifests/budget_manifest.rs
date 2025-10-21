@@ -1,5 +1,5 @@
+use crate::domain::financial::{BudgetStatus, ProjectBudget};
 use serde::{Deserialize, Serialize};
-use crate::domain::financial::{ProjectBudget, BudgetStatus};
 use std::collections::HashMap;
 
 const API_VERSION: &str = "tasktaskrevolution.io/v1alpha1";
@@ -41,7 +41,7 @@ impl From<ProjectBudget> for BudgetManifest {
     fn from(budget: ProjectBudget) -> Self {
         let id = uuid7::uuid7().to_string();
         let code = format!("BUDGET-{}", &id[0..8].to_uppercase());
-        
+
         BudgetManifest {
             api_version: API_VERSION.to_string(),
             kind: "Budget".to_string(),
@@ -109,12 +109,7 @@ mod tests {
 
     #[test]
     fn test_budget_manifest_conversion() {
-        let budget = ProjectBudget::new(
-            "PROJ-1".to_string(),
-            10000.0,
-            "USD".to_string(),
-            "user1".to_string(),
-        );
+        let budget = ProjectBudget::new("PROJ-1".to_string(), 10000.0, "USD".to_string(), "user1".to_string());
 
         let manifest = BudgetManifest::from(budget.clone());
         assert!(!manifest.metadata.id.is_empty());
@@ -127,4 +122,3 @@ mod tests {
         assert_eq!(budget_back.currency, budget.currency);
     }
 }
-

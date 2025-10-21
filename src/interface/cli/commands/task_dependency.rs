@@ -1,10 +1,8 @@
 use clap::{Args, Subcommand};
 use std::collections::HashSet;
 
-use crate::domain::task_management::{
-    DependencyGraph, DependencyType, DependencyValidator, TaskDependency,
-};
 use crate::domain::shared::errors::DomainResult;
+use crate::domain::task_management::{DependencyGraph, DependencyType, DependencyValidator, TaskDependency};
 
 /// Manage task dependencies
 #[derive(Args, Debug)]
@@ -79,30 +77,23 @@ impl TaskDependencyCommand {
                 lag_days,
                 lead_days,
                 description,
-            } => {
-                self.add_dependency(
-                    base_path,
-                    predecessor,
-                    successor,
-                    dependency_type,
-                    *lag_days,
-                    *lead_days,
-                    description.as_deref(),
-                )
-            }
-            TaskDependencyCommand::Remove {
+            } => self.add_dependency(
+                base_path,
                 predecessor,
                 successor,
-            } => self.remove_dependency(base_path, predecessor, successor),
+                dependency_type,
+                *lag_days,
+                *lead_days,
+                description.as_deref(),
+            ),
+            TaskDependencyCommand::Remove { predecessor, successor } => {
+                self.remove_dependency(base_path, predecessor, successor)
+            }
             TaskDependencyCommand::List { task, project } => {
                 self.list_dependencies(base_path, task.as_deref(), project.as_deref())
             }
-            TaskDependencyCommand::Validate { project } => {
-                self.validate_dependencies(base_path, project.as_deref())
-            }
-            TaskDependencyCommand::Summary { project } => {
-                self.show_summary(base_path, project.as_deref())
-            }
+            TaskDependencyCommand::Validate { project } => self.validate_dependencies(base_path, project.as_deref()),
+            TaskDependencyCommand::Summary { project } => self.show_summary(base_path, project.as_deref()),
         }
     }
 
@@ -159,12 +150,7 @@ impl TaskDependencyCommand {
         Ok(())
     }
 
-    fn remove_dependency(
-        &self,
-        base_path: &str,
-        predecessor: &str,
-        successor: &str,
-    ) -> DomainResult<()> {
+    fn remove_dependency(&self, base_path: &str, predecessor: &str, successor: &str) -> DomainResult<()> {
         // Load existing dependencies
         let mut graph = self.load_dependency_graph(base_path)?;
 
@@ -178,12 +164,7 @@ impl TaskDependencyCommand {
         Ok(())
     }
 
-    fn list_dependencies(
-        &self,
-        base_path: &str,
-        task: Option<&str>,
-        project: Option<&str>,
-    ) -> DomainResult<()> {
+    fn list_dependencies(&self, base_path: &str, task: Option<&str>, project: Option<&str>) -> DomainResult<()> {
         let graph = self.load_dependency_graph(base_path)?;
 
         if let Some(task_code) = task {
@@ -193,7 +174,7 @@ impl TaskDependencyCommand {
 
             let predecessors = graph.get_predecessors(task_code);
             let successors = graph.get_successors(task_code);
-            
+
             if !predecessors.is_empty() {
                 println!("\nPredecessors:");
                 for dep in &predecessors {

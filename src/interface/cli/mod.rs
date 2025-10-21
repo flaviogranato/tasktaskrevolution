@@ -135,6 +135,11 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::ResourceCommand,
     },
+    /// Schedule management
+    Schedule {
+        #[clap(flatten)]
+        args: commands::ScheduleArgs,
+    },
     /// Budget management
     Budget {
         #[clap(flatten)]
@@ -330,6 +335,10 @@ impl Cli {
             Commands::Template { command } => handlers::template_handler::handle_template_command(command),
             Commands::Task { command } => handlers::task_handler::handle_task_command(command),
             Commands::Resource { command } => handlers::resource_handler::handle_resource_command(command),
+            Commands::Schedule { args } => {
+                let base_path = env::current_dir().unwrap().to_string_lossy().to_string();
+                args.command.execute(&base_path)
+            }
             Commands::Budget { args } => {
                 let base_path = env::current_dir().unwrap().to_string_lossy().to_string();
                 args.command.execute(&base_path)

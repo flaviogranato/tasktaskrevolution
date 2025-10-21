@@ -1,12 +1,12 @@
-use serde::{Deserialize, Serialize};
 use crate::domain::notifications::AlertSeverity;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BudgetStatus {
-    Under,      // Abaixo do orçamento
-    OnTrack,    // No prazo
-    Over,       // Acima do orçamento
-    Exceeded,   // Excedido
+    Under,    // Abaixo do orçamento
+    OnTrack,  // No prazo
+    Over,     // Acima do orçamento
+    Exceeded, // Excedido
 }
 
 impl std::fmt::Display for BudgetStatus {
@@ -35,12 +35,7 @@ pub struct ProjectBudget {
 }
 
 impl ProjectBudget {
-    pub fn new(
-        project_id: String,
-        total_budget: f64,
-        currency: String,
-        created_by: String,
-    ) -> Self {
+    pub fn new(project_id: String, total_budget: f64, currency: String, created_by: String) -> Self {
         Self {
             project_id,
             total_budget,
@@ -65,7 +60,7 @@ impl ProjectBudget {
 
     pub fn calculate_status(&self) -> BudgetStatus {
         let utilization = self.spent_amount / self.total_budget;
-        
+
         if utilization >= 1.0 {
             BudgetStatus::Exceeded
         } else if utilization >= 0.9 {
@@ -80,7 +75,7 @@ impl ProjectBudget {
     pub fn check_budget_alerts(&self) -> Vec<BudgetAlert> {
         let mut alerts = Vec::new();
         let utilization = self.spent_amount / self.total_budget;
-        
+
         if utilization >= 1.0 {
             alerts.push(BudgetAlert::new(
                 format!("budget-exceeded-{}", self.project_id),
@@ -115,7 +110,7 @@ impl ProjectBudget {
                 Some("Monitor spending closely".to_string()),
             ));
         }
-        
+
         alerts
     }
 
@@ -160,5 +155,3 @@ impl BudgetAlert {
         }
     }
 }
-
-

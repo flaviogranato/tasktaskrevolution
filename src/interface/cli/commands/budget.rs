@@ -1,6 +1,6 @@
-use clap::{Args, Subcommand};
 use crate::domain::financial::ProjectBudget;
 use crate::infrastructure::persistence::repositories::BudgetRepository;
+use clap::{Args, Subcommand};
 
 #[derive(Args)]
 pub struct BudgetArgs {
@@ -103,12 +103,7 @@ impl BudgetCommand {
             } => {
                 let company_code = company.clone().unwrap_or_else(|| "TECH-CORP".to_string());
 
-                let budget = ProjectBudget::new(
-                    project.clone(),
-                    *amount,
-                    currency.clone(),
-                    created_by.clone(),
-                );
+                let budget = ProjectBudget::new(project.clone(), *amount, currency.clone(), created_by.clone());
 
                 budget_repo.save(&company_code, project, &budget)?;
 
@@ -193,7 +188,10 @@ impl BudgetCommand {
                 println!("════════════════════════════════════");
                 println!();
                 println!("  Total Budget:   {} {}", budget.total_budget, budget.currency);
-                println!("  Spent:          {} {} ({:.1}%)", budget.spent_amount, budget.currency, utilization);
+                println!(
+                    "  Spent:          {} {} ({:.1}%)",
+                    budget.spent_amount, budget.currency, utilization
+                );
                 println!("  Remaining:      {} {}", budget.remaining_amount, budget.currency);
                 println!("  Status:         {}", budget.status);
                 println!();
@@ -229,7 +227,10 @@ impl BudgetCommand {
 
                 println!("Budgets for Company: {}", company_code);
                 println!("═══════════════════════════════════════════════════════════════════");
-                println!("{:<20} {:<15} {:<15} {:<15} {:<12}", "PROJECT", "TOTAL", "SPENT", "REMAINING", "STATUS");
+                println!(
+                    "{:<20} {:<15} {:<15} {:<15} {:<12}",
+                    "PROJECT", "TOTAL", "SPENT", "REMAINING", "STATUS"
+                );
                 println!("───────────────────────────────────────────────────────────────────");
 
                 for budget in budgets {
@@ -260,4 +261,3 @@ impl BudgetCommand {
         }
     }
 }
-

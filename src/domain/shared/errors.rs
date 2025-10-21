@@ -430,6 +430,12 @@ impl From<std::io::Error> for DomainError {
     }
 }
 
+impl From<String> for DomainError {
+    fn from(message: String) -> Self {
+        Self::DomainError { message }
+    }
+}
+
 /// Result type alias for domain operations
 pub type DomainResult<T> = Result<T, DomainError>;
 

@@ -288,7 +288,11 @@ impl From<AnyTask> for TaskManifest {
                 estimated_end_date: Some(task_core.due_date),
                 actual_start_date: Some(task_core.start_date),
                 actual_end_date: task_core.actual_end_date,
-                dependencies: task_core.dependencies.into_iter().map(TaskDependencyManifest::from_string).collect(),
+                dependencies: task_core
+                    .dependencies
+                    .into_iter()
+                    .map(TaskDependencyManifest::from_string)
+                    .collect(),
                 tags: task_core.assigned_resources.clone(),
                 effort: Effort {
                     estimated_hours: 8.0,
@@ -758,7 +762,10 @@ mod yaml_parsing_tests {
             manifest.spec.estimated_end_date,
             Some(NaiveDate::from_ymd_opt(2024, 1, 15).unwrap())
         );
-        assert_eq!(manifest.spec.dependencies, vec![TaskDependencyManifest::from_string("TASK-000".to_string())]);
+        assert_eq!(
+            manifest.spec.dependencies,
+            vec![TaskDependencyManifest::from_string("TASK-000".to_string())]
+        );
         assert_eq!(manifest.spec.tags, vec!["development"]);
         assert_eq!(manifest.spec.effort.estimated_hours, 40.0);
         assert_eq!(manifest.spec.acceptance_criteria, vec!["Task completed successfully"]);
@@ -921,10 +928,13 @@ mod yaml_parsing_tests {
         );
         assert_eq!(manifest.spec.priority, Priority::High);
         assert_eq!(manifest.spec.tags, vec!["testing", "complex"]);
-        assert_eq!(manifest.spec.dependencies, vec![
-            TaskDependencyManifest::from_string("TASK-000".to_string()),
-            TaskDependencyManifest::from_string("TASK-002".to_string())
-        ]);
+        assert_eq!(
+            manifest.spec.dependencies,
+            vec![
+                TaskDependencyManifest::from_string("TASK-000".to_string()),
+                TaskDependencyManifest::from_string("TASK-002".to_string())
+            ]
+        );
         assert_eq!(manifest.spec.effort.estimated_hours, 80.0);
         assert_eq!(manifest.spec.effort.actual_hours, Some(75.5));
         assert_eq!(

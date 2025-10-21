@@ -38,7 +38,7 @@ impl AddCostUseCase {
             cost_type,
             description,
             created_by,
-        );
+        )?;
 
         // TODO: Save to repository
         // For now, return the created cost entry
@@ -102,4 +102,3 @@ mod tests {
         assert!(result.is_err());
     }
 }
-

@@ -283,22 +283,10 @@ mod tests {
 
     #[test]
     fn test_dependency_type_from_str() {
-        assert_eq!(
-            DependencyType::from_str("FS").unwrap(),
-            DependencyType::FinishToStart
-        );
-        assert_eq!(
-            DependencyType::from_str("SS").unwrap(),
-            DependencyType::StartToStart
-        );
-        assert_eq!(
-            DependencyType::from_str("FF").unwrap(),
-            DependencyType::FinishToFinish
-        );
-        assert_eq!(
-            DependencyType::from_str("SF").unwrap(),
-            DependencyType::StartToFinish
-        );
+        assert_eq!(DependencyType::from_str("FS").unwrap(), DependencyType::FinishToStart);
+        assert_eq!(DependencyType::from_str("SS").unwrap(), DependencyType::StartToStart);
+        assert_eq!(DependencyType::from_str("FF").unwrap(), DependencyType::FinishToFinish);
+        assert_eq!(DependencyType::from_str("SF").unwrap(), DependencyType::StartToFinish);
 
         assert!(DependencyType::from_str("INVALID").is_err());
     }
@@ -310,7 +298,8 @@ mod tests {
             "TASK-2".to_string(),
             DependencyType::FinishToStart,
             "user".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(dep.predecessor, "TASK-1");
         assert_eq!(dep.successor, "TASK-2");
@@ -337,7 +326,8 @@ mod tests {
             "TASK-2".to_string(),
             DependencyType::FinishToStart,
             "user".to_string(),
-        ).unwrap()
+        )
+        .unwrap()
         .with_lag_time(Duration::days(2));
 
         assert_eq!(dep.lag_time, Some(Duration::days(2)));
@@ -350,14 +340,16 @@ mod tests {
             "TASK-2".to_string(),
             DependencyType::FinishToStart,
             "user".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let dep2 = TaskDependency::new(
             "TASK-2".to_string(),
             "TASK-1".to_string(),
             DependencyType::FinishToStart,
             "user".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(dep1.would_create_cycle(&dep2));
     }

@@ -1,9 +1,10 @@
 pub mod company_management;
 pub mod company_settings;
+pub mod financial;
+pub mod notifications;
 pub mod ports;
 pub mod project_management;
 pub mod resource_management;
+pub mod scheduling;
 pub mod shared;
 pub mod task_management;
-pub mod financial;
-pub mod notifications;

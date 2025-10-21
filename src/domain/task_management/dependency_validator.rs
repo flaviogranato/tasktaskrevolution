@@ -22,21 +22,24 @@ impl DependencyValidator {
         if !self.available_tasks.contains(&dependency.predecessor) {
             return Err(DependencyError::TaskNotFound {
                 code: dependency.predecessor.clone(),
-            }.into());
+            }
+            .into());
         }
 
         // Check if successor exists
         if !self.available_tasks.contains(&dependency.successor) {
             return Err(DependencyError::TaskNotFound {
                 code: dependency.successor.clone(),
-            }.into());
+            }
+            .into());
         }
 
         // Check for self-dependency
         if dependency.predecessor == dependency.successor {
             return Err(DependencyError::InvalidConfiguration {
                 message: "A task cannot depend on itself".to_string(),
-            }.into());
+            }
+            .into());
         }
 
         // Validate dependency type specific rules
@@ -81,7 +84,8 @@ impl DependencyValidator {
             return Err(DependencyError::DependencyExists {
                 predecessor: new_dependency.predecessor.clone(),
                 successor: new_dependency.successor.clone(),
-            }.into());
+            }
+            .into());
         }
 
         // Create a temporary graph with the new dependency to check for cycles
@@ -123,25 +127,28 @@ impl DependencyValidator {
         if dependency.lag_time.is_some() && dependency.lead_time.is_some() {
             return Err(DependencyError::InvalidConfiguration {
                 message: "Cannot specify both lag time and lead time for the same dependency".to_string(),
-            }.into());
+            }
+            .into());
         }
 
         // Validate lag time is positive
-        if let Some(lag) = dependency.lag_time {
-            if lag.num_seconds() < 0 {
-                return Err(DependencyError::InvalidConfiguration {
-                    message: "Lag time must be positive".to_string(),
-                }.into());
+        if let Some(lag) = dependency.lag_time
+            && lag.num_seconds() < 0
+        {
+            return Err(DependencyError::InvalidConfiguration {
+                message: "Lag time must be positive".to_string(),
             }
+            .into());
         }
 
         // Validate lead time is positive
-        if let Some(lead) = dependency.lead_time {
-            if lead.num_seconds() < 0 {
-                return Err(DependencyError::InvalidConfiguration {
-                    message: "Lead time must be positive".to_string(),
-                }.into());
+        if let Some(lead) = dependency.lead_time
+            && lead.num_seconds() < 0
+        {
+            return Err(DependencyError::InvalidConfiguration {
+                message: "Lead time must be positive".to_string(),
             }
+            .into());
         }
 
         Ok(())
@@ -156,16 +163,15 @@ impl DependencyValidator {
                         "Dependency references non-existent predecessor: {}",
                         dependency.predecessor
                     ),
-                }.into());
+                }
+                .into());
             }
 
             if !self.available_tasks.contains(&dependency.successor) {
                 return Err(DependencyError::InvalidConfiguration {
-                    message: format!(
-                        "Dependency references non-existent successor: {}",
-                        dependency.successor
-                    ),
-                }.into());
+                    message: format!("Dependency references non-existent successor: {}", dependency.successor),
+                }
+                .into());
             }
         }
 
@@ -178,14 +184,15 @@ impl DependencyValidator {
 
         for dependency in graph.dependencies() {
             let key = format!("{}->{}", dependency.predecessor, dependency.successor);
-            
+
             if seen.contains(&key) {
                 return Err(DependencyError::InvalidConfiguration {
                     message: format!(
                         "Redundant dependency found: {} -> {}",
                         dependency.predecessor, dependency.successor
                     ),
-                }.into());
+                }
+                .into());
             }
 
             seen.insert(key);
@@ -285,8 +292,8 @@ impl std::fmt::Display for ValidationSummary {
 
 #[cfg(test)]
 mod tests {
+    use super::super::dependency::{DependencyStatus, DependencyType};
     use super::*;
-    use super::super::dependency::{DependencyType, DependencyStatus};
     use chrono::Duration;
 
     fn create_test_dependency(predecessor: &str, successor: &str) -> TaskDependency {
@@ -295,7 +302,8 @@ mod tests {
             successor.to_string(),
             DependencyType::FinishToStart,
             "test".to_string(),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
@@ -320,7 +328,7 @@ mod tests {
     fn test_validate_self_dependency() {
         let tasks = HashSet::from(["TASK-1".to_string()]);
         let _validator = DependencyValidator::new(tasks);
-        
+
         // Create a dependency that would be self-referencing
         let dependency_result = TaskDependency::new(
             "TASK-1".to_string(),
@@ -337,10 +345,12 @@ mod tests {
     fn test_validate_duplicate_dependency() {
         let tasks = HashSet::from(["TASK-1".to_string(), "TASK-2".to_string()]);
         let validator = DependencyValidator::new(tasks);
-        
+
         let mut graph = DependencyGraph::new();
-        graph.add_dependency(create_test_dependency("TASK-1", "TASK-2")).unwrap();
-        
+        graph
+            .add_dependency(create_test_dependency("TASK-1", "TASK-2"))
+            .unwrap();
+
         let duplicate = create_test_dependency("TASK-1", "TASK-2");
         assert!(validator.validate_dependency_addition(&graph, &duplicate).is_err());
     }
@@ -349,10 +359,12 @@ mod tests {
     fn test_validation_summary() {
         let tasks = HashSet::from(["TASK-1".to_string(), "TASK-2".to_string()]);
         let validator = DependencyValidator::new(tasks);
-        
+
         let mut graph = DependencyGraph::new();
-        graph.add_dependency(create_test_dependency("TASK-1", "TASK-2")).unwrap();
-        
+        graph
+            .add_dependency(create_test_dependency("TASK-1", "TASK-2"))
+            .unwrap();
+
         let summary = validator.get_validation_summary(&graph);
         assert!(summary.is_valid);
         assert_eq!(summary.total_dependencies, 1);

@@ -32,12 +32,7 @@ impl CostRepository {
     }
 
     /// Save a cost entry to disk
-    pub fn save(
-        &self,
-        company_code: &str,
-        project_code: &str,
-        cost: &CostEntry,
-    ) -> Result<(), DomainError> {
+    pub fn save(&self, company_code: &str, project_code: &str, cost: &CostEntry) -> Result<(), DomainError> {
         let costs_dir = self.costs_dir(company_code, project_code);
 
         // Ensure costs directory exists
@@ -62,12 +57,7 @@ impl CostRepository {
     }
 
     /// Load a specific cost entry
-    pub fn load(
-        &self,
-        company_code: &str,
-        project_code: &str,
-        cost_id: &str,
-    ) -> Result<CostEntry, DomainError> {
+    pub fn load(&self, company_code: &str, project_code: &str, cost_id: &str) -> Result<CostEntry, DomainError> {
         let path = self.cost_path(company_code, project_code, cost_id);
 
         if !path.exists() {
@@ -82,11 +72,9 @@ impl CostRepository {
             message: format!("Failed to read cost file: {}", e),
         })?;
 
-        let manifest: CostManifest = serde_yaml::from_str(&content).map_err(|e| {
-            DomainError::ValidationError {
-                field: "cost".to_string(),
-                message: format!("Failed to parse cost YAML: {}", e),
-            }
+        let manifest: CostManifest = serde_yaml::from_str(&content).map_err(|e| DomainError::ValidationError {
+            field: "cost".to_string(),
+            message: format!("Failed to parse cost YAML: {}", e),
         })?;
 
         let mut cost = CostEntry::try_from(manifest).map_err(|e| DomainError::ValidationError {
@@ -101,11 +89,7 @@ impl CostRepository {
     }
 
     /// List all costs for a project
-    pub fn list(
-        &self,
-        company_code: &str,
-        project_code: &str,
-    ) -> Result<Vec<CostEntry>, DomainError> {
+    pub fn list(&self, company_code: &str, project_code: &str) -> Result<Vec<CostEntry>, DomainError> {
         let costs_dir = self.costs_dir(company_code, project_code);
 
         if !costs_dir.exists() {
@@ -138,12 +122,7 @@ impl CostRepository {
     }
 
     /// Delete a cost entry
-    pub fn delete(
-        &self,
-        company_code: &str,
-        project_code: &str,
-        cost_id: &str,
-    ) -> Result<(), DomainError> {
+    pub fn delete(&self, company_code: &str, project_code: &str, cost_id: &str) -> Result<(), DomainError> {
         let path = self.cost_path(company_code, project_code, cost_id);
 
         if !path.exists() {
@@ -163,10 +142,7 @@ impl CostRepository {
 
     /// List all costs for a company (across all projects)
     pub fn list_by_company(&self, company_code: &str) -> Result<Vec<CostEntry>, DomainError> {
-        let projects_dir = self.base_path
-            .join("companies")
-            .join(company_code)
-            .join("projects");
+        let projects_dir = self.base_path.join("companies").join(company_code).join("projects");
 
         if !projects_dir.exists() {
             return Ok(Vec::new());
@@ -202,10 +178,7 @@ impl CostRepository {
         resource_id: &str,
     ) -> Result<Vec<CostEntry>, DomainError> {
         let all_costs = self.list(company_code, project_code)?;
-        Ok(all_costs
-            .into_iter()
-            .filter(|c| c.resource_id == resource_id)
-            .collect())
+        Ok(all_costs.into_iter().filter(|c| c.resource_id == resource_id).collect())
     }
 
     /// List costs by task
@@ -242,7 +215,7 @@ mod tests {
             CostType::Hourly,
             Some("Development".to_string()),
             "user1".to_string(),
-        );
+        ).unwrap();
 
         let cost_id = cost.id.clone();
         repo.save("COMP-1", "PROJ-1", &cost).unwrap();
@@ -265,13 +238,13 @@ mod tests {
             CostType::Hourly,
             None,
             "user1".to_string(),
-        );
+        ).unwrap();
 
         repo.save("COMP-1", "PROJ-1", &cost1).unwrap();
-        
+
         // Ensure unique timestamp-based IDs by adding small delay
         std::thread::sleep(std::time::Duration::from_millis(10));
-        
+
         // Create a new cost with guaranteed different timestamp
         let cost2 = CostEntry::new(
             "RES-2".to_string(),
@@ -281,12 +254,11 @@ mod tests {
             CostType::Fixed,
             None,
             "user1".to_string(),
-        );
-        
+        ).unwrap();
+
         repo.save("COMP-1", "PROJ-1", &cost2).unwrap();
 
         let costs = repo.list("COMP-1", "PROJ-1").unwrap();
         assert_eq!(costs.len(), 2);
     }
 }
-
