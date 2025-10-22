@@ -11,7 +11,8 @@ fn test_cost_entry_creation() {
         CostType::Hourly,
         Some("Development work".to_string()),
         "user1".to_string(),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(cost.resource_id, "RES-1");
     assert_eq!(cost.amount, 100.0);
@@ -29,7 +30,8 @@ fn test_hourly_cost_calculation() {
         CostType::Hourly,
         None,
         "user1".to_string(),
-    ).unwrap();
+    )
+    .unwrap();
 
     assert_eq!(cost.calculate_hourly_cost(8.0), 400.0);
     assert_eq!(cost.calculate_hourly_cost(0.0), 0.0);
@@ -116,7 +118,8 @@ fn test_cost_summary_calculation() {
         CostType::Hourly,
         None,
         "user1".to_string(),
-    ).unwrap();
+    )
+    .unwrap();
 
     let cost2 = CostEntry::new(
         "RES-2".to_string(),
@@ -126,7 +129,8 @@ fn test_cost_summary_calculation() {
         CostType::Fixed,
         None,
         "user1".to_string(),
-    ).unwrap();
+    )
+    .unwrap();
 
     summary.add_cost(&cost1);
     summary.add_cost(&cost2);

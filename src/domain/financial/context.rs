@@ -5,14 +5,9 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FinancialContext {
     /// Company-level financial operations
-    Company {
-        company_code: String,
-    },
+    Company { company_code: String },
     /// Project-level financial operations
-    Project {
-        company_code: String,
-        project_code: String,
-    },
+    Project { company_code: String, project_code: String },
 }
 
 impl FinancialContext {

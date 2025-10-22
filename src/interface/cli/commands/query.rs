@@ -20,7 +20,7 @@ pub struct QueryArgs {
     #[arg(long)]
     pub field: Option<String>,
 
-    /// Filter operator (=, !=, >, <, >=, <=, ~, !~)
+    /// Filter operator (=, !=, >, <, >=, <=, ~, !~, ^, $, ~*, !~*, IN, NOT IN, BETWEEN, NOT BETWEEN, IS NULL, IS NOT NULL)
     #[arg(long)]
     pub operator: Option<String>,
 
@@ -145,6 +145,34 @@ fn build_query(args: &QueryArgs) -> Result<crate::domain::shared::query_parser::
 }
 
 fn parse_query_value(value: &str) -> Result<QueryValue, Box<dyn std::error::Error>> {
+    // Parse arrays [value1, value2, ...]
+    if value.starts_with('[') && value.ends_with(']') {
+        let array_content = &value[1..value.len() - 1];
+        let items: Result<Vec<QueryValue>, _> = array_content
+            .split(',')
+            .map(|item| parse_query_value(item.trim()))
+            .collect();
+        return Ok(QueryValue::Array(items?));
+    }
+
+    // Parse ranges value1 AND value2
+    if value.contains(" AND ") {
+        let parts: Vec<&str> = value.split(" AND ").collect();
+        if parts.len() == 2 {
+            let start = parse_query_value(parts[0].trim())?;
+            let end = parse_query_value(parts[1].trim())?;
+            return Ok(QueryValue::Range {
+                start: Box::new(start),
+                end: Box::new(end),
+            });
+        }
+    }
+
+    // Parse NULL
+    if value.to_uppercase() == "NULL" {
+        return Ok(QueryValue::Null);
+    }
+
     // Try to parse as different types
     if let Ok(bool_val) = value.parse::<bool>() {
         return Ok(QueryValue::Boolean(bool_val));
@@ -269,6 +297,12 @@ fn show_query_demo(
     println!("- Simple filters: status:active");
     println!("- Comparisons: priority > high");
     println!("- String contains: name ~ 'developer'");
+    println!("- String starts with: name ^ 'Alice'");
+    println!("- String ends with: name $ 'Smith'");
+    println!("- Regex: name ~* '^[A-Z].*'");
+    println!("- Array operations: status IN ['active', 'pending']");
+    println!("- Range operations: age BETWEEN 20 AND 30");
+    println!("- Null checks: description IS NOT NULL");
     println!("- Logical operators: status:active AND priority:high");
     println!("- Negation: NOT status:cancelled");
     println!("- Parentheses: (status:active OR status:pending) AND priority:high");
@@ -277,6 +311,11 @@ fn show_query_demo(
     println!("- ttr query --query \"status:active\" --entity-type project");
     println!("- ttr query --field priority --operator '>' --value high --entity-type task");
     println!("- ttr query --field name --operator '~' --value developer --entity-type resource");
+    println!("- ttr query --field name --operator '^' --value Alice --entity-type resource");
+    println!("- ttr query --field name --operator '~*' --value '^[A-Z].*' --entity-type resource");
+    println!("- ttr query --field status --operator 'IN' --value '[active,pending]' --entity-type project");
+    println!("- ttr query --field age --operator 'BETWEEN' --value '20 AND 30' --entity-type resource");
+    println!("- ttr query --field description --operator 'IS NOT NULL' --value NULL --entity-type task");
     println!("- ttr query --field status --operator '=' --value active --aggregate count");
     println!("- ttr query --field priority --operator '=' --value high --sort name --order desc");
     println!("- ttr query --field status --operator '=' --value active --limit 10 --offset 0");

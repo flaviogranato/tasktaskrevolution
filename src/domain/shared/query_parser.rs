@@ -4,27 +4,65 @@ use std::fmt;
 /// Representa um operador de comparação
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ComparisonOperator {
+    // Operadores básicos
     Equal,          // =
     NotEqual,       // !=
     GreaterThan,    // >
     LessThan,       // <
     GreaterOrEqual, // >=
     LessOrEqual,    // <=
-    Contains,       // ~ (contém)
-    NotContains,    // !~ (não contém)
+
+    // Operadores de string
+    Contains,    // ~ (contém)
+    NotContains, // !~ (não contém)
+    StartsWith,  // ^ (começa com)
+    EndsWith,    // $ (termina com)
+    Regex,       // ~* (regex case-insensitive)
+    NotRegex,    // !~* (não regex case-insensitive)
+
+    // Operadores de array
+    In,    // IN (está em)
+    NotIn, // NOT IN (não está em)
+
+    // Operadores de range
+    Between,    // BETWEEN (entre)
+    NotBetween, // NOT BETWEEN (não entre)
+
+    // Operadores de null
+    IsNull,    // IS NULL (é nulo)
+    IsNotNull, // IS NOT NULL (não é nulo)
 }
 
 impl fmt::Display for ComparisonOperator {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            // Operadores básicos
             ComparisonOperator::Equal => write!(f, "="),
             ComparisonOperator::NotEqual => write!(f, "!="),
             ComparisonOperator::GreaterThan => write!(f, ">"),
             ComparisonOperator::LessThan => write!(f, "<"),
             ComparisonOperator::GreaterOrEqual => write!(f, ">="),
             ComparisonOperator::LessOrEqual => write!(f, "<="),
+
+            // Operadores de string
             ComparisonOperator::Contains => write!(f, "~"),
             ComparisonOperator::NotContains => write!(f, "!~"),
+            ComparisonOperator::StartsWith => write!(f, "^"),
+            ComparisonOperator::EndsWith => write!(f, "$"),
+            ComparisonOperator::Regex => write!(f, "~*"),
+            ComparisonOperator::NotRegex => write!(f, "!~*"),
+
+            // Operadores de array
+            ComparisonOperator::In => write!(f, "IN"),
+            ComparisonOperator::NotIn => write!(f, "NOT IN"),
+
+            // Operadores de range
+            ComparisonOperator::Between => write!(f, "BETWEEN"),
+            ComparisonOperator::NotBetween => write!(f, "NOT BETWEEN"),
+
+            // Operadores de null
+            ComparisonOperator::IsNull => write!(f, "IS NULL"),
+            ComparisonOperator::IsNotNull => write!(f, "IS NOT NULL"),
         }
     }
 }
@@ -55,6 +93,12 @@ pub enum QueryValue {
     Boolean(bool),
     Date(chrono::NaiveDate),
     DateTime(chrono::NaiveDateTime),
+    Array(Vec<QueryValue>),
+    Range {
+        start: Box<QueryValue>,
+        end: Box<QueryValue>,
+    },
+    Null,
 }
 
 impl fmt::Display for QueryValue {
@@ -65,6 +109,18 @@ impl fmt::Display for QueryValue {
             QueryValue::Boolean(b) => write!(f, "{}", b),
             QueryValue::Date(d) => write!(f, "{}", d.format("%Y-%m-%d")),
             QueryValue::DateTime(dt) => write!(f, "{}", dt.format("%Y-%m-%d %H:%M:%S")),
+            QueryValue::Array(arr) => {
+                write!(f, "[")?;
+                for (i, val) in arr.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", val)?;
+                }
+                write!(f, "]")
+            }
+            QueryValue::Range { start, end } => write!(f, "{} AND {}", start, end),
+            QueryValue::Null => write!(f, "NULL"),
         }
     }
 }
@@ -154,6 +210,20 @@ pub struct PaginationOptions {
     pub offset: Option<usize>,
 }
 
+/// Representa uma projeção de campo
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FieldProjection {
+    pub field: String,
+    pub alias: Option<String>,
+}
+
+/// Representa opções de projeção
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectionOptions {
+    pub fields: Vec<FieldProjection>,
+    pub include_all: bool,
+}
+
 impl PaginationOptions {
     pub fn new(limit: Option<usize>, offset: Option<usize>) -> Self {
         Self { limit, offset }
@@ -167,6 +237,48 @@ impl PaginationOptions {
     }
 }
 
+impl FieldProjection {
+    pub fn new(field: String) -> Self {
+        Self { field, alias: None }
+    }
+
+    pub fn with_alias(field: String, alias: String) -> Self {
+        Self {
+            field,
+            alias: Some(alias),
+        }
+    }
+}
+
+impl ProjectionOptions {
+    pub fn new() -> Self {
+        Self {
+            fields: Vec::new(),
+            include_all: true,
+        }
+    }
+
+    pub fn with_fields(fields: Vec<FieldProjection>) -> Self {
+        Self {
+            fields,
+            include_all: false,
+        }
+    }
+
+    pub fn add_field(mut self, field: FieldProjection) -> Self {
+        self.fields.push(field);
+        self.include_all = false;
+        self
+    }
+
+    pub fn include_all_fields() -> Self {
+        Self {
+            fields: Vec::new(),
+            include_all: true,
+        }
+    }
+}
+
 /// Representa uma consulta completa
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -174,6 +286,7 @@ pub struct Query {
     pub aggregation: Option<AggregationType>,
     pub sort: Option<SortOption>,
     pub pagination: PaginationOptions,
+    pub projection: ProjectionOptions,
 }
 
 impl fmt::Display for Query {
@@ -189,6 +302,7 @@ impl Query {
             aggregation: None,
             sort: None,
             pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
         }
     }
 
@@ -204,6 +318,28 @@ impl Query {
 
     pub fn with_pagination(mut self, limit: Option<usize>, offset: Option<usize>) -> Self {
         self.pagination = PaginationOptions::new(limit, offset);
+        self
+    }
+
+    pub fn with_projection(mut self, projection: ProjectionOptions) -> Self {
+        self.projection = projection;
+        self
+    }
+
+    pub fn select_fields(mut self, fields: Vec<FieldProjection>) -> Self {
+        self.projection = ProjectionOptions::with_fields(fields);
+        self
+    }
+
+    pub fn select_field(mut self, field: String) -> Self {
+        let field_projection = FieldProjection::new(field);
+        self.projection = self.projection.add_field(field_projection);
+        self
+    }
+
+    pub fn select_field_with_alias(mut self, field: String, alias: String) -> Self {
+        let field_projection = FieldProjection::with_alias(field, alias);
+        self.projection = self.projection.add_field(field_projection);
         self
     }
 }
@@ -253,6 +389,7 @@ impl QueryParser {
             aggregation: None,
             pagination: PaginationOptions::new_default(),
             sort: None,
+            projection: ProjectionOptions::include_all_fields(),
         })
     }
 
@@ -315,7 +452,30 @@ impl QueryParser {
         let operator = self.parse_comparison_operator()?;
         self.skip_whitespace();
 
-        let value = self.parse_value()?;
+        // For NULL operators, we don't need to parse a value
+        // For BETWEEN operators, we need to parse a range
+        let value = match operator {
+            ComparisonOperator::IsNull | ComparisonOperator::IsNotNull => QueryValue::Null,
+            ComparisonOperator::Between | ComparisonOperator::NotBetween => {
+                // Parse range: value1 AND value2
+                let start_value = self.parse_value()?;
+                self.skip_whitespace();
+                if self.starts_with("AND") {
+                    self.advance_by(3);
+                    self.skip_whitespace();
+                    let end_value = self.parse_value()?;
+                    QueryValue::Range {
+                        start: Box::new(start_value),
+                        end: Box::new(end_value),
+                    }
+                } else {
+                    return Err(QueryParseError::InvalidValue(
+                        "Expected 'AND' after first value in BETWEEN".to_string(),
+                    ));
+                }
+            }
+            _ => self.parse_value()?,
+        };
 
         Ok(FilterCondition { field, operator, value })
     }
@@ -334,10 +494,47 @@ impl QueryParser {
             return Err(QueryParseError::InvalidField("Empty field name".to_string()));
         }
 
-        Ok(self.input[start..self.position].to_string())
+        let field_name = self.input[start..self.position].to_string();
+
+        // Consumir espaços em branco após o campo
+        self.skip_whitespace();
+
+        Ok(field_name)
     }
 
     fn parse_comparison_operator(&mut self) -> Result<ComparisonOperator, QueryParseError> {
+        // Operadores de palavra-chave (devem ser verificados primeiro)
+        if self.starts_with("BETWEEN") {
+            self.advance_by(7);
+            return Ok(ComparisonOperator::Between);
+        }
+
+        if self.starts_with("NOT BETWEEN") {
+            self.advance_by(11);
+            return Ok(ComparisonOperator::NotBetween);
+        }
+
+        if self.starts_with("IN") {
+            self.advance_by(2);
+            return Ok(ComparisonOperator::In);
+        }
+
+        if self.starts_with("NOT IN") {
+            self.advance_by(6);
+            return Ok(ComparisonOperator::NotIn);
+        }
+
+        if self.starts_with("IS NULL") {
+            self.advance_by(7);
+            return Ok(ComparisonOperator::IsNull);
+        }
+
+        if self.starts_with("IS NOT NULL") {
+            self.advance_by(11);
+            return Ok(ComparisonOperator::IsNotNull);
+        }
+
+        // Operadores básicos (caracteres individuais)
         if self.peek() == Some('=') {
             let _ = self.consume('=');
             return Ok(ComparisonOperator::Equal);
@@ -351,6 +548,10 @@ impl QueryParser {
             }
             if self.peek() == Some('~') {
                 let _ = self.consume('~');
+                if self.peek() == Some('*') {
+                    let _ = self.consume('*');
+                    return Ok(ComparisonOperator::NotRegex);
+                }
                 return Ok(ComparisonOperator::NotContains);
             }
             return Err(QueryParseError::UnsupportedOperator("!".to_string()));
@@ -374,9 +575,24 @@ impl QueryParser {
             return Ok(ComparisonOperator::LessThan);
         }
 
+        // Operadores de string
         if self.peek() == Some('~') {
             let _ = self.consume('~');
+            if self.peek() == Some('*') {
+                let _ = self.consume('*');
+                return Ok(ComparisonOperator::Regex);
+            }
             return Ok(ComparisonOperator::Contains);
+        }
+
+        if self.peek() == Some('^') {
+            let _ = self.consume('^');
+            return Ok(ComparisonOperator::StartsWith);
+        }
+
+        if self.peek() == Some('$') {
+            let _ = self.consume('$');
+            return Ok(ComparisonOperator::EndsWith);
         }
 
         Err(QueryParseError::UnsupportedOperator(
@@ -401,6 +617,57 @@ impl QueryParser {
     fn parse_value(&mut self) -> Result<QueryValue, QueryParseError> {
         self.skip_whitespace();
 
+        // Parse arrays [value1, value2, ...]
+        if self.peek() == Some('[') {
+            let _ = self.consume('[');
+            let mut values = Vec::new();
+
+            self.skip_whitespace();
+            while self.peek() != Some(']') {
+                let value = self.parse_value()?;
+                values.push(value);
+
+                self.skip_whitespace();
+                if self.peek() == Some(',') {
+                    let _ = self.consume(',');
+                    self.skip_whitespace();
+                } else if self.peek() != Some(']') {
+                    return Err(QueryParseError::InvalidValue(
+                        "Expected ',' or ']' in array".to_string(),
+                    ));
+                }
+            }
+            self.expect(']')?;
+            return Ok(QueryValue::Array(values));
+        }
+
+        // Parse boolean values
+        if self.starts_with("true") {
+            self.advance_by(4);
+            return Ok(QueryValue::Boolean(true));
+        }
+
+        if self.starts_with("false") {
+            self.advance_by(5);
+            return Ok(QueryValue::Boolean(false));
+        }
+
+        // Parse NULL
+        if self.starts_with("NULL") {
+            self.advance_by(4);
+            return Ok(QueryValue::Null);
+        }
+
+        // Try to parse as date (YYYY-MM-DD) first
+        if self.position < self.input.len() && self.input.len() - self.position >= 10 {
+            let date_str = &self.input[self.position..self.position + 10];
+            if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+                self.advance_by(10);
+                return Ok(QueryValue::Date(date));
+            }
+        }
+
+        // Parse quoted strings
         if self.peek() == Some('\'') {
             let _ = self.consume('\'');
             let start = self.position;
@@ -414,6 +681,50 @@ impl QueryParser {
             return Ok(QueryValue::String(self.input[start..self.position - 1].to_string()));
         }
 
+        // Parse numbers
+        let start_position = self.position;
+        let mut has_dot = false;
+        let mut is_number = false;
+
+        while let Some(c) = self.peek() {
+            if c.is_ascii_digit() {
+                self.advance();
+                is_number = true;
+            } else if c == '.' && !has_dot {
+                has_dot = true;
+                self.advance();
+                is_number = true;
+            } else {
+                break;
+            }
+        }
+
+        if is_number && self.position > start_position {
+            let num_str = &self.input[start_position..self.position];
+            if let Ok(num) = num_str.parse::<f64>() {
+                return Ok(QueryValue::Number(num));
+            }
+        }
+
+        // Reset position and parse as unquoted string
+        self.position = start_position;
+        let start = self.position;
+        while let Some(c) = self.peek() {
+            if c.is_alphanumeric() || c == '_' || c == '-' || c == '.' {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
+        if self.position > start {
+            Ok(QueryValue::String(self.input[start..self.position].to_string()))
+        } else {
+            Err(QueryParseError::InvalidValue("Empty value".to_string()))
+        }
+    }
+
+    fn parse_value_legacy(&mut self) -> Result<QueryValue, QueryParseError> {
         if self.peek() == Some('t') && self.starts_with("true") {
             self.advance_by(4);
             return Ok(QueryValue::Boolean(true));
@@ -424,33 +735,18 @@ impl QueryParser {
             return Ok(QueryValue::Boolean(false));
         }
 
+        // Parse NULL
+        if self.starts_with("NULL") {
+            self.advance_by(4);
+            return Ok(QueryValue::Null);
+        }
+
         // Try to parse as date (YYYY-MM-DD) first
         if self.position < self.input.len() && self.input.len() - self.position >= 10 {
             let date_str = &self.input[self.position..self.position + 10];
             if let Ok(date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
                 self.advance_by(10);
                 return Ok(QueryValue::Date(date));
-            }
-        }
-
-        // Try to parse as number
-        let start = self.position;
-        let mut has_dot = false;
-        while let Some(c) = self.peek() {
-            if c.is_ascii_digit() {
-                self.advance();
-            } else if c == '.' && !has_dot {
-                has_dot = true;
-                self.advance();
-            } else {
-                break;
-            }
-        }
-
-        if self.position > start {
-            let num_str = &self.input[start..self.position];
-            if let Ok(num) = num_str.parse::<f64>() {
-                return Ok(QueryValue::Number(num));
             }
         }
 
@@ -654,6 +950,86 @@ mod tests {
         match query.expression {
             QueryExpression::Not(_) => {}
             _ => panic!("Expected NOT expression"),
+        }
+    }
+
+    #[test]
+    fn test_between_operator_parsing_issue() {
+        // Este teste demonstra a correção do problema com o operador BETWEEN
+        // O problema estava na ordem de parsing dos operadores
+        let mut parser = QueryParser::new("age BETWEEN 20 AND 30".to_string());
+
+        // Agora o teste deve passar porque o parser consegue identificar corretamente
+        // o operador BETWEEN quando usado diretamente na string de query
+        let result = parser.parse();
+
+        // Esperamos que seja bem-sucedido
+        match result {
+            Ok(query) => {
+                // Verificar que a query foi parseada corretamente
+                if let QueryExpression::Condition(condition) = &query.expression {
+                    assert_eq!(condition.field, "age");
+                    assert_eq!(condition.operator, ComparisonOperator::Between);
+                    // Para BETWEEN, o valor deve ser um Range
+                    if let QueryValue::Range { start, end } = &condition.value {
+                        if let QueryValue::Number(start_val) = start.as_ref() {
+                            assert_eq!(*start_val, 20.0);
+                        } else {
+                            panic!("Start value should be a number");
+                        }
+                        if let QueryValue::Number(end_val) = end.as_ref() {
+                            assert_eq!(*end_val, 30.0);
+                        } else {
+                            panic!("End value should be a number");
+                        }
+                    } else {
+                        panic!("BETWEEN should produce a Range value");
+                    }
+                } else {
+                    panic!("Expected a condition expression");
+                }
+                println!("✅ Operador BETWEEN parseado com sucesso!");
+            }
+            Err(e) => {
+                panic!("Erro inesperado ao parsear BETWEEN: {:?}", e);
+            }
+        }
+    }
+
+    #[test]
+    fn test_between_operator_manual_construction() {
+        // Este teste mostra como o BETWEEN deveria funcionar quando construído manualmente
+        let condition = FilterCondition {
+            field: "age".to_string(),
+            operator: ComparisonOperator::Between,
+            value: QueryValue::Range {
+                start: Box::new(QueryValue::Number(20.0)),
+                end: Box::new(QueryValue::Number(30.0)),
+            },
+        };
+
+        let query = Query {
+            expression: QueryExpression::Condition(condition),
+            aggregation: None,
+            sort: None,
+            pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
+        };
+
+        // Verificar que a condição foi construída corretamente
+        match query.expression {
+            QueryExpression::Condition(cond) => {
+                assert_eq!(cond.field, "age");
+                assert_eq!(cond.operator, ComparisonOperator::Between);
+                match cond.value {
+                    QueryValue::Range { start, end } => {
+                        assert_eq!(*start, QueryValue::Number(20.0));
+                        assert_eq!(*end, QueryValue::Number(30.0));
+                    }
+                    _ => panic!("Esperado Range value"),
+                }
+            }
+            _ => panic!("Esperado condition"),
         }
     }
 }

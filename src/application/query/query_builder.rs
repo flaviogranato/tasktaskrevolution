@@ -1,5 +1,6 @@
 use crate::domain::shared::query_parser::{
-    AggregationType, PaginationOptions, Query, QueryExpression, QueryValue, SortOption,
+    AggregationType, FieldProjection, PaginationOptions, ProjectionOptions, Query, QueryExpression, QueryValue,
+    SortOption,
 };
 
 /// Builder para construção de queries de forma fluente
@@ -8,6 +9,7 @@ pub struct QueryBuilder {
     aggregation: Option<AggregationType>,
     sort: Option<SortOption>,
     pagination: PaginationOptions,
+    projection: ProjectionOptions,
 }
 
 impl QueryBuilder {
@@ -18,20 +20,41 @@ impl QueryBuilder {
             aggregation: None,
             sort: None,
             pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
         }
     }
 
     /// Adiciona uma condição de filtro
     pub fn filter(mut self, field: &str, operator: &str, value: QueryValue) -> Self {
         let comparison_op = match operator {
+            // Operadores básicos
             "=" | "eq" => crate::domain::shared::query_parser::ComparisonOperator::Equal,
             "!=" | "ne" => crate::domain::shared::query_parser::ComparisonOperator::NotEqual,
             ">" | "gt" => crate::domain::shared::query_parser::ComparisonOperator::GreaterThan,
             "<" | "lt" => crate::domain::shared::query_parser::ComparisonOperator::LessThan,
             ">=" | "gte" => crate::domain::shared::query_parser::ComparisonOperator::GreaterOrEqual,
             "<=" | "lte" => crate::domain::shared::query_parser::ComparisonOperator::LessOrEqual,
+
+            // Operadores de string
             "~" | "contains" => crate::domain::shared::query_parser::ComparisonOperator::Contains,
             "!~" | "not_contains" => crate::domain::shared::query_parser::ComparisonOperator::NotContains,
+            "^" | "starts_with" => crate::domain::shared::query_parser::ComparisonOperator::StartsWith,
+            "$" | "ends_with" => crate::domain::shared::query_parser::ComparisonOperator::EndsWith,
+            "~*" | "regex" => crate::domain::shared::query_parser::ComparisonOperator::Regex,
+            "!~*" | "not_regex" => crate::domain::shared::query_parser::ComparisonOperator::NotRegex,
+
+            // Operadores de array
+            "IN" | "in" => crate::domain::shared::query_parser::ComparisonOperator::In,
+            "NOT IN" | "not_in" => crate::domain::shared::query_parser::ComparisonOperator::NotIn,
+
+            // Operadores de range
+            "BETWEEN" | "between" => crate::domain::shared::query_parser::ComparisonOperator::Between,
+            "NOT BETWEEN" | "not_between" => crate::domain::shared::query_parser::ComparisonOperator::NotBetween,
+
+            // Operadores de null
+            "IS NULL" | "is_null" => crate::domain::shared::query_parser::ComparisonOperator::IsNull,
+            "IS NOT NULL" | "is_not_null" => crate::domain::shared::query_parser::ComparisonOperator::IsNotNull,
+
             _ => crate::domain::shared::query_parser::ComparisonOperator::Equal,
         };
 
@@ -58,14 +81,34 @@ impl QueryBuilder {
     /// Adiciona uma condição OR
     pub fn or_filter(mut self, field: &str, operator: &str, value: QueryValue) -> Self {
         let comparison_op = match operator {
+            // Operadores básicos
             "=" | "eq" => crate::domain::shared::query_parser::ComparisonOperator::Equal,
             "!=" | "ne" => crate::domain::shared::query_parser::ComparisonOperator::NotEqual,
             ">" | "gt" => crate::domain::shared::query_parser::ComparisonOperator::GreaterThan,
             "<" | "lt" => crate::domain::shared::query_parser::ComparisonOperator::LessThan,
             ">=" | "gte" => crate::domain::shared::query_parser::ComparisonOperator::GreaterOrEqual,
             "<=" | "lte" => crate::domain::shared::query_parser::ComparisonOperator::LessOrEqual,
+
+            // Operadores de string
             "~" | "contains" => crate::domain::shared::query_parser::ComparisonOperator::Contains,
             "!~" | "not_contains" => crate::domain::shared::query_parser::ComparisonOperator::NotContains,
+            "^" | "starts_with" => crate::domain::shared::query_parser::ComparisonOperator::StartsWith,
+            "$" | "ends_with" => crate::domain::shared::query_parser::ComparisonOperator::EndsWith,
+            "~*" | "regex" => crate::domain::shared::query_parser::ComparisonOperator::Regex,
+            "!~*" | "not_regex" => crate::domain::shared::query_parser::ComparisonOperator::NotRegex,
+
+            // Operadores de array
+            "IN" | "in" => crate::domain::shared::query_parser::ComparisonOperator::In,
+            "NOT IN" | "not_in" => crate::domain::shared::query_parser::ComparisonOperator::NotIn,
+
+            // Operadores de range
+            "BETWEEN" | "between" => crate::domain::shared::query_parser::ComparisonOperator::Between,
+            "NOT BETWEEN" | "not_between" => crate::domain::shared::query_parser::ComparisonOperator::NotBetween,
+
+            // Operadores de null
+            "IS NULL" | "is_null" => crate::domain::shared::query_parser::ComparisonOperator::IsNull,
+            "IS NOT NULL" | "is_not_null" => crate::domain::shared::query_parser::ComparisonOperator::IsNotNull,
+
             _ => crate::domain::shared::query_parser::ComparisonOperator::Equal,
         };
 
@@ -156,6 +199,36 @@ impl QueryBuilder {
         self
     }
 
+    /// Seleciona campos específicos
+    pub fn select(mut self, fields: Vec<&str>) -> Self {
+        let field_projections: Vec<FieldProjection> = fields
+            .into_iter()
+            .map(|field| FieldProjection::new(field.to_string()))
+            .collect();
+        self.projection = ProjectionOptions::with_fields(field_projections);
+        self
+    }
+
+    /// Seleciona um campo específico
+    pub fn select_field(mut self, field: &str) -> Self {
+        let field_projection = FieldProjection::new(field.to_string());
+        self.projection = self.projection.add_field(field_projection);
+        self
+    }
+
+    /// Seleciona um campo com alias
+    pub fn select_field_as(mut self, field: &str, alias: &str) -> Self {
+        let field_projection = FieldProjection::with_alias(field.to_string(), alias.to_string());
+        self.projection = self.projection.add_field(field_projection);
+        self
+    }
+
+    /// Inclui todos os campos (padrão)
+    pub fn select_all(mut self) -> Self {
+        self.projection = ProjectionOptions::include_all_fields();
+        self
+    }
+
     /// Constrói a query final
     pub fn build(self) -> Result<Query, String> {
         let expression = self.expression.ok_or("Query must have at least one filter condition")?;
@@ -165,6 +238,7 @@ impl QueryBuilder {
             aggregation: self.aggregation,
             sort: self.sort,
             pagination: self.pagination,
+            projection: self.projection,
         })
     }
 }
@@ -305,5 +379,62 @@ mod tests {
             }
             _ => panic!("Expected condition expression"),
         }
+    }
+
+    #[test]
+    fn test_query_builder_projection() {
+        let query = QueryBuilder::status_equals("active")
+            .select(vec!["name", "email", "status"])
+            .build()
+            .unwrap();
+
+        assert!(!query.projection.include_all);
+        assert_eq!(query.projection.fields.len(), 3);
+        assert_eq!(query.projection.fields[0].field, "name");
+        assert_eq!(query.projection.fields[1].field, "email");
+        assert_eq!(query.projection.fields[2].field, "status");
+    }
+
+    #[test]
+    fn test_query_builder_projection_single_field() {
+        let query = QueryBuilder::status_equals("active")
+            .select_field("name")
+            .build()
+            .unwrap();
+
+        assert!(!query.projection.include_all);
+        assert_eq!(query.projection.fields.len(), 1);
+        assert_eq!(query.projection.fields[0].field, "name");
+        assert!(query.projection.fields[0].alias.is_none());
+    }
+
+    #[test]
+    fn test_query_builder_projection_with_alias() {
+        let query = QueryBuilder::status_equals("active")
+            .select_field_as("full_name", "name")
+            .build()
+            .unwrap();
+
+        assert!(!query.projection.include_all);
+        assert_eq!(query.projection.fields.len(), 1);
+        assert_eq!(query.projection.fields[0].field, "full_name");
+        assert_eq!(query.projection.fields[0].alias, Some("name".to_string()));
+    }
+
+    #[test]
+    fn test_query_builder_projection_select_all() {
+        let query = QueryBuilder::status_equals("active").select_all().build().unwrap();
+
+        assert!(query.projection.include_all);
+        assert!(query.projection.fields.is_empty());
+    }
+
+    #[test]
+    fn test_query_builder_projection_default() {
+        let query = QueryBuilder::status_equals("active").build().unwrap();
+
+        // Por padrão, deve incluir todos os campos
+        assert!(query.projection.include_all);
+        assert!(query.projection.fields.is_empty());
     }
 }

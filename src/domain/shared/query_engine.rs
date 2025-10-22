@@ -1,6 +1,6 @@
 use crate::domain::shared::query_parser::{
-    AggregationType, ComparisonOperator, FilterCondition, PaginationOptions, Query, QueryExpression, QueryValue,
-    SortOption,
+    AggregationType, ComparisonOperator, FilterCondition, PaginationOptions, ProjectionOptions, Query, QueryExpression,
+    QueryValue, SortOption,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -183,6 +183,16 @@ impl QueryEngine {
             ComparisonOperator::LessOrEqual => Self::compare_numeric(left, right, |a, b| a <= b),
             ComparisonOperator::Contains => Self::compare_string(left, right, |a, b| a.contains(b)),
             ComparisonOperator::NotContains => Self::compare_string(left, right, |a, b| !a.contains(b)),
+            ComparisonOperator::StartsWith => Self::compare_string(left, right, |a, b| a.starts_with(b)),
+            ComparisonOperator::EndsWith => Self::compare_string(left, right, |a, b| a.ends_with(b)),
+            ComparisonOperator::Regex => Self::compare_regex(left, right, false),
+            ComparisonOperator::NotRegex => Self::compare_regex(left, right, true),
+            ComparisonOperator::In => Self::compare_in(left, right, false),
+            ComparisonOperator::NotIn => Self::compare_in(left, right, true),
+            ComparisonOperator::Between => Self::compare_between(left, right, false),
+            ComparisonOperator::NotBetween => Self::compare_between(left, right, true),
+            ComparisonOperator::IsNull => Self::compare_null(left, false),
+            ComparisonOperator::IsNotNull => Self::compare_null(left, true),
         }
     }
 
@@ -240,6 +250,93 @@ impl QueryEngine {
             QueryValue::Boolean(b) => Ok(b.to_string()),
             QueryValue::Date(d) => Ok(d.format("%Y-%m-%d").to_string()),
             QueryValue::DateTime(dt) => Ok(dt.format("%Y-%m-%d %H:%M:%S").to_string()),
+            QueryValue::Array(arr) => {
+                let items: Vec<String> = arr
+                    .iter()
+                    .map(|v| Self::extract_string(v))
+                    .collect::<Result<Vec<String>, _>>()?;
+                Ok(format!("[{}]", items.join(", ")))
+            }
+            QueryValue::Range { start, end } => {
+                let start_str = Self::extract_string(start)?;
+                let end_str = Self::extract_string(end)?;
+                Ok(format!("{} AND {}", start_str, end_str))
+            }
+            QueryValue::Null => Ok("NULL".to_string()),
+        }
+    }
+
+    /// Compara valores usando regex
+    fn compare_regex(left: &QueryValue, right: &QueryValue, negate: bool) -> Result<bool, QueryExecutionError> {
+        let left_str = Self::extract_string(left)?;
+        let right_str = Self::extract_string(right)?;
+
+        // Simple regex matching (basic implementation)
+        let matches = if right_str.starts_with('^') && right_str.ends_with('$') {
+            let pattern = &right_str[1..right_str.len() - 1];
+            left_str == pattern
+        } else if right_str.starts_with('^') {
+            let pattern = &right_str[1..];
+            left_str.starts_with(pattern)
+        } else if right_str.ends_with('$') {
+            let pattern = &right_str[..right_str.len() - 1];
+            left_str.ends_with(pattern)
+        } else {
+            left_str.contains(&right_str)
+        };
+
+        Ok(if negate { !matches } else { matches })
+    }
+
+    /// Compara valores usando IN/NOT IN
+    fn compare_in(left: &QueryValue, right: &QueryValue, negate: bool) -> Result<bool, QueryExecutionError> {
+        if let QueryValue::Array(arr) = right {
+            let left_str = Self::extract_string(left)?;
+            let contains = arr.iter().any(|item| {
+                if let Ok(item_str) = Self::extract_string(item) {
+                    left_str == item_str
+                } else {
+                    false
+                }
+            });
+            Ok(if negate { !contains } else { contains })
+        } else {
+            Err(QueryExecutionError::InvalidField(
+                "IN operator requires array value".to_string(),
+            ))
+        }
+    }
+
+    /// Compara valores usando BETWEEN/NOT BETWEEN
+    fn compare_between(left: &QueryValue, right: &QueryValue, negate: bool) -> Result<bool, QueryExecutionError> {
+        if let QueryValue::Range { start, end } = right {
+            let left_num = Self::extract_numeric(left)?;
+            let start_num = Self::extract_numeric(start)?;
+            let end_num = Self::extract_numeric(end)?;
+
+            let between = left_num >= start_num && left_num <= end_num;
+            Ok(if negate { !between } else { between })
+        } else {
+            Err(QueryExecutionError::InvalidField(
+                "BETWEEN operator requires range value".to_string(),
+            ))
+        }
+    }
+
+    /// Compara valores usando IS NULL/IS NOT NULL
+    fn compare_null(left: &QueryValue, negate: bool) -> Result<bool, QueryExecutionError> {
+        let is_null = matches!(left, QueryValue::Null);
+        Ok(if negate { !is_null } else { is_null })
+    }
+
+    /// Extrai valor numérico de um QueryValue
+    fn extract_numeric(value: &QueryValue) -> Result<f64, QueryExecutionError> {
+        match value {
+            QueryValue::Number(n) => Ok(*n),
+            QueryValue::String(s) => s
+                .parse::<f64>()
+                .map_err(|_| QueryExecutionError::InvalidField("Cannot convert string to number".to_string())),
+            _ => Err(QueryExecutionError::InvalidField("Value is not numeric".to_string())),
         }
     }
 
@@ -413,6 +510,7 @@ mod tests {
             }),
             aggregation: None,
             pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
             sort: None,
         };
 
@@ -453,6 +551,7 @@ mod tests {
             }),
             aggregation: None,
             pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
             sort: None,
         };
 
@@ -492,6 +591,7 @@ mod tests {
             }),
             aggregation: None,
             pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
             sort: None,
         };
 
@@ -539,6 +639,7 @@ mod tests {
             },
             aggregation: None,
             pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
             sort: None,
         };
 
@@ -564,6 +665,7 @@ mod tests {
             }),
             aggregation: None,
             pagination: PaginationOptions::new_default(),
+            projection: ProjectionOptions::include_all_fields(),
             sort: None,
         };
 

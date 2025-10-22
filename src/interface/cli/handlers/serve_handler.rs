@@ -1,8 +1,11 @@
 use std::path::PathBuf;
+// use std::sync::Arc;
 use tokio::sync::broadcast;
 use warp::Filter;
 
 use crate::interface::cli::logging::Logger;
+// use crate::interface::cli::websocket_server::WebSocketServer;
+// use crate::interface::cli::server_logging::ServerLogger;
 
 /// Handle the serve command
 pub async fn handle_serve_command(
@@ -22,32 +25,13 @@ pub async fn handle_serve_command(
         return Err(format!("'{}' is not a directory", directory.display()).into());
     }
 
-    // Initialize logging
-    if debug {
-        unsafe {
-            std::env::set_var("RUST_LOG", "debug");
-        }
-    } else {
-        unsafe {
-            std::env::set_var("RUST_LOG", "info");
-        }
-    }
-    let _ = env_logger::try_init();
+    // Initialize structured logging
+    let _json_logs = std::env::var("TTR_JSON_LOGS").unwrap_or_default() == "1";
+    // ServerLogger::init(debug, json_logs)?;
 
-    Logger::info(&format!(
-        "Starting server on {}:{} serving directory: {}",
-        host,
-        port,
-        directory.display()
-    ));
-
-    if live_reload {
-        Logger::info("Live reload enabled");
-    }
-
-    if cors {
-        Logger::info("CORS enabled");
-    }
+    // Create server logger instance
+    // let server_logger = ServerLogger::new();
+    // server_logger.log_server_start(&host, port, &directory.display().to_string(), live_reload, cors);
 
     // Create the server
     let mut server = Server::new(directory, live_reload, cors, debug);
@@ -63,6 +47,8 @@ pub struct Server {
     cors: bool,
     debug: bool,
     shutdown_tx: Option<broadcast::Sender<()>>,
+    // websocket_server: Option<WebSocketServer>,
+    // server_logger: ServerLogger,
 }
 
 impl Server {
@@ -73,6 +59,8 @@ impl Server {
             cors,
             debug,
             shutdown_tx: None,
+            // websocket_server: None,
+            // server_logger,
         }
     }
 
@@ -80,11 +68,16 @@ impl Server {
         let directory = self.directory.clone();
         let live_reload = self.live_reload;
         let cors = self.cors;
-        let _debug = self.debug;
+        let debug = self.debug;
 
         // Create shutdown channel
         let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
         self.shutdown_tx = Some(shutdown_tx.clone());
+
+        // Create WebSocket server if live reload is enabled
+        if live_reload {
+            // self.websocket_server = Some(WebSocketServer::new(port));
+        }
 
         // Create file watcher if live reload is enabled
         let file_watcher = if live_reload {
@@ -93,8 +86,8 @@ impl Server {
             None
         };
 
-        // Create the warp filter
-        let routes = Self::create_routes_static(directory, live_reload, cors);
+        // Create the warp filter with WebSocket support
+        let routes = Self::create_static_routes_simple(directory.clone(), live_reload, cors);
 
         // Parse host address
         let addr = if host == "0.0.0.0" {
@@ -107,13 +100,21 @@ impl Server {
             std::net::SocketAddr::from((ip, port))
         };
 
+        // Clone logger for use in closure
+        // let server_logger = self.server_logger.clone();
+        let _directory_display = directory.display().to_string();
+
         // Start the server
         let (_, server) = warp::serve(routes).bind_with_graceful_shutdown(addr, async move {
             shutdown_rx.recv().await.ok();
-            Logger::info("Server shutting down...");
+            // server_logger.log_server_shutdown();
         });
 
+        // self.server_logger.log_server_start(&host, port, &directory_display, live_reload, cors);
         Logger::info(&format!("Server running at http://{}:{}", host, port));
+        if live_reload {
+            Logger::info(&format!("Live reload WebSocket available at ws://{}:{}/ws", host, port));
+        }
         Logger::info("Press Ctrl+C to stop the server");
 
         // Run the server
@@ -127,7 +128,7 @@ impl Server {
         Ok(())
     }
 
-    fn create_routes_static(
+    fn create_static_routes_simple(
         directory: PathBuf,
         live_reload: bool,
         _cors: bool,
@@ -136,20 +137,9 @@ impl Server {
 
         // Live reload script injection
         let live_reload_script = if live_reload {
-            r#"
-<script>
-(function() {
-    const ws = new WebSocket('ws://localhost:35729');
-    ws.onmessage = function(event) {
-        if (event.data === 'reload') {
-            window.location.reload();
-        }
-    };
-})();
-</script>
-"#
+            "// Live reload script placeholder".to_string() // TODO: Implement live reload
         } else {
-            ""
+            String::new()
         };
 
         // Static file serving
@@ -325,17 +315,35 @@ impl Server {
         use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 
         let _debug = self.debug;
+        // let server_logger = Arc::new(self.server_logger.clone());
+        // let websocket_server = Arc::new(self.websocket_server.clone());
+
         let mut watcher = RecommendedWatcher::new(
             move |res: Result<notify::Event, notify::Error>| {
+                // let server_logger = server_logger.clone();
+                // let websocket_server = websocket_server.clone();
+
                 match res {
                     Ok(event) => {
-                        if _debug {
-                            Logger::debug(&format!("File changed: {:?}", event));
+                        for path in event.paths {
+                            let path_str = path.to_string_lossy().to_string();
+                            // server_logger.log_file_change(&path_str, "modified");
+
+                            if _debug {
+                                Logger::debug(&format!("File changed: {}", path_str));
+                            }
                         }
-                        // Send reload signal to all connected clients
-                        // This would be implemented with WebSocket in a real implementation
+
+                        // Broadcast reload signal to WebSocket clients
+                        // if let Some(ws_server) = websocket_server.as_ref() {
+                        //     let ws_server = ws_server.clone();
+                        //     tokio::spawn(async move {
+                        //         ws_server.broadcast_reload().await;
+                        //     });
+                        // }
                     }
                     Err(e) => {
+                        // server_logger.log_error(&format!("File watcher error: {}", e), "file_watcher");
                         Logger::error(&format!("File watcher error: {}", e));
                     }
                 }

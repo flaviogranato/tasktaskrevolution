@@ -111,7 +111,10 @@ impl TryFrom<CostManifest> for CostEntry {
         }
 
         // Parse cost type using FromStr
-        let cost_type = manifest.spec.cost_type.parse::<CostType>()
+        let cost_type = manifest
+            .spec
+            .cost_type
+            .parse::<CostType>()
             .map_err(|e| format!("Invalid cost type: {}", e))?;
 
         // Parse date with better error handling
@@ -161,7 +164,8 @@ mod tests {
             CostType::Hourly,
             Some("Development".to_string()),
             "user1".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let manifest = CostManifest::from(cost.clone());
         assert_eq!(manifest.metadata.resource_code, Some("RES-1".to_string()));

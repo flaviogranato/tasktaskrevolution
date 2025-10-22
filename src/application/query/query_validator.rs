@@ -1,6 +1,8 @@
 use super::query_executor::EntityType;
 use crate::application::errors::AppError;
-use crate::domain::shared::query_parser::{AggregationType, FilterCondition, Query, QueryExpression};
+use crate::domain::shared::query_parser::{
+    AggregationType, FilterCondition, ProjectionOptions, Query, QueryExpression,
+};
 
 /// Validador de queries
 pub struct QueryValidator;
@@ -291,6 +293,7 @@ mod tests {
             aggregation: None,
             sort: None,
             pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
+            projection: crate::domain::shared::query_parser::ProjectionOptions::include_all_fields(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -308,6 +311,7 @@ mod tests {
             aggregation: None,
             sort: None,
             pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
+            projection: crate::domain::shared::query_parser::ProjectionOptions::include_all_fields(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -326,6 +330,7 @@ mod tests {
             aggregation: Some(AggregationType::Count),
             sort: None,
             pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
+            projection: crate::domain::shared::query_parser::ProjectionOptions::include_all_fields(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -346,6 +351,7 @@ mod tests {
             aggregation: Some(AggregationType::Sum("task_count".to_string())),
             sort: None,
             pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
+            projection: crate::domain::shared::query_parser::ProjectionOptions::include_all_fields(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -363,6 +369,7 @@ mod tests {
             aggregation: Some(AggregationType::Sum("name".to_string())),
             sort: None,
             pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
+            projection: crate::domain::shared::query_parser::ProjectionOptions::include_all_fields(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -384,6 +391,7 @@ mod tests {
                 ascending: true,
             }),
             pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
+            projection: crate::domain::shared::query_parser::ProjectionOptions::include_all_fields(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);
@@ -404,6 +412,7 @@ mod tests {
                 ascending: true,
             }),
             pagination: crate::domain::shared::query_parser::PaginationOptions::new_default(),
+            projection: crate::domain::shared::query_parser::ProjectionOptions::include_all_fields(),
         };
 
         let result = QueryValidator::validate_query(&query, EntityType::Project);

@@ -215,7 +215,8 @@ mod tests {
             CostType::Hourly,
             Some("Development".to_string()),
             "user1".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         let cost_id = cost.id.clone();
         repo.save("COMP-1", "PROJ-1", &cost).unwrap();
@@ -238,7 +239,8 @@ mod tests {
             CostType::Hourly,
             None,
             "user1".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         repo.save("COMP-1", "PROJ-1", &cost1).unwrap();
 
@@ -254,7 +256,8 @@ mod tests {
             CostType::Fixed,
             None,
             "user1".to_string(),
-        ).unwrap();
+        )
+        .unwrap();
 
         repo.save("COMP-1", "PROJ-1", &cost2).unwrap();
 
