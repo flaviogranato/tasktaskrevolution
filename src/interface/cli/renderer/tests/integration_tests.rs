@@ -29,7 +29,7 @@ impl Queryable for MockEntity {
     }
 }
 
-/// Teste de integração completo: Query → Validação → Execução → Renderização
+/// Complete integration test: Query → Validation → Execution → Rendering
 #[test]
 fn test_complete_query_integration() {
     // 1. Construir query usando QueryBuilder
@@ -69,27 +69,27 @@ fn test_complete_query_integration() {
     // 3. Converter para RenderableData
     let renderable_data = QueryConverter::to_renderable_data(&query, &result, "user");
 
-    // 4. Testar renderização em diferentes formatos
+    // 4. Test rendering in different formats
     let formats = vec![OutputFormat::Json, OutputFormat::Table, OutputFormat::Csv, OutputFormat::Html];
     
     for format in formats {
         let renderer = UnifiedRenderer::new(format);
         let output = renderer.render(&renderable_data).expect("Should render successfully");
         
-        // Verificar que a saída não está vazia
+        // Verify that output is not empty
         assert!(!output.is_empty(), "Output should not be empty for format {:?}", format);
         
-        // Verificar que contém dados esperados
+        // Verify that it contains expected data
         assert!(output.contains("Alice") || output.contains("alice"), "Should contain expected data for format {:?}", format);
     }
 }
 
-/// Teste de integração com versionamento de API
+/// Integration test with API versioning
 #[test]
 fn test_versioned_query_integration() {
     let middleware = VersioningMiddleware::new();
     
-    // Query com projeções (v1.1.0+)
+    // Query with projections (v1.1.0+)
     let query = Query {
         expression: QueryExpression::Condition(FilterCondition {
             field: "status".to_string(),
@@ -116,7 +116,7 @@ fn test_versioned_query_integration() {
     assert!(validation_new.is_success(), "Query with projections should pass in v1.1.0");
 }
 
-/// Teste de integração com filtros avançados
+/// Integration test with advanced filters
 #[test]
 fn test_advanced_filters_integration() {
     let test_data = vec![
@@ -152,10 +152,10 @@ fn test_advanced_filters_integration() {
         .build()
         .expect("Regex query should build");
 
-    // Simular execução da query
+    // Simulate query execution
     let filtered_items: Vec<&MockEntity> = test_data.iter()
         .filter(|item| {
-            // Simular lógica de filtro regex
+            // Simulate regex filter logic
             item.name.starts_with('A') || item.name.starts_with('B') || item.name.starts_with('C')
         })
         .collect();
@@ -178,7 +178,7 @@ fn test_advanced_filters_integration() {
     assert_eq!(range_filtered.len(), 3, "Range filter should match all items in range");
 }
 
-/// Teste de integração com projeções e aliases
+/// Integration test with projections and aliases
 #[test]
 fn test_projection_integration() {
     let query = QueryBuilder::new()
@@ -205,18 +205,18 @@ fn test_projection_integration() {
 
     let renderable_data = QueryConverter::to_renderable_data(&query, &result, "user");
     
-    // Verificar que apenas campos projetados estão presentes
+    // Verify that only projected fields are present
     assert_eq!(renderable_data.headers.len(), 3, "Should have 3 projected fields");
     assert!(renderable_data.headers.contains(&"name".to_string()));
     assert!(renderable_data.headers.contains(&"email".to_string()));
     assert!(renderable_data.headers.contains(&"state".to_string()));
     
-    // Verificar que dados estão corretos
+    // Verify that data is correct
     assert_eq!(renderable_data.rows.len(), 1);
     assert_eq!(renderable_data.rows[0].len(), 3);
 }
 
-/// Teste de integração com ordenação e paginação
+/// Integration test with sorting and pagination
 #[test]
 fn test_sorting_and_pagination_integration() {
     let query = QueryBuilder::new()
@@ -254,7 +254,7 @@ fn test_sorting_and_pagination_integration() {
         },
     ];
 
-    // Simular ordenação e paginação
+    // Simulate sorting and pagination
     let mut sorted_data = test_data.clone();
     sorted_data.sort_by(|a, b| a.name.cmp(&b.name));
     
@@ -268,7 +268,7 @@ fn test_sorting_and_pagination_integration() {
     assert_eq!(paginated_data[1].name, "Charlie Brown", "Second item should be Charlie");
 }
 
-/// Teste de integração com agregações
+/// Integration test with aggregations
 #[test]
 fn test_aggregation_integration() {
     let query = QueryBuilder::new()
@@ -300,7 +300,7 @@ fn test_aggregation_integration() {
         filtered_count: 2,
     };
 
-    // Simular cálculo de agregação
+    // Simulate aggregation calculation
     let ages: Vec<i32> = result.items.iter()
         .map(|item| item.get_field_value("age").unwrap().parse::<i32>().unwrap())
         .collect();
@@ -309,7 +309,7 @@ fn test_aggregation_integration() {
     assert_eq!(avg_age, 27.5, "Average age should be 27.5");
 }
 
-/// Teste de integração com renderização em múltiplos formatos
+/// Integration test with rendering in multiple formats
 #[test]
 fn test_multi_format_rendering_integration() {
     let query = QueryBuilder::new()
@@ -347,7 +347,7 @@ fn test_multi_format_rendering_integration() {
         let renderer = UnifiedRenderer::new(format);
         let output = renderer.render(&renderable_data).expect(&format!("{} rendering should work", name));
         
-        // Verificar características específicas de cada formato
+        // Verify specific characteristics of each format
         match format {
             OutputFormat::Json => {
                 assert!(output.contains("{"), "JSON should contain objects");
@@ -369,19 +369,19 @@ fn test_multi_format_rendering_integration() {
     }
 }
 
-/// Teste de integração com versionamento e compatibilidade
+/// Integration test with versioning and compatibility
 #[test]
 fn test_versioning_compatibility_integration() {
     let middleware = VersioningMiddleware::new();
     
-    // Testar diferentes versões
+    // Test different versions
     let versions = vec![
         ApiVersion::new(1, 0, 0),
         ApiVersion::new(1, 1, 0),
     ];
 
     for version in versions {
-        // Query básica (compatível com todas as versões)
+        // Basic query (compatible with all versions)
         let basic_query = QueryBuilder::new()
             .filter("status", "=", QueryValue::String("active".to_string()))
             .build()
@@ -390,7 +390,7 @@ fn test_versioning_compatibility_integration() {
         let validation = middleware.contract_manager().validate_query(&basic_query, &version);
         assert!(validation.is_success(), "Basic query should be valid for version {}", version);
 
-        // Query com projeções (compatível apenas com v1.1.0+)
+        // Query with projections (compatible only with v1.1.0+)
         if version.minor >= 1 {
             let projection_query = QueryBuilder::new()
                 .filter("status", "=", QueryValue::String("active".to_string()))

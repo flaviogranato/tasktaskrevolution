@@ -264,6 +264,11 @@ pub enum Commands {
         #[clap(long)]
         help: bool,
     },
+    /// Timezone management and global coordination
+    Timezone {
+        #[clap(subcommand)]
+        command: commands::TimezoneCommand,
+    },
     /// Test data validation and management
     TestData {
         #[clap(subcommand)]
@@ -445,6 +450,20 @@ impl Cli {
                     completions::CompletionCommandHandler::handle_install_command(output_dir.clone())
                 } else {
                     completions::CompletionCommandHandler::handle_completion_command(shell.clone())
+                }
+            }
+            Commands::Timezone { command } => {
+                use crate::interface::cli::commands::timezone::TimezoneHandler;
+                let mut handler = TimezoneHandler::new();
+                match handler.execute(command) {
+                    Ok(output) => {
+                        println!("{}", output);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        eprintln!("Erro: {}", e);
+                        Err(e.into())
+                    }
                 }
             }
             Commands::TestData { command } => {

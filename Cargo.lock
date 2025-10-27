@@ -2835,6 +2835,7 @@ dependencies = [
  "assert_cmd",
  "assert_fs",
  "chrono",
+ "chrono-tz",
  "clap",
  "clap_complete",
  "criterion",

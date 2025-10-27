@@ -98,7 +98,7 @@ pub fn execute_report(args: ReportArgs) -> Result<(), AppError> {
         template: args.template,
     };
 
-    // Adicionar filtros específicos baseados nos argumentos
+    // Add specific filters based on arguments
     if let Some(project) = args.project {
         config.filters.push(ReportFilter {
             field: "project_code".to_string(),

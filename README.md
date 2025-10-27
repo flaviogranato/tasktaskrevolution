@@ -1,10 +1,11 @@
-# TaskTaskRevolution v0.6.0
+# TaskTaskRevolution v0.7.0
 
-A powerful, feature-rich project management system built with Rust. TaskTaskRevolution provides comprehensive tools for managing companies, projects, tasks, and resources with advanced querying, searching, and reporting capabilities.
+A powerful, feature-rich project management system built with Rust. TaskTaskRevolution provides comprehensive tools for managing companies, projects, tasks, and resources with advanced querying, searching, reporting capabilities, and multi-timezone support for global projects.
 
-## 🚀 What's New in v0.6.0
+## 🚀 What's New in v0.7.0
 
 ### ✨ Major Features
+- **🌍 Multi-Timezone Support** - Complete timezone coordination for global projects with advanced scheduling and analytics
 - **🔍 Advanced Search System** - Search across all files with regex, fuzzy matching, and metadata filtering
 - **📊 Query Engine** - Powerful querying system with filtering, sorting, and aggregation
 - **🐚 Shell Completions** - Auto-completion support for bash, zsh, fish, and PowerShell
@@ -218,6 +219,55 @@ ttr query --query "status = 'active'" --entity-type project --format table
 # JSON format
 ttr query --query "status = 'active'" --entity-type project --format json
 ```
+
+## 🌍 Multi-Timezone Support
+
+Complete timezone coordination for global projects with advanced scheduling and analytics.
+
+### Basic Timezone Operations
+```bash
+# Set timezone for current context
+ttr timezone set --timezone "America/New_York"
+
+# Convert time between timezones
+ttr timezone convert --from "UTC" --to "America/New_York" --time "2024-01-15 14:00:00"
+
+# List available timezones
+ttr timezone list
+```
+
+### Global Scheduling
+```bash
+# Create a global schedule
+ttr timezone sync --project "Global Project" --timezone "UTC" --start "2024-01-15 09:00:00" --end "2024-01-15 17:00:00"
+
+# Add participants from different timezones
+ttr timezone sync --add-participant "alice@company.com" --timezone "America/New_York" --required
+ttr timezone sync --add-participant "bob@company.com" --timezone "Europe/London" --required
+
+# Coordinate schedules and detect conflicts
+ttr timezone sync --coordinate --schedules "project1,project2,project3"
+ttr timezone sync --detect-conflicts --schedule "project1"
+```
+
+### Timezone Analytics
+```bash
+# Generate comprehensive timezone reports
+ttr timezone report --format json --output timezone-report.json
+
+# Analyze performance metrics
+ttr timezone report --metrics performance --format csv --output performance.csv
+
+# Generate collaboration insights
+ttr timezone report --metrics collaboration --format table
+```
+
+### Advanced Features
+- **Automatic Conflict Detection** - Detect scheduling conflicts across timezones
+- **Schedule Optimization** - Optimize schedules for efficiency across timezones
+- **Working Hours Validation** - Validate working hours for each timezone
+- **Collaboration Metrics** - Track cross-timezone collaboration effectiveness
+- **Risk Assessment** - Identify and assess timezone-related risks
 
 ## 💰 Cost Management
 
@@ -528,6 +578,8 @@ cargo test --test integration
 
 - **API Documentation**: Run `cargo doc --open` for full API docs
 - **Command Reference**: Use `ttr --help` for command help
+- **Timezone System Guide**: See `docs/README-timezone.md`
+- **Timezone Examples**: See `docs/timezone-examples.md`
 - **Search System Guide**: See `docs/search-system.md`
 - **Query Engine Guide**: See `docs/query-engine.md`
 
@@ -553,7 +605,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🎯 Roadmap
 
-- [ ] **v0.7.0**: Advanced analytics and dashboards
+- [x] **v0.7.0**: Multi-timezone support and global scheduling
 - [ ] **v0.8.0**: Real-time collaboration features
 - [ ] **v0.9.0**: Mobile application
 - [ ] **v1.0.0**: Enterprise features and integrations
@@ -562,4 +614,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Happy project managing! 🚀**
 
-*TaskTaskRevolution v0.6.0 - Built with ❤️ in Rust*
+*TaskTaskRevolution v0.7.0 - Built with ❤️ in Rust*

@@ -134,7 +134,7 @@ impl ScheduleCommand {
 
     fn create_schedule(
         &self,
-        base_path: &str,
+        _base_path: &str,
         project: &str,
         start_date: &Option<String>,
         company: &Option<String>,
@@ -157,7 +157,7 @@ impl ScheduleCommand {
 
     fn analyze_critical_path(
         &self,
-        base_path: &str,
+        _base_path: &str,
         project: &str,
         company: &Option<String>,
         detailed: bool,
@@ -179,7 +179,7 @@ impl ScheduleCommand {
 
     fn level_resources(
         &self,
-        base_path: &str,
+        _base_path: &str,
         project: &str,
         company: &Option<String>,
         utilization: bool,
@@ -200,7 +200,7 @@ impl ScheduleCommand {
 
     fn resolve_conflicts(
         &self,
-        base_path: &str,
+        _base_path: &str,
         project: &str,
         company: &Option<String>,
         patterns: bool,
@@ -221,7 +221,7 @@ impl ScheduleCommand {
 
     fn optimize_schedule(
         &self,
-        base_path: &str,
+        _base_path: &str,
         project: &str,
         company: &Option<String>,
         goal: &str,
@@ -239,7 +239,7 @@ impl ScheduleCommand {
 
     fn show_status(
         &self,
-        base_path: &str,
+        _base_path: &str,
         project: &str,
         company: &Option<String>,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -260,7 +260,7 @@ impl ScheduleCommand {
 
     fn generate_report(
         &self,
-        base_path: &str,
+        _base_path: &str,
         project: &str,
         company: &Option<String>,
         format: &str,

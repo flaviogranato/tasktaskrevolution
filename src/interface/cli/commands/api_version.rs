@@ -3,7 +3,7 @@ use crate::domain::shared::api_versioning::ApiVersion;
 use clap::{Args, Subcommand};
 use serde_json;
 
-/// Comandos para gerenciar versões da API
+/// Commands for managing API versions
 #[derive(Debug, Args)]
 pub struct ApiVersionArgs {
     #[command(subcommand)]
@@ -12,38 +12,38 @@ pub struct ApiVersionArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum ApiVersionCommand {
-    /// Lista todas as versões disponíveis
+    /// List all available versions
     List,
-    /// Mostra informações sobre uma versão específica
+    /// Show information about a specific version
     Info {
-        /// Versão da API (ex: v1.0.0)
+        /// API version (e.g., v1.0.0)
         version: String,
     },
-    /// Verifica compatibilidade entre duas versões
+    /// Check compatibility between two versions
     Check {
-        /// Versão solicitada
+        /// Requested version
         requested: String,
-        /// Versão atual
+        /// Current version
         current: String,
     },
-    /// Valida uma query contra uma versão específica
+    /// Validate a query against a specific version
     Validate {
-        /// Versão da API para validar
+        /// API version to validate against
         version: String,
-        /// Arquivo JSON com a query
+        /// JSON file with the query
         query_file: String,
     },
-    /// Mostra o guia de migração entre versões
+    /// Show migration guide between versions
     Migrate {
-        /// Versão de origem
+        /// Source version
         from: String,
-        /// Versão de destino
+        /// Target version
         to: String,
     },
 }
 
 impl ApiVersionArgs {
-    /// Executa o comando de versão da API
+    /// Execute the API version command
     pub fn execute(&self) -> Result<String, String> {
         let middleware = VersioningMiddleware::new();
 
@@ -66,14 +66,14 @@ impl ApiVersionArgs {
         }
     }
 
-    /// Lista todas as versões disponíveis
+    /// List all available versions
     fn list_versions(&self, middleware: &VersioningMiddleware) -> Result<String, String> {
         let contract_manager = middleware.contract_manager();
         let mut output = String::new();
         
-        output.push_str("📋 Versões da API Disponíveis:\n\n");
+        output.push_str("📋 Available API Versions:\n\n");
         
-        // Listar versões suportadas
+        // List supported versions
         let versions = vec![
             ApiVersion::new(1, 0, 0),
             ApiVersion::new(1, 1, 0),
@@ -101,23 +101,23 @@ impl ApiVersionArgs {
             }
         }
 
-        output.push_str(&format!("📌 Versão atual: {}\n", middleware.default_version()));
-        output.push_str(&format!("📌 Versão mínima suportada: {}\n", 
+        output.push_str(&format!("📌 Current version: {}\n", middleware.default_version()));
+        output.push_str(&format!("📌 Minimum supported version: {}\n", 
             contract_manager.minimum_supported()));
 
         Ok(output)
     }
 
-    /// Mostra informações sobre uma versão específica
+    /// Show information about a specific version
     fn show_version_info(&self, middleware: &VersioningMiddleware, version_str: &str) -> Result<String, String> {
         let version: ApiVersion = version_str.parse()
-            .map_err(|e| format!("Versão inválida '{}': {}", version_str, e))?;
+            .map_err(|e| format!("Invalid version '{}': {}", version_str, e))?;
 
         let version_info = middleware.get_version_info(&version)
-            .ok_or_else(|| format!("Versão '{}' não encontrada", version))?;
+            .ok_or_else(|| format!("Version '{}' not found", version))?;
 
         let mut output = String::new();
-        output.push_str(&format!("📊 Informações da Versão {}\n\n", version));
+        output.push_str(&format!("📊 Version Information {}\n\n", version));
 
         output.push_str("✅ Funcionalidades Suportadas:\n");
         for feature in &version_info.supported_features {
@@ -132,31 +132,31 @@ impl ApiVersionArgs {
         }
 
         if let Some(guide) = &version_info.migration_guide {
-            output.push_str(&format!("\n📖 Guia de Migração:\n{}\n", guide));
+            output.push_str(&format!("\n📖 Migration Guide:\n{}\n", guide));
         }
 
         Ok(output)
     }
 
-    /// Verifica compatibilidade entre duas versões
+    /// Check compatibility between two versions
     fn check_compatibility(&self, middleware: &VersioningMiddleware, requested: &str, current: &str) -> Result<String, String> {
         let requested_version: ApiVersion = requested.parse()
-            .map_err(|e| format!("Versão solicitada inválida '{}': {}", requested, e))?;
+            .map_err(|e| format!("Invalid requested version '{}': {}", requested, e))?;
         
         let current_version: ApiVersion = current.parse()
-            .map_err(|e| format!("Versão atual inválida '{}': {}", current, e))?;
+            .map_err(|e| format!("Invalid current version '{}': {}", current, e))?;
 
         let compatibility = middleware.check_compatibility(&requested_version, &current_version);
 
         let mut output = String::new();
-        output.push_str(&format!("🔍 Verificação de Compatibilidade\n\n"));
-        output.push_str(&format!("📥 Versão Solicitada: {}\n", requested_version));
-        output.push_str(&format!("📤 Versão Atual: {}\n\n", current_version));
+        output.push_str(&format!("🔍 Compatibility Check\n\n"));
+        output.push_str(&format!("📥 Requested Version: {}\n", requested_version));
+        output.push_str(&format!("📤 Current Version: {}\n\n", current_version));
 
         if compatibility.is_compatible {
-            output.push_str("✅ Compatível\n");
+            output.push_str("✅ Compatible\n");
         } else {
-            output.push_str("❌ Incompatível\n");
+            output.push_str("❌ Incompatible\n");
         }
 
         if !compatibility.warnings.is_empty() {
@@ -167,7 +167,7 @@ impl ApiVersionArgs {
         }
 
         if !compatibility.breaking_changes.is_empty() {
-            output.push_str("\n💥 Mudanças que Quebram Compatibilidade:\n");
+            output.push_str("\n💥 Breaking Changes:\n");
             for change in &compatibility.breaking_changes {
                 output.push_str(&format!("   • {}\n", change));
             }
@@ -183,10 +183,10 @@ impl ApiVersionArgs {
         Ok(output)
     }
 
-    /// Valida uma query contra uma versão específica
+    /// Validate a query against a specific version
     fn validate_query(&self, middleware: &VersioningMiddleware, version_str: &str, query_file: &str) -> Result<String, String> {
         let version: ApiVersion = version_str.parse()
-            .map_err(|e| format!("Versão inválida '{}': {}", version_str, e))?;
+            .map_err(|e| format!("Invalid version '{}': {}", version_str, e))?;
 
         // Ler arquivo de query
         let query_content = std::fs::read_to_string(query_file)
@@ -200,10 +200,10 @@ impl ApiVersionArgs {
         let validation_result = middleware.contract_manager().validate_query(&query, &version);
 
         let mut output = String::new();
-        output.push_str(&format!("🔍 Validação da Query contra {}\n\n", version));
+        output.push_str(&format!("🔍 Query Validation against {}\n\n", version));
 
         if validation_result.is_success() {
-            output.push_str("✅ Query válida para esta versão\n");
+            output.push_str("✅ Query valid for this version\n");
             
             let warnings = validation_result.warnings();
             if !warnings.is_empty() {
@@ -213,7 +213,7 @@ impl ApiVersionArgs {
                 }
             }
         } else {
-            output.push_str("❌ Query inválida para esta versão\n");
+            output.push_str("❌ Query invalid for this version\n");
             if let Some(error) = validation_result.error_message() {
                 output.push_str(&format!("   Erro: {}\n", error));
             }
@@ -222,22 +222,22 @@ impl ApiVersionArgs {
         Ok(output)
     }
 
-    /// Mostra o guia de migração entre versões
+    /// Show migration guide between versions
     fn show_migration_guide(&self, middleware: &VersioningMiddleware, from: &str, to: &str) -> Result<String, String> {
         let from_version: ApiVersion = from.parse()
-            .map_err(|e| format!("Versão de origem inválida '{}': {}", from, e))?;
+            .map_err(|e| format!("Invalid source version '{}': {}", from, e))?;
         
         let to_version: ApiVersion = to.parse()
-            .map_err(|e| format!("Versão de destino inválida '{}': {}", to, e))?;
+            .map_err(|e| format!("Invalid target version '{}': {}", to, e))?;
 
         let compatibility = middleware.check_compatibility(&from_version, &to_version);
         let changes = middleware.contract_manager().get_version_changes(&from_version, &to_version);
 
         let mut output = String::new();
-        output.push_str(&format!("📖 Guia de Migração: {} → {}\n\n", from_version, to_version));
+        output.push_str(&format!("📖 Migration Guide: {} → {}\n\n", from_version, to_version));
 
         if !changes.is_empty() {
-            output.push_str("🔄 Mudanças de Versão:\n");
+            output.push_str("🔄 Version Changes:\n");
             for change in changes {
                 output.push_str(&format!("   • {}\n", change));
             }
@@ -253,7 +253,7 @@ impl ApiVersionArgs {
         }
 
         if !compatibility.breaking_changes.is_empty() {
-            output.push_str("💥 Mudanças que Quebram Compatibilidade:\n");
+            output.push_str("💥 Breaking Changes:\n");
             for change in &compatibility.breaking_changes {
                 output.push_str(&format!("   • {}\n", change));
             }
@@ -261,17 +261,17 @@ impl ApiVersionArgs {
         }
 
         if !compatibility.new_features.is_empty() {
-            output.push_str("🆕 Novas Funcionalidades Disponíveis:\n");
+            output.push_str("🆕 New Features Available:\n");
             for feature in &compatibility.new_features {
                 output.push_str(&format!("   • {}\n", feature));
             }
             output.push_str("\n");
         }
 
-        // Adicionar guia específico se disponível
+        // Add specific guide if available
         if let Some(contract) = middleware.contract_manager().get_contract(&to_version) {
             if let Some(guide) = &contract.migration_guide {
-                output.push_str(&format!("📋 Guia de Migração Específico:\n{}\n", guide));
+                output.push_str(&format!("📋 Specific Migration Guide:\n{}\n", guide));
             }
         }
 
