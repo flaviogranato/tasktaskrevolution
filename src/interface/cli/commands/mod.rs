@@ -1,3 +1,4 @@
+pub mod agile;
 pub mod budget;
 pub mod company;
 pub mod cost;
@@ -23,6 +24,7 @@ pub mod validate;
 pub mod wip;
 pub mod workspace;
 
+pub use agile::AgileCommand;
 pub use budget::BudgetArgs;
 pub use company::CompanyCommand;
 pub use cost::CostArgs;

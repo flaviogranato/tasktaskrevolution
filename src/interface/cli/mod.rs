@@ -269,6 +269,11 @@ pub enum Commands {
         #[clap(subcommand)]
         command: commands::TimezoneCommand,
     },
+    /// Agile methodologies support (Scrum/Kanban)
+    Agile {
+        #[clap(flatten)]
+        command: commands::AgileCommand,
+    },
     /// Test data validation and management
     TestData {
         #[clap(subcommand)]
@@ -465,6 +470,12 @@ impl Cli {
                         Err(e.into())
                     }
                 }
+            }
+            Commands::Agile { command } => {
+                use crate::interface::cli::commands::agile::AgileHandler;
+                let base_path = std::env::current_dir()?;
+                let handler = AgileHandler::new(base_path);
+                handler.handle(&command).map_err(|e| e.into())
             }
             Commands::TestData { command } => {
                 let base_path = std::env::current_dir().unwrap().to_string_lossy().to_string();
