@@ -14,3 +14,8 @@ fix_mock_repos.sh
 TEST_CASES.md
 TUTORIAL_TESTE.md
 TEST_COVERAGE_ANALYSIS.md
+
+# Large test artifacts
+test_between_fix
+test_between_simple
+test_between_fixed
