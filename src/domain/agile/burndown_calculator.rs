@@ -131,7 +131,11 @@ impl BurndownCalculator {
                 return Ok(BurndownVelocity::default());
             }
 
-            let total_story_points = sprint.metrics.planned_story_points as f64;
+            // Prefer planned points; fallback to capacity if not set in metrics
+            let mut total_story_points = sprint.metrics.planned_story_points as f64;
+            if total_story_points == 0.0 {
+                total_story_points = sprint.capacity.total_story_points as f64;
+            }
             let total_days = sprint.duration_days() as f64;
             
             // Calculate ideal velocity (story points per day)
@@ -511,6 +515,7 @@ mod tests {
             capacity,
         );
 
+        let sprint_id = sprint.id.clone();
         calculator.add_sprint(sprint);
 
         let daily_completions = vec![
@@ -526,7 +531,7 @@ mod tests {
             },
         ];
 
-        let result = calculator.generate_burndown_data("sprint1", daily_completions);
+        let result = calculator.generate_burndown_data(&sprint_id, daily_completions);
         assert!(result.is_ok());
         
         let burndown_data = result.unwrap();
@@ -570,9 +575,10 @@ mod tests {
             },
         ];
 
+        let sprint_id = sprint.id.clone();
         calculator.add_sprint(sprint);
 
-        let velocity = calculator.calculate_burndown_velocity("sprint1").unwrap();
+        let velocity = calculator.calculate_burndown_velocity(&sprint_id).unwrap();
         assert!(velocity.actual_velocity > 0.0);
         assert_eq!(velocity.total_story_points, 40);
     }

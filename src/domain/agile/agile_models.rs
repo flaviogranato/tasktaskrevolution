@@ -398,11 +398,8 @@ impl VelocityData {
         sprint_duration_days: u32,
         team_members: Vec<String>,
     ) -> Self {
-        let velocity = if sprint_duration_days > 0 {
-            story_points_completed as f64 / sprint_duration_days as f64
-        } else {
-            0.0
-        };
+        // In agile context, velocity is typically measured as story points per sprint
+        let velocity = story_points_completed as f64;
 
         Self {
             team_id,
@@ -604,7 +601,7 @@ mod tests {
             vec!["dev1".to_string(), "dev2".to_string()],
         );
 
-        assert_eq!(velocity_data.velocity, 20.0 / 14.0);
+        assert_eq!(velocity_data.velocity, 20.0);
         assert_eq!(velocity_data.velocity_per_member(), velocity_data.velocity / 2.0);
     }
 
