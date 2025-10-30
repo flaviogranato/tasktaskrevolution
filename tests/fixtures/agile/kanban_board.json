@@ -1,0 +1,14 @@
+{
+  "id": "board-qa-001",
+  "name": "QA Board",
+  "project_id": "proj-qa",
+  "columns": [
+    { "id": "col-todo", "name": "To Do", "position": 1, "wip_limit": 10, "tasks": ["T-1", "T-2", "T-3"] },
+    { "id": "col-doing", "name": "Doing", "position": 2, "wip_limit": 3, "tasks": ["T-4"] },
+    { "id": "col-review", "name": "Review", "position": 3, "wip_limit": 2, "tasks": [] },
+    { "id": "col-done", "name": "Done", "position": 4, "wip_limit": null, "tasks": ["T-0"] }
+  ],
+  "wip_limits": { "col-doing": 3, "col-review": 2 }
+}
+
+

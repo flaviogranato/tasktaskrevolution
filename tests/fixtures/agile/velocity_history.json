@@ -1,0 +1,11 @@
+{
+  "team_id": "team-qa",
+  "sprints": [
+    { "sprint_id": "s-1", "story_points_completed": 18, "story_points_committed": 20, "sprint_duration_days": 14, "team_members": ["alice"] },
+    { "sprint_id": "s-2", "story_points_completed": 22, "story_points_committed": 24, "sprint_duration_days": 14, "team_members": ["alice"] },
+    { "sprint_id": "s-3", "story_points_completed": 20, "story_points_committed": 22, "sprint_duration_days": 14, "team_members": ["alice"] },
+    { "sprint_id": "s-4", "story_points_completed": 25, "story_points_committed": 26, "sprint_duration_days": 14, "team_members": ["alice"] }
+  ]
+}
+
+

@@ -1,0 +1,22 @@
+{
+  "id": "sprint-qa-001",
+  "name": "Sprint QA 1",
+  "project_id": "proj-qa",
+  "start_date": "2025-01-06T09:00:00Z",
+  "end_date": "2025-01-20T18:00:00Z",
+  "capacity": {
+    "total_story_points": 40,
+    "team_members": ["alice", "bob", "carol"],
+    "working_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "hours_per_day": 8.0,
+    "availability_percentage": 0.85
+  },
+  "metrics": {
+    "planned_story_points": 40,
+    "completed_story_points": 0,
+    "burndown_data": []
+  },
+  "status": "Planning"
+}
+
+
