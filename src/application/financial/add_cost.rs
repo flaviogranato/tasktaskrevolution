@@ -3,6 +3,7 @@ use crate::domain::shared::errors::DomainError;
 use std::path::PathBuf;
 
 pub struct AddCostUseCase {
+    #[allow(dead_code)]
     base_path: PathBuf,
 }
 
@@ -11,6 +12,7 @@ impl AddCostUseCase {
         Self { base_path }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn execute(
         &self,
         resource_id: String,

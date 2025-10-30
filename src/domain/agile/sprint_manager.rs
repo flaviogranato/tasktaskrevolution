@@ -1,5 +1,7 @@
 use crate::domain::agile::agile_models::*;
-use chrono::{DateTime, Utc, Duration};
+use chrono::{DateTime, Utc};
+#[cfg(test)]
+use chrono::Duration;
 use std::collections::HashMap;
 
 /// SprintManager handles sprint lifecycle management
@@ -34,11 +36,12 @@ impl SprintManager {
 
         // Check for overlapping sprints in the same project
         for sprint in self.sprints.values() {
-            if sprint.project_id == project_id && sprint.is_active() {
-                if (start_date >= sprint.start_date && start_date <= sprint.end_date) ||
-                   (end_date >= sprint.start_date && end_date <= sprint.end_date) {
-                    return Err(format!("Sprint overlaps with existing active sprint: {}", sprint.name));
-                }
+            if sprint.project_id == project_id
+                && sprint.is_active()
+                && ((start_date >= sprint.start_date && start_date <= sprint.end_date)
+                    || (end_date >= sprint.start_date && end_date <= sprint.end_date))
+            {
+                return Err(format!("Sprint overlaps with existing active sprint: {}", sprint.name));
             }
         }
 
@@ -171,7 +174,7 @@ impl SprintManager {
                 );
 
                 let team_key = sprint.capacity.team_members.join(",");
-                self.velocity_history.entry(team_key).or_insert_with(Vec::new).push(velocity_data);
+                self.velocity_history.entry(team_key).or_default().push(velocity_data);
                 
                 Ok(())
             } else {
@@ -442,7 +445,7 @@ mod tests {
             availability_percentage: 0.8,
         };
 
-        let sprint_id = manager.create_sprint(
+        let _sprint_id = manager.create_sprint(
             "Sprint 1".to_string(),
             "proj1".to_string(),
             start_date,

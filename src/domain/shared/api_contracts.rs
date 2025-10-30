@@ -1,5 +1,5 @@
 use crate::domain::shared::api_versioning::{ApiVersion, ApiVersionManager, CompatibilityInfo};
-use crate::domain::shared::query_parser::{ProjectionOptions, Query};
+use crate::domain::shared::query_parser::Query;
 // use crate::domain::shared::query_engine::QueryResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -210,14 +210,12 @@ impl ApiContractManager {
                 errors.push("Projections are not supported in this API version".to_string());
             }
 
-            if !query.projection.include_all && !query.projection.fields.is_empty() {
-                if !contract.supports_feature("field_aliases") {
+            if !query.projection.fields.is_empty() && !contract.supports_feature("field_aliases") {
                     // Verificar se há aliases
                     let has_aliases = query.projection.fields.iter().any(|f| f.alias.is_some());
                     if has_aliases {
                         errors.push("Field aliases are not supported in this API version".to_string());
                     }
-                }
             }
         }
 
@@ -293,6 +291,7 @@ impl QueryValidationResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::shared::query_parser::ProjectionOptions;
 
     #[test]
     fn test_api_contract_creation() {

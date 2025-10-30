@@ -273,6 +273,12 @@ impl GlobalMetrics {
     }
 }
 
+impl Default for GlobalMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Erro relacionado a timezone
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TimezoneError {

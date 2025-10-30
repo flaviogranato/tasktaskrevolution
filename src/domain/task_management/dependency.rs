@@ -32,6 +32,7 @@ impl fmt::Display for DependencyType {
 
 impl DependencyType {
     /// Get the dependency type from string representation
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> DomainResult<Self> {
         match s.to_uppercase().as_str() {
             "FS" | "FINISHTOSTART" => Ok(DependencyType::FinishToStart),

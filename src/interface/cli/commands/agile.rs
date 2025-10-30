@@ -1,5 +1,5 @@
 use clap::{Args, Subcommand};
-use crate::domain::agile::agile_reporter::ReportFormat;
+// use crate::domain::agile::agile_reporter::ReportFormat;
 use std::path::PathBuf;
 
 /// Agile management commands
@@ -226,6 +226,7 @@ pub enum ReportCommand {
 
 /// Handler for agile commands
 pub struct AgileHandler {
+    #[allow(dead_code)]
     base_path: PathBuf,
 }
 

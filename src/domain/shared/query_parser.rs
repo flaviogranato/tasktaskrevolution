@@ -279,6 +279,12 @@ impl ProjectionOptions {
     }
 }
 
+impl Default for ProjectionOptions {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Representa uma consulta completa
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Query {
@@ -724,6 +730,7 @@ impl QueryParser {
         }
     }
 
+    #[allow(dead_code)]
     fn parse_value_legacy(&mut self) -> Result<QueryValue, QueryParseError> {
         if self.peek() == Some('t') && self.starts_with("true") {
             self.advance_by(4);

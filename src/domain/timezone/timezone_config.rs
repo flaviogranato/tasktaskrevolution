@@ -53,7 +53,7 @@ impl TimezoneConfig {
 
     pub fn validate_timezone(&self, timezone: &str) -> ValidationResult {
         let mut errors = Vec::new();
-        let mut warnings = Vec::new();
+        let warnings = Vec::new();
 
         if !self.is_timezone_allowed(timezone) {
             errors.push(ValidationError {
@@ -241,7 +241,7 @@ impl TimezoneRule {
             return Ok(());
         }
 
-        let mut errors = Vec::new();
+        let errors = Vec::new();
 
         match self.rule_type {
             TimezoneRuleType::WorkingHoursOnly => {

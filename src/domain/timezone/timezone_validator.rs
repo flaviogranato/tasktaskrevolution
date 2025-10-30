@@ -28,7 +28,7 @@ impl TimezoneValidator {
                 description: "Validates that times are within working hours (9 AM - 5 PM)".to_string(),
                 validator: Box::new(|time, _| {
                     let hour = time.hour();
-                    hour >= 9 && hour <= 17
+                    (9..=17).contains(&hour)
                 }),
             },
         );
@@ -53,7 +53,7 @@ impl TimezoneValidator {
                 description: "Validates that times are within business hours (8 AM - 6 PM)".to_string(),
                 validator: Box::new(|time, _| {
                     let hour = time.hour();
-                    hour >= 8 && hour <= 18
+                    (8..=18).contains(&hour)
                 }),
             },
         );
@@ -74,7 +74,7 @@ impl TimezoneValidator {
         }
 
         // Verificar se é um timezone comum
-        let common_timezones = vec![
+        let common_timezones = [
             "UTC",
             "America/New_York",
             "America/Chicago",
@@ -127,14 +127,14 @@ impl TimezoneValidator {
 
         // Aplicar regras de validação
         for rule_name in rules {
-            if let Some(rule) = self.validation_rules.get(rule_name) {
-                if !(rule.validator)(&local_time, timezone) {
+            if let Some(rule) = self.validation_rules.get(rule_name)
+                && !(rule.validator)(&local_time, timezone)
+            {
                     errors.push(ValidationError {
                         code: rule_name.to_string().to_uppercase(),
                         message: format!("Validation failed for rule: {}", rule.name),
                         severity: ValidationSeverity::Error,
                     });
-                }
             }
         }
 
@@ -149,7 +149,7 @@ impl TimezoneValidator {
     }
 
     /// Valida consistência do horário
-    fn validate_time_consistency(&self, time: &DateTime<Tz>, timezone: &str, warnings: &mut Vec<ValidationError>) {
+    fn validate_time_consistency(&self, time: &DateTime<Tz>, _timezone: &str, warnings: &mut Vec<ValidationError>) {
         let hour = time.hour();
 
         // Avisar sobre horários muito cedo ou muito tarde
@@ -170,7 +170,7 @@ impl TimezoneValidator {
         }
 
         // Avisar sobre horários de almoço
-        if hour >= 12 && hour <= 13 {
+        if (12..=13).contains(&hour) {
             warnings.push(ValidationError {
                 code: "LUNCH_TIME".to_string(),
                 message: "Scheduled during lunch time - consider if this is appropriate".to_string(),
@@ -253,6 +253,7 @@ impl TimezoneValidator {
 }
 
 /// Regra de validação
+#[allow(clippy::type_complexity)]
 pub struct ValidationRule {
     pub name: String,
     pub description: String,

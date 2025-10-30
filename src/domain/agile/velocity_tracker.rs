@@ -21,7 +21,7 @@ impl VelocityTracker {
     /// Record velocity data for a sprint
     pub fn record_sprint_velocity(&mut self, velocity_data: VelocityData) {
         let team_key = velocity_data.team_id.clone();
-        self.velocity_data.entry(team_key.clone()).or_insert_with(Vec::new).push(velocity_data);
+        self.velocity_data.entry(team_key.clone()).or_default().push(velocity_data);
         
         // Update team metrics
         self.update_team_metrics(&team_key);
@@ -68,7 +68,7 @@ impl VelocityTracker {
             }
 
             let velocities: Vec<f64> = velocity_history.iter().map(|v| v.velocity).collect();
-            let story_points: Vec<u32> = velocity_history.iter().map(|v| v.story_points_completed).collect();
+            let _story_points: Vec<u32> = velocity_history.iter().map(|v| v.story_points_completed).collect();
 
             // Calculate basic statistics
             let average_velocity = velocities.iter().sum::<f64>() / velocities.len() as f64;
@@ -244,7 +244,7 @@ impl VelocityTracker {
             }
 
             // Check for seasonal patterns
-            if self.detect_seasonal_pattern(&velocity_history) {
+            if self.detect_seasonal_pattern(velocity_history) {
                 patterns.push(VelocityPattern::Seasonal);
             }
 
@@ -335,7 +335,7 @@ impl VelocityTracker {
         
         for data in velocity_history {
             let month = data.completion_date.month();
-            monthly_velocities.entry(month).or_insert_with(Vec::new).push(data.velocity);
+            monthly_velocities.entry(month).or_default().push(data.velocity);
         }
 
         // Check if there's significant variation between months
@@ -619,7 +619,7 @@ mod tests {
     fn test_get_velocity_distribution() {
         let mut tracker = VelocityTracker::new();
         
-        let velocities = vec![10.0, 15.0, 20.0, 25.0, 30.0];
+        let velocities = [10.0, 15.0, 20.0, 25.0, 30.0];
         for (i, velocity) in velocities.iter().enumerate() {
             let velocity_data = VelocityData::new(
                 "team1".to_string(),

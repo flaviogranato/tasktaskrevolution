@@ -42,6 +42,7 @@ impl std::error::Error for BuildContextError {}
 /// Metadata structure for company.yaml files
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct CompanyMetadata {
     code: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -55,6 +56,7 @@ struct CompanyMetadata {
 /// Metadata structure for project.yaml files
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct ProjectMetadata {
     code: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]

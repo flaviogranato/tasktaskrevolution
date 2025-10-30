@@ -97,6 +97,7 @@ impl TaskDependencyCommand {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn add_dependency(
         &self,
         base_path: &str,

@@ -107,6 +107,7 @@ impl CostCommand {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn handle_add_cost(
         &self,
         base_path: &str,

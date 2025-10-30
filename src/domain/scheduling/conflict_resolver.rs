@@ -356,7 +356,7 @@ impl ConflictResolver {
         Ok(adjustments)
     }
 
-    fn find_dependency_adjustment(&self, task_id: &str) -> Option<DependencyAdjustment> {
+    fn find_dependency_adjustment(&self, _task_id: &str) -> Option<DependencyAdjustment> {
         // Find how to adjust dependencies for this task
         Some(DependencyAdjustment {
             new_predecessor: None,
@@ -365,7 +365,7 @@ impl ConflictResolver {
         })
     }
 
-    fn adjust_task_dependency(&mut self, task_id: &str, adjustment: DependencyAdjustment) -> Result<(), DomainError> {
+    fn adjust_task_dependency(&mut self, _task_id: &str, _adjustment: DependencyAdjustment) -> Result<(), DomainError> {
         // Apply dependency adjustment
         // This is a simplified implementation
         Ok(())
@@ -380,7 +380,7 @@ impl ConflictResolver {
         })
     }
 
-    fn apply_restructuring_plan(&mut self, plan: &RestructuringPlan) -> Result<(), DomainError> {
+    fn apply_restructuring_plan(&mut self, _plan: &RestructuringPlan) -> Result<(), DomainError> {
         // Apply the restructuring plan
         // This is a simplified implementation
         Ok(())
@@ -659,7 +659,7 @@ pub struct ConflictResolution {
 }
 
 impl ConflictResolution {
-    pub fn new(resource_id: String) -> Self {
+    pub fn new(_resource_id: String) -> Self {
         Self {
             method: ResolutionMethod::Failed,
             description: String::new(),
@@ -891,7 +891,7 @@ mod tests {
     fn test_prevention_recommendations() {
         let schedule = create_test_schedule();
         let resolver = ConflictResolver::new(schedule);
-        let recommendations = resolver.generate_prevention_recommendations();
+        let _recommendations = resolver.generate_prevention_recommendations();
 
         // Should have some recommendations based on analysis
         // Removed useless comparison (len() is always >= 0)

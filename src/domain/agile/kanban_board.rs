@@ -84,12 +84,11 @@ impl KanbanBoardManager {
     ) -> Result<(), String> {
         if let Some(board) = self.boards.get_mut(board_id) {
             // Check WIP limits before moving
-            if let Some(target_col) = board.columns.iter().find(|c| c.id == to_column) {
-                if let Some(limit) = board.wip_limits.get(&target_col.id) {
-                    if target_col.tasks.len() as u32 >= *limit {
-                        return Err(format!("WIP limit exceeded for column {}", target_col.name));
-                    }
-                }
+            if let Some(target_col) = board.columns.iter().find(|c| c.id == to_column)
+                && let Some(limit) = board.wip_limits.get(&target_col.id)
+                && target_col.tasks.len() as u32 >= *limit
+            {
+                return Err(format!("WIP limit exceeded for column {}", target_col.name));
             }
 
             board.move_task(task_id, from_column, to_column)?;
@@ -104,7 +103,7 @@ impl KanbanBoardManager {
             };
 
             self.task_movements.entry(board_id.to_string())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(movement);
 
             Ok(())
@@ -160,7 +159,7 @@ impl KanbanBoardManager {
             // Calculate cycle time (time from first column to last column)
             let cycle_times: Vec<Duration> = movements.iter()
                 .filter(|m| m.from_column != m.to_column)
-                .map(|m| Duration::seconds(1)) // Simplified for now
+                .map(|_m| Duration::seconds(1)) // Simplified for now
                 .collect();
 
             let cycle_time = if !cycle_times.is_empty() {

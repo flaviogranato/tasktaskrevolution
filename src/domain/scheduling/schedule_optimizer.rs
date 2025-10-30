@@ -185,6 +185,7 @@ impl ScheduleOptimizer {
     }
 
     /// Optimize using genetic algorithm
+    #[allow(unused_assignments)]
     fn optimize_genetic(&self) -> Result<ProjectSchedule, DomainError> {
         let mut optimized_schedule = self.schedule.clone();
 
@@ -192,7 +193,7 @@ impl ScheduleOptimizer {
         let mut population = self.initialize_population(50)?;
 
         // Run genetic algorithm
-        for generation in 0..100 {
+        for _generation in 0..100 {
             // Evaluate fitness
             let fitness_scores = self.evaluate_population(&population)?;
 
@@ -296,15 +297,15 @@ impl ScheduleOptimizer {
 
     fn parallelize_tasks(
         &self,
-        schedule: &mut ProjectSchedule,
-        task1_id: &str,
-        task2_id: &str,
+        _schedule: &mut ProjectSchedule,
+        _task1_id: &str,
+        _task2_id: &str,
     ) -> Result<(), DomainError> {
         // Implement task parallelization
         Ok(())
     }
 
-    fn optimize_dependencies(&self, schedule: &mut ProjectSchedule) -> Result<(), DomainError> {
+    fn optimize_dependencies(&self, _schedule: &mut ProjectSchedule) -> Result<(), DomainError> {
         // Optimize task dependencies
         Ok(())
     }
@@ -341,8 +342,8 @@ impl ScheduleOptimizer {
 
     fn assign_more_tasks_to_resource(
         &self,
-        schedule: &mut ProjectSchedule,
-        resource_id: &str,
+        _schedule: &mut ProjectSchedule,
+        _resource_id: &str,
     ) -> Result<(), DomainError> {
         // Assign more tasks to underutilized resource
         Ok(())
@@ -350,8 +351,8 @@ impl ScheduleOptimizer {
 
     fn redistribute_tasks_from_resource(
         &self,
-        schedule: &mut ProjectSchedule,
-        resource_id: &str,
+        _schedule: &mut ProjectSchedule,
+        _resource_id: &str,
     ) -> Result<(), DomainError> {
         // Redistribute tasks from overutilized resource
         Ok(())
@@ -367,56 +368,56 @@ impl ScheduleOptimizer {
             .collect()
     }
 
-    fn compress_task(&self, schedule: &mut ProjectSchedule, task_id: &str) -> Result<(), DomainError> {
+    fn compress_task(&self, _schedule: &mut ProjectSchedule, _task_id: &str) -> Result<(), DomainError> {
         // Compress a task (e.g., by adding more resources)
         Ok(())
     }
 
-    fn optimize_task_sequencing(&self, schedule: &mut ProjectSchedule) -> Result<(), DomainError> {
+    fn optimize_task_sequencing(&self, _schedule: &mut ProjectSchedule) -> Result<(), DomainError> {
         // Optimize the sequence of tasks
         Ok(())
     }
 
-    fn analyze_cost_distribution(&self, schedule: &ProjectSchedule) -> HashMap<String, CostInfo> {
+    fn analyze_cost_distribution(&self, _schedule: &ProjectSchedule) -> HashMap<String, CostInfo> {
         // Analyze cost distribution across resources
         HashMap::new()
     }
 
-    fn find_lower_cost_alternative(&self, resource_id: &str) -> Option<String> {
+    fn find_lower_cost_alternative(&self, _resource_id: &str) -> Option<String> {
         // Find a lower-cost alternative resource
         None
     }
 
     fn replace_resource(
         &self,
-        schedule: &mut ProjectSchedule,
-        old_resource_id: &str,
-        new_resource_id: &str,
+        _schedule: &mut ProjectSchedule,
+        _old_resource_id: &str,
+        _new_resource_id: &str,
     ) -> Result<(), DomainError> {
         // Replace one resource with another
         Ok(())
     }
 
-    fn initialize_population(&self, size: usize) -> Result<Vec<ScheduleIndividual>, DomainError> {
+    fn initialize_population(&self, _size: usize) -> Result<Vec<ScheduleIndividual>, DomainError> {
         // Initialize population for genetic algorithm
         Ok(vec![])
     }
 
-    fn evaluate_population(&self, population: &[ScheduleIndividual]) -> Result<Vec<f64>, DomainError> {
+    fn evaluate_population(&self, _population: &[ScheduleIndividual]) -> Result<Vec<f64>, DomainError> {
         // Evaluate fitness of population
         Ok(vec![])
     }
 
     fn select_parents(
         &self,
-        population: &[ScheduleIndividual],
-        fitness_scores: &[f64],
+        _population: &[ScheduleIndividual],
+        _fitness_scores: &[f64],
     ) -> Result<Vec<&ScheduleIndividual>, DomainError> {
         // Select parents for reproduction
         Ok(vec![])
     }
 
-    fn create_offspring(&self, parents: &[&ScheduleIndividual]) -> Result<Vec<ScheduleIndividual>, DomainError> {
+    fn create_offspring(&self, _parents: &[&ScheduleIndividual]) -> Result<Vec<ScheduleIndividual>, DomainError> {
         // Create offspring from parents
         Ok(vec![])
     }
@@ -429,14 +430,14 @@ impl ScheduleOptimizer {
     fn replace_population(
         &self,
         population: Vec<ScheduleIndividual>,
-        offspring: Vec<ScheduleIndividual>,
+        _offspring: Vec<ScheduleIndividual>,
         _fitness_scores: &[f64],
     ) -> Result<Vec<ScheduleIndividual>, DomainError> {
         // Replace population with new generation
         Ok(population)
     }
 
-    fn has_converged(&self, fitness_scores: &[f64]) -> bool {
+    fn has_converged(&self, _fitness_scores: &[f64]) -> bool {
         // Check if the population has converged
         false
     }
@@ -452,17 +453,17 @@ impl ScheduleOptimizer {
         })
     }
 
-    fn individual_to_schedule(&self, individual: &ScheduleIndividual) -> Result<ProjectSchedule, DomainError> {
+    fn individual_to_schedule(&self, _individual: &ScheduleIndividual) -> Result<ProjectSchedule, DomainError> {
         // Convert individual to schedule
         Ok(self.schedule.clone())
     }
 
-    fn calculate_average_utilization(&self, schedule: &ProjectSchedule) -> f64 {
+    fn calculate_average_utilization(&self, _schedule: &ProjectSchedule) -> f64 {
         // Calculate average resource utilization
         0.8
     }
 
-    fn calculate_cost_score(&self, schedule: &ProjectSchedule) -> f64 {
+    fn calculate_cost_score(&self, _schedule: &ProjectSchedule) -> f64 {
         // Calculate cost optimization score
         0.9
     }

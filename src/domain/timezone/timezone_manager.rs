@@ -1,5 +1,4 @@
 use super::timezone_models::*;
-use chrono::{DateTime, TimeZone, Utc};
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -180,7 +179,7 @@ impl TimezoneManager {
     pub fn find_by_country(&self, country: &str) -> Vec<&TimezoneInfo> {
         self.timezones
             .values()
-            .filter(|tz| tz.country.as_ref().map_or(false, |c| c == country))
+            .filter(|tz| tz.country.as_ref().is_some_and(|c| c == country))
             .collect()
     }
 
@@ -188,7 +187,7 @@ impl TimezoneManager {
     pub fn find_by_region(&self, region: &str) -> Vec<&TimezoneInfo> {
         self.timezones
             .values()
-            .filter(|tz| tz.region.as_ref().map_or(false, |r| r == region))
+            .filter(|tz| tz.region.as_ref().is_some_and(|r| r == region))
             .collect()
     }
 

@@ -12,6 +12,7 @@ pub struct GlobalScheduler {
     timezone_converter: super::TimezoneConverter,
     coordination_rules: Vec<CoordinationRule>,
     conflict_resolver: ConflictResolver,
+    #[allow(dead_code)]
     metrics_aggregator: TimezoneMetricsAggregator,
     working_hours_cache: HashMap<String, WorkingHours>,
 }
@@ -132,6 +133,7 @@ impl GlobalScheduler {
 
         for participant in participants {
             let hour = participant.local_start_time.hour();
+            #[allow(unused_assignments)]
             let mut score = 0.0;
 
             // Score baseado no horário local
@@ -1006,18 +1008,18 @@ mod tests {
             scheduler.create_schedule(
                 format!("project{}", i),
                 "UTC".to_string(),
-                base_time + Duration::hours(i.try_into().unwrap()),
-                base_time + Duration::hours((i + 1).try_into().unwrap())
+                base_time + Duration::hours(i as i64),
+                base_time + Duration::hours((i + 1) as i64)
             ).unwrap();
         }
 
         // Test optimization
         let schedule = scheduler.get_schedule("project0").unwrap();
-        let optimized = scheduler.optimize_schedule(&schedule).unwrap();
+        let optimized = scheduler.optimize_schedule(schedule).unwrap();
         assert!(optimized.optimization_score >= 0.0);
         
         // Test recommendations
-        let recommendations = scheduler.generate_optimization_recommendations(&schedule);
+        let recommendations = scheduler.generate_optimization_recommendations(schedule);
         assert!(!recommendations.is_empty());
     }
 
@@ -1026,15 +1028,15 @@ mod tests {
         let mut scheduler = GlobalScheduler::new();
         
         // Create schedules with different timezones
-        let timezones = vec!["UTC", "America/New_York", "Europe/London", "Asia/Tokyo"];
+        let timezones = ["UTC", "America/New_York", "Europe/London", "Asia/Tokyo"];
         let base_time = Utc::now();
         
         for (i, timezone) in timezones.iter().enumerate() {
             scheduler.create_schedule(
                 format!("project{}", i),
                 timezone.to_string(),
-                base_time + Duration::hours(i.try_into().unwrap()),
-                base_time + Duration::hours((i + 1).try_into().unwrap())
+                base_time + Duration::hours(i as i64),
+                base_time + Duration::hours((i + 1) as i64)
             ).unwrap();
         }
 
@@ -1051,7 +1053,7 @@ mod tests {
 
         // Test timezone distribution analysis
         let schedule = scheduler.get_schedule("project0").unwrap();
-        let distribution = scheduler.analyze_timezone_distribution(&schedule);
+        let distribution = scheduler.analyze_timezone_distribution(schedule);
         assert_eq!(distribution.timezone_count.len(), 1);
         assert!(distribution.most_common_timezone.is_some());
     }
@@ -1090,6 +1092,6 @@ mod tests {
         assert!(sync_result.is_ok());
         
         let result = sync_result.unwrap();
-        assert!(result.synced_schedules.len() > 0);
+        assert!(!result.synced_schedules.is_empty());
     }
 }

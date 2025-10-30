@@ -68,7 +68,7 @@ impl Server {
         let directory = self.directory.clone();
         let live_reload = self.live_reload;
         let cors = self.cors;
-        let debug = self.debug;
+        let _debug = self.debug;
 
         // Create shutdown channel
         let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);

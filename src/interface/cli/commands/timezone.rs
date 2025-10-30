@@ -280,10 +280,13 @@ pub struct ValidateTimezoneArgs {
 pub struct TimezoneHandler {
     timezone_manager: TimezoneManager,
     timezone_converter: TimezoneConverter,
+    #[allow(dead_code)]
     global_scheduler: GlobalScheduler,
     timezone_validator: TimezoneValidator,
+    #[allow(dead_code)]
     preferences_manager: TimezonePreferencesManager,
     global_reporter: GlobalReporter,
+    #[allow(dead_code)]
     metrics_aggregator: TimezoneMetricsAggregator,
 }
 

@@ -48,11 +48,7 @@ impl TimezoneConverter {
     }
 
     /// Converte um horário local para UTC
-    pub fn local_to_utc(&self, local_time: DateTime<Tz>, timezone: &str) -> TimezoneResult<DateTime<Utc>> {
-        let tz: Tz = timezone
-            .parse()
-            .map_err(|_| TimezoneError::InvalidTimezone(timezone.to_string()))?;
-
+    pub fn local_to_utc(&self, local_time: DateTime<Tz>, _timezone: &str) -> TimezoneResult<DateTime<Utc>> {
         Ok(local_time.with_timezone(&Utc))
     }
 
@@ -145,7 +141,7 @@ impl TimezoneConverter {
                 let local_end = local_start + chrono::Duration::minutes(duration_minutes);
 
                 // Verificar se está dentro do horário de trabalho
-                if local_end.hour() <= end_hour as u32 {
+                if local_end.hour() <= end_hour {
                     let utc_start = local_start.with_timezone(&Utc);
                     let utc_end = local_end.with_timezone(&Utc);
 
@@ -186,18 +182,15 @@ impl TimezoneConverter {
 
             // Score baseado no horário local
             let hour = local_start.hour();
-            let mut participant_score = 0.0;
-
-            // Horário ideal: 9h-17h
-            if (9..=17).contains(&hour) {
-                participant_score = 1.0;
+            let mut participant_score = if (9..=17).contains(&hour) {
+                1.0
             } else if (8..=18).contains(&hour) {
-                participant_score = 0.8;
+                0.8
             } else if (7..=19).contains(&hour) {
-                participant_score = 0.6;
+                0.6
             } else {
-                participant_score = 0.2;
-            }
+                0.2
+            };
 
             // Penalizar se for fim de semana
             if local_start.weekday() == chrono::Weekday::Sat || local_start.weekday() == chrono::Weekday::Sun {

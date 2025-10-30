@@ -1,7 +1,7 @@
 use super::query_executor::EntityType;
 use crate::application::errors::AppError;
 use crate::domain::shared::query_parser::{
-    AggregationType, FilterCondition, ProjectionOptions, Query, QueryExpression,
+    AggregationType, FilterCondition, Query, QueryExpression,
 };
 
 /// Validador de queries

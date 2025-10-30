@@ -24,7 +24,7 @@ impl BurndownCalculator {
     /// Calculate ideal burndown line
     pub fn calculate_ideal_burndown(
         &self,
-        sprint_id: &str,
+        _sprint_id: &str,
         total_story_points: u32,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
@@ -249,7 +249,7 @@ impl BurndownCalculator {
 
     /// Calculate sprint health score
     pub fn calculate_sprint_health(&self, sprint_id: &str) -> Result<SprintHealthScore, String> {
-        if let Some(sprint) = self.sprint_data.get(sprint_id) {
+        if let Some(_sprint) = self.sprint_data.get(sprint_id) {
             let velocity = self.calculate_burndown_velocity(sprint_id)?;
             let prediction = self.predict_sprint_completion(sprint_id)?;
             
@@ -271,7 +271,7 @@ impl BurndownCalculator {
             }
 
             // Ensure score is between 0 and 100
-            health_score = health_score.max(0.0).min(100.0);
+            health_score = health_score.clamp(0.0, 100.0);
 
             let health_level = if health_score >= 80.0 {
                 HealthLevel::Excellent

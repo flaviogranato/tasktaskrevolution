@@ -143,6 +143,7 @@ impl TaskDependencyManifest {
     }
 
     /// Convert to a simple string (for backward compatibility)
+    #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         self.predecessor.clone()
     }

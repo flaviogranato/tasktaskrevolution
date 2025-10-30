@@ -1,6 +1,6 @@
 use crate::domain::shared::query_parser::{
-    AggregationType, ComparisonOperator, FilterCondition, PaginationOptions, ProjectionOptions, Query, QueryExpression,
-    QueryValue, SortOption,
+    AggregationType, ComparisonOperator, FilterCondition, PaginationOptions, Query, QueryExpression, QueryValue,
+    SortOption,
 };
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -253,7 +253,7 @@ impl QueryEngine {
             QueryValue::Array(arr) => {
                 let items: Vec<String> = arr
                     .iter()
-                    .map(|v| Self::extract_string(v))
+                    .map(Self::extract_string)
                     .collect::<Result<Vec<String>, _>>()?;
                 Ok(format!("[{}]", items.join(", ")))
             }
@@ -275,8 +275,7 @@ impl QueryEngine {
         let matches = if right_str.starts_with('^') && right_str.ends_with('$') {
             let pattern = &right_str[1..right_str.len() - 1];
             left_str == pattern
-        } else if right_str.starts_with('^') {
-            let pattern = &right_str[1..];
+        } else if let Some(pattern) = right_str.strip_prefix('^') {
             left_str.starts_with(pattern)
         } else if right_str.ends_with('$') {
             let pattern = &right_str[..right_str.len() - 1];
@@ -452,7 +451,7 @@ impl QueryEngine {
 mod tests {
     use super::*;
     use crate::domain::shared::query_parser::{
-        ComparisonOperator, FilterCondition, LogicalOperator, Query, QueryExpression,
+        ComparisonOperator, FilterCondition, LogicalOperator, ProjectionOptions, Query, QueryExpression,
     };
 
     #[derive(Debug, Clone, PartialEq)]

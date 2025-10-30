@@ -537,9 +537,7 @@ mod tests {
 
     #[test]
     fn test_agile_reporter_creation() {
-        let reporter = AgileReporter::new();
-        // Test that reporter is created successfully
-        assert!(true);
+        let _reporter = AgileReporter::new();
     }
 
     #[test]

@@ -3,6 +3,7 @@ use crate::domain::shared::errors::DomainError;
 use std::path::PathBuf;
 
 pub struct CalculateCostsUseCase {
+    #[allow(dead_code)]
     base_path: PathBuf,
 }
 

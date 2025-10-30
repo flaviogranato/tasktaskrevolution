@@ -782,7 +782,7 @@ mod tests {
         leveler.set_resource_capacity("resource-1".to_string(), 0.5);
         leveler.set_resource_capacity("resource-2".to_string(), 0.8);
 
-        let recommendations = leveler.generate_recommendations();
+        let _recommendations = leveler.generate_recommendations();
 
         // Should have some recommendations based on utilization
         // Removed useless comparison (len() is always >= 0)

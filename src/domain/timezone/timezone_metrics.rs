@@ -62,7 +62,7 @@ impl TimezoneMetrics {
         let conflict_penalty = (self.timezone_conflicts as f64 * 5.0).min(30.0);
         score += 30.0 - conflict_penalty;
 
-        self.efficiency_score = score.min(100.0).max(0.0);
+        self.efficiency_score = score.clamp(0.0, 100.0);
     }
 
     pub fn update_peak_usage(&mut self, hour: u8) {
@@ -238,6 +238,12 @@ impl GlobalTimezoneMetrics {
             efficiency_distribution: HashMap::new(),
             last_updated: Utc::now(),
         }
+    }
+}
+
+impl Default for GlobalTimezoneMetrics {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

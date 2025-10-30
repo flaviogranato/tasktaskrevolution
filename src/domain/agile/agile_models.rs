@@ -363,11 +363,15 @@ impl KanbanBoard {
         let mut violations = Vec::new();
         
         for column in &self.columns {
-            if let Some(limit) = self.wip_limits.get(&column.id) {
-                if column.tasks.len() as u32 > *limit {
-                    violations.push(format!("Column {} exceeds WIP limit: {}/{}", 
-                        column.name, column.tasks.len(), limit));
-                }
+            if let Some(limit) = self.wip_limits.get(&column.id)
+                && column.tasks.len() as u32 > *limit
+            {
+                violations.push(format!(
+                    "Column {} exceeds WIP limit: {}/{}",
+                    column.name,
+                    column.tasks.len(),
+                    limit
+                ));
             }
         }
         

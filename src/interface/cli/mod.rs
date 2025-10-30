@@ -475,7 +475,7 @@ impl Cli {
                 use crate::interface::cli::commands::agile::AgileHandler;
                 let base_path = std::env::current_dir()?;
                 let handler = AgileHandler::new(base_path);
-                handler.handle(&command).map_err(|e| e.into())
+                handler.handle(&command)
             }
             Commands::TestData { command } => {
                 let base_path = std::env::current_dir().unwrap().to_string_lossy().to_string();

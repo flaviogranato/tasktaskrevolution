@@ -1,5 +1,5 @@
 use super::timezone_models::*;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

@@ -435,7 +435,7 @@ impl GlobalReporter {
     }
 
     /// Generate risk assessment
-    fn generate_risk_assessment(&self, schedules: &[GlobalSchedule]) -> RiskAssessment {
+    fn generate_risk_assessment(&self, _schedules: &[GlobalSchedule]) -> RiskAssessment {
         let mut risks = Vec::new();
 
         // Risco de conflitos de timezone
@@ -822,7 +822,7 @@ mod tests {
         
         // Test all metrics are populated
         assert!(report.performance_metrics.total_meetings > 0);
-        assert!(report.collaboration_metrics.total_participants >= 0);
+        // total_participants is non-negative by type; no need to assert lower bound
         assert!(report.efficiency_metrics.total_productive_time > Duration::zero());
         assert!(!report.global_insights.is_empty());
         assert!(!report.recommendations.is_empty());
@@ -846,7 +846,7 @@ mod tests {
         // Test performance metrics
         assert_eq!(report.performance_metrics.total_meetings, 2);
         assert!(report.performance_metrics.total_duration > Duration::zero());
-        assert!(report.performance_metrics.timezone_conflicts >= 0);
+        // timezone_conflicts is non-negative by type; no need to assert lower bound
         assert!(report.performance_metrics.conflict_rate >= 0.0);
         assert!(report.performance_metrics.delay_rate >= 0.0);
     }
@@ -884,7 +884,7 @@ mod tests {
         
         // Test collaboration metrics
         assert!(report.collaboration_metrics.total_participants > 0);
-        assert!(report.collaboration_metrics.cross_timezone_meetings >= 0);
+        // cross_timezone_meetings is non-negative by type; no need to assert lower bound
         assert!(!report.collaboration_metrics.timezone_diversity.is_empty());
         assert!(report.collaboration_metrics.collaboration_index >= 0.0);
     }
